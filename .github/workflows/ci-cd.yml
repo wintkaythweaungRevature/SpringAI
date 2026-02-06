@@ -15,10 +15,12 @@ jobs:
         with:
           node-version: 18
           
-      - name: Install and Build
-        run: |
-          npm install
-          CI=false npm run build
+      - name: Install Dependencies
+        run: npm install
 
-      - name: Docker Build (Optional Step to check)
+      - name: Build React App
+        # CI=false ကို run command ထဲမှာ တိုက်ရိုက်ထည့်ထားတာပါ
+        run: CI=false npm run build
+
+      - name: Docker Build (Check Dockerfile)
         run: docker build -t test-build .

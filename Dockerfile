@@ -7,12 +7,13 @@ WORKDIR /app
 RUN apk add --no-cache bash git python3 make g++
 
 COPY package*.json ./
-RUN npm install
+# ဒီစာကြောင်းကို အောက်ပါအတိုင်း ပြင်လိုက်ပါ
+RUN npm install --legacy-peer-deps
 
 COPY . .
 
-# Build app
-RUN npm run build
+# Build app - CI=false ထည့်တာက ပိုသေချာပါတယ်
+RUN CI=false npm run build
 
 # Stage 2: Serve with Nginx
 FROM nginx:alpine

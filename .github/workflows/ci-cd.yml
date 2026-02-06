@@ -18,9 +18,7 @@ jobs:
       - name: Install and Build
         run: |
           npm install
-          npm run build
-        env:
-          CI: false
+          CI=false npm run build
 
       - name: Docker Build (Optional Step to check)
         run: docker build -t test-build .

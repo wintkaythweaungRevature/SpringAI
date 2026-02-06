@@ -15,12 +15,12 @@ jobs:
         with:
           node-version: 18
           
-      - name: Install Dependencies
-        run: npm install
+      - name: Clean Install Dependencies
+        # ဒီနေရာမှာ --legacy-peer-deps ထည့်လိုက်တာက react-typical အတွက် အထိရောက်ဆုံးပါ
+        run: npm install --legacy-peer-deps
 
       - name: Build React App
-        # CI=false ကို run command ထဲမှာ တိုက်ရိုက်ထည့်ထားတာပါ
         run: CI=false npm run build
 
-      - name: Docker Build (Check Dockerfile)
-        run: docker build -t test-build .npm install react-typical
+      - name: Docker Build
+        run: docker build -t test-build .

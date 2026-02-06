@@ -1,0 +1,28 @@
+name: Java CI/CD with Maven
+
+on:
+  push:
+    branches: [ "main" ] # main branch ထဲ push လုပ်ရင် run မယ်
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up JDK 17 # သင့် Java version အလိုက် ပြင်နိုင်ပါတယ်
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: maven
+
+    - name: Build with Maven
+      run: mvn -B package --file pom.xml
+
+    # အကယ်၍ Docker သုံးချင်ရင် အောက်ပါအဆင့်ကို ထည့်နိုင်ပါတယ်
+    - name: Build Docker Image
+      run: docker build -t wintkay/spring-ai-app .

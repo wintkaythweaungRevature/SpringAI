@@ -1,44 +1,26 @@
-name: React CI/CD Workflow
+name: React CI CD
 
 on:
   push:
     branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
 
 jobs:
-  build:
+  build-and-test:
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v4
-
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        cache: 'npm'
-
-    - name: Install Dependencies
-      run: npm install
-
-    - name: Build React App
-      run: npm run build
-
-      - name: Build React App
-      run: npm run build
-      env:
-        CI: false  # ဒီစာကြောင်းက warning တွေကို ignore လုပ်ခိုင်းတာပါ
-
-    # Docker ပိုင်း (အကယ်၍ Docker Hub တင်ချင်ရင်)
-    - name: Login to Docker Hub
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-    - name: Build and Push Docker Image
-      run: |
-        docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/react-app:latest .
-        docker push ${{ secrets.DOCKERHUB_USERNAME }}/react-app:latest
+      - uses: actions/checkout@v4
       
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          
+      - name: Install and Build
+        run: |
+          npm install
+          npm run build
+        env:
+          CI: false
+
+      - name: Docker Build (Optional Step to check)
+        run: docker build -t test-build .

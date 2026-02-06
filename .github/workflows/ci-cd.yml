@@ -35,5 +35,6 @@ jobs:
         with:
           context: .
           push: true
-          # tags မှာ test-build အစား သင့် username/repository-name ဖြစ်နေရပါမယ်
+
+          # tags မှာ test-build အစား သင့် username/repository-name ကို သုံးပါ
           tags: ${{ secrets.DOCKER_USERNAME }}/spring-ai-react:latest

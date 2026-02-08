@@ -7,7 +7,10 @@ import ReceipeGenerator from './components/ReceipeGenerator';
 
 
 function App() {
+const API_BASE_URL = "http://wintspringbootaws.eba-2kvb9tdk.us-east-2.elasticbeanstalk.com/"; 
 
+// ခေါ်ယူပုံ
+const response = await fetch(`${API_BASE_URL}/chat`, { ... });
   const [activeTab, setActiveTab ]= useState('image-generator');
 
   const handleTabChange = (tab) => {

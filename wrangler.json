@@ -1,6 +1,6 @@
 {
-  "name": "wint-spring-ai-frontend",
-  "compatibility_date": "2026-02-07",
+  "name": "springai",
+  "compatibility_date": "2026-02-08",
   "assets": {
     "directory": "./" 
   }

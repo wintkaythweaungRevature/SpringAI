@@ -1,4 +1,4 @@
-name: React CI CD
+name: React Build and Push to Docker
 
 on:
   push:
@@ -8,25 +8,23 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 18
-          
-      - name: Clean Install Dependencies
+          node-version: 20 # React 19 အတွက် Node 20 က ပိုကိုက်ညီပါတယ်
+
+      - name: Install Dependencies
         run: npm install --legacy-peer-deps
 
       - name: Build React App
         run: CI=false npm run build
 
-      # --- ဒီနေရာကနေစပြီး Docker Hub ကို ပို့မယ့်အပိုင်းပါ ---
-      
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
-          # GitHub Settings ထဲမှာ ထည့်ထားတဲ့ Secrets နာမည်တွေကို ဒီမှာ ပြန်သုံးပါတယ်
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
@@ -35,6 +33,4 @@ jobs:
         with:
           context: .
           push: true
-
-          # tags မှာ test-build အစား သင့် username/repository-name ကို သုံးပါ
           tags: ${{ secrets.DOCKER_USERNAME }}/spring-ai-react:latest

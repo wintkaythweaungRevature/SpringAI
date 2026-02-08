@@ -77,4 +77,10 @@ img {
   line-height: 1.6; /* Improves readability */
   border: 1px solid #ccc; /* Optional: adds a border around the text container */
   margin-bottom: 20px; /* Spacing below the text container */
+}*
+ {
+  color: #000000 !important; /* စာသားအားလုံးကို အနက်ရောင်ဖြစ်အောင် အတင်းသတ်မှတ်ခြင်း */
+}.App {
+  position: relative;
+  z-index: 1;
 }

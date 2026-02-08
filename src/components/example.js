@@ -4,9 +4,15 @@ import ImageGenerator from './components/ImageGenerator';
 import ChatComponent from './components/ChatComponent';
 import ReceipeGenerator from './components/ReceipeGenerator';
 
-async function App() {
+// ✅ ၁။ 'async' ကို function အရှေ့ကနေ ဖယ်ထုတ်လိုက်ပါ။ 
+// React Component တွေကို async function ပေးလို့ မရပါဘူး။
+function App() {
   const [activeTab, setActiveTab] = useState('image-generator');
-const response = await fetch(`https://api.wintkaythweaung.com/api/ai/ask-ai?prompt=${prompt}`);
+
+  // ✅ ၂။ ဒီနေရာမှာ fetch ခေါ်ထားတာကို ဖယ်လိုက်ပါ။ 
+  // API ခေါ်တာတွေကို Component တစ်ခုချင်းစီ (ဥပမာ- ChatComponent.js) ထဲမှာပဲ လုပ်ရမှာပါ။
+  // App.js က Tab တွေကို ပြောင်းပေးဖို့နဲ့ UI structure အတွက်ပဲ သုံးတာ ပိုကောင်းပါတယ်။
+
   return (
     <div className="portfolio-container">
       {/* --- HEADER SECTION --- */}
@@ -19,7 +25,7 @@ const response = await fetch(`https://api.wintkaythweaung.com/api/ai/ask-ai?prom
         {/* --- LEFT SIDE: PROFILE --- */}
         <section className="profile-sidebar">
           <div className="profile-image-container">
-            {/* မင်းရဲ့ပုံကို src ထဲထည့်ပြီး ဒီမှာ လမ်းကြောင်းပေးပါ */}
+            {/* မင်းရဲ့ပုံကို public folder ထဲမှာ my-profile.jpg နာမည်နဲ့ ထည့်ထားပါ */}
             <img src="/my-profile.jpg" alt="Wint Kay" className="circle-image" />
           </div>
           <div className="bio">
@@ -44,6 +50,7 @@ const response = await fetch(`https://api.wintkaythweaung.com/api/ai/ask-ai?prom
           </div>
 
           <div className="tab-content">
+            {/* Component တစ်ခုချင်းစီထဲမှာ URL တွေ အမှန်ပြင်ထားဖို့ လိုပါတယ် */}
             {activeTab === 'image-generator' && <ImageGenerator />}
             {activeTab === 'chat' && <ChatComponent />}
             {activeTab === 'recipe-generator' && <ReceipeGenerator />}
@@ -66,7 +73,6 @@ const response = await fetch(`https://api.wintkaythweaung.com/api/ai/ask-ai?prom
           <div className="hobby-item">
             <h3>My Videos</h3>
             <div className="video-container">
-               {/* YouTube video သို့မဟုတ် local video ထည့်ရန် */}
                <p>Video content goes here...</p>
             </div>
           </div>

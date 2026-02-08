@@ -9,7 +9,7 @@ function ImageGenerator()
 
     const generateImage = async () => {
  try {
-     const response = await fetch (`http://localhost:8080/generate-image?prompt=${prompt}`)
+     const response = await fetch (`https://api.wintkaythweaung.com/api/ai/ask-ai?prompt=${prompt}`)
      const urls = await response.json();
      console.log(urls);
      setImageUrls(urls);

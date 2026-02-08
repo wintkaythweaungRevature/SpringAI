@@ -8,6 +8,8 @@ import ReceipeGenerator from './components/ReceipeGenerator';
 // const API_BASE_URL = "http://wintspringbootaws.eba-2kvb9tdk.us-east-2.elasticbeanstalk.com/"; 
 
 function App() {
+  const response = await fetch(`https://api.wintkaythweaung.com/api/ai/ask-ai?prompt=${prompt}`);
+  
   const [activeTab, setActiveTab ]= useState('image-generator');
 
   const handleTabChange = (tab) => {

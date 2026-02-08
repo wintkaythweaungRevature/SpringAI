@@ -10,7 +10,7 @@ function ReceipeGenerator ()
   const createRecipe = async () => {
 
     try {
-      const response = await fetch (`http://localhost:8080/recipe-creator?ingredients= ${ingredients}&dietaryRestrictions=${dietaryRestriction}&cuisine =${cuisine}`)
+      const response = await fetch (`https://api.wintkaythweaung.com/api/ai/ask-ai?prompt= ${ingredients}&dietaryRestrictions=${dietaryRestriction}&cuisine =${cuisine}`)
       const data = await response.text();
       console.log(data);
       setRescipe(data);

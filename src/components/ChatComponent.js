@@ -11,7 +11,7 @@ function ChatComponent() {
     setLoading(true);
     try {
       // ၁။ Localhost အစား AWS Backend URL ကို အသုံးပြုခြင်း
-      const AWS_BACKEND_URL = "https://www.wintkaythweaung.com";
+      const AWS_BACKEND_URL = "https://api.wintkaythweaung.com/api/ai/ask-ai?prompt=${prompt}";
       
       // ၂။ သင်၏ Java Controller ရှိ RequestMapping (/api/ai) ကို ထည့်သွင်းခြင်း
       const response = await fetch(`${AWS_BACKEND_URL}/api/ai/ask-ai?prompt=${encodeURIComponent(prompt)}`, {

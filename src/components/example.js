@@ -4,9 +4,9 @@ import ImageGenerator from './components/ImageGenerator';
 import ChatComponent from './components/ChatComponent';
 import ReceipeGenerator from './components/ReceipeGenerator';
 
-function App() {
+async function App() {
   const [activeTab, setActiveTab] = useState('image-generator');
-
+const response = await fetch(`https://api.wintkaythweaung.com/api/ai/ask-ai?prompt=${prompt}`);
   return (
     <div className="portfolio-container">
       {/* --- HEADER SECTION --- */}

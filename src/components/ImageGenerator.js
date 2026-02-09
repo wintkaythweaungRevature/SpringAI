@@ -13,8 +13,8 @@ function ImageGenerator() {
             const response = await fetch(`https://api.wintkaythweaung.com/api/ai/ask-ai?prompt=${encodeURIComponent(prompt)}`);
             
             // ✅ ပြဿနာကို ဒီမှာ ဖြေရှင်းထားပါတယ်: JSON အစား Text အနေနဲ့ အရင်ဖတ်ပါ
-            const data = await response.text();
-            console.log("Raw Response:", data);
+           const data = await response.json();
+setImageUrls([data.url]);
 
             // Backend က URL စာသားတစ်ခုတည်း ပြန်လာတယ်ဆိုရင် Array ထဲထည့်ပေးရပါမယ်
             // အကယ်၍ backend က JSON array ပြန်တာသေချာမှ .json() ကို သုံးသင့်ပါတယ်

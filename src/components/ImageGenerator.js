@@ -65,4 +65,4 @@ function ImageGenerator() {
     );
 }
 
-export default ImageGenerator;
+export default ImageGenerator; 

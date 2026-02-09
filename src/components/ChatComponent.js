@@ -3,34 +3,32 @@ import React, { useState } from "react";
 function ChatComponent() {
   const [prompt, setPrompt] = useState('');
   const [chatResponse, setChatResponse] = useState('');
-  const [loading, setLoading] = useState(false); // Loading state ထည့်ထားခြင်း
+  const [loading, setLoading] = useState(false);
 
   const askAI = async () => {
     if (!prompt) return alert("Please enter a prompt!");
 
     setLoading(true);
+    setChatResponse(""); 
+    
     try {
-      // ၁။ Localhost အစား AWS Backend URL ကို အသုံးပြုခြင်း
-      const AWS_BACKEND_URL = 'https://api.wintkaythweaung.com/api/ai/ask-ai?prompt=${prompt}';
+      // ✅ URL ကို စနစ်တကျ ပြင်ဆင်ထားသည်
+      const fullUrl = `https://api.wintkaythweaung.com/api/ai/ask-ai?prompt=${encodeURIComponent(prompt)}`;
       
-      // ၂။ သင်၏ Java Controller ရှိ RequestMapping (/api/ai) ကို ထည့်သွင်းခြင်း
-      const response = await fetch(`${AWS_BACKEND_URL}/api/ai/ask-ai?prompt=${encodeURIComponent(prompt)}`, {
-        method: 'GET', // သင်၏ Java ဘက်တွင် GetMapping သုံးထားပါက
+      const response = await fetch(fullUrl, {
+        method: 'GET',
         headers: {
           'Accept': 'text/plain',
         },
       });
 
-      if (!response.ok) {
-        throw new Error(`Server error: ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`Server error: ${response.status}`);
 
       const data = await response.text();
-      console.log("AI Response:", data);
       setChatResponse(data);
     } catch (error) {
-      console.error("Error generating Response:", error);
-      setChatResponse("Error: Could not connect to AI backend. Check CORS or AWS status.");
+      console.error("Error:", error);
+      setChatResponse("Error: Backend သို့ ချိတ်ဆက်၍မရပါ။ Tunnel ကို စစ်ဆေးပါ။");
     } finally {
       setLoading(false);
     }
@@ -54,7 +52,7 @@ function ChatComponent() {
 
       <div className="output">
         <strong>Response:</strong>
-        <p>{chatResponse}</p>
+        <p style={{ whiteSpace: "pre-wrap" }}>{chatResponse}</p>
       </div>
     </div>
   );

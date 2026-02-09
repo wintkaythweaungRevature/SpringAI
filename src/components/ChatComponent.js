@@ -3,22 +3,19 @@ import React, { useState } from "react";
 function ChatComponent() {
   const [prompt, setPrompt] = useState('');
   const [chatResponse, setChatResponse] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false); // Loading state ထည့်ထားခြင်း
 
   const askAI = async () => {
     if (!prompt) return alert("Please enter a prompt!");
 
     setLoading(true);
-    setChatResponse(""); // အဖြေအသစ်အတွက် နေရာလွတ်အရင်လုပ်ပါ
-    
     try {
-      // ✅ URL ကို api. subdomain သို့ အမှန်ကန်ဆုံး ပြင်ထားသည်
-      const fullUrl = `https://api.wintkaythweaung.com/api/ai/ask-ai?prompt=${encodeURIComponent(prompt)}`;
+      // ၁။ Localhost အစား AWS Backend URL ကို အသုံးပြုခြင်း
+      const AWS_BACKEND_URL = 'https://api.wintkaythweaung.com/api/ai/ask-ai?prompt=${prompt}';
       
-      console.log("Fetching from:", fullUrl);
-
-      const response = await fetch(fullUrl, {
-        method: 'GET',
+      // ၂။ သင်၏ Java Controller ရှိ RequestMapping (/api/ai) ကို ထည့်သွင်းခြင်း
+      const response = await fetch(`${AWS_BACKEND_URL}/api/ai/ask-ai?prompt=${encodeURIComponent(prompt)}`, {
+        method: 'GET', // သင်၏ Java ဘက်တွင် GetMapping သုံးထားပါက
         headers: {
           'Accept': 'text/plain',
         },
@@ -33,7 +30,7 @@ function ChatComponent() {
       setChatResponse(data);
     } catch (error) {
       console.error("Error generating Response:", error);
-      setChatResponse("Error: Backend သို့ ချိတ်ဆက်မရပါ။ Tunnel နှင့် Spring Boot ကို စစ်ဆေးပါ။");
+      setChatResponse("Error: Could not connect to AI backend. Check CORS or AWS status.");
     } finally {
       setLoading(false);
     }
@@ -49,20 +46,15 @@ function ChatComponent() {
           onChange={(e) => setPrompt(e.target.value)}
           placeholder="Enter a prompt for AI..."
           disabled={loading}
-          style={{ padding: "10px", width: "70%", borderRadius: "5px", border: "1px solid #ccc" }}
         />
-        <button 
-          onClick={askAI} 
-          disabled={loading}
-          style={{ padding: "10px 20px", marginLeft: "10px", cursor: loading ? "not-allowed" : "pointer" }}
-        >
+        <button onClick={askAI} disabled={loading}>
           {loading ? "Thinking..." : "Ask AI"}
         </button>
       </div>
 
-      <div className="output" style={{ marginTop: "20px", padding: "15px", backgroundColor: "#f9f9f9", borderRadius: "5px" }}>
+      <div className="output">
         <strong>Response:</strong>
-        <p style={{ whiteSpace: "pre-wrap" }}>{chatResponse}</p>
+        <p>{chatResponse}</p>
       </div>
     </div>
   );

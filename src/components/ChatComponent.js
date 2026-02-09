@@ -13,7 +13,7 @@ function ChatComponent() {
     
     try {
       // ✅ URL ကို စနစ်တကျ ပြင်ဆင်ထားသည်
-      const fullUrl = `https://api.wintkaythweaung.com/api/ai/ask-ai?prompt=${encodeURIComponent(prompt)}`;
+      const fullUrl = `http://api.wintkaythweaung.com/api/ai/ask-ai?prompt=${encodeURIComponent(prompt)}`;
       
       const response = await fetch(fullUrl, {
         method: 'GET',

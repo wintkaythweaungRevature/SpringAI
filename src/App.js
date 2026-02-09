@@ -7,8 +7,8 @@ import ReceipeGenerator from './components/ReceipeGenerator';
 // API URL ကို အပြင်မှာပဲ သတ်မှတ်ထားပါ (သို့မဟုတ် Component ထဲမှာ သုံးပါ)
 // const API_BASE_URL = "http://wintspringbootaws.eba-2kvb9tdk.us-east-2.elasticbeanstalk.com/"; 
 
-async function App() {
-  const response = await fetch(`https://api.wintkaythweaung.com/api/ai/ask-ai?prompt=${prompt}`);
+ function App() {
+  const response =  fetch(`https://api.wintkaythweaung.com/api/ai/ask-ai?prompt=${prompt}`);
   
   const [activeTab, setActiveTab ]= useState('image-generator');
 

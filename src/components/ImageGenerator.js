@@ -10,19 +10,26 @@ function ImageGenerator() {
 
         setLoading(true);
         try {
-            const response = await fetch(`https://api.wintkaythweaung.com/api/ai/ask-ai?prompt=${encodeURIComponent(prompt)}`);
+            // ၁။ Endpoint ကို /generate-image သို့ ပြောင်းပါ
+            const response = await fetch(`https://api.wintkaythweaung.com/api/ai/generate-image?prompt=${encodeURIComponent(prompt)}`);
             
-            // ✅ ပြဿနာကို ဒီမှာ ဖြေရှင်းထားပါတယ်: JSON အစား Text အနေနဲ့ အရင်ဖတ်ပါ
-           const data = await response.json();
-setImageUrls([data.url]);
+            if (!response.ok) {
+                throw new Error("Backend error or Forbidden");
+            }
 
-            // Backend က URL စာသားတစ်ခုတည်း ပြန်လာတယ်ဆိုရင် Array ထဲထည့်ပေးရပါမယ်
-            // အကယ်၍ backend က JSON array ပြန်တာသေချာမှ .json() ကို သုံးသင့်ပါတယ်
-            setImageUrls([data]); 
+            // ၂။ Backend က Map<String, String> ပို့တာမို့ JSON အနေနဲ့ ဖတ်ပါ
+            const data = await response.json(); 
+
+            // ၃။ { "url": "http://..." } ဆိုတဲ့ object ထဲက url ကိုပဲ ယူသုံးပါ
+            if (data.url) {
+                setImageUrls([data.url]); // Array အသစ်အနေနဲ့ ထည့်လိုက်တာပါ
+            } else {
+                alert("Image URL not found in response.");
+            }
 
         } catch (error) {
             console.error("Error generating Image : ", error);
-            alert("Image ထုတ်ပေးရာတွင် အမှားအယွင်းရှိနေပါသည်။");
+            alert("Image ထုတ်ပေးရာတွင် အမှားအယွင်းရှိနေပါသည်။ (Check Backend Status)");
         } finally {
             setLoading(false);
         }
@@ -30,16 +37,20 @@ setImageUrls([data.url]);
 
     return (
         <div className="tab-content">
-            <h2>Generate Image</h2>
+            <h2>AI Image Generator</h2>
             <div className="input-group">
                 <input 
                     type="text" 
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
-                    placeholder="Enter prompt for Image (e.g. A cat flying in space)"
-                    style={{ padding: '10px', width: '250px' }}
+                    placeholder="e.g. A futuristic city in Myanmar..."
+                    style={{ padding: '10px', width: '300px', border: '1px solid #ccc', borderRadius: '4px' }}
                 /> 
-                <button onClick={generateImage} disabled={loading}>
+                <button 
+                    onClick={generateImage} 
+                    disabled={loading}
+                    style={{ padding: '10px 20px', cursor: loading ? 'not-allowed' : 'pointer' }}
+                >
                     {loading ? "Generating..." : "Generate Image"}
                 </button>
             </div>
@@ -47,17 +58,22 @@ setImageUrls([data.url]);
             <div className="image-grid" style={{ marginTop: '20px' }}>
                 {imageUrls.length > 0 ? (
                     imageUrls.map((url, index) => (
-                        <img 
-                            key={index} 
-                            src={url} 
-                            alt={`Generated ${index}`} 
-                            style={{ width: '300px', borderRadius: '8px', border: '1px solid #ddd' }}
-                            onError={(e) => { e.target.alt = "Invalid Image URL"; }}
-                        />
+                        <div key={index} style={{ textAlign: 'center' }}>
+                            <img 
+                                src={url} 
+                                alt={`Generated result`} 
+                                style={{ width: '100%', maxWidth: '500px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}
+                                onError={(e) => { e.target.src = "https://via.placeholder.com/500?text=Invalid+Image+URL"; }}
+                            />
+                            <br/>
+                            <a href={url} target="_blank" rel="noreferrer" style={{ display: 'inline-block', marginTop: '10px', color: '#007bff' }}>
+                                Open Full Image
+                            </a>
+                        </div>
                     ))
                 ) : (
-                    <div className="empty-image-slot" style={{ width: '300px', height: '300px', backgroundColor: '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        No image yet
+                    <div className="empty-image-slot" style={{ width: '100%', maxWidth: '500px', height: '300px', border: '2px dashed #ccc', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '12px' }}>
+                        <p>{loading ? "AI is painting your imagination..." : "No image generated yet"}</p>
                     </div>
                 )}
             </div>
@@ -65,4 +81,4 @@ setImageUrls([data.url]);
     );
 }
 
-export default ImageGenerator; 
+export default ImageGenerator;

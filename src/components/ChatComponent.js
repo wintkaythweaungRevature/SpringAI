@@ -12,22 +12,25 @@ function ChatComponent() {
     setChatResponse(""); 
     
     try {
-      // POST request to the backend with JSON body
-      const response = await fetch("https://api.wintkaythweaung.com/api/ai/ask-ai", {
-        method: 'POST',
+      // ✅ Port 5000 ကို URL မှာ ထည့်ပေးထားပါ (AWS မှာ Port 5000 သုံးထားရင်)
+      // ✅ AWS က Port 80 ဆိုရင်တော့ :5000 ကို ဖြုတ်လိုက်ပါ
+      const fullUrl = `https://api.wintkaythweaung.com/api/ai/ask-ai?prompt=${encodeURIComponent(prompt)}`;
+      
+      const response = await fetch(fullUrl, {
+        method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
+          'Accept': 'text/plain',
         },
-        body: JSON.stringify({ prompt })
       });
 
       if (!response.ok) throw new Error(`Server error: ${response.status}`);
 
-      const data = await response.json();
-      setChatResponse(data.answer || data.error);
+      const data = await response.text();
+      setChatResponse(data);
     } catch (error) {
       console.error("Error:", error);
-      setChatResponse("Error: This server is currently in backend development.");
+      // ✅ Error message ကို ပြင်လိုက်ပါတယ်
+      setChatResponse("Error: Backend သို့ ချိတ်ဆက်၍မရပါ။ AWS Server နှင့် DNS ကို စစ်ဆေးပါ။");
     } finally {
       setLoading(false);
     }
@@ -41,7 +44,7 @@ function ChatComponent() {
           type="text"
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && askAI()} 
+          onKeyPress={(e) => e.key === 'Enter' && askAI()} // Enter နှိပ်ရင်လည်း အလုပ်လုပ်အောင်
           placeholder="Enter a prompt for AI..."
           disabled={loading}
         />
@@ -52,9 +55,7 @@ function ChatComponent() {
 
       <div className="output">
         <strong>Response:</strong>
-        <p style={{ whiteSpace: "pre-wrap" }}>
-          {chatResponse || "အဖြေကို ဤနေရာတွင် ပြသပေးမည်..."}
-        </p>
+        <p style={{ whiteSpace: "pre-wrap" }}>{chatResponse || "အဖြေကို ဤနေရာတွင် ပြသပေးမည်..."}</p>
       </div>
     </div>
   );

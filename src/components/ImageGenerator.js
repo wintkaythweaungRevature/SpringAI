@@ -12,7 +12,7 @@ function ImageGenerator() {
         try {
             // ✅ AWS Backend URL (Cloudflare DNS မှတစ်ဆင့်)
             // Port 5000 လိုအပ်ပါက :5000 ထည့်ပေးပါ
-const response = await fetch(`https://api.wintkaythweaung.com/api/ai/generate-image?prompt=${encodeURIComponent(prompt)}`);
+const response = await fetch(`https://main.dk6jk3fcod2l.amplifyapp.com/api/ai/generate-image?prompt=${encodeURIComponent(prompt)}`);
             
             if (!response.ok) {
                 throw new Error(`Backend error: ${response.status}`);

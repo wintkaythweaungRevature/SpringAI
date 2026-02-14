@@ -14,7 +14,7 @@ function ChatComponent() {
     try {
       // ✅ Port 5000 ကို URL မှာ ထည့်ပေးထားပါ (AWS မှာ Port 5000 သုံးထားရင်)
       // ✅ AWS က Port 80 ဆိုရင်တော့ :5000 ကို ဖြုတ်လိုက်ပါ
-      const fullUrl = `https://api.wintkaythweaung.com/api/ai/ask-ai?prompt=${encodeURIComponent(prompt)}`;
+      const fullUrl = `http://wintbotai.us-east-2.elasticbeanstalk.com/api/ai/ask-ai?prompt=${encodeURIComponent(prompt)}`;
       
       const response = await fetch(fullUrl, {
         method: 'GET',

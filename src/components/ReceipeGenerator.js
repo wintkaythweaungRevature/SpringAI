@@ -19,7 +19,7 @@ function RecipeGenerator() {
                       Dietary restrictions: ${dietaryRestriction || 'none'}. 
                       Please provide a Title, Ingredients list, and Step-by-step instructions.`;
 
-      const response = await fetch(`https://api.wintkaythweaung.com/api/ai/ask-ai?prompt=${encodeURIComponent(prompt)}`);
+      const response = await fetch(`http://wintbotai.us-east-2.elasticbeanstalk.com/api/ai/ask-ai?prompt=${encodeURIComponent(prompt)}`);
       
       if (!response.ok) throw new Error("Server error");
 

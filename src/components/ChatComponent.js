@@ -14,7 +14,7 @@ function ChatComponent() {
     try {
       // ✅ Port 5000 ကို URL မှာ ထည့်ပေးထားပါ (AWS မှာ Port 5000 သုံးထားရင်)
       // ✅ AWS က Port 80 ဆိုရင်တော့ :5000 ကို ဖြုတ်လိုက်ပါ
-      const fullUrl = `https://api.wintaibot.com/api/ai/ask-ai?prompt=${encodeURIComponent(prompt)}`;
+      const fullUrl = `https://api.wintaibot.com:8080/api/ai/ask-ai?prompt=${encodeURIComponent(prompt)}`;
       
       const response = await fetch(fullUrl, {
         method: 'GET',

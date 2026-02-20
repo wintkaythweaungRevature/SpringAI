@@ -13,21 +13,22 @@ function App() {
 
   return (
     <div className="App">
-      <header className="portfolio-header">
-        <h1>WINT KAY THWE AUNG</h1>
-        <p>AI Developer Portfolio</p>
+      <header className="header">
+        <h1>Wint's AI Bot</h1>
+     
       </header>
 
       <div className="tab-buttons">
-        <button className={activeTab === 'image-generator' ? 'active' : ''} 
-          onClick={() => handleTabChange('image-generator')}> 
-          Image Generator
+         <button 
+         className={`tab-btn ${activeTab === 'image-generator' ? 'active' : ''}`} 
+        onClick={() => handleTabChange('image-generator')}>
+         Image Generator
         </button>
-        <button className={activeTab === 'chat' ? 'active' : ''}
+        <button className={`tab-btn ${activeTab === 'chat' ? 'active' : ''}`} 
           onClick={() => handleTabChange('chat')}>
           Ask AI
         </button>
-        <button className={activeTab === 'recipe-generator' ? 'active' : ''}
+        <button className={`tab-btn ${activeTab === 'recipe-generator' ? 'active' : ''}`}
           onClick={() => handleTabChange('recipe-generator')}> 
           Recipe Generator 
         </button>

@@ -5,7 +5,7 @@
   padding: 20px;
 }
 
-.tabs {
+/* .tabs {
   display: flex;
   justify-content: space-around;
   margin-bottom: 20px;
@@ -17,7 +17,7 @@ button {
   border: none;
   background-color: #f0f0f0;
   font-weight: bold;
-}
+} */
 
 button.active {
   background-color: #007bff;
@@ -83,4 +83,87 @@ img {
 }.App {
   position: relative;
   z-index: 1;
+}
+.header {
+  background: linear-gradient(135deg,#401187,#717cb3,#0c0e60);
+  padding: 20px;
+  border-radius: 22px;
+  margin-bottom: 24px;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.25);
+  transition: all 0.3s ease;
+}
+.header:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+}
+.title {
+  margin: 0;
+  font-size: 2.4rem;
+  font-weight: 800;
+  background: linear-gradient(90deg,#d3e3e3,#7cffcb);
+
+  -webkit-text-fill-color: transparent;
+}
+.tab-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin-bottom: 25px;
+}
+
+.tab-btn {
+  padding: 12px 26px;
+  border-radius: 999px;
+  border: 1px solid rgba(0,0,0,0.15);
+  background: rgba(255,255,255,0.85);
+  color: #0f2027;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.tab-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 20px rgba(137, 6, 6, 0.1);
+}
+
+.tab-btn.active {
+ background: rgba(255,255,255,0.9); /* almost same as inactive */
+  color: #401187; /* dark text, matches header */
+  font-weight: 700;
+  border: none;
+  box-shadow: 0 0 25px rgba(124,255,203,0.9);
+  transform: translateY(-2px);
+}
+ .tabs {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 20px;
+}
+
+button {
+  /* padding: 10px 20px;
+  cursor: pointer;
+  border: none;
+  background-color: #f0f0f0;
+  font-weight: bold; */
+
+padding: 12px 26px;
+  border-radius: 999px;
+  border: 1px solid rgba(0,0,0,0.15);
+  background: rgba(255,255,255,0.85);
+  color: #9793ae;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+
+
+.content {
+  background: rgba(0,0,0,0.08);
+  border-radius: 22px;
+  padding: 20px;
+  box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+  font-size: 1.15rem;
 }

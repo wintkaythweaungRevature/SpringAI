@@ -39,7 +39,7 @@ const response = await fetch(`https://api.wintaibot.com/api/ai/generate-image?pr
         <div style={styles.container}>
             <div style={styles.card}>
                 <h2 style={styles.title}>🎨 AI Image Generator</h2>
-                <p style={styles.subtitle}>သင်စိတ်ကူးရှိရာကို စာသားရိုက်ရုံဖြင့် ပုံဖော်လိုက်ပါ</p>
+                <p style={styles.subtitle}>"Bring your imagination to life just by typing."</p>
                 
                 <div style={styles.inputGroup}>
                     <input 
@@ -84,7 +84,8 @@ const response = await fetch(`https://api.wintaibot.com/api/ai/generate-image?pr
                     ) : (
                         <div style={styles.placeholder}>
                             <p style={styles.placeholderText}>
-                                {loading ? "AI က သင့်အတွက် ပုံဆွဲပေးနေပါပြီ..." : "ပုံထုတ်ရန် စာသားရိုက်ထည့်ပါ"}
+                                {loading ? "Type a prompt to generate an image..." : "Describe what you want to see"}
+                           
                             </p>
                         </div>
                     )}

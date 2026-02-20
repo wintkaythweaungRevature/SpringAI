@@ -30,7 +30,7 @@ function ChatComponent() {
     } catch (error) {
       console.error("Error:", error);
       // ✅ Error message ကို ပြင်လိုက်ပါတယ်
-      setChatResponse("Error: Backend သို့ ချိတ်ဆက်၍မရပါ။ AWS Server နှင့် DNS ကို စစ်ဆေးပါ။");
+      setChatResponse("This page is currently under maintenance. Please try again later.");
     } finally {
       setLoading(false);
     }
@@ -55,7 +55,7 @@ function ChatComponent() {
 
       <div className="output">
         <strong>Response:</strong>
-        <p style={{ whiteSpace: "pre-wrap" }}>{chatResponse || "အဖြေကို ဤနေရာတွင် ပြသပေးမည်..."}</p>
+        <p style={{ whiteSpace: "pre-wrap" }}>{chatResponse || "Answer will appear here"}</p>
       </div>
     </div>
   );

@@ -27,7 +27,7 @@ function RecipeGenerator() {
       setRecipe(data);
     } catch (error) {
       console.error("Error generating Recipes response: ", error);
-      setRecipe("Recipe ထုတ်ပေးရာတွင် အမှားအယွင်း ရှိနေပါသည်။ Backend ကို စစ်ဆေးပါ။");
+      setRecipe("This page is currently under maintenance. Please try again later.");
     } finally {
       setLoading(false);
     }

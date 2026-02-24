@@ -33,10 +33,7 @@ function App() {
           onClick={() => handleTabChange('recipe-generator')}> 
           Recipe Generator 
         </button>
-        <button className={`tab-btn ${activeTab === 'Audio-Transcript' ? 'active' : ''}`}
-          onClick={() => handleTabChange('Audio-Transcript')}> 
-          Audio Transcript 
-        </button>
+       
         
         
       </div>
@@ -45,7 +42,7 @@ function App() {
         {activeTab === 'image-generator' && <ImageGenerator />}
         {activeTab === 'chat' && <ChatComponent />}
         {activeTab === 'recipe-generator' && <ReceipeGenerator />}
-        {activeTab === 'Audio-Transcript' && <AudioUploader />}
+       
       </div>
     </div>
   );

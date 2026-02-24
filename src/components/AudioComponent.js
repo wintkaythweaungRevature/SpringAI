@@ -17,7 +17,7 @@ function AudioComponent() {
   formData.append("file", file); // Ensure this matches @RequestParam("file") in Java
 
   try {
-        const response = await axios.post("https://api.wintaibot.com/api/audio/transcribe", formData, {
+        const response = await axios.post("https://wintaibot.com/api/audio/transcribe", formData, {
             // 💡 Header ကို လုံးဝ ဖြုတ်လိုက်ပါ (Axios က auto သတ်မှတ်ပါလိမ့်မယ်)
             onUploadProgress: (progressEvent) => {
                 const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);

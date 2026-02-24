@@ -17,7 +17,7 @@ function AudioComponent() {
   formData.append("file", file); // Ensure this matches @RequestParam("file") in Java
 
   try {
-    const fullUrl = `https://wintaibot.com/api/audio/transcribe`;
+    const fullUrl = `https://api.wintaibot.com/api/audio/transcribe`;
     
     const response = await axios.post(fullUrl, formData, {
       // 💡 Remove the explicit Content-Type header; let Axios handle it!

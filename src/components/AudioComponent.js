@@ -17,25 +17,17 @@ function AudioComponent() {
   formData.append("file", file); // Ensure this matches @RequestParam("file") in Java
 
   try {
-    const fullUrl = `https://api.wintaibot.com/api/audio/transcribe`;
-    
-    const response = await axios.post(fullUrl, formData, {
-      // 💡 Remove the explicit Content-Type header; let Axios handle it!
-      // This ensures the "boundary" is correctly generated.
-      onUploadProgress: (progressEvent) => {
-        const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-        setProgress(percent);
-      },
-    });
-
-    setTranscript(response.data);
-  } catch (error) {
-    console.error("Error Status:", error.response?.status); // Check if it's 403, 413, etc.
-    setTranscript("Transcription failed. Error code: " + (error.response?.status || "Network Error"));
-  } finally {
-    setLoading(false);
-  }
-};
+        const response = await axios.post("https://api.wintaibot.com/api/audio/transcribe", formData, {
+            // 💡 Header ကို လုံးဝ ဖြုတ်လိုက်ပါ (Axios က auto သတ်မှတ်ပါလိမ့်မယ်)
+            onUploadProgress: (progressEvent) => {
+                const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                setProgress(percent);
+            }
+        });
+        setTranscript(response.data);
+    } catch (error) {
+        console.error("Full Error:", error);
+    }
 
   return (
     <div className="chat-container"> {/* Reusing your chat-container class */}

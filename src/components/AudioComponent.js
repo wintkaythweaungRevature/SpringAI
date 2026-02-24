@@ -13,7 +13,7 @@ const handleUpload = async () => {
   const formData = new FormData();
   formData.append('file', file);
   try {
-    const response = await axios.post('http://3.139.20.70/api/ai/transcribe', formData, {
+    const response = await axios.post('https://api.wintaibot.com/api/ai/transcribe', formData, {
      
     });
    setTranscription(response.data);
@@ -23,7 +23,7 @@ const handleUpload = async () => {
 }
 
 
-
+git 
 
   return (
 

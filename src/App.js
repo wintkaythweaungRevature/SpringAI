@@ -3,6 +3,7 @@ import './App.css';
 import ImageGenerator from './components/ImageGenerator';
 import ChatComponent from './components/ChatComponent';
 import ReceipeGenerator from './components/ReceipeGenerator';
+import AudioUploader from './components/AudioComponent';
 
 function App() {
   const [activeTab, setActiveTab] = useState('image-generator');
@@ -32,12 +33,19 @@ function App() {
           onClick={() => handleTabChange('recipe-generator')}> 
           Recipe Generator 
         </button>
+        <button className={`tab-btn ${activeTab === 'Audio-Transcript' ? 'active' : ''}`}
+          onClick={() => handleTabChange('Audio-Transcript')}> 
+          Audio Transcript 
+        </button>
+        
+        
       </div>
       
       <div className="content">
         {activeTab === 'image-generator' && <ImageGenerator />}
         {activeTab === 'chat' && <ChatComponent />}
         {activeTab === 'recipe-generator' && <ReceipeGenerator />}
+        {activeTab === 'Audio-Transcript' && <AudioUploader />}
       </div>
     </div>
   );

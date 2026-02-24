@@ -34,7 +34,7 @@ const handleUpload = async () => {
   <div className="file-input" >
     <input type ="file" accept="audio/*" onChange={handleFileChange}/>
   </div>
-  <button className="upload-btn"> Upload and Transcribe </button>
+  <button className="upload-btn" onClick={handleUpload}> Upload and Transcribe </button>
   <div className="transcription-result">
     <h2>  Transcription Result </h2>
     <p>{transcription}</p>

@@ -14,9 +14,7 @@ const handleUpload = async () => {
   formData.append('file', file);
   try {
     const response = await axios.post('https://api.wintaibot.com/api/ai/transcribe', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
+     
     });
    setTranscription(response.data);
    }catch (error) {

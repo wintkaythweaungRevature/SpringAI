@@ -19,6 +19,7 @@ const handleUpload = async () => {
    setTranscription(response.data);
    }catch (error) {
     console.error('Error uploading file:', error);
+    console.error('Error Status:', error.response?.status);
   }
 }
 

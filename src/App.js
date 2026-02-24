@@ -3,7 +3,6 @@ import './App.css';
 import ImageGenerator from './components/ImageGenerator';
 import ChatComponent from './components/ChatComponent';
 import ReceipeGenerator from './components/ReceipeGenerator';
-import AudioUploader from './components/AudioComponent';
 
 function App() {
   const [activeTab, setActiveTab] = useState('image-generator');

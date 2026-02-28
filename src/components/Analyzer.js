@@ -1,5 +1,26 @@
 import React, { useState } from "react";
 import * as XLSX from "xlsx";
+import * as pdfjsLib from "pdfjs-dist";
+
+// Worker for PDF.js - use local copy from public/ to avoid CDN fetch errors
+if (typeof window !== "undefined") {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.js";
+}
+
+const ASK_AI_URL = "https://api.wintaibot.com/api/ai/ask-ai";
+const MAX_TEXT_LENGTH = 5000; // URL limit for ask-ai GET request
+
+async function extractTextFromPdf(file) {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  let text = "";
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    text += content.items.map((item) => item.str).join(" ") + "\n";
+  }
+  return text.trim();
+}
 
 function PdfAnalyzer() {
   const [pdfFile, setPdfFile] = useState(null);
@@ -30,29 +51,41 @@ function PdfAnalyzer() {
     setInsights([]);
 
     try {
-      // ✅ Send as multipart/form-data — same as your existing convert-pdf-to-excel
-      const formData = new FormData();
-      formData.append('file', pdfFile);
-      formData.append('prompt', prompt || 'Analyze this document and extract all important information.');
+      // 1. Extract text from PDF (client-side)
+      const fullText = await extractTextFromPdf(pdfFile);
+      if (!fullText.trim()) throw new Error("No text found in PDF.");
 
-      const response = await fetch('https://api.wintaibot.com/api/ai/analyze-pdf', {
-        method: 'POST',
-        body: formData
-      });
+      const truncated = fullText.length > MAX_TEXT_LENGTH
+        ? fullText.slice(0, MAX_TEXT_LENGTH) + "\n\n[... truncated ...]"
+        : fullText;
 
-      if (!response.ok) throw new Error("Server error");
+      // 2. Call ask-ai with extracted text (works without analyze-pdf endpoint)
+      const userPrompt = prompt || "Analyze this document and extract all important information.";
+      const aiPrompt = `${userPrompt}\n\nDocument content:\n${truncated}`;
 
-      const text = await response.text();
-      const clean = text.replace(/```json|```/g, '').trim();
-      const parsed = JSON.parse(clean);
+      const response = await fetch(
+        `${ASK_AI_URL}?prompt=${encodeURIComponent(aiPrompt)}`,
+        { method: "GET", headers: { Accept: "text/plain" } }
+      );
 
-      setSummary(parsed.summary || '');
-      setTableHeaders(parsed.table_headers || []);
-      setTableRows(parsed.table_rows || []);
-      setInsights(parsed.insights || []);
+      const aiResponse = await response.text();
+      if (!response.ok) throw new Error(`Server error (${response.status}): ${aiResponse.slice(0, 80)}`);
+
+      // 3. Parse response: ask-ai returns plain text. Try to extract insights (bullet points)
+      const lines = aiResponse.split("\n").map((s) => s.trim()).filter(Boolean);
+      const bulletInsights = lines.filter((l) => /^[-*•]\s/.test(l) || /^\d+\.\s/.test(l));
+      const mainText = bulletInsights.length > 0
+        ? lines.filter((l) => !/^[-*•]\s/.test(l) && !/^\d+\.\s/.test(l)).join("\n\n")
+        : aiResponse;
+
+      setSummary(mainText || aiResponse);
+      setInsights(bulletInsights.length > 0 ? bulletInsights : []);
+      setTableHeaders([]);
+      setTableRows([]);
     } catch (error) {
       console.error("Error analyzing PDF: ", error);
-      setSummary("This page is currently under maintenance. Please try again later.");
+      const msg = error.message || String(error);
+      setSummary(`Analysis failed: ${msg}. Please check your connection and try again.`);
     } finally {
       setLoading(false);
     }

@@ -1,53 +1,51 @@
 import React, { useState } from "react";
 
 function PdfAnalyzer() {
-  // ✅ Error တက်နေတဲ့ variables တွေကို state အဖြစ် ဒီမှာ ကြေညာပေးရပါမယ်
- This ESLint error happens because your JavaScript code is trying to use a variable named pdfText that hasn't been created or declared yet.
+  // ✅ These MUST be defined inside the function
+  const [file, setFile] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [recipe, setRecipe] = useState("");
 
-Since your Java Backend is already set up to read the PDF file using PDFBox, you don't need to extract the text in React. You just need to send the File object itself.
+  const handleProcess = async () => {
+    if (!file) return alert("Please upload a PDF!");
 
-The Fix: Update Analyzer.js
-Modify your handleProcess function to use the file state (which you already defined) instead of pdfText.
+    // 1. Create FormData to send the actual file
+    const formData = new FormData();
+    formData.append("file", file); // Matches @RequestParam("file") in Java
+    formData.append("prompt", "Analyze this document and extract all important information.");
 
-JavaScript
-const handleProcess = async () => {
-  if (!file) return alert("Please upload a PDF!");
+    setLoading(true);
+    setRecipe(""); // Clear previous results
 
-  // 1. Create FormData to send the actual file
-  const formData = new FormData();
-  formData.append("file", file); // This matches @RequestParam("file") in your Java code
-  formData.append("prompt", "Analyze this document and extract all important information.");
+    try {
+      // 2. POST to your API       "https://api.wintaibot.com/api/ai/analyze-pdf";
+     const url = `https://api.wintaibot.com/api/ai/analyze-pdf?t=${Date.now()}`;
+const response = await fetch(url, {
+  method: "POST", // Ensure this is POST
+  body: formData,
+});
 
-  setLoading(true);
-  try {
-    // 2. Point to the correct POST endpoint
-    const response = await fetch("https://api.wintaibot.com/api/ai/analyze-pdf", {
-      method: "POST",
-      body: formData, 
-      // Note: Do NOT set 'Content-Type' manually; browser handles it for FormData
-    });
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "Server error");
+      }
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(errorText);
+      const data = await response.json();
+      setRecipe(JSON.stringify(data, null, 2));
+    } catch (error) {
+      console.error("Upload error:", error);
+      setRecipe(`Analysis failed: ${error.message}`);
+    } finally {
+      setLoading(false);
     }
-
-    const data = await response.json();
-    setRecipe(JSON.stringify(data, null, 2));
-  } catch (error) {
-    console.error("Upload error:", error);
-    setRecipe("Analysis failed. Check backend logs.");
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   return (
     <div style={styles.card}>
       <h3>📂 PDF Spending Analyzer</h3>
       <input 
         type="file" 
-        onChange={(e) => setFile(e.target.files[0])} // Line 2 & 5 fixed
+        onChange={(e) => setFile(e.target.files[0])} 
         accept=".pdf" 
         style={styles.input}
       />
@@ -70,11 +68,11 @@ const handleProcess = async () => {
 }
 
 const styles = {
-  card: { padding: '20px', maxWidth: '500px', margin: 'auto', border: '1px solid #ccc', borderRadius: '8px' },
-  input: { marginBottom: '15px', display: 'block' },
-  button: { width: '100%', padding: '10px', backgroundColor: '#28a745', color: '#fff', border: 'none', cursor: 'pointer' },
-  outputArea: { marginTop: '20px', backgroundColor: '#f4f4f4', padding: '10px' },
-  recipeText: { whiteSpace: 'pre-wrap', wordBreak: 'break-all' }
+  card: { padding: '20px', maxWidth: '600px', margin: '20px auto', border: '1px solid #ccc', borderRadius: '8px', fontFamily: 'Arial' },
+  input: { marginBottom: '15px', display: 'block', width: '100%' },
+  button: { width: '100%', padding: '12px', backgroundColor: '#28a745', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' },
+  outputArea: { marginTop: '20px', backgroundColor: '#f8f9fa', padding: '15px', border: '1px solid #ddd', borderRadius: '4px', overflowX: 'auto' },
+  recipeText: { whiteSpace: 'pre-wrap', wordBreak: 'break-all', fontSize: '14px' }
 };
 
 export default PdfAnalyzer;

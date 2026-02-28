@@ -1,113 +1,169 @@
-/* --- Global Overrides --- */
-* {
-  color: #000000 !important; /* Forces black text globally as requested */
-}
-
 .App {
   text-align: center;
-  max-width: 1000px;
+  max-width: 800px;
   margin: 0 auto;
   padding: 20px;
+}
+
+/* .tabs {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 20px;
+}
+
+button {
+  padding: 10px 20px;
+  cursor: pointer;
+  border: none;
+  background-color: #f0f0f0;
+  font-weight: bold;
+} */
+
+button.active {
+  background-color: #007bff;
+  color: #fff;
+}
+
+input {
+  padding: 10px;
+  width: calc(100% - 22px);
+  margin-bottom: 10px;
+  box-sizing: border-box;
+}
+
+.tab-content {
+  margin-top: 20px;
+}
+
+.image-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-top: 20px;
+}
+
+img {
+  width: 100%;
+  height: auto;
+  border: 2px solid #ccc;
+  border-radius: 5px;
+}
+
+.empty-image-slot {
+  width: 100%;
+  height: 0;
+  padding-bottom: 75%; /* Maintain aspect ratio for empty slots */
+  border: 2px dashed #ccc;
+  border-radius: 5px;
+  background-color: #f9f9f9;
+}
+
+.output {
+  margin-top: 20px;
+  text-align: left;
+  background-color: #f4f4f4;
+  padding: 10px;
+  border-radius: 5px;
+}
+
+
+.recipe-text {
+  max-width: 100%; /* Adjust based on your specific layout needs */
+  padding: 10px;
+  box-sizing: border-box; /* Ensures padding is included in width calculation */
+  word-wrap: break-word;
+  overflow-y: auto; /* Allows scrolling for excessive text */
+  font-size: calc(12px + 0.5vw); /* Responsive font size */
+  line-height: 1.6; /* Improves readability */
+  border: 1px solid #ccc; /* Optional: adds a border around the text container */
+  margin-bottom: 20px; /* Spacing below the text container */
+}*
+ {
+  color: #000000 !important; /* စာသားအားလုံးကို အနက်ရောင်ဖြစ်အောင် အတင်းသတ်မှတ်ခြင်း */
+}.App {
   position: relative;
   z-index: 1;
 }
-
-/* --- Your Gradient Header --- */
-.wizard-header {
+.header {
   background: linear-gradient(135deg,#401187,#717cb3,#0c0e60);
-  padding: 40px 20px;
+  padding: 20px;
   border-radius: 22px;
-  margin-bottom: 30px;
+  margin-bottom: 24px;
   box-shadow: 0 15px 35px rgba(0,0,0,0.25);
   transition: all 0.3s ease;
 }
-
-.wizard-header:hover {
+.header:hover {
   transform: translateY(-5px);
   box-shadow: 0 20px 50px rgba(0,0,0,0.3);
 }
-
-.wizard-title {
+.title {
   margin: 0;
-  font-size: 2.8rem;
+  font-size: 2.4rem;
   font-weight: 800;
   background: linear-gradient(90deg,#d3e3e3,#7cffcb);
-  -webkit-background-clip: text;
+
   -webkit-text-fill-color: transparent;
 }
-
-/* --- Content Sections --- */
-.content-area {
-  background: rgba(0,0,0,0.05);
-  border-radius: 22px;
-  padding: 25px;
-  box-shadow: 0 15px 30px rgba(0,0,0,0.1);
-}
-
-.summary-card {
-  background: #ffffff;
-  padding: 20px;
-  border-radius: 15px;
-  border-left: 8px solid #401187;
-  text-align: left;
-  margin-bottom: 25px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-}
-
-/* --- Table Styles --- */
-.table-container {
-  overflow-x: auto;
-  border-radius: 12px;
-  background: white;
-  border: 1px solid #ddd;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-th {
-  background-color: #401187;
-  color: #ffffff !important; /* Exceptions for header visibility */
-  padding: 15px;
-  text-align: left;
-}
-
-td {
-  padding: 12px 15px;
-  border-bottom: 1px solid #eee;
-  outline: none;
-}
-
-/* --- Wizard Chat Box --- */
-.chat-section {
-  margin-top: 40px;
-  padding: 30px;
-  background: #fffbe6;
-  border-radius: 20px;
-  border: 2px solid #fadb14;
-}
-
-.chat-input-group {
+.tab-buttons {
   display: flex;
-  gap: 10px;
-  margin-top: 15px;
+  justify-content: center;
+  gap: 14px;
+  margin-bottom: 25px;
 }
 
-/* --- Buttons (Using your tab-btn style) --- */
-.wizard-btn {
+.tab-btn {
   padding: 12px 26px;
   border-radius: 999px;
   border: 1px solid rgba(0,0,0,0.15);
-  background: #28a745;
-  color: white !important;
-  font-weight: 700;
+  background: rgba(255,255,255,0.85);
+  color: #0f2027;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.25s ease;
 }
 
-.wizard-btn:hover {
+.tab-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+  box-shadow: 0 5px 20px rgba(137, 6, 6, 0.1);
+}
+
+.tab-btn.active {
+ background: rgba(255,255,255,0.9); /* almost same as inactive */
+  color: #401187; /* dark text, matches header */
+  font-weight: 700;
+  border: none;
+  box-shadow: 0 0 25px rgba(124,255,203,0.9);
+  transform: translateY(-2px);
+}
+ .tabs {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 20px;
+}
+
+button {
+  /* padding: 10px 20px;
+  cursor: pointer;
+  border: none;
+  background-color: #f0f0f0;
+  font-weight: bold; */
+
+padding: 12px 26px;
+  border-radius: 999px;
+  border: 1px solid rgba(0,0,0,0.15);
+  background: rgba(255,255,255,0.85);
+  color: #9793ae;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+
+
+.content {
+  background: rgba(0,0,0,0.08);
+  border-radius: 22px;
+  padding: 20px;
+  box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+  font-size: 1.15rem;
 }

@@ -1,26 +1,12 @@
 import React, { useState } from "react";
 import * as XLSX from "xlsx";
-import * as pdfjsLib from "pdfjs-dist";
 
-// Worker for PDF.js - use local copy from public/ to avoid CDN fetch errors
-if (typeof window !== "undefined") {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.js";
-}
-
-const ASK_AI_URL = "https://api.wintaibot.com/api/ai/ask-ai";
-const MAX_TEXT_LENGTH = 5000; // URL limit for ask-ai GET request
-
-async function extractTextFromPdf(file) {
-  const arrayBuffer = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-  let text = "";
-  for (let i = 1; i <= pdf.numPages; i++) {
-    const page = await pdf.getPage(i);
-    const content = await page.getTextContent();
-    text += content.items.map((item) => item.str).join(" ") + "\n";
-  }
-  return text.trim();
-}
+// Backend analyze-pdf endpoint (POST with file) - proxy in dev, full URL in prod
+const API_BASE =
+  typeof window !== "undefined" && window.location.hostname === "localhost"
+    ? ""
+    : "https://api.wintaibot.com";
+const ANALYZE_PDF_URL = `${API_BASE}/api/ai/analyze-pdf`;
 
 function PdfAnalyzer() {
   const [pdfFile, setPdfFile] = useState(null);
@@ -51,37 +37,29 @@ function PdfAnalyzer() {
     setInsights([]);
 
     try {
-      // 1. Extract text from PDF (client-side)
-      const fullText = await extractTextFromPdf(pdfFile);
-      if (!fullText.trim()) throw new Error("No text found in PDF.");
-
-      const truncated = fullText.length > MAX_TEXT_LENGTH
-        ? fullText.slice(0, MAX_TEXT_LENGTH) + "\n\n[... truncated ...]"
-        : fullText;
-
-      // 2. Call ask-ai with extracted text (works without analyze-pdf endpoint)
-      const userPrompt = prompt || "Analyze this document and extract all important information.";
-      const aiPrompt = `${userPrompt}\n\nDocument content:\n${truncated}`;
-
-      const response = await fetch(
-        `${ASK_AI_URL}?prompt=${encodeURIComponent(aiPrompt)}`,
-        { method: "GET", headers: { Accept: "text/plain" } }
+      const formData = new FormData();
+      formData.append("file", pdfFile);
+      formData.append(
+        "prompt",
+        prompt || "Analyze this document and extract all important information."
       );
 
-      const aiResponse = await response.text();
-      if (!response.ok) throw new Error(`Server error (${response.status}): ${aiResponse.slice(0, 80)}`);
+      const response = await fetch(ANALYZE_PDF_URL, {
+        method: "POST",
+        body: formData,
+      });
 
-      // 3. Parse response: ask-ai returns plain text. Try to extract insights (bullet points)
-      const lines = aiResponse.split("\n").map((s) => s.trim()).filter(Boolean);
-      const bulletInsights = lines.filter((l) => /^[-*•]\s/.test(l) || /^\d+\.\s/.test(l));
-      const mainText = bulletInsights.length > 0
-        ? lines.filter((l) => !/^[-*•]\s/.test(l) && !/^\d+\.\s/.test(l)).join("\n\n")
-        : aiResponse;
+      const text = await response.text();
+      if (!response.ok) throw new Error(`Server error (${response.status}): ${text.slice(0, 80)}`);
 
-      setSummary(mainText || aiResponse);
-      setInsights(bulletInsights.length > 0 ? bulletInsights : []);
-      setTableHeaders([]);
-      setTableRows([]);
+      // Parse JSON (AI may wrap in ```json ... ```)
+      const clean = text.replace(/```json|```/g, "").trim();
+      const parsed = JSON.parse(clean);
+
+      setSummary(parsed.summary || "");
+      setTableHeaders(parsed.table_headers || []);
+      setTableRows(parsed.table_rows || []);
+      setInsights(parsed.insights || []);
     } catch (error) {
       console.error("Error analyzing PDF: ", error);
       const msg = error.message || String(error);

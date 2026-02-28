@@ -6,52 +6,60 @@ function SmartParserDocuWizard() {
   const [results, setResults] = useState([]);
   const [chatQuery, setChatQuery] = useState("");
   const [chatResponse, setChatResponse] = useState("");
+const handleProcess = async () => {
+    if (files.length === 0) return alert("Please upload at least one PDF!");
+    setLoading(true);
+    setResults([]);
 
-  const handleProcess = async () => {
-   try {
-  const response = await fetch(`https://api.wintaibot.com/api/ai/analyze-pdf?t=${Date.now()}`, {
-    method: "POST",
-    body: formData,
-  });
-
-  // ✅ NEW: Handle Network Errors (502, 404, etc.) gracefully
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Server Error (${response.status}): ${errorText.substring(0, 50)}`);
-  }
-
-  const data = await response.json();
-  
-  if (data && data.analysis) {
     try {
-      // ✅ STRIP MARKDOWN: In case the AI ignores instructions and adds ```json
-      const cleanJson = data.analysis.replace(/```json|```/g, "").trim();
-      const parsed = JSON.parse(cleanJson);
-      
-      const finalData = {
-        fileName: file.name,
-        summary: parsed.summary || "No summary available.",
-        table_headers: parsed.table_headers || ["Info"],
-        table_rows: parsed.table_rows || [["No table data found"]],
-        insights: parsed.insights || []
-      };
+      // ✅ FIX: Loop through each file
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append("file", file);
 
-      setResults(prev => [...prev, finalData]);
-    } catch (e) {
-      // ✅ FALLBACK: If AI returns plain text instead of JSON
-      setResults(prev => [...prev, {
-        fileName: file.name,
-        summary: "Raw Analysis",
-        table_headers: ["Content"],
-        table_rows: [[data.analysis]],
-        insights: []
-      }]);
+        const response = await fetch(`https://api.wintaibot.com/api/ai/analyze-pdf?t=${Date.now()}`, {
+          method: "POST",
+          body: formData,
+        });
+
+        // ✅ FIX: Catch 502/404 errors before they break JSON
+        if (!response.ok) {
+          throw new Error(`Server Error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        if (data.analysis) {
+          try {
+            // ✅ FIX: Remove markdown backticks
+            const cleanJson = data.analysis.replace(/```json|```/g, "").trim();
+            const parsed = JSON.parse(cleanJson);
+            
+            setResults(prev => [...prev, {
+              fileName: file.name,
+              summary: parsed.summary || "Summary extracted.",
+              table_headers: parsed.table_headers || ["Data"],
+              table_rows: parsed.table_rows || [["No rows found"]],
+              insights: parsed.insights || []
+            }]);
+          } catch (e) {
+            // ✅ FIX: Fallback if AI sends text instead of JSON
+            setResults(prev => [...prev, {
+              fileName: file.name,
+              summary: "Raw Text Result",
+              table_headers: ["Content"],
+              table_rows: [[data.analysis]],
+              insights: []
+            }]);
+          }
+        }
+      }
+    } catch (error) {
+      alert(`Wizard Error: ${error.message}`);
+    } finally {
+      setLoading(false);
     }
-  }
-} catch (error) {
-  console.error("Processing failed for", file.name, error);
-  alert(`Wizard Error for ${file.name}: ${error.message}`);
-}
+  };
   const askWizard = async () => {
     if (!chatQuery || results.length === 0) return;
     setLoading(true);

@@ -35,7 +35,7 @@ function App() {
         </button>
         <button className={`tab-btn ${activeTab === 'analyzer' ? 'active' : ''}`}
           onClick={() => handleTabChange('analyzer')}> 
-          Spending Analyzer 
+         DocuWizard 
         </button>
        
         

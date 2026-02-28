@@ -37,7 +37,27 @@ function PdfAnalyzer() {
     }
   };
 
-  // Helper to safely parse JSON for the dashboard
+  // ✅ New: Export to CSV Function
+  const downloadCSV = () => {
+    const parsedData = recipe && !recipe.startsWith("Analysis failed") ? JSON.parse(recipe) : null;
+    if (!parsedData || !parsedData.table_headers) return;
+
+    // Build CSV content: Headers row + Data rows
+    const csvContent = [
+      parsedData.table_headers.join(","), 
+      ...parsedData.table_rows.map(row => row.map(cell => `"${cell}"`).join(",")) 
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Data_Export_${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const parsedData = recipe && !recipe.startsWith("Analysis failed") ? JSON.parse(recipe) : null;
 
   return (
@@ -50,16 +70,23 @@ function PdfAnalyzer() {
         style={styles.input}
       />
       
-      <div style={{ display: 'flex', gap: '10px' }}>
+      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
         <button onClick={handleProcess} disabled={loading} style={styles.button}>
           {loading ? "Analyzing..." : "Analyze PDF"}
         </button>
+        
+        {/* ✅ Added Export Button */}
+        {parsedData && (
+          <button onClick={downloadCSV} style={styles.exportButton}>
+            📊 Export to Excel
+          </button>
+        )}
+
         {recipe && (
           <button onClick={() => setRecipe("")} style={styles.clearButton}>Clear</button>
         )}
       </div>
 
-      {/* Dashboard View */}
       {parsedData && (
         <div style={styles.dashboardContainer}>
           <div style={styles.summaryCard}>
@@ -104,7 +131,6 @@ function PdfAnalyzer() {
         </div>
       )}
 
-      {/* Error View */}
       {!parsedData && recipe && (
         <div style={styles.outputArea}>
           <pre style={styles.recipeText}>{recipe}</pre>
@@ -118,6 +144,7 @@ const styles = {
   card: { padding: '20px', maxWidth: '800px', margin: '20px auto', backgroundColor: '#fff', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', fontFamily: 'Arial, sans-serif' },
   input: { padding: '10px', marginBottom: '15px', border: '1px solid #ddd', borderRadius: '4px', width: '100%' },
   button: { padding: '10px 20px', backgroundColor: '#28a745', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' },
+  exportButton: { padding: '10px 20px', backgroundColor: '#007bff', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' },
   clearButton: { padding: '10px 20px', backgroundColor: '#6c757d', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' },
   dashboardContainer: { marginTop: '30px', textAlign: 'left' },
   summaryCard: { padding: '20px', backgroundColor: '#f0f9ff', borderRadius: '10px', marginBottom: '20px', borderLeft: '6px solid #28a745' },

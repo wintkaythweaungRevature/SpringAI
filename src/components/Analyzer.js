@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 
 function PdfAnalyzer() {
-  // ✅ These MUST be defined inside the function
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [recipe, setRecipe] = useState("");
@@ -9,21 +8,19 @@ function PdfAnalyzer() {
   const handleProcess = async () => {
     if (!file) return alert("Please upload a PDF!");
 
-    // 1. Create FormData to send the actual file
     const formData = new FormData();
-    formData.append("file", file); // Matches @RequestParam("file") in Java
+    formData.append("file", file);
     formData.append("prompt", "Analyze this document and extract all important information.");
 
     setLoading(true);
-    setRecipe(""); // Clear previous results
+    setRecipe(""); 
 
     try {
-      // 2. POST to your API       "https://api.wintaibot.com/api/ai/analyze-pdf";
-     const url = `https://api.wintaibot.com/api/ai/analyze-pdf?t=${Date.now()}`;
-const response = await fetch(url, {
-  method: "POST", // Ensure this is POST
-  body: formData,
-});
+      const url = `https://api.wintaibot.com/api/ai/analyze-pdf?t=${Date.now()}`;
+      const response = await fetch(url, {
+        method: "POST",
+        body: formData,
+      });
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -31,7 +28,7 @@ const response = await fetch(url, {
       }
 
       const data = await response.json();
-      setRecipe(JSON.stringify(data, null, 2));
+      setRecipe(JSON.stringify(data));
     } catch (error) {
       console.error("Upload error:", error);
       setRecipe(`Analysis failed: ${error.message}`);
@@ -40,7 +37,27 @@ const response = await fetch(url, {
     }
   };
 
-  // Helper to safely parse JSON
+  // ✅ New: Export to CSV Function
+  const downloadCSV = () => {
+    const parsedData = recipe && !recipe.startsWith("Analysis failed") ? JSON.parse(recipe) : null;
+    if (!parsedData || !parsedData.table_headers) return;
+
+    // Build CSV content: Headers row + Data rows
+    const csvContent = [
+      parsedData.table_headers.join(","), 
+      ...parsedData.table_rows.map(row => row.map(cell => `"${cell}"`).join(",")) 
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Data_Export_${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const parsedData = recipe && !recipe.startsWith("Analysis failed") ? JSON.parse(recipe) : null;
 
   return (
@@ -53,54 +70,67 @@ const response = await fetch(url, {
         style={styles.input}
       />
       
-      <button onClick={handleProcess} disabled={loading} style={styles.button}>
-        {loading ? "Analyzing..." : "Analyze PDF"}
-      </button>
+      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+        <button onClick={handleProcess} disabled={loading} style={styles.button}>
+          {loading ? "Analyzing..." : "Analyze PDF"}
+        </button>
+        
+        {/* ✅ Added Export Button */}
+        {parsedData && (
+          <button onClick={downloadCSV} style={styles.exportButton}>
+            📊 Export to Excel
+          </button>
+        )}
+
+        {recipe && (
+          <button onClick={() => setRecipe("")} style={styles.clearButton}>Clear</button>
+        )}
+      </div>
 
       {parsedData && (
-        <div style={styles.resultContainer}>
-          {/* Summary Section */}
-          <div style={styles.summaryBox}>
-            <h4 style={{marginTop: 0}}>Summary</h4>
-            <p>{parsedData.summary}</p>
+        <div style={styles.dashboardContainer}>
+          <div style={styles.summaryCard}>
+            <h4 style={styles.cardHeader}>📄 AI Document Summary</h4>
+            <p style={styles.summaryText}>{parsedData.summary}</p>
           </div>
 
-          {/* Table Section */}
-          <div style={styles.tableWrapper}>
-            <h4>Extracted Data</h4>
-            <table style={styles.table}>
-              <thead>
-                <tr>
-                  {parsedData.table_headers?.map((header, i) => (
-                    <th key={i} style={styles.th}>{header}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {parsedData.table_rows?.map((row, i) => (
-                  <tr key={i} style={i % 2 === 0 ? {} : {backgroundColor: '#f9f9f9'}}>
-                    {row.map((cell, j) => (
-                      <td key={j} style={styles.td}>{cell}</td>
+          <div style={styles.tableSection}>
+            <h4>📊 Extracted Details</h4>
+            <div style={styles.tableWrapper}>
+              <table style={styles.table}>
+                <thead>
+                  <tr>
+                    {parsedData.table_headers?.map((header, i) => (
+                      <th key={i} style={styles.th}>{header}</th>
                     ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {parsedData.table_rows?.map((row, i) => (
+                    <tr key={i} style={i % 2 === 0 ? {} : styles.altRow}>
+                      {row.map((cell, j) => (
+                        <td key={j} style={styles.td}>{cell}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
 
-          {/* Insights Section */}
-          <div style={styles.summaryBox}>
-            <h4 style={{marginTop: 0}}>AI Insights</h4>
-            <ul>
-              {parsedData.insights?.map((insight, i) => (
-                <li key={i} style={{fontSize: '14px', marginBottom: '5px'}}>{insight}</li>
-              ))}
-            </ul>
-          </div>
+          {parsedData.insights && (
+            <div style={styles.insightsCard}>
+              <h4 style={styles.cardHeader}>💡 Key Insights</h4>
+              <ul style={styles.list}>
+                {parsedData.insights.map((insight, i) => (
+                  <li key={i} style={styles.listItem}>{insight}</li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
 
-      {/* Show raw error if it's not JSON */}
       {!parsedData && recipe && (
         <div style={styles.outputArea}>
           <pre style={styles.recipeText}>{recipe}</pre>
@@ -111,17 +141,26 @@ const response = await fetch(url, {
 }
 
 const styles = {
-  card: { padding: '20px', backgroundColor: '#fff', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' },
-  input: { padding: '10px', marginBottom: '10px', border: '1px solid #ddd', borderRadius: '4px', width: '100%' },
-  button: { padding: '10px 20px', backgroundColor: '#28a745', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' },
-  outputArea: { marginTop: '20px', padding: '15px', backgroundColor: '#f9f9f9', borderRadius: '4px', border: '1px solid #ddd' },
-  recipeText: { whiteSpace: 'pre-wrap', wordWrap: 'break-word', fontSize: '12px' },
-  resultContainer: { marginTop: '25px', textAlign: 'left' },
-  summaryBox: { padding: '15px', backgroundColor: '#eefaf0', borderRadius: '6px', marginBottom: '20px', borderLeft: '5px solid #28a745' },
-  tableWrapper: { overflowX: 'auto', marginBottom: '20px' },
-  table: { width: '100%', borderCollapse: 'collapse', marginTop: '10px' },
-  th: { backgroundColor: '#28a745', color: '#fff', padding: '10px', textAlign: 'left', border: '1px solid #ddd' },
-  td: { padding: '10px', border: '1px solid #ddd' },
+  card: { padding: '20px', maxWidth: '800px', margin: '20px auto', backgroundColor: '#fff', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', fontFamily: 'Arial, sans-serif' },
+  input: { padding: '10px', marginBottom: '15px', border: '1px solid #ddd', borderRadius: '4px', width: '100%' },
+  button: { padding: '10px 20px', backgroundColor: '#28a745', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' },
+  exportButton: { padding: '10px 20px', backgroundColor: '#007bff', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' },
+  clearButton: { padding: '10px 20px', backgroundColor: '#6c757d', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' },
+  dashboardContainer: { marginTop: '30px', textAlign: 'left' },
+  summaryCard: { padding: '20px', backgroundColor: '#f0f9ff', borderRadius: '10px', marginBottom: '20px', borderLeft: '6px solid #28a745' },
+  insightsCard: { padding: '20px', backgroundColor: '#fffbe6', borderRadius: '10px', marginBottom: '20px', borderLeft: '6px solid #fadb14' },
+  cardHeader: { marginTop: 0, color: '#333', borderBottom: '1px solid #eee', paddingBottom: '10px' },
+  summaryText: { fontSize: '15px', lineHeight: '1.6', color: '#555' },
+  tableSection: { marginBottom: '30px' },
+  tableWrapper: { overflowX: 'auto', borderRadius: '8px', border: '1px solid #eee' },
+  table: { width: '100%', borderCollapse: 'collapse', backgroundColor: '#fff' },
+  th: { backgroundColor: '#28a745', color: '#fff', padding: '12px', textAlign: 'left', fontSize: '14px' },
+  td: { padding: '12px', borderBottom: '1px solid #eee', fontSize: '14px', color: '#444' },
+  altRow: { backgroundColor: '#f9f9f9' },
+  list: { paddingLeft: '20px', margin: 0 },
+  listItem: { marginBottom: '8px', fontSize: '14px', color: '#444' },
+  outputArea: { marginTop: '20px', padding: '15px', backgroundColor: '#fff5f5', borderRadius: '4px', border: '1px solid #feb2b2', color: '#c53030' },
+  recipeText: { whiteSpace: 'pre-wrap', wordWrap: 'break-word', fontSize: '12px' }
 };
 
 export default PdfAnalyzer;

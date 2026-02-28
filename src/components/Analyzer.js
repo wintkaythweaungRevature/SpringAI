@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import "./Analyzer.css"; // Import the new CSS
 
 function PdfAnalyzer() {
   const [file, setFile] = useState(null);

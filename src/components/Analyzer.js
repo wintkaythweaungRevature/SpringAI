@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-function SmartParserDocuWizard() {
+function Anayzer() {
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState([]); 
@@ -192,4 +192,4 @@ const styles = {
   responseArea: { marginTop: '15px', padding: '15px', backgroundColor: '#fff', borderRadius: '4px', borderLeft: '4px solid #fadb14', fontSize: '14px' }
 };
 
-export default SmartParserDocuWizard;
+export default Anayzer;

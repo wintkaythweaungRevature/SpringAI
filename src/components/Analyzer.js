@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 
 function PdfAnalyzer() {
   const [file, setFile] = useState(null);
@@ -16,36 +16,51 @@ function PdfAnalyzer() {
     setRecipe(""); 
 
     try {
+      // Use a cache-busting timestamp
       const url = `https://api.wintaibot.com/api/ai/analyze-pdf?t=${Date.now()}`;
+      
       const response = await fetch(url, {
         method: "POST",
+        headers: {
+          'Accept': 'application/json', // Explicitly ask for JSON
+        },
         body: formData,
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(errorText || "Server error");
+        throw new Error(`Server Error (${response.status}): ${errorText || "Internal Server Error"}`);
       }
 
       const data = await response.json();
+      // Ensure we store a string for the state logic
       setRecipe(JSON.stringify(data));
+      
     } catch (error) {
-      console.error("Upload error:", error);
+      console.error("Upload error details:", error);
       setRecipe(`Analysis failed: ${error.message}`);
     } finally {
       setLoading(false);
     }
   };
 
-  // ✅ New: Export to CSV Function
+  // Safe parsing logic to prevent crashes
+  const parsedData = useMemo(() => {
+    if (!recipe || recipe.startsWith("Analysis failed")) return null;
+    try {
+      return JSON.parse(recipe);
+    } catch (e) {
+      console.error("Parsing error:", e);
+      return null;
+    }
+  }, [recipe]);
+
   const downloadCSV = () => {
-    const parsedData = recipe && !recipe.startsWith("Analysis failed") ? JSON.parse(recipe) : null;
     if (!parsedData || !parsedData.table_headers) return;
 
-    // Build CSV content: Headers row + Data rows
     const csvContent = [
       parsedData.table_headers.join(","), 
-      ...parsedData.table_rows.map(row => row.map(cell => `"${cell}"`).join(",")) 
+      ...(parsedData.table_rows || []).map(row => row.map(cell => `"${cell}"`).join(",")) 
     ].join("\n");
 
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
@@ -57,8 +72,6 @@ function PdfAnalyzer() {
     link.click();
     document.body.removeChild(link);
   };
-
-  const parsedData = recipe && !recipe.startsWith("Analysis failed") ? JSON.parse(recipe) : null;
 
   return (
     <div style={styles.card}>
@@ -72,10 +85,9 @@ function PdfAnalyzer() {
       
       <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
         <button onClick={handleProcess} disabled={loading} style={styles.button}>
-          {loading ? "Analyzing..." : "Analyze PDF"}
+          {loading ? "⌛ Analyzing..." : "Analyze PDF"}
         </button>
         
-        {/* ✅ Added Export Button */}
         {parsedData && (
           <button onClick={downloadCSV} style={styles.exportButton}>
             📊 Export to Excel
@@ -83,15 +95,15 @@ function PdfAnalyzer() {
         )}
 
         {recipe && (
-          <button onClick={() => setRecipe("")} style={styles.clearButton}>Clear</button>
+          <button onClick={() => { setRecipe(""); setFile(null); }} style={styles.clearButton}>Clear</button>
         )}
       </div>
 
-      {parsedData && (
+      {parsedData ? (
         <div style={styles.dashboardContainer}>
           <div style={styles.summaryCard}>
             <h4 style={styles.cardHeader}>📄 AI Document Summary</h4>
-            <p style={styles.summaryText}>{parsedData.summary}</p>
+            <p style={styles.summaryText}>{parsedData.summary || "No summary available."}</p>
           </div>
 
           <div style={styles.tableSection}>
@@ -129,38 +141,15 @@ function PdfAnalyzer() {
             </div>
           )}
         </div>
-      )}
-
-      {!parsedData && recipe && (
-        <div style={styles.outputArea}>
-          <pre style={styles.recipeText}>{recipe}</pre>
-        </div>
+      ) : (
+        recipe && (
+          <div style={styles.outputArea}>
+            <pre style={styles.recipeText}>{recipe}</pre>
+          </div>
+        )
       )}
     </div>
   );
 }
 
-const styles = {
-  card: { padding: '20px', maxWidth: '800px', margin: '20px auto', backgroundColor: '#fff', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', fontFamily: 'Arial, sans-serif' },
-  input: { padding: '10px', marginBottom: '15px', border: '1px solid #ddd', borderRadius: '4px', width: '100%' },
-  button: { padding: '10px 20px', backgroundColor: '#28a745', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' },
-  exportButton: { padding: '10px 20px', backgroundColor: '#007bff', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' },
-  clearButton: { padding: '10px 20px', backgroundColor: '#6c757d', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' },
-  dashboardContainer: { marginTop: '30px', textAlign: 'left' },
-  summaryCard: { padding: '20px', backgroundColor: '#f0f9ff', borderRadius: '10px', marginBottom: '20px', borderLeft: '6px solid #28a745' },
-  insightsCard: { padding: '20px', backgroundColor: '#fffbe6', borderRadius: '10px', marginBottom: '20px', borderLeft: '6px solid #fadb14' },
-  cardHeader: { marginTop: 0, color: '#333', borderBottom: '1px solid #eee', paddingBottom: '10px' },
-  summaryText: { fontSize: '15px', lineHeight: '1.6', color: '#555' },
-  tableSection: { marginBottom: '30px' },
-  tableWrapper: { overflowX: 'auto', borderRadius: '8px', border: '1px solid #eee' },
-  table: { width: '100%', borderCollapse: 'collapse', backgroundColor: '#fff' },
-  th: { backgroundColor: '#28a745', color: '#fff', padding: '12px', textAlign: 'left', fontSize: '14px' },
-  td: { padding: '12px', borderBottom: '1px solid #eee', fontSize: '14px', color: '#444' },
-  altRow: { backgroundColor: '#f9f9f9' },
-  list: { paddingLeft: '20px', margin: 0 },
-  listItem: { marginBottom: '8px', fontSize: '14px', color: '#444' },
-  outputArea: { marginTop: '20px', padding: '15px', backgroundColor: '#fff5f5', borderRadius: '4px', border: '1px solid #feb2b2', color: '#c53030' },
-  recipeText: { whiteSpace: 'pre-wrap', wordWrap: 'break-word', fontSize: '12px' }
-};
-
-export default PdfAnalyzer;
+// ... (keep your existing styles object)

@@ -75,7 +75,14 @@ function PdfAnalyzer() {
 
   return (
     <div style={styles.card}>
-      <h3>📂 PDF Spending Analyzer</h3>
+   <div style={styles.headerContainer}>
+        <span style={{ fontSize: '32px' }}>🧙‍♂️</span>
+        <h2 style={styles.mainTitle}>Smart Parser DocuWizard</h2>
+      </div>
+      <p style={styles.subTitle}>Bulk AI Extraction & Interactive Analytics</p>
+      <h2 style={styles.mainTitle}>🧙‍♂️ PDF AI Wizard</h2>
+      <p style={styles.subTitle}>Upload PDF ➔ AI Analysis ➔ Export Excel</p>
+
       <input 
         type="file" 
         onChange={(e) => setFile(e.target.files[0])} 

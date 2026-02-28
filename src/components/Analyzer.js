@@ -47,8 +47,28 @@ function SmartParserDocuWizard() {
     a.href = url;
     a.download = `${data.fileName}_Export.csv`;
     a.click();
-  };
+  };const askWizard = async (docText) => {
+  if (!chatQuery) return;
+  setLoading(true);
 
+  try {
+    const response = await fetch("https://api.wintaibot.com/api/ai/chat-with-doc", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        documentText: docText, // Send the text we already have
+        question: chatQuery
+      }),
+    });
+
+    const data = await response.json();
+    setChatResponse(data.answer);
+  } catch (error) {
+    setChatResponse("The Wizard is tired. Try again later.");
+  } finally {
+    setLoading(false);
+  }
+};
   return (
     <div style={styles.card}>
       <div style={styles.headerContainer}>
@@ -68,6 +88,14 @@ function SmartParserDocuWizard() {
         />
         <p style={{fontSize: '12px', color: '#666'}}>{files.length} files selected</p>
       </div>
+      {/* Add this inside your results.map loop */}
+<div style={styles.chartBarContainer}>
+  <div style={{
+    ...styles.chartBar,
+    width: `${Math.min(res.table_rows.length * 10, 100)}%` 
+  }}></div>
+  <span style={{fontSize: '12px'}}>Activity Level: {res.table_rows.length} items found</span>
+</div>
       
       <button onClick={handleProcess} disabled={loading} style={styles.button}>
         {loading ? "Wizard is working..." : `Analyze ${files.length} PDF(s)`}

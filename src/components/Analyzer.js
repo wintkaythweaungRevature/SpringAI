@@ -1,109 +1,166 @@
 import React, { useState } from "react";
-import * as XLSX from "xlsx"; // ✅ Import Excel library
 
-function SmartParserDocuWizard() {
-  const [files, setFiles] = useState([]);
+function PdfAnalyzer() {
+  const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [results, setResults] = useState([]);
+  const [recipe, setRecipe] = useState("");
 
   const handleProcess = async () => {
-    if (files.length === 0) return alert("Please upload at least one PDF!");
+    if (!file) return alert("Please upload a PDF!");
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("prompt", "Analyze this document and extract all important information.");
+
     setLoading(true);
-    setResults([]);
+    setRecipe(""); 
 
     try {
-      for (const file of files) {
-        const formData = new FormData();
-        formData.append("file", file);
+      const url = `https://api.wintaibot.com/api/ai/analyze-pdf?t=${Date.now()}`;
+      const response = await fetch(url, {
+        method: "POST",
+        body: formData,
+      });
 
-        const response = await fetch(`https://api.wintaibot.com/api/ai/analyze-pdf?t=${Date.now()}`, {
-          method: "POST",
-          body: formData,
-        });
-
-        if (!response.ok) throw new Error(`Server Error: ${response.status}`);
-
-        const data = await response.json();
-        
-        if (data.analysis) {
-          try {
-            const cleanJson = data.analysis.replace(/```json|```/g, "").trim();
-            const parsed = JSON.parse(cleanJson);
-            
-            setResults(prev => [...prev, {
-              fileName: file.name,
-              summary: parsed.summary || "Summary extracted.",
-              table_headers: parsed.table_headers || ["Data"],
-              table_rows: parsed.table_rows || [["No rows found"]],
-            }]);
-          } catch (e) {
-            // Fallback if AI sends text instead of JSON
-            setResults(prev => [...prev, {
-              fileName: file.name,
-              summary: "Analysis Complete",
-              table_headers: ["Raw Content"],
-              table_rows: [[data.analysis]],
-            }]);
-          }
-        }
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "Server error");
       }
+
+      const data = await response.json();
+      setRecipe(JSON.stringify(data));
     } catch (error) {
-      alert(`Wizard Error: ${error.message}`);
+      console.error("Upload error:", error);
+      setRecipe(`Analysis failed: ${error.message}`);
     } finally {
       setLoading(false);
     }
   };
 
-  // ✅ NEW: Excel Export Function
-  const exportToExcel = (res) => {
-    const workbook = XLSX.utils.book_new();
-    // Combine headers and rows into one array for the sheet
-    const worksheetData = [res.table_headers, ...res.table_rows];
-    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
-    
-    XLSX.utils.book_append_sheet(workbook, worksheet, "AI Analysis");
-    XLSX.writeFile(workbook, `${res.fileName}_Export.xlsx`);
+  // ✅ New: Export to CSV Function
+  const downloadCSV = () => {
+    const parsedData = recipe && !recipe.startsWith("Analysis failed") ? JSON.parse(recipe) : null;
+    if (!parsedData || !parsedData.table_headers) return;
+
+    // Build CSV content: Headers row + Data rows
+    const csvContent = [
+      parsedData.table_headers.join(","), 
+      ...parsedData.table_rows.map(row => row.map(cell => `"${cell}"`).join(",")) 
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Data_Export_${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
+
+  const parsedData = recipe && !recipe.startsWith("Analysis failed") ? JSON.parse(recipe) : null;
 
   return (
     <div style={styles.card}>
-      <h2 style={styles.mainTitle}>🧙‍♂️ PDF AI Wizard</h2>
-      <p style={styles.subTitle}>Upload PDF ➔ AI Analysis ➔ Export Excel</p>
-
-      <div style={styles.uploadSection}>
-        <input type="file" multiple onChange={(e) => setFiles(Array.from(e.target.files))} accept=".pdf" />
-        <p>{files.length} files ready</p>
-      </div>
+      <h3>📂 PDF Spending Analyzer</h3>
+      <input 
+        type="file" 
+        onChange={(e) => setFile(e.target.files[0])} 
+        accept=".pdf" 
+        style={styles.input}
+      />
       
-      <button onClick={handleProcess} disabled={loading} style={styles.button}>
-        {loading ? "Wizard is thinking..." : `Analyze ${files.length} PDF(s)`}
-      </button>
+      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+        <button onClick={handleProcess} disabled={loading} style={styles.button}>
+          {loading ? "Analyzing..." : "Analyze PDF"}
+        </button>
+        
+        {/* ✅ Added Export Button */}
+        {parsedData && (
+          <button onClick={downloadCSV} style={styles.exportButton}>
+            📊 Export to Excel
+          </button>
+        )}
 
-      {results.map((res, idx) => (
-        <div key={idx} style={styles.resultCard}>
-          <div style={{display: 'flex', justifyContent: 'space-between'}}>
-            <h4 style={{margin: 0}}>📄 {res.fileName}</h4>
-            {/* ✅ The Excel Export Button */}
-            <button onClick={() => exportToExcel(res)} style={styles.excelButton}>
-              Export Excel
-            </button>
+        {recipe && (
+          <button onClick={() => setRecipe("")} style={styles.clearButton}>Clear</button>
+        )}
+      </div>
+
+      {parsedData && (
+        <div style={styles.dashboardContainer}>
+          <div style={styles.summaryCard}>
+            <h4 style={styles.cardHeader}>📄 AI Document Summary</h4>
+            <p style={styles.summaryText}>{parsedData.summary}</p>
           </div>
-          <p style={styles.summaryText}>{res.summary}</p>
+
+          <div style={styles.tableSection}>
+            <h4>📊 Extracted Details</h4>
+            <div style={styles.tableWrapper}>
+              <table style={styles.table}>
+                <thead>
+                  <tr>
+                    {parsedData.table_headers?.map((header, i) => (
+                      <th key={i} style={styles.th}>{header}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {parsedData.table_rows?.map((row, i) => (
+                    <tr key={i} style={i % 2 === 0 ? {} : styles.altRow}>
+                      {row.map((cell, j) => (
+                        <td key={j} style={styles.td}>{cell}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {parsedData.insights && (
+            <div style={styles.insightsCard}>
+              <h4 style={styles.cardHeader}>💡 Key Insights</h4>
+              <ul style={styles.list}>
+                {parsedData.insights.map((insight, i) => (
+                  <li key={i} style={styles.listItem}>{insight}</li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
-      ))}
+      )}
+
+      {!parsedData && recipe && (
+        <div style={styles.outputArea}>
+          <pre style={styles.recipeText}>{recipe}</pre>
+        </div>
+      )}
     </div>
   );
 }
 
 const styles = {
-  card: { padding: '30px', maxWidth: '700px', margin: '20px auto', backgroundColor: '#fff', borderRadius: '15px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', fontFamily: 'sans-serif' },
-  mainTitle: { textAlign: 'center', marginBottom: '5px' },
-  subTitle: { textAlign: 'center', color: '#666', marginBottom: '20px' },
-  uploadSection: { padding: '20px', border: '2px dashed #ccc', borderRadius: '10px', textAlign: 'center', marginBottom: '15px' },
-  button: { width: '100%', padding: '12px', backgroundColor: '#6366f1', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' },
-  resultCard: { marginTop: '20px', padding: '15px', backgroundColor: '#f8fafc', borderRadius: '10px', borderLeft: '4px solid #6366f1' },
-  summaryText: { fontSize: '14px', color: '#334155', lineHeight: '1.5' },
-  excelButton: { padding: '6px 12px', backgroundColor: '#10b981', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer', fontSize: '12px' }
+  card: { padding: '20px', maxWidth: '800px', margin: '20px auto', backgroundColor: '#fff', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', fontFamily: 'Arial, sans-serif' },
+  input: { padding: '10px', marginBottom: '15px', border: '1px solid #ddd', borderRadius: '4px', width: '100%' },
+  button: { padding: '10px 20px', backgroundColor: '#28a745', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' },
+  exportButton: { padding: '10px 20px', backgroundColor: '#007bff', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' },
+  clearButton: { padding: '10px 20px', backgroundColor: '#6c757d', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' },
+  dashboardContainer: { marginTop: '30px', textAlign: 'left' },
+  summaryCard: { padding: '20px', backgroundColor: '#f0f9ff', borderRadius: '10px', marginBottom: '20px', borderLeft: '6px solid #28a745' },
+  insightsCard: { padding: '20px', backgroundColor: '#fffbe6', borderRadius: '10px', marginBottom: '20px', borderLeft: '6px solid #fadb14' },
+  cardHeader: { marginTop: 0, color: '#333', borderBottom: '1px solid #eee', paddingBottom: '10px' },
+  summaryText: { fontSize: '15px', lineHeight: '1.6', color: '#555' },
+  tableSection: { marginBottom: '30px' },
+  tableWrapper: { overflowX: 'auto', borderRadius: '8px', border: '1px solid #eee' },
+  table: { width: '100%', borderCollapse: 'collapse', backgroundColor: '#fff' },
+  th: { backgroundColor: '#28a745', color: '#fff', padding: '12px', textAlign: 'left', fontSize: '14px' },
+  td: { padding: '12px', borderBottom: '1px solid #eee', fontSize: '14px', color: '#444' },
+  altRow: { backgroundColor: '#f9f9f9' },
+  list: { paddingLeft: '20px', margin: 0 },
+  listItem: { marginBottom: '8px', fontSize: '14px', color: '#444' },
+  outputArea: { marginTop: '20px', padding: '15px', backgroundColor: '#fff5f5', borderRadius: '4px', border: '1px solid #feb2b2', color: '#c53030' },
+  recipeText: { whiteSpace: 'pre-wrap', wordWrap: 'break-word', fontSize: '12px' }
 };
 
-export default SmartParserDocuWizard;
+export default PdfAnalyzer;

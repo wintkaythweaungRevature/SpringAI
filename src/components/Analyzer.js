@@ -2,43 +2,45 @@ import React, { useState } from "react";
 
 function PdfAnalyzer() {
   // ✅ Error တက်နေတဲ့ variables တွေကို state အဖြစ် ဒီမှာ ကြေညာပေးရပါမယ်
-  const [file, setFile] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [recipe, setRecipe] = useState("");
+ This ESLint error happens because your JavaScript code is trying to use a variable named pdfText that hasn't been created or declared yet.
 
-  const handleProcess = async () => {
-    if (!file) return alert("Please upload a PDF!");
+Since your Java Backend is already set up to read the PDF file using PDFBox, you don't need to extract the text in React. You just need to send the File object itself.
 
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("prompt", "Analyze this document and extract information.");
+The Fix: Update Analyzer.js
+Modify your handleProcess function to use the file state (which you already defined) instead of pdfText.
 
-    setLoading(true); // Line 8 fixed
-    setRecipe(""); 
+JavaScript
+const handleProcess = async () => {
+  if (!file) return alert("Please upload a PDF!");
 
-    try {
-      const response = await fetch("https://api.wintaibot.com/api/ai/ask-ai", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    prompt: "Analyze this document... " + pdfText 
-  }),
-});
+  // 1. Create FormData to send the actual file
+  const formData = new FormData();
+  formData.append("file", file); // This matches @RequestParam("file") in your Java code
+  formData.append("prompt", "Analyze this document and extract all important information.");
 
-      if (!response.ok) throw new Error("Server error");
+  setLoading(true);
+  try {
+    // 2. Point to the correct POST endpoint
+    const response = await fetch("https://api.wintaibot.com/api/ai/analyze-pdf", {
+      method: "POST",
+      body: formData, 
+      // Note: Do NOT set 'Content-Type' manually; browser handles it for FormData
+    });
 
-      const data = await response.json();
-      // AI ရဲ့ JSON response ကို စာသားအဖြစ် ပြောင်းပြီး သိမ်းမယ်
-      setRecipe(JSON.stringify(data, null, 2)); // Line 22 fixed
-    } catch (error) {
-      console.error("Upload error:", error);
-      setRecipe("Analysis failed. Please try again."); // Line 25 fixed
-    } finally {
-      setLoading(false); // Line 27 fixed
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText);
     }
-  };
+
+    const data = await response.json();
+    setRecipe(JSON.stringify(data, null, 2));
+  } catch (error) {
+    console.error("Upload error:", error);
+    setRecipe("Analysis failed. Check backend logs.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div style={styles.card}>

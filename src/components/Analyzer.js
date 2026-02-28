@@ -158,5 +158,6 @@ function PdfAnalyzer() {
     </div>
   );
 }
-
+// Ensure this is at the very bottom
+export default PdfAnalyzer;
 // ... (keep your existing styles object)

@@ -3,6 +3,7 @@ import './App.css';
 import ImageGenerator from './components/ImageGenerator';
 import ChatComponent from './components/ChatComponent';
 import ReceipeGenerator from './components/ReceipeGenerator';
+import SpendingAnalyzer from './components/Analyzer';
 
 function App() {
   const [activeTab, setActiveTab] = useState('image-generator');
@@ -28,9 +29,13 @@ function App() {
           onClick={() => handleTabChange('chat')}>
           Ask AI
         </button>
-        <button className={`tab-btn ${activeTab === 'recipe-generator' ? 'active' : ''}`}
+          <button className={`tab-btn ${activeTab === 'recipe-generator' ? 'active' : ''}`}
           onClick={() => handleTabChange('recipe-generator')}> 
           Recipe Generator 
+        </button>
+        <button className={`tab-btn ${activeTab === 'analyzer' ? 'active' : ''}`}
+          onClick={() => handleTabChange('analyzer')}> 
+          Spending Analyzer 
         </button>
        
         
@@ -40,6 +45,7 @@ function App() {
       <div className="content">
         {activeTab === 'image-generator' && <ImageGenerator />}
         {activeTab === 'chat' && <ChatComponent />}
+         {activeTab === 'analyzer' && <SpendingAnalyzer />}
         {activeTab === 'recipe-generator' && <ReceipeGenerator />}
        
       </div>

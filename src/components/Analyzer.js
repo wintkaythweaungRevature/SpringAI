@@ -1,42 +1,80 @@
 import React, { useState } from "react";
 
 function SmartParserDocuWizard() {
-  const [files, setFiles] = useState([]); // Changed to array for Bulk
+  const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [results, setResults] = useState([]); // Store multiple results
+  const [results, setResults] = useState([]);
   const [chatQuery, setChatQuery] = useState("");
   const [chatResponse, setChatResponse] = useState("");
 
   const handleProcess = async () => {
-    if (files.length === 0) return alert("Please upload at least one PDF!");
-    setLoading(true);
-    setResults([]);
+   try {
+  const response = await fetch(`https://api.wintaibot.com/api/ai/analyze-pdf?t=${Date.now()}`, {
+    method: "POST",
+    body: formData,
+  });
 
+  // ✅ NEW: Handle Network Errors (502, 404, etc.) gracefully
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Server Error (${response.status}): ${errorText.substring(0, 50)}`);
+  }
+
+  const data = await response.json();
+  
+  if (data && data.analysis) {
     try {
-      // Process each file (Bulk Logic)
-      for (const file of files) {
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("prompt", "Analyze this document into JSON: summary, table_headers, table_rows, insights");
+      // ✅ STRIP MARKDOWN: In case the AI ignores instructions and adds ```json
+      const cleanJson = data.analysis.replace(/```json|```/g, "").trim();
+      const parsed = JSON.parse(cleanJson);
+      
+      const finalData = {
+        fileName: file.name,
+        summary: parsed.summary || "No summary available.",
+        table_headers: parsed.table_headers || ["Info"],
+        table_rows: parsed.table_rows || [["No table data found"]],
+        insights: parsed.insights || []
+      };
 
-        const response = await fetch(`https://api.wintaibot.com/api/ai/analyze-pdf?t=${Date.now()}`, {
-          method: "POST",
-          body: formData,
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setResults(prev => [...prev, { fileName: file.name, ...data }]);
-        }
-      }
+      setResults(prev => [...prev, finalData]);
+    } catch (e) {
+      // ✅ FALLBACK: If AI returns plain text instead of JSON
+      setResults(prev => [...prev, {
+        fileName: file.name,
+        summary: "Raw Analysis",
+        table_headers: ["Content"],
+        table_rows: [[data.analysis]],
+        insights: []
+      }]);
+    }
+  }
+} catch (error) {
+  console.error("Processing failed for", file.name, error);
+  alert(`Wizard Error for ${file.name}: ${error.message}`);
+}
+  const askWizard = async () => {
+    if (!chatQuery || results.length === 0) return;
+    setLoading(true);
+    try {
+      const response = await fetch("https://api.wintaibot.com/api/ai/chatdoc", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          documentText: results.map(r => r.summary).join("\n"), 
+          question: chatQuery
+        }),
+      });
+      const data = await response.json();
+      setChatResponse(data.answer);
     } catch (error) {
-      alert("Wizard Error: " + error.message);
+      setChatResponse("The Wizard is tired. Try again later.");
     } finally {
       setLoading(false);
     }
   };
 
   const downloadCSV = (data) => {
+    if (!data.table_headers || !data.table_rows) return;
     const csvContent = [
       data.table_headers.join(","),
       ...data.table_rows.map(row => row.map(cell => `"${cell}"`).join(","))
@@ -47,28 +85,8 @@ function SmartParserDocuWizard() {
     a.href = url;
     a.download = `${data.fileName}_Export.csv`;
     a.click();
-  };const askWizard = async (docText) => {
-  if (!chatQuery) return;
-  setLoading(true);
+  };
 
-  try {
-    const response = await fetch("https://api.wintaibot.com/api/ai/chat-with-doc", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        documentText: docText, // Send the text we already have
-        question: chatQuery
-      }),
-    });
-
-    const data = await response.json();
-    setChatResponse(data.answer);
-  } catch (error) {
-    setChatResponse("The Wizard is tired. Try again later.");
-  } finally {
-    setLoading(false);
-  }
-};
   return (
     <div style={styles.card}>
       <div style={styles.headerContainer}>
@@ -77,7 +95,6 @@ function SmartParserDocuWizard() {
       </div>
       <p style={styles.subTitle}>Bulk AI Extraction & Interactive Analytics</p>
 
-      {/* 1. Bulk Upload Input */}
       <div style={styles.uploadSection}>
         <input 
           type="file" 
@@ -86,44 +103,34 @@ function SmartParserDocuWizard() {
           accept=".pdf" 
           style={styles.input}
         />
-        <p style={{fontSize: '12px', color: '#666'}}>{files.length} files selected</p>
+        <p style={{fontSize: '12px', color: '#666', marginTop: '10px'}}>{files.length} files selected</p>
       </div>
-      {/* Add this inside your results.map loop */}
-<div style={styles.chartBarContainer}>
-  <div style={{
-    ...styles.chartBar,
-    width: `${Math.min(res.table_rows.length * 10, 100)}%` 
-  }}></div>
-  <span style={{fontSize: '12px'}}>Activity Level: {res.table_rows.length} items found</span>
-</div>
       
       <button onClick={handleProcess} disabled={loading} style={styles.button}>
-        {loading ? "Wizard is working..." : `Analyze ${files.length} PDF(s)`}
+        {loading ? "Magic in progress..." : `Analyze ${files.length} PDF(s)`}
       </button>
 
       {results.map((res, idx) => (
         <div key={idx} style={styles.dashboardContainer}>
           <div style={styles.summaryCard}>
-            <h4>📄 {res.fileName} Summary</h4>
-            <p>{res.summary}</p>
+            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+               <h4 style={{margin: 0}}>📄 {res.fileName}</h4>
+               <button onClick={() => downloadCSV(res)} style={styles.exportButton}>Export CSV</button>
+            </div>
+            <p style={{fontSize: '14px', marginTop: '10px'}}>{res.summary}</p>
           </div>
 
-          {/* 2. Interactive Table (Editable) */}
           <div style={styles.tableSection}>
-            <div style={{display: 'flex', justifyContent: 'space-between'}}>
-              <h4>📊 Data (Click cells to edit)</h4>
-              <button onClick={() => downloadCSV(res)} style={styles.exportButton}>Export to Excel</button>
-            </div>
             <div style={styles.tableWrapper}>
               <table style={styles.table}>
                 <thead>
-                  <tr>{res.table_headers.map((h, i) => <th key={i} style={styles.th}>{h}</th>)}</tr>
+                  <tr>{res.table_headers?.map((h, i) => <th key={i} style={styles.th}>{h}</th>)}</tr>
                 </thead>
                 <tbody>
-                  {res.table_rows.map((row, i) => (
+                  {res.table_rows?.map((row, i) => (
                     <tr key={i}>
                       {row.map((cell, j) => (
-                        <td key={j} contentEditable style={styles.td}>{cell}</td>
+                        <td key={j} contentEditable suppressContentEditableWarning style={styles.td}>{cell}</td>
                       ))}
                     </tr>
                   ))}
@@ -134,17 +141,23 @@ function SmartParserDocuWizard() {
         </div>
       ))}
 
-      {/* 3. Chat with Document Section */}
       {results.length > 0 && (
         <div style={styles.chatBox}>
-          <h4>💬 Ask the Wizard about these files</h4>
-          <input 
-            placeholder="e.g. Total spending on all files?" 
-            value={chatQuery}
-            onChange={(e) => setChatQuery(e.target.value)}
-            style={styles.chatInput}
-          />
-          <button style={styles.smallButton}>Ask Wizard</button>
+          <h4 style={{marginTop: 0}}>💬 Ask the Wizard</h4>
+          <div style={{display: 'flex', gap: '10px'}}>
+            <input 
+              placeholder="e.g. Total spending?" 
+              value={chatQuery}
+              onChange={(e) => setChatQuery(e.target.value)}
+              style={styles.chatInput}
+            />
+            <button onClick={askWizard} style={styles.smallButton}>Ask</button>
+          </div>
+          {chatResponse && (
+            <div style={{marginTop: '15px', padding: '10px', background: '#fff', borderRadius: '5px', border: '1px solid #ffe58f', textAlign: 'left'}}>
+              <strong>Wizard:</strong> {chatResponse}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -156,18 +169,18 @@ const styles = {
   headerContainer: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '15px' },
   mainTitle: { margin: 0, color: '#1a202c', fontSize: '28px', fontWeight: '800' },
   subTitle: { margin: '5px 0 25px 0', fontSize: '14px', color: '#4a5568', textAlign: 'center' },
-  uploadSection: { padding: '20px', border: '2px dashed #cbd5e0', borderRadius: '10px', textAlign: 'center', backgroundColor: '#f7fafc', marginBottom: '15px' },
+  uploadSection: { padding: '30px', border: '2px dashed #cbd5e0', borderRadius: '10px', textAlign: 'center', backgroundColor: '#f7fafc', marginBottom: '15px' },
   button: { width: '100%', padding: '15px', backgroundColor: '#28a745', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px' },
   dashboardContainer: { marginTop: '40px', borderTop: '2px solid #edf2f7', paddingTop: '20px' },
-  summaryCard: { padding: '15px', backgroundColor: '#ebf8ff', borderRadius: '8px', borderLeft: '5px solid #3182ce', marginBottom: '20px' },
+  summaryCard: { padding: '15px', backgroundColor: '#ebf8ff', borderRadius: '8px', borderLeft: '5px solid #3182ce', marginBottom: '20px', textAlign: 'left' },
   tableWrapper: { overflowX: 'auto', borderRadius: '8px', border: '1px solid #e2e8f0' },
   table: { width: '100%', borderCollapse: 'collapse' },
-  th: { backgroundColor: '#f8fafc', padding: '12px', textAlign: 'left', borderBottom: '2px solid #e2e8f0' },
-  td: { padding: '12px', borderBottom: '1px solid #edf2f7', outline: 'none' },
-  exportButton: { padding: '5px 15px', backgroundColor: '#007bff', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' },
-  chatBox: { marginTop: '40px', padding: '20px', backgroundColor: '#fffbe6', borderRadius: '10px', border: '1px solid #ffe58f' },
-  chatInput: { width: '80%', padding: '10px', borderRadius: '5px', border: '1px solid #d9d9d9', marginRight: '10px' },
-  smallButton: { padding: '10px 15px', backgroundColor: '#fadb14', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }
+  th: { backgroundColor: '#f8fafc', padding: '12px', textAlign: 'left', borderBottom: '2px solid #e2e8f0', fontSize: '13px' },
+  td: { padding: '12px', borderBottom: '1px solid #edf2f7', outline: 'none', fontSize: '13px', textAlign: 'left' },
+  exportButton: { padding: '5px 12px', backgroundColor: '#3182ce', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '11px' },
+  chatBox: { marginTop: '40px', padding: '20px', backgroundColor: '#fffbe6', borderRadius: '10px', border: '1px solid #ffe58f', textAlign: 'left' },
+  chatInput: { flex: 1, padding: '10px', borderRadius: '5px', border: '1px solid #d9d9d9' },
+  smallButton: { padding: '10px 20px', backgroundColor: '#fadb14', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }
 };
 
 export default SmartParserDocuWizard;

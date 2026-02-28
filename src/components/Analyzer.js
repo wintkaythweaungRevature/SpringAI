@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import "./Analyzer.css"; // Import the new CSS
+import "./Analyzer.css"; // Ensure this file exists in the same folder
 
 function PdfAnalyzer() {
   const [file, setFile] = useState(null);
@@ -8,7 +8,6 @@ function PdfAnalyzer() {
 
   const handleProcess = async () => {
     if (!file) return alert("Please upload a PDF!");
-
     const formData = new FormData();
     formData.append("file", file);
     formData.append("prompt", "Analyze this document and extract all important information.");
@@ -17,53 +16,42 @@ function PdfAnalyzer() {
     setRecipe(""); 
 
     try {
-      // Use a cache-busting timestamp
       const url = `https://api.wintaibot.com/api/ai/analyze-pdf?t=${Date.now()}`;
-      
       const response = await fetch(url, {
         method: "POST",
-        headers: {
-          'Accept': 'application/json', // Explicitly ask for JSON
-        },
+        headers: { 'Accept': 'application/json' },
         body: formData,
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Server Error (${response.status}): ${errorText || "Internal Server Error"}`);
+        throw new Error(`Server Error (${response.status}): ${errorText || "Error"}`);
       }
 
       const data = await response.json();
-      // Ensure we store a string for the state logic
       setRecipe(JSON.stringify(data));
-      
     } catch (error) {
-      console.error("Upload error details:", error);
       setRecipe(`Analysis failed: ${error.message}`);
     } finally {
       setLoading(false);
     }
   };
 
-  // Safe parsing logic to prevent crashes
   const parsedData = useMemo(() => {
     if (!recipe || recipe.startsWith("Analysis failed")) return null;
     try {
       return JSON.parse(recipe);
     } catch (e) {
-      console.error("Parsing error:", e);
       return null;
     }
   }, [recipe]);
 
   const downloadCSV = () => {
     if (!parsedData || !parsedData.table_headers) return;
-
     const csvContent = [
       parsedData.table_headers.join(","), 
       ...(parsedData.table_rows || []).map(row => row.map(cell => `"${cell}"`).join(",")) 
     ].join("\n");
-
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -75,61 +63,59 @@ function PdfAnalyzer() {
   };
 
   return (
-    <div style={styles.card}>
-   <div style={styles.headerContainer}>
+    <div className="analyzer-card">
+      <div className="analyzer-header-container">
         <span style={{ fontSize: '32px' }}>🧙‍♂️</span>
-        <h2 style={styles.mainTitle}>Smart Parser DocuWizard</h2>
+        <h2 className="analyzer-main-title">Smart Parser DocuWizard</h2>
       </div>
-      <p style={styles.subTitle}>Bulk AI Extraction & Interactive Analytics</p>
-      <h2 style={styles.mainTitle}>🧙‍♂️ PDF AI Wizard</h2>
-      <p style={styles.subTitle}>Upload PDF ➔ AI Analysis ➔ Export Excel</p>
-
+      <p className="analyzer-sub-title">Bulk AI Extraction & Interactive Analytics</p>
+      
       <input 
         type="file" 
         onChange={(e) => setFile(e.target.files[0])} 
         accept=".pdf" 
-        style={styles.input}
+        className="analyzer-input"
       />
       
-      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-        <button onClick={handleProcess} disabled={loading} style={styles.button}>
+      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '20px' }}>
+        <button onClick={handleProcess} disabled={loading} className="analyzer-button">
           {loading ? "⌛ Analyzing..." : "Analyze PDF"}
         </button>
         
         {parsedData && (
-          <button onClick={downloadCSV} style={styles.exportButton}>
+          <button onClick={downloadCSV} className="analyzer-export-button">
             📊 Export to Excel
           </button>
         )}
 
         {recipe && (
-          <button onClick={() => { setRecipe(""); setFile(null); }} style={styles.clearButton}>Clear</button>
+          <button onClick={() => { setRecipe(""); setFile(null); }} className="analyzer-clear-button">Clear</button>
         )}
       </div>
 
       {parsedData ? (
-        <div style={styles.dashboardContainer}>
-          <div style={styles.summaryCard}>
-            <h4 style={styles.cardHeader}>📄 AI Document Summary</h4>
-            <p style={styles.summaryText}>{parsedData.summary || "No summary available."}</p>
+        <div className="analyzer-dashboard">
+          <div className="analyzer-summary-card">
+            <h4 className="analyzer-card-header">📄 AI Document Summary</h4>
+            <p className="analyzer-summary-text">{parsedData.summary || "No summary available."}</p>
           </div>
 
-          <div style={styles.tableSection}>
+          <div className="analyzer-table-section">
             <h4>📊 Extracted Details</h4>
-            <div style={styles.tableWrapper}>
-              <table style={styles.table}>
+            <div className="analyzer-table-wrapper">
+              <table className="analyzer-table">
                 <thead>
                   <tr>
                     {parsedData.table_headers?.map((header, i) => (
-                      <th key={i} style={styles.th}>{header}</th>
+                      <th key={i} className="analyzer-th">{header}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {parsedData.table_rows?.map((row, i) => (
-                    <tr key={i} style={i % 2 === 0 ? {} : styles.altRow}>
+                    <tr key={i} className={i % 2 !== 0 ? "analyzer-alt-row" : ""}>
                       {row.map((cell, j) => (
-                        <td key={j} style={styles.td}>{cell}</td>
+                        <td key={j} className="analyzer-td">{cell}</td>
                       ))}
                     </tr>
                   ))}
@@ -139,11 +125,11 @@ function PdfAnalyzer() {
           </div>
 
           {parsedData.insights && (
-            <div style={styles.insightsCard}>
-              <h4 style={styles.cardHeader}>💡 Key Insights</h4>
-              <ul style={styles.list}>
+            <div className="analyzer-insights-card">
+              <h4 className="analyzer-card-header">💡 Key Insights</h4>
+              <ul className="analyzer-list">
                 {parsedData.insights.map((insight, i) => (
-                  <li key={i} style={styles.listItem}>{insight}</li>
+                  <li key={i} className="analyzer-list-item">{insight}</li>
                 ))}
               </ul>
             </div>
@@ -151,14 +137,13 @@ function PdfAnalyzer() {
         </div>
       ) : (
         recipe && (
-          <div style={styles.outputArea}>
-            <pre style={styles.recipeText}>{recipe}</pre>
+          <div className="analyzer-error-area">
+            <pre className="analyzer-pre">{recipe}</pre>
           </div>
         )
       )}
     </div>
   );
 }
-// Ensure this is at the very bottom
+
 export default PdfAnalyzer;
-// ... (keep your existing styles object)

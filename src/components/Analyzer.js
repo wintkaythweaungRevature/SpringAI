@@ -17,10 +17,15 @@ function PdfAnalyzer() {
     setRecipe(""); 
 
     try {
-      const response = await fetch("https://api.wintaibot.com/api/ai/analyze-pdf", {
-        method: "POST",
-        body: formData,
-      });
+      const response = await fetch("https://api.wintaibot.com/api/ai/ask-ai", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    prompt: "Analyze this document... " + pdfText 
+  }),
+});
 
       if (!response.ok) throw new Error("Server error");
 

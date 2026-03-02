@@ -37,6 +37,10 @@ function App() {
           onClick={() => handleTabChange('analyzer')}> 
          DocuWizard 
         </button>
+        <button className={`tab-btn ${activeTab === 'transcription' ? 'active' : ''}`}
+          onClick={() => handleTabChange('transcription')}> 
+         DocuWizard 
+        </button>
        
         
         
@@ -47,6 +51,8 @@ function App() {
         {activeTab === 'chat' && <ChatComponent />}
          {activeTab === 'analyzer' && <SpendingAnalyzer />}
         {activeTab === 'recipe-generator' && <ReceipeGenerator />}
+        
+        {activeTab === 'transcription' && <Transcription />}
        
       </div>
     </div>

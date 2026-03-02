@@ -4,6 +4,7 @@ import ImageGenerator from './components/ImageGenerator';
 import ChatComponent from './components/ChatComponent';
 import ReceipeGenerator from './components/ReceipeGenerator';
 import SpendingAnalyzer from './components/Analyzer';
+import Transcription from './components/Transcription'; // Or whatever your filename is
 
 function App() {
   const [activeTab, setActiveTab] = useState('image-generator');
@@ -39,7 +40,7 @@ function App() {
         </button>
         <button className={`tab-btn ${activeTab === 'transcription' ? 'active' : ''}`}
           onClick={() => handleTabChange('transcription')}> 
-         DocuWizard 
+         EchoScribe 
         </button>
        
         

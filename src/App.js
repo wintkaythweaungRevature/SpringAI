@@ -4,6 +4,7 @@ import ImageGenerator from './components/ImageGenerator';
 import ChatComponent from './components/ChatComponent';
 import ReceipeGenerator from './components/ReceipeGenerator';
 import SpendingAnalyzer from './components/Analyzer';
+import Transcription from './components/Transcription';
 
 function App() {
   const [activeTab, setActiveTab] = useState('image-generator');
@@ -36,6 +37,9 @@ function App() {
         <button className={`tab-btn ${activeTab === 'analyzer' ? 'active' : ''}`}
           onClick={() => handleTabChange('analyzer')}> 
          DocuWizard 
+        </button> <button className={`tab-btn ${activeTab === 'transcription' ? 'active' : ''}`}
+          onClick={() => handleTabChange('transcription')}> 
+         Transcription 
         </button>
        
         
@@ -47,6 +51,8 @@ function App() {
         {activeTab === 'chat' && <ChatComponent />}
          {activeTab === 'analyzer' && <SpendingAnalyzer />}
         {activeTab === 'recipe-generator' && <ReceipeGenerator />}
+        {activeTab === 'transcription' && <Transcription />}
+       
        
       </div>
     </div>

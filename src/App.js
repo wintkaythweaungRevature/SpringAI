@@ -5,6 +5,7 @@ import ChatComponent from './components/ChatComponent';
 import ReceipeGenerator from './components/ReceipeGenerator';
 import SpendingAnalyzer from './components/Analyzer';
 import Transcription from './components/Transcription'; // Or whatever your filename is
+import Content from './components/Content'; // Or whatever your filename is   
 
 function App() {
   const [activeTab, setActiveTab] = useState('image-generator');
@@ -42,8 +43,8 @@ function App() {
           onClick={() => handleTabChange('transcription')}> 
          EchoScribe 
         </button>
-        <button className={`tab-btn ${activeTab === 'email-enchanter' ? 'active' : ''}`}
-          onClick={() => handleTabChange('email-enchanter')}> 
+        <button className={`tab-btn ${activeTab === 'content' ? 'active' : ''}`}
+          onClick={() => handleTabChange('content')}> 
          Reply Enchanter
         </button>
        
@@ -58,6 +59,8 @@ function App() {
         {activeTab === 'recipe-generator' && <ReceipeGenerator />}
         
         {activeTab === 'transcription' && <Transcription />}
+         {activeTab === 'content' && <Content />}
+        {activeTab}
         {activeTab}
 
        

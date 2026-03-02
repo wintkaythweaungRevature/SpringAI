@@ -1,0 +1,113 @@
+.email-app-container {
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+  background-color: #f4f7ff;
+  min-height: 100vh;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.email-card {
+  background: #ffffff;
+  width: 100%;
+  max-width: 650px;
+  padding: 30px;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+}
+
+.title { margin: 0; color: #1a202c; font-size: 24px; }
+.subtitle { color: #718096; margin-bottom: 25px; font-size: 14px; }
+
+.label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #4a5568;
+  margin-bottom: 8px;
+}
+
+.text-area {
+  width: 100%;
+  height: 150px;
+  padding: 15px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 15px;
+  resize: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.text-area:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.controls {
+  display: flex;
+  gap: 15px;
+  margin-top: 20px;
+  align-items: flex-end;
+}
+
+.select-group { flex: 1; }
+
+.select-input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1.5px solid #e2e8f0;
+  background: white;
+  font-weight: 500;
+}
+
+.generate-btn {
+  padding: 11px 25px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.generate-btn:hover { opacity: 0.9; }
+
+.result-section {
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #edf2f7;
+}
+
+.result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.result-box {
+  background: #f8fafc;
+  padding: 20px;
+  border-radius: 10px;
+  color: #2d3748;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  border: 1px solid #e2e8f0;
+}
+
+.copy-btn {
+  background: #edf2f7;
+  border: none;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  color: #4a5568;
+}
+
+.copy-btn:hover { background: #e2e8f0; }

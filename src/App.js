@@ -42,6 +42,10 @@ function App() {
           onClick={() => handleTabChange('transcription')}> 
          EchoScribe 
         </button>
+        <button className={`tab-btn ${activeTab === 'email-enchanter' ? 'active' : ''}`}
+          onClick={() => handleTabChange('email-enchanter')}> 
+         Reply Enchanter
+        </button>
        
         
         
@@ -54,6 +58,8 @@ function App() {
         {activeTab === 'recipe-generator' && <ReceipeGenerator />}
         
         {activeTab === 'transcription' && <Transcription />}
+        {activeTab}
+
        
       </div>
     </div>

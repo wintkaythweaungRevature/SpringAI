@@ -5,6 +5,7 @@ import ChatComponent from './components/ChatComponent';
 import ReceipeGenerator from './components/ReceipeGenerator';
 import SpendingAnalyzer from './components/Analyzer';
 import Transcription from './components/Transcription'; // Or whatever your filename is
+import Content from './components/Content'; // Importing the new Content component
 
 function App() {
   const [activeTab, setActiveTab] = useState('image-generator');

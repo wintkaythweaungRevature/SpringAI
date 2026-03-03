@@ -12,7 +12,7 @@ function Content() {
     setLoading(true);
     
     try {
-      const response = await fetch("https://api.wintaibot.com/api/ai/reply",
+      const response = await fetch("https://www.wintaibot.com/api/ai/reply",
         
         {
         method: "POST",

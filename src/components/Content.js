@@ -12,7 +12,9 @@ function Content() {
     setLoading(true);
     
     try {
-      const response = await fetch("https://api.wintaibot.com/api/ai/reply", {
+      const response = await fetch("https://api.wintaibot.com/api/ai/reply",
+        
+        {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 

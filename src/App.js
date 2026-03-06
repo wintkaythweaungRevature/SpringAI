@@ -6,7 +6,7 @@ import ReceipeGenerator from './components/ReceipeGenerator';
 import SpendingAnalyzer from './components/Analyzer';
 import Transcription from './components/Transcription'; // Or whatever your filename is
 import Content from './components/Content'; // Importing the new Content component
-
+import Resume from './components/Resume'; // Importing the new Resume component
 function App() {
   const [activeTab, setActiveTab] = useState('image-generator');
 
@@ -47,6 +47,10 @@ function App() {
           onClick={() => handleTabChange('Content')}> 
          Reply Enchanter
         </button>
+        <button className={`tab-btn ${activeTab === 'Resume' ? 'active' : ''}`}
+          onClick={() => handleTabChange('Resume')}> 
+         Resume Worlock
+        </button>
        
         
         
@@ -60,7 +64,8 @@ function App() {
         
         {activeTab === 'transcription' && <Transcription />}
         {activeTab === 'Content' && <Content />}
-        {activeTab}
+        {activeTab === 'Resume' && <Resume />} 
+        {/* Add this line to render Resume component */}
 
        
       </div>

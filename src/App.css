@@ -167,3 +167,76 @@ padding: 12px 26px;
   box-shadow: 0 15px 30px rgba(0,0,0,0.2);
   font-size: 1.15rem;
 }
+/* 1. FIX THE SCALE - Allow the app to be wider for the Resume tool */
+.App {
+  text-align: center;
+  max-width: 1250px; /* Increased from 800px */
+  margin: 0 auto;
+  padding: 40px 20px;
+  position: relative;
+  z-index: 1;
+  
+}
+
+/* 2. PREVENT OVERFLOW - Crucial for the text boxes */
+* {
+  box-sizing: border-box;
+}
+
+/* 3. DANGER: REMOVE OR MODIFY THIS */
+/* This line in your original code makes everything black, even on dark panels. 
+   If you want white text in Resume Worlock, remove the !important below. */
+* {
+  color: inherit; 
+}
+
+/* 4. HEADER STYLING */
+.header {
+  background: linear-gradient(135deg, #401187, #717cb3, #0c0e60);
+  padding: 30px;
+  border-radius: 22px;
+  margin-bottom: 30px;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.25);
+}
+
+.header h1 {
+  margin: 0;
+  color: white !important; /* Ensure title is white */
+  font-size: 2.4rem;
+}
+
+/* 5. TAB BUTTONS ALIGNMENT */
+.tab-buttons {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap; /* Allows buttons to wrap on smaller screens */
+  gap: 10px;
+  margin-bottom: 30px;
+}
+
+.tab-btn {
+  padding: 10px 20px;
+  border-radius: 999px;
+  border: 1px solid rgba(0,0,0,0.1);
+  background: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tab-btn.active {
+  background: #401187;
+  color: white !important;
+  box-shadow: 0 8px 20px rgba(64, 17, 135, 0.3);
+  border: none;
+}
+
+/* 6. CONTENT AREA */
+.content {
+  background: #ffffff; /* Clean white background */
+  border: 1px solid #e2e8f0;
+  border-radius: 24px;
+  padding: 30px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+  min-height: 500px;
+}

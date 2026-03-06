@@ -22,7 +22,7 @@ const Flashcard = ({ card, index }) => {
     <div 
       onClick={() => setFlipped(!flipped)}
       style={{
-        background: "#040a74", borderRadius: "12px", padding: "24px", marginBottom: "16px",
+        background: "#d1d6ef", borderRadius: "12px", padding: "24px", marginBottom: "16px",
         cursor: "pointer", border: `1px solid ${T.darkBorder}`, transition: "all 0.2s ease",
         boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)", minHeight: "180px", display: "flex", flexDirection: "column"
       }}

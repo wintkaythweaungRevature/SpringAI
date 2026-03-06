@@ -30,7 +30,7 @@
       "react-app/jest"
     ]
   },
-  "proxy": "https://api.anthropic.com",
+  
   
   "browserslist": {
     "production": [

@@ -8,10 +8,10 @@ const T = {
 };
 
 const AGENTS = [
-  { id: "extractor", label: "AGENT 01", name: "KEYWORD MATCH", color: T.amber },
-  { id: "analyzer", label: "AGENT 02", name: "GAPS & ANALYSIS", color: T.green },
-  { id: "generator", label: "AGENT 03", name: "30 INTERVIEW QUESTIONS", color: T.blue },
-  { id: "flashcards", label: "AGENT 06", name: "20 STUDY FLASHCARDS", color: T.pink },
+  { id: "extractor", label: "Extraction", name: "KEYWORD MATCH", color: T.amber },
+  { id: "analyzer", label: "Analyzing", name: "GAPS & ANALYSIS", color: T.green },
+  { id: "generator", label: "Generating", name: "30 INTERVIEW QUESTIONS", color: T.blue },
+  { id: "flashcards", label: "Flashcards", name: "20 STUDY FLASHCARDS", color: T.pink },
 ];
 
 // --- 2. FLASHCARD UI COMPONENT ---
@@ -22,7 +22,7 @@ const Flashcard = ({ card, index }) => {
     <div 
       onClick={() => setFlipped(!flipped)}
       style={{
-        background: T.darkBg, borderRadius: "12px", padding: "24px", marginBottom: "16px",
+        background: "#040a74", borderRadius: "12px", padding: "24px", marginBottom: "16px",
         cursor: "pointer", border: `1px solid ${T.darkBorder}`, transition: "all 0.2s ease",
         boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)", minHeight: "180px", display: "flex", flexDirection: "column"
       }}
@@ -30,8 +30,8 @@ const Flashcard = ({ card, index }) => {
       <div style={{ color: "#4a5568", fontWeight: "bold", fontSize: "12px", marginBottom: "10px" }}>
         {String(index + 1).padStart(2, '0')}
       </div>
-
-      <div style={{ color: "#e2e8f0", fontSize: "15px", lineHeight: "1.6", flexGrow: 1 }}>
+"
+      <div style={{ color: "#040a74", fontSize: "15px", lineHeight: "1.6", flexGrow: 1 }}>
         {flipped ? card.back : card.front}
       </div>
 
@@ -104,7 +104,7 @@ export default function Resume() {
       await delay(1500);
       setOutputs(prev => ({ ...prev, generator: data.questions }));
 
-      // Agent 6
+      // Agent 4
       setActiveAgent("flashcards");
       await delay(1500);
       setOutputs(prev => ({ ...prev, flashcards: data.flashcards }));

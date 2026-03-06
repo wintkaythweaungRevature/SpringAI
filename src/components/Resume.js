@@ -16,85 +16,38 @@ const T = {
 };
 
 const AGENTS = [
-  { id: "extractor", label: "AGENT 01 — ROLE EXTRACTOR", icon: "◈", color: T.amber, desc: "Parsing job description" },
-  { id: "analyzer", label: "AGENT 02 — CV ANALYZER", icon: "◉", color: T.green, desc: "Mapping candidate experience" },
-  { id: "generator", label: "AGENT 03 — QUESTION GENERATOR", icon: "◆", color: T.blue, desc: "Synthesizing questions" },
-  { id: "writer", label: "AGENT 04 — ANSWER WRITER", icon: "◇", color: T.purple, desc: "Drafting responses" },
-  { id: "scorer", label: "AGENT 05 — CONFIDENCE SCORER", icon: "◎", color: T.amber, desc: "Scoring readiness" },
-  { id: "flashcards", label: "AGENT 06 — FLASHCARD GEN", icon: "✦", color: T.pink, desc: "Creating study cards" },
+  { id: "extractor", label: "01 — ROLE EXTRACTOR", icon: "◈", color: T.amber, desc: "Parsing JD" },
+  { id: "analyzer", label: "02 — CV ANALYZER", icon: "◉", color: T.green, desc: "Mapping CV" },
+  { id: "generator", label: "03 — QUESTION GEN", icon: "◆", color: T.blue, desc: "Synthesizing" },
+  { id: "writer", label: "04 — ANSWER WRITER", icon: "◇", color: T.purple, desc: "Drafting" },
+  { id: "scorer", label: "05 — CONFIDENCE", icon: "◎", color: T.amber, desc: "Scoring" },
+  { id: "flashcards", label: "06 — FLASHCARDS", icon: "✦", color: T.pink, desc: "Generating" },
 ];
-
-function Flashcard({ question, answer }) {
-  const [show, setShow] = useState(false);
-  return (
-    <div 
-      onClick={() => setShow(!show)}
-      style={{
-        background: show ? T.pink + "08" : "#fff",
-        border: `1px solid ${show ? T.pink : T.border}`,
-        padding: "15px",
-        borderRadius: "8px",
-        cursor: "pointer",
-        transition: "all 0.2s ease",
-        minHeight: "100px",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center"
-      }}
-    >
-      <div style={{ fontSize: "9px", color: T.pink, fontWeight: "bold", marginBottom: "8px", letterSpacing: "1px", textTransform: "uppercase" }}>
-        {show ? "• Answer" : "• Question"}
-      </div>
-      <div style={{ fontSize: "13px", color: T.text, fontWeight: "500", lineHeight: "1.5" }}>
-        {show ? answer : question}
-      </div>
-    </div>
-  );
-}
-
-function AgentRow({ agent, status }) {
-  const isActive = status === "running";
-  const isDone = status === "done";
-  
-  return (
-    <div style={{
-      border: `1px solid ${isActive ? agent.color : T.border}`,
-      background: isActive ? `${agent.color}08` : T.panel,
-      padding: "12px",
-      marginBottom: "10px",
-      borderRadius: "6px",
-      transition: "all 0.3s ease"
-    }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-        <span style={{ color: agent.color, fontSize: "16px" }}>{agent.icon}</span> 
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: "11px", fontWeight: "bold", color: T.text }}>{agent.label}</div>
-          <div style={{ fontSize: "10px", color: T.textDim }}>
-            {isActive ? "RUNNING..." : isDone ? "✓ COMPLETE" : agent.desc}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 export default function Resume() {
   const [jdText, setJdText] = useState("");
-  const [cvText, setCvText] = useState("");
+  const [cvText, setCvText] = useState(""); // ဤနေရာတွင် Readable Text သိမ်းမည်
+  const [rawFile, setRawFile] = useState(null); // Backend ပို့ရန် File သိမ်းမည်
+  const [loading, setLoading] = useState(false);
+  
   const [activeAgent, setActiveAgent] = useState(null);
   const [agentStatuses, setAgentStatuses] = useState({});
-  const [flashcards, setFlashcards] = useState([]);
-  const [showFlashcards, setShowFlashcards] = useState(false);
-  const [isDownloading, setIsDownloading] = useState(false);
 
+  // File ရွေးချယ်သည့်အခါ
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    
+    setRawFile(file); // File object ကို state ထဲသိမ်းထားပါ
+
     try {
       if (file.name.endsWith(".docx")) {
         const arrayBuffer = await file.arrayBuffer();
         const result = await mammoth.extractRawText({ arrayBuffer });
         setCvText(result.value);
+      } else if (file.name.endsWith(".pdf")) {
+        // PDF ဆိုလျှင် binary data များ မမြင်ရစေရန် preview text ကို ခေတ္တပြောင်းထားပါမည်
+        setCvText(`[ PDF_DETECTED ]: ${file.name}\nClick 'ANALYZE CV' to parse content.`);
       } else {
         const reader = new FileReader();
         reader.onload = (f) => setCvText(f.target.result);
@@ -103,149 +56,123 @@ export default function Resume() {
     } catch (err) { alert("Error reading file."); }
   };
 
-  const downloadPDF = async () => {
-    if (flashcards.length === 0) return;
-    setIsDownloading(true);
-    try {
-      const response = await fetch("https://api.wintaibot.com/api/ai/flashcards-pdf", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(flashcards)
-      });
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = "Interview_Flashcards.pdf";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    } catch (error) {
-      alert("PDF export failed. Please check backend.");
-    } finally {
-      setIsDownloading(false);
-    }
-  };
-
-  const startPipeline = async () => {
-    if (!jdText || !cvText) return alert("Missing JD or CV.");
+  // PDF ကို Backend သို့ပို့၍ Analyze လုပ်ခြင်း (Transcription Logic အတိုင်း)
+  const analyzeCVWithBackend = async () => {
+    if (!rawFile) return alert("Please upload a CV file first!");
     
-    setAgentStatuses({});
-    setShowFlashcards(false);
-    setFlashcards([]);
+    const formData = new FormData();
+    formData.append("file", rawFile);
 
-    for (const agent of AGENTS) {
-      setActiveAgent(agent.id);
-      setAgentStatuses(prev => ({ ...prev, [agent.id]: "running" }));
+    setLoading(true);
+    setCvText("📡 COMMENCING_REMOTE_ANALYSIS... PLEASE_WAIT");
 
-      if (agent.id === "flashcards") {
-        try {
-          const response = await fetch("https://api.wintaibot.com/api/ai/generate-flashcards", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ jd: jdText, cv: cvText })
-          });
-          const data = await response.json();
-          setFlashcards(data);
-        } catch (error) {
-          console.error("Flashcard generation failed", error);
-        }
-      } else {
-        await new Promise(r => setTimeout(r, 800));
+    try {
+      const url = `https://api.wintaibot.com/api/ai/generate-flashcards`; 
+      const response = await fetch(url, {
+        method: "POST",
+        body: formData, // FormData ပို့သည့်အတွက် Fetch မှ headers ကို အလိုအလျောက် သတ်မှတ်ပေးပါမည်
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server Error (${response.status})`);
       }
 
-      setAgentStatuses(prev => ({ ...prev, [agent.id]: "done" }));
+      const data = await response.text(); 
+      setCvText(data); // Readable text ကို Preview box ထဲသို့ ထည့်သွင်းခြင်း
+    } catch (error) {
+      setCvText(`Analysis failed: ${error.message}`);
+    } finally {
+      setLoading(false);
     }
-
-    setActiveAgent(null);
-    setShowFlashcards(true);
   };
 
   return (
-    <div style={{ background: T.bg, minHeight: "100vh", padding: "30px", boxSizing: "border-box", fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ background: T.bg, minHeight: "100vh", padding: "20px", boxSizing: "border-box", overflowX: "hidden" }}>
       
-      <header style={{ 
-        display: "flex", justifyContent: "space-between", alignItems: "center", 
-        marginBottom: "30px", borderBottom: `1px solid ${T.border}`, paddingBottom: "15px" 
-      }}>
-        <div style={{ fontSize: "16px", fontWeight: "bold", color: T.text, letterSpacing: "1px" }}>ARCHITECT_OS // V1</div>
+      {/* HEADER */}
+      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", borderBottom: `1px solid ${T.border}`, paddingBottom: "10px" }}>
+        <div style={{ fontSize: "14px", fontWeight: "bold", color: T.text, letterSpacing: "1px" }}>ARCHITECT_OS // V1</div>
         <button 
-          onClick={startPipeline} 
-          disabled={!!activeAgent}
-          style={{
-            background: "#0f172a", color: "#fff", border: "none", padding: "10px 20px",
-            cursor: activeAgent ? "not-allowed" : "pointer", fontWeight: "bold", borderRadius: "4px", fontSize: "12px",
-            opacity: activeAgent ? 0.7 : 1
-          }}
+           onClick={() => alert("Pipeline Initialized")}
+           style={{ background: "#0f172a", color: "#fff", border: "none", padding: "6px 15px", borderRadius: "4px", fontSize: "11px", cursor: "pointer", fontWeight: "bold" }}
         >
-          {activeAgent ? "PIPELINE_ACTIVE..." : "INITIALIZE PIPELINE"}
+          INITIALIZE
         </button>
       </header>
 
-      <div style={{ display: "flex", gap: "40px", alignItems: "flex-start" }}>
+      {/* MAIN LAYOUT */}
+      <div style={{ display: "grid", gridTemplateColumns: "260px 1fr", gap: "20px", alignItems: "start" }}>
         
-        {/* LEFT MONITOR */}
-        <div style={{ flex: "0 0 320px" }}>
-          <label style={{ color: T.textDim, fontSize: "10px", display: "block", marginBottom: "15px", fontWeight: "bold", letterSpacing: "1px" }}>
-            [ SYSTEM_MONITOR ]
-          </label>
+        {/* LEFT COLUMN: SYSTEM MONITOR */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+          <label style={{ color: T.textDim, fontSize: "9px", fontWeight: "bold", letterSpacing: "1px" }}>[ SYSTEM_MONITOR ]</label>
           {AGENTS.map(agent => (
-            <AgentRow key={agent.id} agent={agent} status={agentStatuses[agent.id] || "idle"} />
+            <div key={agent.id} style={{ border: `1px solid ${T.border}`, background: T.panel, padding: "10px", borderRadius: "6px", display: "flex", alignItems: "center", gap: "8px" }}>
+              <span style={{ color: agent.color, fontSize: "14px" }}>{agent.icon}</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: "10px", fontWeight: "bold", color: T.text }}>{agent.label}</div>
+                <div style={{ fontSize: "9px", color: T.textDim }}>{agent.desc}</div>
+              </div>
+            </div>
           ))}
         </div>
 
-        {/* RIGHT CONTENT */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "25px" }}>
+        {/* RIGHT COLUMN: INPUTS */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "20px", minWidth: 0 }}>
           
-          <div style={{ background: T.panel, border: `1px solid ${T.border}`, padding: "20px", borderRadius: "8px" }}>
-            <label style={{ color: T.textDim, fontSize: "10px", display: "block", marginBottom: "10px", fontWeight: "bold" }}>INPUT_SOURCE: JOB_DESCRIPTION</label>
+          {/* JD INPUT BOX */}
+          <div style={{ background: T.panel, border: `1px solid ${T.border}`, padding: "15px", borderRadius: "8px" }}>
+            <label style={{ color: T.textDim, fontSize: "10px", display: "block", marginBottom: "8px", fontWeight: "bold" }}>INPUT_SOURCE: JOB_DESCRIPTION</label>
             <textarea 
               value={jdText} 
               onChange={(e) => setJdText(e.target.value)}
-              placeholder="Paste job description here..."
-              style={{ 
-                width: "100%", height: "120px", background: "#fff", border: `1px solid ${T.border}`,
-                padding: "12px", fontFamily: T.mono, fontSize: "12px", borderRadius: "4px",
-                boxSizing: "border-box", resize: "none"
-              }}
+              placeholder="Paste JD here..."
+              style={{ width: "100%", height: "80px", border: `1px solid ${T.border}`, padding: "10px", fontSize: "12px", borderRadius: "4px", boxSizing: "border-box", resize: "none", fontFamily: T.mono }}
             />
           </div>
 
-          <div style={{ background: T.panel, border: `1px solid ${T.border}`, padding: "20px", borderRadius: "8px" }}>
-            <label style={{ color: T.textDim, fontSize: "10px", display: "block", marginBottom: "10px", fontWeight: "bold" }}>INPUT_SOURCE: CV_STREAM</label>
-            <input type="file" onChange={handleFileUpload} style={{ fontSize: "12px", marginBottom: "15px" }} />
+          {/* CV INPUT BOX WITH ANALYZE FUNCTION */}
+          <div style={{ background: T.panel, border: `1px solid ${T.border}`, padding: "15px", borderRadius: "8px" }}>
+            <label style={{ color: T.textDim, fontSize: "10px", display: "block", marginBottom: "8px", fontWeight: "bold" }}>INPUT_SOURCE: CV_STREAM</label>
+            
+            <div style={{ display: "flex", gap: "10px", alignItems: "center", marginBottom: "10px", flexWrap: "wrap" }}>
+              <input 
+                type="file" 
+                accept=".pdf,.docx,.txt"
+                onChange={handleFileUpload} 
+                style={{ fontSize: "11px", flex: 1, minWidth: "150px" }} 
+              />
+              <button 
+                onClick={analyzeCVWithBackend}
+                disabled={loading}
+                style={{ 
+                  background: loading ? T.textDim : T.blue, 
+                  color: "#fff", 
+                  border: "none", 
+                  padding: "6px 14px", 
+                  borderRadius: "4px", 
+                  fontSize: "10px", 
+                  fontWeight: "bold", 
+                  cursor: loading ? "not-allowed" : "pointer", 
+                  whiteSpace: "nowrap",
+                  transition: "opacity 0.2s"
+                }}
+              >
+                {loading ? "⌛ ANALYZING..." : "ANALYZE CV"}
+              </button>
+            </div>
+
+            {/* PREVIEW BOX */}
             <div style={{ 
               height: "150px", overflowY: "auto", fontSize: "11px", color: T.text, 
               background: "#fff", padding: "15px", border: `1px solid ${T.border}`, 
-              borderRadius: "4px", boxSizing: "border-box", whiteSpace: "pre-wrap"
+              borderRadius: "4px", boxSizing: "border-box", whiteSpace: "pre-wrap",
+              wordBreak: "break-all", fontFamily: T.mono, lineHeight: "1.5"
             }}>
               {cvText || "Awaiting file upload..."}
             </div>
           </div>
 
-          {/* FLASHCARDS SECTION */}
-          {showFlashcards && flashcards.length > 0 && (
-            <div style={{ background: "#fff", border: `2px solid ${T.pink}`, padding: "20px", borderRadius: "8px", boxShadow: "0 4px 12px rgba(219, 39, 119, 0.1)" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-                <label style={{ color: T.pink, fontSize: "11px", fontWeight: "bold", letterSpacing: "1px" }}>✦ AGENT_GEN_06: INTERVIEW_FLASHCARDS</label>
-                <button 
-                  onClick={downloadPDF}
-                  disabled={isDownloading}
-                  style={{
-                    background: T.pink, color: "#fff", border: "none", padding: "6px 14px",
-                    borderRadius: "4px", fontSize: "10px", fontWeight: "bold", cursor: "pointer"
-                  }}
-                >
-                  {isDownloading ? "GENERATING PDF..." : "DOWNLOAD PDF"}
-                </button>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px" }}>
-                {flashcards.map((card, i) => (
-                  <Flashcard key={i} question={card.q} answer={card.a} />
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>

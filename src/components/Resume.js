@@ -30,7 +30,7 @@ const Flashcard = ({ card, index }) => {
       <div style={{ color: "#4a5568", fontWeight: "bold", fontSize: "12px", marginBottom: "10px" }}>
         {String(index + 1).padStart(2, '0')}
       </div>
-"
+
       <div style={{ color: "#040a74", fontSize: "15px", lineHeight: "1.6", flexGrow: 1 }}>
         {flipped ? card.back : card.front}
       </div>

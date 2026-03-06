@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import * as mammoth from "mammoth";
 
 const T = {
   bg: "#ffffff", panel: "#f8fafc", border: "#e2e8f0", text: "#0f172a",
@@ -16,48 +15,48 @@ const AGENTS = [
   { id: "flashcards", label: "AGENT 06", name: "FLASHCARDS", color: T.pink },
 ];
 
-export default function PrepKit() {
+export default function Resume() {
   const [jdText, setJdText] = useState("");
-  const [cvText, setCvText] = useState("");
+  const [fileObject, setFileObject] = useState(null); // Store the actual binary file
   const [activeAgent, setActiveAgent] = useState(null);
   const [outputs, setOutputs] = useState({});
 
-  const handleFile = async (e) => {
+  const handleFile = (e) => {
     const file = e.target.files[0];
-    if (!file) return;
-    if (file.name.endsWith(".docx")) {
-      const { value } = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
-      setCvText(value);
-    } else {
-      // For PDF, you'll ideally send the File object to the backend 
-      // but for this snippet, we'll treat it as text-based
-      setCvText(`[FILE_SOURCE: ${file.name}]`); 
+    if (file) {
+      setFileObject(file);
     }
   };
 
   const runPipeline = async () => {
-    if (!jdText || !cvText) return alert("Please provide JD and Resume content.");
+    if (!jdText || !fileObject) return alert("Please provide JD and upload a PDF!");
     setOutputs({}); 
 
     for (const a of AGENTS) {
       setActiveAgent(a.id);
       
+      const formData = new FormData();
+      formData.append("file", fileObject);
+      // We send a custom prompt for each agent so the AI knows its role
+      formData.append("prompt", `Role: ${a.name}. Analyze this resume against the following JD: ${jdText}. Provide a detailed 10-line technical insight.`);
+
       try {
-        // CALLING YOUR BACKEND (Example URL)
-        const response = await fetch("https://api.wintaibot.com/api/ai/analyze-pdf", {
+        // Using the URL and logic from your working Analyzer.js
+        const url = `https://api.wintaibot.com/api/ai/analyze-pdf?t=${Date.now()}`;
+        const response = await fetch(url, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            agentId: a.id,
-            agentName: a.name,
-            jd: jdText,
-            cv: cvText
-          })
+          headers: { 'Accept': 'application/json' },
+          body: formData, // Sending FormData as in your working file
         });
 
+        if (!response.ok) throw new Error("Server Error");
+
         const data = await response.json();
-        // State updates: Previous answers remain, new one appears below
-        setOutputs(prev => ({ ...prev, [a.id]: data.result }));
+        
+        // Map the correct field from your API (usually 'summary' or 'result')
+        const aiAnswer = data.summary || data.result || "Analysis complete.";
+        
+        setOutputs(prev => ({ ...prev, [a.id]: aiAnswer }));
       } catch (err) {
         setOutputs(prev => ({ ...prev, [a.id]: "Error connecting to AI service." }));
       }
@@ -94,7 +93,7 @@ export default function PrepKit() {
               animation: "fadeIn 0.5s ease forwards"
             }}>
               <div style={{ fontSize: "11px", fontWeight: "bold", color: a.color, marginBottom: "12px", letterSpacing: "0.5px" }}>
-                {a.name} // DYNAMIC_REPORT
+                {a.name} // LIVE_AI_REPORT
               </div>
               <div style={{ fontSize: "14px", lineHeight: "1.8", whiteSpace: "pre-wrap" }}>
                 {outputs[a.id]}
@@ -110,15 +109,15 @@ export default function PrepKit() {
           <label style={{ fontSize: "11px", fontWeight: "bold", color: T.textDim }}>TARGET JOB DESCRIPTION</label>
           <textarea value={jdText} onChange={e => setJdText(e.target.value)} placeholder="Paste full JD here..." style={{ width: "100%", height: "120px", marginTop: "10px", padding: "12px", border: `1px solid ${T.border}`, borderRadius: "8px", fontSize: "13px" }} />
           <button onClick={runPipeline} disabled={!!activeAgent} style={{ width: "100%", background: "#000", color: "#fff", padding: "14px", marginTop: "15px", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold", opacity: activeAgent ? 0.6 : 1 }}>
-            {activeAgent ? "AGENTS PROCESSING DATA..." : "EXECUTE PIPELINE"}
+            {activeAgent ? "AGENTS PROCESSING..." : "INITIALIZE AI AGENTS"}
           </button>
         </div>
         <div>
-          <label style={{ fontSize: "11px", fontWeight: "bold", color: T.textDim }}>CANDIDATE SOURCE (CV)</label>
+          <label style={{ fontSize: "11px", fontWeight: "bold", color: T.textDim }}>CANDIDATE SOURCE (PDF)</label>
           <div style={{ marginTop: "10px", padding: "35px", background: T.panel, border: `2px dashed ${T.border}`, borderRadius: "8px", textAlign: "center" }}>
-            <input type="file" onChange={handleFile} accept=".pdf,.docx" style={{ fontSize: "12px" }} />
-            <div style={{ fontSize: "11px", marginTop: "20px", color: cvText ? T.green : T.textDim }}>
-              {cvText ? "✔ CV Content Parsed & Ready" : "Upload Resume to Begin"}
+            <input type="file" onChange={handleFile} accept=".pdf" style={{ fontSize: "12px" }} />
+            <div style={{ fontSize: "11px", marginTop: "20px", color: fileObject ? T.green : T.textDim }}>
+              {fileObject ? `✔ ${fileObject.name} Ready` : "Upload PDF Resume"}
             </div>
           </div>
         </div>

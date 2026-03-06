@@ -81,7 +81,7 @@ export default function Resume() {
     try {
       // Start API Call
       setActiveAgent("extractor"); 
-      const url = `https://api.wintaibot.com/api/ai/prepare-interview?t=${Date.now()}`;
+      const url = `https://api.wintaibot.com/prepare-interview?t=${Date.now()}`;
       const response = await fetch(url, { method: "POST", body: formData });
 
       if (!response.ok) throw new Error("Server Error");
@@ -180,7 +180,7 @@ export default function Resume() {
         <div>
           <label style={{ fontSize: "11px", fontWeight: "bold", color: T.textDim }}>TARGET JOB DESCRIPTION</label>
           <textarea value={jdText} onChange={e => setJdText(e.target.value)} style={{ width: "100%", height: "150px", marginTop: "10px", padding: "12px", border: `1px solid ${T.border}`, borderRadius: "8px" }} />
-          <button onClick={runPipeline} disabled={!!activeAgent} style={{ width: "100%", background: "#000", color: "#fff", padding: "14px", marginTop: "15px", border: "none", borderRadius: "8px", cursor: "pointer" }}>
+          <button onClick={runPipeline} disabled={!!activeAgent} style={{ width: "100%", background: "#1e3a8a", color: "#fff", padding: "14px", marginTop: "15px", border: "none", borderRadius: "8px", cursor: "pointer" }}>
             {activeAgent ? "AI AGENTS DEPLOYED..." : "RUN FULL PREP KIT"}
           </button>
         </div>

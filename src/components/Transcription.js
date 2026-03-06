@@ -17,7 +17,7 @@ function Transcription() {
 
     try {
       // Points to your new transcription endpoint
-      const url = `https://api.wintaibot.com/api/ai/transcribe`;
+      const url = `https://api.wintaibot.com/transcribe`;
       const response = await fetch(url, {
         method: "POST",
         body: formData, // No headers needed for FormData; Fetch sets them automatically

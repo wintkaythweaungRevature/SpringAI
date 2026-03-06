@@ -1,246 +1,132 @@
-import React, { useState, useMemo } from "react";
-import "./Resume.css";
+import React, { useState } from "react";
+import * as mammoth from "mammoth";
 
-function Resume() {
-  const [file, setFile] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [recipe, setRecipe] = useState("");
-  const [dragOver, setDragOver] = useState(false);
+const T = {
+  bg: "#ffffff", panel: "#f8fafc", border: "#e2e8f0", text: "#0f172a",
+  textDim: "#64748b", amber: "#d97706", green: "#059669", blue: "#2563eb", 
+  purple: "#7c3aed", pink: "#db2777"
+};
 
-  const handleProcess = async () => {
+const AGENTS = [
+  { id: "extractor", label: "AGENT 01", name: "ROLE EXTRACTOR", color: T.amber },
+  { id: "analyzer", label: "AGENT 02", name: "CV ANALYZER", color: T.green },
+  { id: "generator", label: "AGENT 03", name: "QUESTION GEN", color: T.blue },
+  { id: "writer", label: "AGENT 04", name: "ANSWER WRITER", color: T.purple },
+  { id: "scorer", label: "AGENT 05", name: "CONFIDENCE", color: T.amber },
+  { id: "flashcards", label: "AGENT 06", name: "FLASHCARDS", color: T.pink },
+];
+
+export default function PrepKit() {
+  const [jdText, setJdText] = useState("");
+  const [cvText, setCvText] = useState("");
+  const [activeAgent, setActiveAgent] = useState(null);
+  const [outputs, setOutputs] = useState({});
+
+  const handleFile = async (e) => {
+    const file = e.target.files[0];
     if (!file) return;
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("prompt", "Analyze this document and extract all important information.");
+    if (file.name.endsWith(".docx")) {
+      const { value } = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
+      setCvText(value);
+    } else {
+      // For PDF, you'll ideally send the File object to the backend 
+      // but for this snippet, we'll treat it as text-based
+      setCvText(`[FILE_SOURCE: ${file.name}]`); 
+    }
+  };
 
-    setLoading(true);
-    setRecipe("");
+  const runPipeline = async () => {
+    if (!jdText || !cvText) return alert("Please provide JD and Resume content.");
+    setOutputs({}); 
 
-    try {
-      const url = `https://api.wintaibot.com/api/ai/analyze-pdf?t=${Date.now()}`;
-      const response = await fetch(url, {
-        method: "POST",
-        headers: { Accept: "application/json" },
-        body: formData,
-      });
+    for (const a of AGENTS) {
+      setActiveAgent(a.id);
+      
+      try {
+        // CALLING YOUR BACKEND (Example URL)
+        const response = await fetch("https://api.wintaibot.com/api/ai/analyze-pdf", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            agentId: a.id,
+            agentName: a.name,
+            jd: jdText,
+            cv: cvText
+          })
+        });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Server Error (${response.status}): ${errorText || "Unknown error"}`);
+        const data = await response.json();
+        // State updates: Previous answers remain, new one appears below
+        setOutputs(prev => ({ ...prev, [a.id]: data.result }));
+      } catch (err) {
+        setOutputs(prev => ({ ...prev, [a.id]: "Error connecting to AI service." }));
       }
-
-      const data = await response.json();
-      setRecipe(JSON.stringify(data));
-    } catch (error) {
-      setRecipe(`Analysis failed: ${error.message}`);
-    } finally {
-      setLoading(false);
     }
+    setActiveAgent(null);
   };
-
-  const parsedData = useMemo(() => {
-    if (!recipe || recipe.startsWith("Analysis failed")) return null;
-    try {
-      return JSON.parse(recipe);
-    } catch {
-      return null;
-    }
-  }, [recipe]);
-
-  const downloadCSV = () => {
-    if (!parsedData?.table_headers) return;
-    const csvContent = [
-      parsedData.table_headers.join(","),
-      ...(parsedData.table_rows || []).map((row) =>
-        row.map((cell) => `"${cell}"`).join(",")
-      ),
-    ].join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `DocuWizard_Export_${Date.now()}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    setDragOver(false);
-    const dropped = e.dataTransfer.files[0];
-    if (dropped && dropped.type === "application/pdf") setFile(dropped);
-  };
-
-  const reset = () => {
-    setRecipe("");
-    setFile(null);
-  };
-
-  const isError = recipe && recipe.startsWith("Analysis failed");
 
   return (
-    <div className="dw-root">
-      {/* Header */}
-      <div className="dw-header">
-        <div className="dw-header-glyph">⬡</div>
+    <div style={{ background: T.bg, minHeight: "100vh", padding: "40px", color: T.text, fontFamily: "sans-serif" }}>
+      
+      {/* MONITOR GRID */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: "10px", marginBottom: "30px" }}>
+        {AGENTS.map(a => (
+          <div key={a.id} style={{ 
+            background: T.panel, border: `1px solid ${activeAgent === a.id ? a.color : T.border}`, 
+            padding: "10px", borderRadius: "8px", textAlign: "center", 
+            opacity: activeAgent === a.id || outputs[a.id] ? 1 : 0.3,
+            transition: "all 0.3s ease"
+          }}>
+            <div style={{ fontSize: "10px", fontWeight: "bold", color: a.color }}>{a.label}</div>
+            {activeAgent === a.id && <div style={{ fontSize: "8px", marginTop: "4px", color: a.color }}>⚡ ACTIVE</div>}
+            {outputs[a.id] && <div style={{ fontSize: "8px", marginTop: "4px", color: T.green }}>✓ DONE</div>}
+          </div>
+        ))}
+      </div>
+
+      {/* SEQUENTIAL OUTPUTS */}
+      <div style={{ minHeight: "300px", marginBottom: "40px" }}>
+        {AGENTS.map(a => (
+          outputs[a.id] && (
+            <div key={a.id} style={{ 
+              background: "#fff", border: `1px solid ${T.border}`, borderLeft: `5px solid ${a.color}`, 
+              padding: "25px", marginBottom: "20px", borderRadius: "8px", boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+              animation: "fadeIn 0.5s ease forwards"
+            }}>
+              <div style={{ fontSize: "11px", fontWeight: "bold", color: a.color, marginBottom: "12px", letterSpacing: "0.5px" }}>
+                {a.name} // DYNAMIC_REPORT
+              </div>
+              <div style={{ fontSize: "14px", lineHeight: "1.8", whiteSpace: "pre-wrap" }}>
+                {outputs[a.id]}
+              </div>
+            </div>
+          )
+        ))}
+      </div>
+
+      {/* INPUTS PANEL */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "30px", borderTop: `1px solid ${T.border}`, paddingTop: "30px" }}>
         <div>
-          <div className="dw-eyebrow">AI DOCUMENT INTELLIGENCE</div>
-          <h1 className="dw-title">DocuWizard</h1>
-          <p className="dw-subtitle">Upload any PDF — extract structure, insights & data in seconds</p>
+          <label style={{ fontSize: "11px", fontWeight: "bold", color: T.textDim }}>TARGET JOB DESCRIPTION</label>
+          <textarea value={jdText} onChange={e => setJdText(e.target.value)} placeholder="Paste full JD here..." style={{ width: "100%", height: "120px", marginTop: "10px", padding: "12px", border: `1px solid ${T.border}`, borderRadius: "8px", fontSize: "13px" }} />
+          <button onClick={runPipeline} disabled={!!activeAgent} style={{ width: "100%", background: "#000", color: "#fff", padding: "14px", marginTop: "15px", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold", opacity: activeAgent ? 0.6 : 1 }}>
+            {activeAgent ? "AGENTS PROCESSING DATA..." : "EXECUTE PIPELINE"}
+          </button>
+        </div>
+        <div>
+          <label style={{ fontSize: "11px", fontWeight: "bold", color: T.textDim }}>CANDIDATE SOURCE (CV)</label>
+          <div style={{ marginTop: "10px", padding: "35px", background: T.panel, border: `2px dashed ${T.border}`, borderRadius: "8px", textAlign: "center" }}>
+            <input type="file" onChange={handleFile} accept=".pdf,.docx" style={{ fontSize: "12px" }} />
+            <div style={{ fontSize: "11px", marginTop: "20px", color: cvText ? T.green : T.textDim }}>
+              {cvText ? "✔ CV Content Parsed & Ready" : "Upload Resume to Begin"}
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Upload zone */}
-      {!parsedData && !isError && (
-        <div
-          className={`dw-dropzone ${dragOver ? "dw-dropzone--over" : ""} ${file ? "dw-dropzone--ready" : ""}`}
-          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={handleDrop}
-          onClick={() => !file && document.getElementById("dw-file-input").click()}
-        >
-          <input
-            id="dw-file-input"
-            type="file"
-            accept=".pdf"
-            style={{ display: "none" }}
-            onChange={(e) => setFile(e.target.files[0])}
-          />
-          {file ? (
-            <div className="dw-file-ready">
-              <div className="dw-file-icon">📄</div>
-              <div className="dw-file-name">{file.name}</div>
-              <div className="dw-file-size">{(file.size / 1024).toFixed(1)} KB · Ready to analyze</div>
-              <button className="dw-remove-btn" onClick={(e) => { e.stopPropagation(); setFile(null); }}>✕ Remove</button>
-            </div>
-          ) : (
-            <div className="dw-upload-prompt">
-              <div className="dw-upload-icon">⊕</div>
-              <div className="dw-upload-text">Drop your PDF here</div>
-              <div className="dw-upload-sub">or click to browse</div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Action bar */}
-      {!parsedData && !isError && (
-        <div className="dw-actions">
-          <button
-            className={`dw-btn dw-btn--primary ${!file || loading ? "dw-btn--disabled" : ""}`}
-            onClick={handleProcess}
-            disabled={!file || loading}
-          >
-            {loading ? (
-              <span className="dw-loading-row">
-                <span className="dw-spinner" />
-                Analyzing document…
-              </span>
-            ) : (
-              "▶ Run Analysis"
-            )}
-          </button>
-        </div>
-      )}
-
-      {/* Loading agent steps */}
-      {loading && (
-        <div className="dw-loading-steps">
-          {["Parsing PDF structure", "Extracting text content", "Running AI analysis", "Structuring output"].map((step, i) => (
-            <div key={i} className="dw-step" style={{ animationDelay: `${i * 0.4}s` }}>
-              <span className="dw-step-dot" style={{ animationDelay: `${i * 0.4}s` }} />
-              {step}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Error state */}
-      {isError && (
-        <div className="dw-error-panel">
-          <div className="dw-error-icon">⚠</div>
-          <div className="dw-error-text">{recipe.replace("Analysis failed: ", "")}</div>
-          <button className="dw-btn dw-btn--ghost" onClick={reset}>Try Again</button>
-        </div>
-      )}
-
-      {/* Results dashboard */}
-      {parsedData && (
-        <div className="dw-dashboard">
-
-          {/* Result toolbar */}
-          <div className="dw-result-bar">
-            <div className="dw-result-label">
-              <span className="dw-result-dot" />
-              Analysis Complete — {file?.name}
-            </div>
-            <div className="dw-result-actions">
-              <button className="dw-btn dw-btn--export" onClick={downloadCSV}>
-                ↓ Export CSV
-              </button>
-              <button className="dw-btn dw-btn--ghost" onClick={reset}>
-                ← New Document
-              </button>
-            </div>
-          </div>
-
-          {/* Summary card */}
-          <div className="dw-card dw-summary-card">
-            <div className="dw-card-label">DOCUMENT SUMMARY</div>
-            <p className="dw-summary-text">{parsedData.summary || "No summary available."}</p>
-          </div>
-
-          {/* Insights */}
-          {parsedData.insights?.length > 0 && (
-            <div className="dw-card dw-insights-card">
-              <div className="dw-card-label">KEY INSIGHTS</div>
-              <div className="dw-insights-grid">
-                {parsedData.insights.map((insight, i) => (
-                  <div key={i} className="dw-insight-item" style={{ animationDelay: `${i * 0.08}s` }}>
-                    <span className="dw-insight-num">{String(i + 1).padStart(2, "0")}</span>
-                    <span className="dw-insight-text">{insight}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Data table */}
-          {parsedData.table_headers?.length > 0 && (
-            <div className="dw-card dw-table-card">
-              <div className="dw-card-label">
-                EXTRACTED DATA
-                <span className="dw-table-count">
-                  {parsedData.table_rows?.length || 0} rows · {parsedData.table_headers.length} columns
-                </span>
-              </div>
-              <div className="dw-table-wrap">
-                <table className="dw-table">
-                  <thead>
-                    <tr>
-                      {parsedData.table_headers.map((h, i) => (
-                        <th key={i} className="dw-th">{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {parsedData.table_rows?.map((row, i) => (
-                      <tr key={i} className="dw-tr">
-                        {row.map((cell, j) => (
-                          <td key={j} className="dw-td">{cell}</td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+      <style>{`
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+      `}</style>
     </div>
   );
 }
-
-export default Resume ;

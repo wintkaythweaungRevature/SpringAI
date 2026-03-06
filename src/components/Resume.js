@@ -7,10 +7,10 @@ const T = {
 };
 
 const AGENTS = [
-  { id: "extractor", label: "AGENT 01", name: "MATCH SCORE", color: T.amber },
-  { id: "analyzer", label: "AGENT 02", name: "STRENGTHS & WEAKNESSES", color: T.green },
+  { id: "extractor", label: "AGENT 01", name: "KEYWORD MATCH", color: T.amber },
+  { id: "analyzer", label: "AGENT 02", name: "GAPS & ANALYSIS", color: T.green },
   { id: "generator", label: "AGENT 03", name: "30 INTERVIEW QUESTIONS", color: T.blue },
-  { id: "flashcards", label: "AGENT 06", name: "STUDY FLASHCARDS", color: T.pink },
+  { id: "flashcards", label: "AGENT 06", name: "20 STUDY FLASHCARDS", color: T.pink },
 ];
 
 export default function Resume() {
@@ -18,6 +18,7 @@ export default function Resume() {
   const [fileObject, setFileObject] = useState(null);
   const [activeAgent, setActiveAgent] = useState(null);
   const [outputs, setOutputs] = useState({});
+  const [matchScore, setMatchScore] = useState(null);
 
   const handleFile = (e) => {
     const file = e.target.files[0];
@@ -26,61 +27,51 @@ export default function Resume() {
 
   const runPipeline = async () => {
     if (!jdText || !fileObject) return alert("Please provide JD and upload a PDF!");
+    
     setOutputs({}); 
+    setActiveAgent("extractor"); // Start visual processing
 
-    // This loop runs automatically one by one
-    for (const a of AGENTS) {
-      setActiveAgent(a.id);
+    const formData = new FormData();
+    formData.append("file", fileObject);
+    formData.append("jd", jdText); // Matches Java @RequestParam("jd")
+
+    try {
+      const url = `https://api.wintaibot.com/api/ai/prepare-interview?t=${Date.now()}`;
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { 'Accept': 'application/json' },
+        body: formData, 
+      });
+
+      if (!response.ok) throw new Error("Server connection failed.");
+
+      const data = await response.json();
       
-      const formData = new FormData();
-      formData.append("file", fileObject);
+      setMatchScore(data.match_percentage);
 
-      // Define specific instructions for each box
-      let dynamicPrompt = "";
-      if (a.id === "extractor") {
-        dynamicPrompt = `Calculate Match Percentage (0-100%). Provide a 10-line detailed breakdown of why the candidate fits or doesn't fit this JD: ${jdText}`;
-      } else if (a.id === "analyzer") {
-        dynamicPrompt = `Analyze Strengths and Weaknesses. List 5 specific strengths and 5 critical weaknesses based on this JD: ${jdText}`;
-      } else if (a.id === "generator") {
-        dynamicPrompt = `Generate exactly 30 interview questions (10 Technical, 10 Behavioral, 10 Role-specific). Provide brief answer guidance for each. JD: ${jdText}`;
-      } else if (a.id === "flashcards") {
-        dynamicPrompt = `Create 10 technical flashcards based on the skills found in the resume and required by the JD: ${jdText}`;
-      }
+      // Map the single JSON response to your individual Agent UI boxes
+      setOutputs({
+        extractor: `Keyword Match Score: ${data.match_percentage}%\n\n${data.analysis}`,
+        analyzer: data.analysis,
+        generator: data.questions.map((q, i) => `${i+1}. [${q.type}] ${q.q}\nGuidance: ${q.guidance}`).join("\n\n"),
+        flashcards: data.flashcards.map((f, i) => `Card ${i+1}: ${f.front} → ${f.back}`).join("\n\n")
+      });
 
-      formData.append("prompt", dynamicPrompt);
-
-      try {
-        const url = `https://api.wintaibot.com/api/ai/prepare-interview?t=${Date.now()}`;
-        const response = await fetch(url, {
-          method: "POST",
-          headers: { 'Accept': 'application/json' },
-          body: formData, 
-        });
-
-        if (!response.ok) throw new Error("Server Error");
-
-        const data = await response.json();
-        const aiAnswer = data.summary || data.result || "Processing complete.";
-        
-        // Update state and move to next agent automatically
-        setOutputs(prev => ({ ...prev, [a.id]: aiAnswer }));
-      } catch (err) {
-        setOutputs(prev => ({ ...prev, [a.id]: "Error: Check backend connection." }));
-      }
+    } catch (err) {
+      setOutputs({ extractor: "Error: " + err.message });
+    } finally {
+      setActiveAgent(null);
     }
-    setActiveAgent(null);
   };
 
   return (
     <div style={{ background: T.bg, minHeight: "100vh", padding: "40px", color: T.text, fontFamily: "sans-serif" }}>
       
       {/* MATCH PERCENTAGE DASHBOARD */}
-      {outputs.extractor && (
-        <div style={{ background: T.panel, border: `1px solid ${T.blue}`, padding: "20px", borderRadius: "12px", textAlign: "center", marginBottom: "30px" }}>
-           <h2 style={{ color: T.blue, margin: 0 }}>
-             {outputs.extractor.match(/\d+/)?.[0] || "85"}% Match Score
-           </h2>
-           <p style={{ fontSize: "12px", color: T.textDim }}>AI-Generated Compatibility Rating</p>
+      {matchScore !== null && (
+        <div style={{ background: T.panel, border: `2px solid ${T.blue}`, padding: "20px", borderRadius: "12px", textAlign: "center", marginBottom: "30px", animation: "fadeIn 0.5s ease" }}>
+           <h2 style={{ color: T.blue, margin: 0, fontSize: "32px" }}>{matchScore}% Keyword Match</h2>
+           <p style={{ fontSize: "12px", color: T.textDim }}>Calculated by comparing Resume Skills vs Job Requirements</p>
         </div>
       )}
 
@@ -95,7 +86,7 @@ export default function Resume() {
           }}>
             <div style={{ fontSize: "10px", fontWeight: "bold", color: a.color }}>{a.label}</div>
             <div style={{ fontSize: "11px", fontWeight: "bold" }}>{a.name}</div>
-            {activeAgent === a.id && <div style={{ fontSize: "10px", color: a.color }}>⚡ ANALYZING...</div>}
+            {activeAgent && !outputs[a.id] && <div style={{ fontSize: "8px", color: a.color, marginTop: "5px" }}>PROCESSING...</div>}
           </div>
         ))}
       </div>
@@ -106,11 +97,10 @@ export default function Resume() {
           outputs[a.id] && (
             <div key={a.id} style={{ 
               background: "#fff", border: `1px solid ${T.border}`, borderLeft: `5px solid ${a.color}`, 
-              padding: "25px", marginBottom: "20px", borderRadius: "8px", boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
-              animation: "fadeIn 0.5s ease forwards"
+              padding: "25px", marginBottom: "20px", borderRadius: "8px", boxShadow: "0 2px 8px rgba(0,0,0,0.04)"
             }}>
               <div style={{ fontSize: "11px", fontWeight: "bold", color: a.color, marginBottom: "12px" }}>
-                {a.name} // DYNAMIC_REPORT
+                {a.name} // SYSTEM_GENERATED
               </div>
               <div style={{ fontSize: "14px", lineHeight: "1.8", whiteSpace: "pre-wrap" }}>
                 {outputs[a.id]}
@@ -124,17 +114,17 @@ export default function Resume() {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "30px", borderTop: `1px solid ${T.border}`, paddingTop: "30px" }}>
         <div>
           <label style={{ fontSize: "11px", fontWeight: "bold", color: T.textDim }}>TARGET JOB DESCRIPTION</label>
-          <textarea value={jdText} onChange={e => setJdText(e.target.value)} placeholder="Paste JD requirements here..." style={{ width: "100%", height: "150px", marginTop: "10px", padding: "12px", border: `1px solid ${T.border}`, borderRadius: "8px", fontSize: "13px" }} />
+          <textarea value={jdText} onChange={e => setJdText(e.target.value)} placeholder="Paste keywords and requirements here..." style={{ width: "100%", height: "150px", marginTop: "10px", padding: "12px", border: `1px solid ${T.border}`, borderRadius: "8px", fontSize: "13px" }} />
           <button onClick={runPipeline} disabled={!!activeAgent} style={{ width: "100%", background: "#000", color: "#fff", padding: "14px", marginTop: "15px", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold" }}>
-            {activeAgent ? "AI PROCESSING..." : "RUN FULL PREP KIT"}
+            {activeAgent ? "ANALYZING KEYWORDS..." : "ANALYZE & GENERATE PREP KIT"}
           </button>
         </div>
         <div>
-          <label style={{ fontSize: "11px", fontWeight: "bold", color: T.textDim }}>RESUME SOURCE (PDF)</label>
+          <label style={{ fontSize: "11px", fontWeight: "bold", color: T.textDim }}>CANDIDATE RESUME (PDF)</label>
           <div style={{ marginTop: "10px", padding: "45px", background: T.panel, border: `2px dashed ${T.border}`, borderRadius: "8px", textAlign: "center" }}>
             <input type="file" onChange={handleFile} accept=".pdf" />
             <div style={{ fontSize: "11px", marginTop: "20px", color: fileObject ? T.green : T.textDim }}>
-              {fileObject ? `✔ ${fileObject.name} Loaded` : "Upload Resume"}
+              {fileObject ? `✔ ${fileObject.name} Loaded` : "Upload PDF to Begin"}
             </div>
           </div>
         </div>

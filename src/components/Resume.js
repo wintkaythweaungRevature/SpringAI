@@ -110,9 +110,10 @@ export default function Resume() {
             style={{ 
               width: "100%", background: "#21419e", color: "#ffffff", padding: "16px", 
               marginTop: "15px", border: "none", borderRadius: "8px", cursor: "pointer",
-              fontWeight: "bold", letterSpacing: "1px", transition: "0.2s opacity"
+              fontWeight: "bold", letterSpacing: "1px", transition: "0.2s opacity",appearance: "none",
+               WebkitAppearance: "none"
             }}>
-            {activeAgent ? "AI AGENTS DEPLOYED..." : "RUN FULL PREP KIT"}
+            {activeAgent ? "AI AGENTS DEPLOYED..." : "Run Full Prep Kit"}
           </button>
         </div>
       </div>

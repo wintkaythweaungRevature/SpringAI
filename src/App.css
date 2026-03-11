@@ -192,6 +192,11 @@ padding: 12px 26px;
 
 /* 4. HEADER STYLING */
 .header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
   background: linear-gradient(135deg, #401187, #717cb3, #0c0e60);
   padding: 30px;
   border-radius: 22px;

@@ -70,7 +70,7 @@ function PdfAnalyzer() {
       </div>
       <p className="analyzer-sub-title">Bulk AI Extraction & Interactive Analytics</p>
       
-      <input 
+      <input y
         type="file" 
         onChange={(e) => setFile(e.target.files[0])} 
         accept=".pdf" 

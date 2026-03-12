@@ -1,6 +1,8 @@
 import React, { useState } from "react";
+import { useAuth } from "../context/AuthContext";
 
 function ImageGenerator() {
+  const { token, apiBase } = useAuth();
     const [prompt, setPrompt] = useState('');
     const [imageUrls, setImageUrls] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -12,7 +14,10 @@ function ImageGenerator() {
         try {
             // ✅ AWS Backend URL (Cloudflare DNS မှတစ်ဆင့်)
             // Port 5000 လိုအပ်ပါက :5000 ထည့်ပေးပါ
-const response = await fetch(`https://api.wintaibot.com/generate-image?prompt=${encodeURIComponent(prompt)}`);
+const url = `${apiBase || 'https://api.wintaibot.com'}/generate-image?prompt=${encodeURIComponent(prompt)}`;
+            const headers = {};
+            if (token) headers.Authorization = `Bearer ${token}`;
+            const response = await fetch(url, { headers });
             
             if (!response.ok) {
                 throw new Error(`Backend error: ${response.status}`);

@@ -1,7 +1,9 @@
 import React, { useState } from "react";
-import "./Transcription.css"; 
+import "./Transcription.css";
+import { useAuth } from "../context/AuthContext";
 
 function Transcription() {
+  const { token, apiBase } = useAuth();
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [transcript, setTranscript] = useState("");
@@ -17,10 +19,13 @@ function Transcription() {
 
     try {
       // Points to your new transcription endpoint
-      const url = `https://api.wintaibot.com/transcribe`;
+      const url = `${apiBase || 'https://api.wintaibot.com'}/transcribe`;
+      const headers = {};
+      if (token) headers.Authorization = `Bearer ${token}`;
       const response = await fetch(url, {
         method: "POST",
-        body: formData, // No headers needed for FormData; Fetch sets them automatically
+        headers,
+        body: formData,
       });
 
       if (!response.ok) {

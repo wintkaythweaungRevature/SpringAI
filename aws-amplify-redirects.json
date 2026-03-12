@@ -1,0 +1,22 @@
+[
+  {
+    "source": "/sitemap.xml",
+    "status": "200",
+    "target": "/sitemap.xml"
+  },
+  {
+    "source": "/robots.txt",
+    "status": "200",
+    "target": "/robots.txt"
+  },
+  {
+    "source": "https://wintbotai.com",
+    "status": "301",
+    "target": "https://www.wintbotai.com"
+  },
+  {
+    "source": "</^[^.]+$|\\.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|woff2|ttf|map|json|xml)$)([^.]+$)/>",
+    "status": "200",
+    "target": "/index.html"
+  }
+]

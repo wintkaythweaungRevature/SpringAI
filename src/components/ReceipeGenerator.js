@@ -1,6 +1,8 @@
 import React, { useState } from "react";
+import { useAuth } from "../context/AuthContext";
 
 function RecipeGenerator() {
+  const { token, apiBase } = useAuth();
   const [ingredients, setIngredients] = useState('');
   const [cuisine, setCuisine] = useState('any');
   const [dietaryRestriction, setDietaryRestrictions] = useState('');
@@ -19,7 +21,10 @@ function RecipeGenerator() {
                       Dietary restrictions: ${dietaryRestriction || 'none'}. 
                       Please provide a Title, Ingredients list, and Step-by-step instructions.`;
 
-      const response = await fetch(`https://api.wintaibot.com/ask-ai?prompt=${encodeURIComponent(prompt)}`);
+      const url = `${apiBase || 'https://api.wintaibot.com'}/ask-ai?prompt=${encodeURIComponent(prompt)}`;
+      const headers = {};
+      if (token) headers.Authorization = `Bearer ${token}`;
+      const response = await fetch(url, { headers });
       
       if (!response.ok) throw new Error("Server error");
 

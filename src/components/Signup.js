@@ -9,12 +9,15 @@ export default function Signup({ onSuccess, onSwitchToLogin }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const [success, setSuccess] = useState(false);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
     try {
       await signup(email, password, name);
+      setSuccess(true);
       onSuccess?.();
     } catch (err) {
       setError(err.message || "Signup failed");
@@ -28,42 +31,56 @@ export default function Signup({ onSuccess, onSwitchToLogin }) {
       <div style={styles.card}>
         <h2 style={styles.title}>Member Registration</h2>
         <p style={styles.subtitle}>Sign up to access all AI features</p>
-        <form onSubmit={handleSubmit} style={styles.form}>
-          <input
-            type="text"
-            placeholder="Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            style={styles.input}
-          />
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={styles.input}
-            required
-          />
-          <input
-            type="password"
-            placeholder="Password (min 6 chars)"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={styles.input}
-            minLength={6}
-            required
-          />
-          {error && <p style={styles.error}>{error}</p>}
-          <button type="submit" disabled={loading} style={styles.button}>
-            {loading ? "Creating account..." : "Sign Up"}
-          </button>
-        </form>
-        <p style={styles.footer}>
-          Already a member?{" "}
-          <button type="button" onClick={onSwitchToLogin} style={styles.link}>
-            Log in
-          </button>
-        </p>
+        {success ? (
+          <div style={{ padding: "16px", backgroundColor: "#d4edda", borderRadius: "8px", color: "#155724" }}>
+            <strong>Registration successful!</strong>
+            <p style={{ margin: "8px 0 0", fontSize: "14px" }}>
+              Please check your email ({email}) and click the verification link. Then log in to use Ask AI and other features.
+            </p>
+            <button type="button" onClick={onSwitchToLogin} style={{ ...styles.link, marginTop: "12px", display: "block" }}>
+              Go to Login
+            </button>
+          </div>
+        ) : (
+          <>
+            <form onSubmit={handleSubmit} style={styles.form}>
+              <input
+                type="text"
+                placeholder="Name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                style={styles.input}
+              />
+              <input
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                style={styles.input}
+                required
+              />
+              <input
+                type="password"
+                placeholder="Password (min 6 chars)"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                style={styles.input}
+                minLength={6}
+                required
+              />
+              {error && <p style={styles.error}>{error}</p>}
+              <button type="submit" disabled={loading} style={styles.button}>
+                {loading ? "Creating account..." : "Sign Up"}
+              </button>
+            </form>
+            <p style={styles.footer}>
+              Already a member?{" "}
+              <button type="button" onClick={onSwitchToLogin} style={styles.link}>
+                Log in
+              </button>
+            </p>
+          </>
+        )}
       </div>
     </div>
   );

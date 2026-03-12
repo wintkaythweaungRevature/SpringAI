@@ -1,7 +1,9 @@
 import React, { useState, useMemo } from "react";
-import "./Analyzer.css"; // Ensure this file exists in the same folder
+import "./Analyzer.css";
+import { useAuth } from "../context/AuthContext";
 
 function PdfAnalyzer() {
+  const { token, apiBase } = useAuth();
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [recipe, setRecipe] = useState("");
@@ -16,10 +18,12 @@ function PdfAnalyzer() {
     setRecipe(""); 
 
     try {
-      const url = `https://api.wintaibot.com/analyze-pdf?t=${Date.now()}`;
+      const url = `${apiBase || 'https://api.wintaibot.com'}/analyze-pdf?t=${Date.now()}`;
+      const headers = { Accept: 'application/json' };
+      if (token) headers.Authorization = `Bearer ${token}`;
       const response = await fetch(url, {
         method: "POST",
-        headers: { 'Accept': 'application/json' },
+        headers,
         body: formData,
       });
 

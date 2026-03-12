@@ -9,10 +9,11 @@ import Content from './components/Content';
 import Resume from './components/Resume';
 import { useAuth } from './context/AuthContext';
 import MemberGate from './components/MemberGate';
+import AskAIGate from './components/AskAIGate';
 
 function App() {
   const [activeTab, setActiveTab] = useState('image-generator');
-  const { user, logout, isSubscribed, loading } = useAuth();
+  const { user, logout, loading } = useAuth();
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
@@ -29,7 +30,7 @@ function App() {
             <>
               <span style={{ fontSize: '14px', color: '#fff' }}>
                 {user.email}
-                {isSubscribed && <span style={{ color: '#7cff7c', marginLeft: '6px' }}>✓ Member</span>}
+                {user?.membershipType === 'MEMBER' && <span style={{ color: '#7cff7c', marginLeft: '6px' }}>✓ Member</span>}
               </span>
               <button onClick={logout} style={{ padding: '6px 12px', fontSize: '14px', backgroundColor: 'rgba(255,255,255,0.2)', color: '#fff', border: '1px solid rgba(255,255,255,0.5)', borderRadius: '6px', cursor: 'pointer' }}>
                 Logout
@@ -78,9 +79,9 @@ function App() {
       
       <div className="content">
         {activeTab === 'image-generator' && <MemberGate featureName="Image Generator"><ImageGenerator /></MemberGate>}
-        {activeTab === 'chat' && <MemberGate featureName="Ask AI"><ChatComponent /></MemberGate>}
+        {activeTab === 'chat' && <AskAIGate featureName="Ask AI"><ChatComponent /></AskAIGate>}
         {activeTab === 'analyzer' && <MemberGate featureName="DocuWizard"><SpendingAnalyzer /></MemberGate>}
-        {activeTab === 'recipe-generator' && <MemberGate featureName="Recipe Generator"><ReceipeGenerator /></MemberGate>}
+        {activeTab === 'recipe-generator' && <AskAIGate featureName="Recipe Generator"><ReceipeGenerator /></AskAIGate>}
         {activeTab === 'transcription' && <MemberGate featureName="EchoScribe"><Transcription /></MemberGate>}
         {activeTab === 'Content' && <MemberGate featureName="Reply Enchanter"><Content /></MemberGate>}
         {activeTab === 'Resume' && <MemberGate featureName="Resume Worlock"><Resume /></MemberGate>}

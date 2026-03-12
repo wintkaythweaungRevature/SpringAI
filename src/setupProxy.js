@@ -1,12 +1,17 @@
 const { createProxyMiddleware } = require('http-proxy-middleware');
 
+// Use local backend when REACT_APP_USE_LOCAL_API=true (run backend with: cd backend && mvn spring-boot:run)
+const apiTarget = process.env.REACT_APP_USE_LOCAL_API === 'true'
+  ? 'http://localhost:8080'
+  : 'https://api.wintaibot.com';
+
 module.exports = function (app) {
-  // Proxy API requests to api.wintaibot.com (avoids CORS/403 in dev)
   app.use(
     '/api',
     createProxyMiddleware({
-      target: 'https://api.wintaibot.com',
+      target: apiTarget,
       changeOrigin: true,
+      secure: apiTarget.startsWith('https'),
     })
   );
   // Proxy /ai to AWS backend (for other features)

@@ -1,0 +1,4 @@
+/sitemap.xml  /sitemap.xml  200
+/robots.txt  /robots.txt  200
+https://wintbotai.com  https://www.wintbotai.com  301
+</^[^.]+$|\.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|woff2|ttf|map|json|xml)$)([^.]+$)/>  /index.html  200

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useAuth } from "../context/AuthContext";
 
 // --- 1. GLOBAL CONSTANTS ---
 const T = {
@@ -58,8 +59,10 @@ export default function Resume() {
 
     try {
       setActiveAgent("extractor"); 
-      const url = `https://api.wintaibot.com/prepare-interview?t=${Date.now()}`;
-      const response = await fetch(url, { method: "POST", body: formData });
+      const url = `${apiBase || 'https://api.wintaibot.com'}/prepare-interview?t=${Date.now()}`;
+      const headers = {};
+      if (token) headers.Authorization = `Bearer ${token}`;
+      const response = await fetch(url, { method: "POST", headers, body: formData });
       if (!response.ok) throw new Error("Server Error");
       const data = await response.json();
 

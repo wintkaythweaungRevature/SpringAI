@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import "./Content.css";
+import { useAuth } from "../context/AuthContext";
 
 function Content() {
+  const { token, apiBase } = useAuth();
   const [emailInput, setEmailInput] = useState("");
   const [tone, setTone] = useState("Professional");
   const [result, setResult] = useState("");
@@ -12,11 +14,12 @@ function Content() {
     setLoading(true);
     
     try {
-      const response = await fetch("https://api.wintaibot.com/reply",
-        
-        {
+      const url = `${apiBase || 'https://api.wintaibot.com'}/reply`;
+      const headers = { "Content-Type": "application/json" };
+      if (token) headers.Authorization = `Bearer ${token}`;
+      const response = await fetch(url, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ 
           emailContent: emailInput, 
           tone: tone.toLowerCase() 

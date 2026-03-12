@@ -1,6 +1,8 @@
 import React, { useState } from "react";
+import { useAuth } from "../context/AuthContext";
 
 function ChatComponent() {
+  const { token, apiBase } = useAuth();
   const [prompt, setPrompt] = useState('');
   const [chatResponse, setChatResponse] = useState('');
   const [loading, setLoading] = useState(false);
@@ -14,13 +16,13 @@ function ChatComponent() {
     try {
       // ✅ Port 5000 ကို URL မှာ ထည့်ပေးထားပါ (AWS မှာ Port 5000 သုံးထားရင်)
       // ✅ AWS က Port 80 ဆိုရင်တော့ :5000 ကို ဖြုတ်လိုက်ပါ
-      const fullUrl = `https://api.wintaibot.com/ask-ai?prompt=${encodeURIComponent(prompt)}`;
-      
+      const fullUrl = `${apiBase || 'https://api.wintaibot.com'}/ask-ai?prompt=${encodeURIComponent(prompt)}`;
+      const headers = { Accept: 'text/plain' };
+      if (token) headers.Authorization = `Bearer ${token}`;
+
       const response = await fetch(fullUrl, {
         method: 'GET',
-        headers: {
-          'Accept': 'text/plain',
-        },
+        headers,
       });
 
       if (!response.ok) throw new Error(`Server error: ${response.status}`);

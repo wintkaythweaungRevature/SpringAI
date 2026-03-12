@@ -20,6 +20,12 @@ export function AuthProvider({ children }) {
       })
         .then((res) => {
           if (res.status === 404) setAuthAvailable(false);
+          if (res.status === 401 || res.status === 403) {
+            localStorage.removeItem("authToken");
+            setToken(null);
+            setUser(null);
+            return null;
+          }
           return res.ok ? res.json() : null;
         })
         .then((data) => data && setUser({ ...data, emailVerified: data.emailVerified ?? true }))
@@ -44,23 +50,27 @@ export function AuthProvider({ children }) {
       body: JSON.stringify({ email, password }),
     });
     if (!res.ok) {
-      const err = await res.text();
-      throw new Error(err || "Login failed");
+      const text = await res.text();
+      let msg = "Login failed";
+      try {
+        const j = JSON.parse(text);
+        if (j.error) msg = j.error;
+      } catch (_) {}
+      throw new Error(msg);
     }
     const data = await res.json();
-    const token = data.token || data.accessToken;
-    localStorage.setItem("authToken", token);
-    setToken(token);
+    const newToken = data.token || data.accessToken;
+    localStorage.setItem("authToken", newToken);
+    setToken(newToken);
     setUser(data.user || {
       id: data.userId || data.id,
       email: data.email,
       membershipType: data.membershipType || "FREE",
       emailVerified: data.emailVerified ?? true,
     });
-    // Fetch full profile if /me available
     try {
       const meRes = await fetch(`${API_BASE}/api/auth/me`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${newToken}` },
       });
       if (meRes.ok) {
         const me = await meRes.json();
@@ -77,21 +87,30 @@ export function AuthProvider({ children }) {
       body: JSON.stringify({
         email,
         password,
-        name,
         firstName: name || "",
         lastName: "",
       }),
     });
     if (!res.ok) {
-      const err = await res.text();
-      throw new Error(err || "Signup failed");
+      const text = await res.text();
+      let msg = "Signup failed";
+      try {
+        const j = JSON.parse(text);
+        if (j.error) msg = j.error;
+      } catch (_) {}
+      throw new Error(msg);
     }
     const data = await res.json();
-    const token = data.token || data.accessToken;
-    if (token) {
-      localStorage.setItem("authToken", token);
-      setToken(token);
-      setUser(data.user || { id: data.id, email: data.email, membershipType: data.membershipType || "FREE", emailVerified: true });
+    const newToken = data.token || data.accessToken;
+    if (newToken) {
+      localStorage.setItem("authToken", newToken);
+      setToken(newToken);
+      setUser(data.user || {
+        id: data.userId || data.id,
+        email: data.email,
+        membershipType: data.membershipType || "FREE",
+        emailVerified: data.emailVerified ?? true,
+      });
     }
     return data;
   };
@@ -108,9 +127,10 @@ export function AuthProvider({ children }) {
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ plan: "MEMBER" }),
     });
-    if (!res.ok) throw new Error("Checkout failed");
-    const data = await res.json();
-    if (data.checkoutUrl) window.location.href = data.checkoutUrl;
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || "Checkout failed");
+    if (data.url) window.location.href = data.url;
+    else throw new Error("Checkout failed");
   };
 
   const value = {

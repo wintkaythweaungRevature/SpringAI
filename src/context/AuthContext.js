@@ -15,7 +15,7 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     if (token) {
-      fetch(`${API_BASE}/auth/me`, {
+      fetch(`${API_BASE}/api/auth/me`, {
         headers: { Authorization: `Bearer ${token}` },
       })
         .then((res) => {
@@ -30,7 +30,7 @@ export function AuthProvider({ children }) {
         })
         .finally(() => setLoading(false));
     } else {
-      fetch(`${API_BASE}/auth/me`, { headers: { Authorization: "Bearer x" } })
+      fetch(`${API_BASE}/api/auth/me`, { headers: { Authorization: "Bearer x" } })
         .then((res) => { if (res.status === 404) setAuthAvailable(false); })
         .catch(() => setAuthAvailable(false))
         .finally(() => setLoading(false));
@@ -38,7 +38,7 @@ export function AuthProvider({ children }) {
   }, [token]);
 
   const login = async (email, password) => {
-    const res = await fetch(`${API_BASE}/auth/login`, {
+    const res = await fetch(`${API_BASE}/api/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
@@ -59,7 +59,7 @@ export function AuthProvider({ children }) {
     });
     // Fetch full profile if /me available
     try {
-      const meRes = await fetch(`${API_BASE}/auth/me`, {
+      const meRes = await fetch(`${API_BASE}/api/auth/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (meRes.ok) {
@@ -71,7 +71,7 @@ export function AuthProvider({ children }) {
   };
 
   const signup = async (email, password, name) => {
-    const res = await fetch(`${API_BASE}/auth/register`, {
+    const res = await fetch(`${API_BASE}/api/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

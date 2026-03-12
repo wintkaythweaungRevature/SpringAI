@@ -22,7 +22,9 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "deploy:docker": "docker build -t wintkaythweaugn/spring-ai-react:latest . && docker push wintkaythweaugn/spring-ai-react:latest",
+    "deploy:cloudflare": "npm run build && npx wrangler deploy"
   },
   "eslintConfig": {
     "extends": [

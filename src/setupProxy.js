@@ -7,14 +7,6 @@ const apiTarget = process.env.REACT_APP_USE_LOCAL_API === 'true'
 
 module.exports = function (app) {
   app.use(
-    '/auth',
-    createProxyMiddleware({
-      target: apiTarget,
-      changeOrigin: true,
-      secure: apiTarget.startsWith('https'),
-    })
-  );
-  app.use(
     '/api',
     createProxyMiddleware({
       target: apiTarget,

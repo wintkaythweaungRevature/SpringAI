@@ -183,14 +183,36 @@ export function AuthProvider({ children }) {
 
   const openBillingPortal = async () => {
     const res = await fetch(`${API_BASE}/api/subscription/portal`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || data.message || "Failed to open billing");
     const url = data.url || data.portalUrl;
     if (url) window.location.href = url;
     else throw new Error("No billing portal URL");
+  };
+
+  const cancelSubscription = async () => {
+    const res = await fetch(`${API_BASE}/api/subscription/cancel`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || data.message || "Cancel failed");
+    await refetchUser();
+    return data;
+  };
+
+  const reactivateSubscription = async () => {
+    const res = await fetch(`${API_BASE}/api/subscription/reactivate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || data.message || "Reactivation failed");
+    await refetchUser();
+    return data;
   };
 
   const reactivateAccount = async (email, password) => {
@@ -237,6 +259,8 @@ export function AuthProvider({ children }) {
     refetchUser,
     checkoutSubscription,
     openBillingPortal,
+    cancelSubscription,
+    reactivateSubscription,
     deactivateAccount,
     reactivateAccount,
     isSubscribed: user?.membershipType === "MEMBER",

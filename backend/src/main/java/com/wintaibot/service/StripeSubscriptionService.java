@@ -108,17 +108,6 @@ public class StripeSubscriptionService {
         }
     }
 
-    public void cancelSubscription(String subscriptionId) {
-        if (subscriptionId == null || subscriptionId.isEmpty()) return;
-        Stripe.apiKey = stripeSecretKey;
-        try {
-            Subscription sub = Subscription.retrieve(subscriptionId);
-            sub.cancel();
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to cancel subscription: " + e.getMessage());
-        }
-    }
-
     public void handleSubscriptionDeleted(String subscriptionId) {
         userRepository.findAll().stream()
                 .filter(u -> subscriptionId.equals(u.getStripeSubscriptionId()))
@@ -128,6 +117,29 @@ public class StripeSubscriptionService {
                     user.setMembershipType(User.MembershipType.FREE);
                     userRepository.save(user);
                 });
+    }
+
+    /**
+     * Verify checkout session and upgrade user to MEMBER if payment completed.
+     * Fallback when webhook is not configured or delayed.
+     */
+    public boolean verifyCheckoutSession(String sessionId, Long userId) {
+        if (sessionId == null || sessionId.isEmpty() || userId == null) return false;
+        Stripe.apiKey = stripeSecretKey;
+        try {
+            Session session = Session.retrieve(sessionId);
+            if (session == null) return false;
+            if (!"complete".equalsIgnoreCase(session.getStatus())) return false;
+            String metaUserId = session.getMetadata() != null ? session.getMetadata().get("userId") : null;
+            if (metaUserId == null || !metaUserId.equals(String.valueOf(userId))) return false;
+            String subId = session.getSubscription();
+            if (subId == null || subId.isEmpty()) return false;
+            String customerId = session.getCustomer();
+            handleSubscriptionCreated(customerId, subId, metaUserId);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     public void handleWebhook(String payload, String sigHeader) {

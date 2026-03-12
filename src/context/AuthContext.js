@@ -13,6 +13,23 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [authAvailable, setAuthAvailable] = useState(true);
 
+  const refetchUser = () => {
+    if (!token) return;
+    return fetch(`${API_BASE}/api/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => {
+        if (res.status === 401 || res.status === 403) {
+          localStorage.removeItem("authToken");
+          setToken(null);
+          setUser(null);
+          return null;
+        }
+        return res.ok ? res.json() : null;
+      })
+      .then((data) => data && setUser({ ...data, emailVerified: data.emailVerified ?? true }));
+  };
+
   useEffect(() => {
     if (token) {
       fetch(`${API_BASE}/api/auth/me`, {
@@ -43,11 +60,36 @@ export function AuthProvider({ children }) {
     }
   }, [token]);
 
+  // Refetch user when returning from Stripe checkout (session_id in URL)
+  useEffect(() => {
+    if (typeof window === "undefined" || !token) return;
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get("session_id");
+    if (!sessionId) return;
+    window.history.replaceState({}, "", window.location.pathname);
+    // Verify session with backend (upgrades user if webhook didn't run)
+    fetch(`${API_BASE}/api/subscription/verify-session?session_id=${encodeURIComponent(sessionId)}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        refetchUser();
+        if (data?.upgraded) setTimeout(refetchUser, 500);
+      })
+      .catch(() => refetchUser());
+    refetchUser();
+    const t1 = setTimeout(refetchUser, 2000);
+    const t2 = setTimeout(refetchUser, 5000);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [token]);
+
   const login = async (email, password) => {
+    const trimmedEmail = (email || "").trim();
+    const trimmedPassword = password || "";
     const res = await fetch(`${API_BASE}/api/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email: trimmedEmail, password: trimmedPassword }),
     });
     if (!res.ok) {
       const text = await res.text();
@@ -192,6 +234,7 @@ export function AuthProvider({ children }) {
     login,
     signup,
     logout,
+    refetchUser,
     checkoutSubscription,
     openBillingPortal,
     deactivateAccount,

@@ -31,6 +31,17 @@ public class SubscriptionController {
         return ResponseEntity.ok(new CheckoutResponse(url));
     }
 
+    @GetMapping("/verify-session")
+    public ResponseEntity<Map<String, Object>> verifySession(@RequestParam String session_id,
+                                                            Authentication auth) {
+        if (auth == null || !(auth.getPrincipal() instanceof Long)) {
+            return ResponseEntity.status(401).build();
+        }
+        Long userId = (Long) auth.getPrincipal();
+        boolean upgraded = stripeService.verifyCheckoutSession(session_id, userId);
+        return ResponseEntity.ok(Map.of("upgraded", upgraded));
+    }
+
     @PostMapping("/portal")
     public ResponseEntity<Map<String, String>> billingPortal(Authentication auth) {
         if (auth == null || !(auth.getPrincipal() instanceof Long)) {

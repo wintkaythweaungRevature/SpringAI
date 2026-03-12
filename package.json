@@ -46,7 +46,6 @@
       "last 1 safari version"
     ]
   },
-  "proxy": "http://wintspringbootaws.eba-2kvb9tdk.us-east-2.elasticbeanstalk.com",
   "devDependencies": {
     "ajv": "^8.17.1",
     "ajv-keywords": "^5.1.0"

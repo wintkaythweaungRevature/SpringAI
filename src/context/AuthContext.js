@@ -51,11 +51,13 @@ export function AuthProvider({ children }) {
     });
     if (!res.ok) {
       const text = await res.text();
-      let msg = "Login failed";
+      let msg = "Invalid email or password";
       try {
         const j = JSON.parse(text);
-        if (j.error) msg = j.error;
-      } catch (_) {}
+        msg = j.error || j.message || j.msg || msg;
+      } catch (_) {
+        if (text) msg = text;
+      }
       throw new Error(msg);
     }
     const data = await res.json();
@@ -87,6 +89,7 @@ export function AuthProvider({ children }) {
       body: JSON.stringify({
         email,
         password,
+        name: name || "",
         firstName: name || "",
         lastName: "",
       }),
@@ -96,8 +99,10 @@ export function AuthProvider({ children }) {
       let msg = "Signup failed";
       try {
         const j = JSON.parse(text);
-        if (j.error) msg = j.error;
-      } catch (_) {}
+        msg = j.error || j.message || j.msg || msg;
+      } catch (_) {
+        if (text) msg = text;
+      }
       throw new Error(msg);
     }
     const data = await res.json();

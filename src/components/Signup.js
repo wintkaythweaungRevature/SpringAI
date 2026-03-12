@@ -35,7 +35,7 @@ export default function Signup({ onSuccess, onSwitchToLogin }) {
           <div style={{ padding: "16px", backgroundColor: "#d4edda", borderRadius: "8px", color: "#155724" }}>
             <strong>Registration successful!</strong>
             <p style={{ margin: "8px 0 0", fontSize: "14px" }}>
-              Please check your email ({email}) and click the verification link. Then log in to use Ask AI and other features.
+              You can now log in to use Ask AI and other features.
             </p>
             <button type="button" onClick={onSwitchToLogin} style={{ ...styles.link, marginTop: "12px", display: "block" }}>
               Go to Login

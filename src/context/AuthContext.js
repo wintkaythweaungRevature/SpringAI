@@ -133,9 +133,56 @@ export function AuthProvider({ children }) {
       body: JSON.stringify({ plan: "MEMBER" }),
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || "Checkout failed");
-    if (data.url) window.location.href = data.url;
+    if (!res.ok) throw new Error(data.error || data.message || "Checkout failed");
+    const url = data.url || data.checkoutUrl;
+    if (url) window.location.href = url;
     else throw new Error("Checkout failed");
+  };
+
+  const openBillingPortal = async () => {
+    const res = await fetch(`${API_BASE}/api/subscription/portal`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || data.message || "Failed to open billing");
+    const url = data.url || data.portalUrl;
+    if (url) window.location.href = url;
+    else throw new Error("No billing portal URL");
+  };
+
+  const reactivateAccount = async (email, password) => {
+    const res = await fetch(`${API_BASE}/api/auth/reactivate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || data.message || "Reactivation failed");
+    const newToken = data.token || data.accessToken;
+    if (newToken) {
+      localStorage.setItem("authToken", newToken);
+      setToken(newToken);
+      setUser(data.user || { id: data.userId || data.id, email: data.email, membershipType: data.membershipType || "FREE", emailVerified: data.emailVerified ?? true });
+      try {
+        const meRes = await fetch(`${API_BASE}/api/auth/me`, { headers: { Authorization: `Bearer ${newToken}` } });
+        if (meRes.ok) {
+          const meData = await meRes.json();
+          setUser({ ...meData, emailVerified: meData.emailVerified ?? true });
+        }
+      } catch (_) {}
+    }
+  };
+
+  const deactivateAccount = async (password) => {
+    const res = await fetch(`${API_BASE}/api/auth/deactivate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ password: password || "" }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || data.message || "Deactivation failed");
+    logout();
   };
 
   const value = {
@@ -146,6 +193,9 @@ export function AuthProvider({ children }) {
     signup,
     logout,
     checkoutSubscription,
+    openBillingPortal,
+    deactivateAccount,
+    reactivateAccount,
     isSubscribed: user?.membershipType === "MEMBER",
     isLoggedIn: !!user,
     emailVerified: user?.emailVerified ?? true,

@@ -64,6 +64,28 @@ public class StripeSubscriptionService {
         }
     }
 
+    public String createBillingPortalSession(Long userId) {
+        Stripe.apiKey = stripeSecretKey;
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        String customerId = user.getStripeCustomerId();
+        if (customerId == null || customerId.isEmpty()) {
+            throw new RuntimeException("No billing account. Subscribe first to manage billing and view invoices.");
+        }
+        try {
+            com.stripe.param.billingportal.SessionCreateParams params =
+                    com.stripe.param.billingportal.SessionCreateParams.builder()
+                            .setCustomer(customerId)
+                            .setReturnUrl(successUrl)
+                            .build();
+            com.stripe.model.billingportal.Session session =
+                    com.stripe.model.billingportal.Session.create(params);
+            return session.getUrl();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to create billing portal session: " + e.getMessage());
+        }
+    }
+
     public void handleSubscriptionCreated(String customerId, String subscriptionId, String userIdStr) {
         Long userId = Long.parseLong(userIdStr);
         User user = userRepository.findById(userId).orElse(null);
@@ -72,6 +94,28 @@ public class StripeSubscriptionService {
             user.setStripeSubscriptionId(subscriptionId);
             user.setMembershipType(User.MembershipType.MEMBER);
             userRepository.save(user);
+        }
+    }
+
+    public void cancelSubscription(String subscriptionId) {
+        if (subscriptionId == null || subscriptionId.isEmpty()) return;
+        Stripe.apiKey = stripeSecretKey;
+        try {
+            Subscription sub = Subscription.retrieve(subscriptionId);
+            sub.cancel();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to cancel subscription: " + e.getMessage());
+        }
+    }
+
+    public void cancelSubscription(String subscriptionId) {
+        if (subscriptionId == null || subscriptionId.isEmpty()) return;
+        Stripe.apiKey = stripeSecretKey;
+        try {
+            Subscription sub = Subscription.retrieve(subscriptionId);
+            sub.cancel();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to cancel subscription: " + e.getMessage());
         }
     }
 

@@ -31,6 +31,16 @@ public class SubscriptionController {
         return ResponseEntity.ok(new CheckoutResponse(url));
     }
 
+    @PostMapping("/portal")
+    public ResponseEntity<Map<String, String>> billingPortal(Authentication auth) {
+        if (auth == null || !(auth.getPrincipal() instanceof Long)) {
+            return ResponseEntity.status(401).build();
+        }
+        Long userId = (Long) auth.getPrincipal();
+        String url = stripeService.createBillingPortalSession(userId);
+        return ResponseEntity.ok(Map.of("url", url));
+    }
+
     @PostMapping("/webhook")
     public ResponseEntity<?> webhook(@RequestBody String payload,
                                     @RequestHeader("Stripe-Signature") String sigHeader) {

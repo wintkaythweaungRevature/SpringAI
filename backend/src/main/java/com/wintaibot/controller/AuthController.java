@@ -51,4 +51,22 @@ public class AuthController {
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.status(404).build());
     }
+
+    @PostMapping("/deactivate")
+    public ResponseEntity<?> deactivate(@RequestBody(required = false) java.util.Map<String, String> body,
+                                       Authentication auth) {
+        if (auth == null || !(auth.getPrincipal() instanceof Long)) {
+            return ResponseEntity.status(401).build();
+        }
+        Long userId = (Long) auth.getPrincipal();
+        String password = body != null ? body.get("password") : null;
+        authService.deactivate(userId, password);
+        return ResponseEntity.ok().body(java.util.Map.of("message", "Account deactivated successfully"));
+    }
+
+    @PostMapping("/reactivate")
+    public ResponseEntity<LoginResponse> reactivate(@Valid @RequestBody LoginRequest req) {
+        LoginResponse res = authService.reactivate(req.getEmail(), req.getPassword());
+        return ResponseEntity.ok(res);
+    }
 }

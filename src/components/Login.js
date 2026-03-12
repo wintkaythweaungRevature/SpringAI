@@ -2,21 +2,38 @@ import React, { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 
 export default function Login({ onSuccess, onSwitchToSignup }) {
-  const { login } = useAuth();
+  const { login, reactivateAccount } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showReactivate, setShowReactivate] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setShowReactivate(false);
     setLoading(true);
     try {
       await login(email, password);
       onSuccess?.();
     } catch (err) {
-      setError(err.message || "Login failed");
+      const msg = err.message || "Login failed";
+      setError(msg);
+      if (msg.toLowerCase().includes("deactivated")) setShowReactivate(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReactivate = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      await reactivateAccount(email, password);
+      onSuccess?.();
+    } catch (err) {
+      setError(err.message || "Reactivation failed");
     } finally {
       setLoading(false);
     }
@@ -44,6 +61,14 @@ export default function Login({ onSuccess, onSwitchToSignup }) {
             required
           />
           {error && <p style={styles.error}>{error}</p>}
+          {showReactivate && (
+            <div style={{ marginBottom: "12px", padding: "12px", backgroundColor: "#fff3cd", borderRadius: "8px", border: "1px solid #ffc107" }}>
+              <p style={{ margin: "0 0 8px 0", fontSize: "14px", color: "#856404" }}>Your account was deactivated.</p>
+              <button type="button" onClick={handleReactivate} disabled={loading} style={{ ...styles.button, backgroundColor: "#28a745" }}>
+                {loading ? "Reactivating..." : "Reactivate Account"}
+              </button>
+            </div>
+          )}
           <button type="submit" disabled={loading} style={styles.button}>
             {loading ? "Logging in..." : "Login"}
           </button>

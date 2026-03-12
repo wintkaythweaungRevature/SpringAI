@@ -3,9 +3,7 @@ FROM node:18-alpine AS build
 
 WORKDIR /app
 
-# Install dependencies needed for some packages
-RUN apk add --no-cache bash git python3 make g++
-
+RUN apk add --no-cache bash git
 COPY package*.json ./
 # ဒီစာကြောင်းကို အောက်ပါအတိုင်း ပြင်လိုက်ပါ
 RUN npm install --legacy-peer-deps

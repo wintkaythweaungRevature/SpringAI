@@ -7,6 +7,7 @@ import SpendingAnalyzer from './components/Analyzer';
 import Transcription from './components/Transcription';
 import Content from './components/Content';
 import Resume from './components/Resume';
+import AccountSettings from './components/AccountSettings';
 import { useAuth } from './context/AuthContext';
 import MemberGate from './components/MemberGate';
 import AskAIGate from './components/AskAIGate';
@@ -72,9 +73,12 @@ function App() {
           onClick={() => handleTabChange('Resume')}> 
          Resume Worlock
         </button>
-       
-        
-        
+        {user && (
+          <button className={`tab-btn ${activeTab === 'account' ? 'active' : ''}`}
+            onClick={() => handleTabChange('account')}>
+            Account
+          </button>
+        )}
       </div>
       
       <div className="content">
@@ -85,6 +89,7 @@ function App() {
         {activeTab === 'transcription' && <MemberGate featureName="EchoScribe"><Transcription /></MemberGate>}
         {activeTab === 'Content' && <MemberGate featureName="Reply Enchanter"><Content /></MemberGate>}
         {activeTab === 'Resume' && <MemberGate featureName="Resume Worlock"><Resume /></MemberGate>}
+        {activeTab === 'account' && <AskAIGate featureName="Account"><AccountSettings /></AskAIGate>}
       </div>
       
     </div>

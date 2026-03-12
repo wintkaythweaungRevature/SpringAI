@@ -46,6 +46,9 @@ public class User {
     @Column(name = "created_at")
     private Instant createdAt = Instant.now();
 
+    @Column(name = "deactivated", nullable = false)
+    private boolean deactivated = false;
+
     public enum MembershipType {
         FREE,
         MEMBER
@@ -91,4 +94,7 @@ public class User {
 
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
+
+    public boolean isDeactivated() { return deactivated; }
+    public void setDeactivated(boolean deactivated) { this.deactivated = deactivated; }
 }

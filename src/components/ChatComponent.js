@@ -16,7 +16,7 @@ function ChatComponent() {
     try {
       // ✅ Port 5000 ကို URL မှာ ထည့်ပေးထားပါ (AWS မှာ Port 5000 သုံးထားရင်)
       // ✅ AWS က Port 80 ဆိုရင်တော့ :5000 ကို ဖြုတ်လိုက်ပါ
-      const fullUrl = `${apiBase || 'https://api.wintaibot.com'}/ask-ai?prompt=${encodeURIComponent(prompt)}`;
+      const fullUrl = `${apiBase || 'https://api.wintaibot.com'}/api/ai/ask-ai?prompt=${encodeURIComponent(prompt)}`;
       const headers = { Accept: 'text/plain' };
       if (token) headers.Authorization = `Bearer ${token}`;
 

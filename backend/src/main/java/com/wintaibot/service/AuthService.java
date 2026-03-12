@@ -6,6 +6,7 @@ import com.wintaibot.dto.MeResponse;
 import com.wintaibot.dto.RegisterRequest;
 import com.wintaibot.entity.User;
 import com.wintaibot.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -22,7 +23,7 @@ public class AuthService {
     private final EmailService emailService;
 
     public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder,
-                       JwtService jwtService, EmailService emailService) {
+                       JwtService jwtService, @Autowired(required = false) EmailService emailService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
@@ -64,10 +65,12 @@ public class AuthService {
 
         userRepository.save(user);
 
-        try {
-            emailService.sendVerificationEmail(user.getEmail(), user.getEmailVerificationToken());
-        } catch (Exception e) {
-            // Log but don't fail registration
+        if (emailService != null) {
+            try {
+                emailService.sendVerificationEmail(user.getEmail(), user.getEmailVerificationToken());
+            } catch (Exception e) {
+                // Log but don't fail registration
+            }
         }
     }
 

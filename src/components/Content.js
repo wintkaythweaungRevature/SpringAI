@@ -14,7 +14,7 @@ function Content() {
     setLoading(true);
     
     try {
-      const url = `${apiBase || 'https://api.wintaibot.com'}/reply`;
+      const url = `${apiBase || 'https://api.wintaibot.com'}/api/ai/reply`;
       const headers = { "Content-Type": "application/json" };
       if (token) headers.Authorization = `Bearer ${token}`;
       const response = await fetch(url, {

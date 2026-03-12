@@ -14,7 +14,7 @@ function ImageGenerator() {
         try {
             // ✅ AWS Backend URL (Cloudflare DNS မှတစ်ဆင့်)
             // Port 5000 လိုအပ်ပါက :5000 ထည့်ပေးပါ
-const url = `${apiBase || 'https://api.wintaibot.com'}/generate-image?prompt=${encodeURIComponent(prompt)}`;
+const url = `${apiBase || 'https://api.wintaibot.com'}/api/ai/generate-image?prompt=${encodeURIComponent(prompt)}`;
             const headers = {};
             if (token) headers.Authorization = `Bearer ${token}`;
             const response = await fetch(url, { headers });

@@ -21,7 +21,7 @@ function RecipeGenerator() {
                       Dietary restrictions: ${dietaryRestriction || 'none'}. 
                       Please provide a Title, Ingredients list, and Step-by-step instructions.`;
 
-      const url = `${apiBase || 'https://api.wintaibot.com'}/ask-ai?prompt=${encodeURIComponent(prompt)}`;
+      const url = `${apiBase || 'https://api.wintaibot.com'}/api/ai/ask-ai?prompt=${encodeURIComponent(prompt)}`;
       const headers = {};
       if (token) headers.Authorization = `Bearer ${token}`;
       const response = await fetch(url, { headers });

@@ -37,6 +37,7 @@ const Flashcard = ({ card, index }) => {
 };
 
 export default function Resume() {
+  const { token, apiBase } = useAuth();
   const [jdText, setJdText] = useState("");
   const [fileObject, setFileObject] = useState(null);
   const [activeAgent, setActiveAgent] = useState(null);
@@ -59,7 +60,7 @@ export default function Resume() {
 
     try {
       setActiveAgent("extractor"); 
-      const url = `${apiBase || 'https://api.wintaibot.com'}/prepare-interview?t=${Date.now()}`;
+      const url = `${apiBase || 'https://api.wintaibot.com'}/api/ai/prepare-interview?t=${Date.now()}`;
       const headers = {};
       if (token) headers.Authorization = `Bearer ${token}`;
       const response = await fetch(url, { method: "POST", headers, body: formData });

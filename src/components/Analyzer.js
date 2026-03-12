@@ -18,7 +18,7 @@ function PdfAnalyzer() {
     setRecipe(""); 
 
     try {
-      const url = `${apiBase || 'https://api.wintaibot.com'}/analyze-pdf?t=${Date.now()}`;
+      const url = `${apiBase || 'https://api.wintaibot.com'}/api/ai/analyze-pdf?t=${Date.now()}`;
       const headers = { Accept: 'application/json' };
       if (token) headers.Authorization = `Bearer ${token}`;
       const response = await fetch(url, {

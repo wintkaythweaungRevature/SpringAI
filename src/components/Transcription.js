@@ -19,7 +19,7 @@ function Transcription() {
 
     try {
       // Points to your new transcription endpoint
-      const url = `${apiBase || 'https://api.wintaibot.com'}/transcribe`;
+      const url = `${apiBase || 'https://api.wintaibot.com'}/api/ai/transcribe`;
       const headers = {};
       if (token) headers.Authorization = `Bearer ${token}`;
       const response = await fetch(url, {

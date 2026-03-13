@@ -1,0 +1,29 @@
+# Stage 1: Build
+FROM maven:3.8.4-openjdk-17-slim AS build
+WORKDIR /app
+COPY pom.xml .
+RUN mvn dependency:go-offline
+COPY src ./src
+RUN mvn clean package -DskipTests
+
+# Stage 2: Runtime
+FROM eclipse-temurin:17-jdk-alpine
+WORKDIR /app
+
+ARG STRIPE_SECRET_KEY
+ARG STRIPE_PRICE_ID
+ARG STRIPE_WEBHOOK_SECRET
+ARG DB_URL
+ARG DB_USERNAME
+ARG DB_PASSWORD
+
+ENV STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+ENV STRIPE_PRICE_ID=${STRIPE_PRICE_ID}
+ENV STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+ENV DB_URL=${DB_URL}
+ENV DB_USERNAME=${DB_USERNAME}
+ENV DB_PASSWORD=${DB_PASSWORD}
+
+COPY --from=build /app/target/*.jar app.jar
+EXPOSE 8080
+ENTRYPOINT ["java", "-jar", "app.jar"]

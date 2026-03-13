@@ -63,14 +63,34 @@ public class SubscriptionController {
         return ResponseEntity.ok(status);
     }
 
+    /** Cancel membership at period end — user keeps access until then. */
     @PostMapping("/cancel")
     public ResponseEntity<Map<String, String>> cancel(Authentication auth) {
         if (auth == null || !(auth.getPrincipal() instanceof Long)) {
             return ResponseEntity.status(401).build();
         }
         Long userId = (Long) auth.getPrincipal();
-        stripeService.cancelSubscriptionAtPeriodEnd(userId);
-        return ResponseEntity.ok(Map.of("message", "Subscription will cancel at the end of the current period."));
+        try {
+            stripeService.cancelSubscriptionAtPeriodEnd(userId);
+            return ResponseEntity.ok(Map.of("message", "Membership will cancel at the end of the current billing period. You can still use member features until then."));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    /** Reactivate a membership that was set to cancel at period end (undo cancellation). */
+    @PostMapping("/reactivate")
+    public ResponseEntity<Map<String, String>> reactivate(Authentication auth) {
+        if (auth == null || !(auth.getPrincipal() instanceof Long)) {
+            return ResponseEntity.status(401).build();
+        }
+        Long userId = (Long) auth.getPrincipal();
+        try {
+            stripeService.reactivateSubscription(userId);
+            return ResponseEntity.ok(Map.of("message", "Membership reactivated. Your subscription will continue."));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 
     @GetMapping("/invoices")

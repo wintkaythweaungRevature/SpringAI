@@ -204,6 +204,25 @@ public class StripeSubscriptionService {
         return status;
     }
 
+    /** Reactivates a subscription that was set to cancel at period end (undo cancel). */
+    public void reactivateSubscription(Long userId) {
+        Stripe.apiKey = stripeSecretKey;
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        String subId = user.getStripeSubscriptionId();
+        if (subId == null || subId.isEmpty()) {
+            throw new RuntimeException("No subscription to reactivate");
+        }
+        try {
+            var params = com.stripe.param.SubscriptionUpdateParams.builder()
+                    .setCancelAtPeriodEnd(false)
+                    .build();
+            Subscription.retrieve(subId).update(params);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to reactivate subscription: " + e.getMessage());
+        }
+    }
+
     /** Cancels the subscription at period end. */
     public void cancelSubscriptionAtPeriodEnd(Long userId) {
         Stripe.apiKey = stripeSecretKey;

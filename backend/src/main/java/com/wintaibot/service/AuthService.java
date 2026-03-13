@@ -10,13 +10,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.security.SecureRandom;
 import java.util.Base64;
-import java.util.Map;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -39,33 +35,17 @@ public class AuthService {
     }
 
     public LoginResponse login(LoginRequest req) {
-        // #region agent log
         String email = (req.getEmail() != null) ? req.getEmail().trim().toLowerCase() : "";
-        dbg("AuthService.login:entry", "A,D", Map.of("emailLen", email.length(), "emailDomain", email.contains("@") ? email.substring(Math.max(0, email.indexOf("@") + 1)) : ""));
-        // #endregion
         Optional<User> userOpt = userRepository.findByEmailIgnoreCase(email);
-        // #region agent log
-        dbg("AuthService.login:userLookup", "A", Map.of("userFound", userOpt.isPresent()));
-        // #endregion
         User user = userOpt.orElseThrow(() -> new RuntimeException("Invalid email or password"));
 
         if (user.isDeactivated()) {
-            // #region agent log
-            dbg("AuthService.login:deactivated", "E", Map.of("userId", user.getId()));
-            // #endregion
             throw new RuntimeException("Account has been deactivated");
         }
 
         String rawPassword = req.getPassword();
         String storedHash = user.getPasswordHash();
-        // #region agent log
-        String hashPrefix = (storedHash != null && storedHash.length() >= 10) ? storedHash.substring(0, 10) : (storedHash != null ? storedHash : "null");
-        dbg("AuthService.login:beforeMatch", "B,C", Map.of("hashLen", storedHash != null ? storedHash.length() : 0, "hashPrefix", hashPrefix, "isBcrypt", isBcryptHash(storedHash != null ? storedHash : "")));
-        // #endregion
         boolean matched = passwordMatches(rawPassword, storedHash);
-        // #region agent log
-        dbg("AuthService.login:matchResult", "B,C", Map.of("matched", matched));
-        // #endregion
         if (!matched) {
             throw new RuntimeException("Invalid email or password");
         }
@@ -168,6 +148,27 @@ public class AuthService {
         );
     }
 
+    /** Admin: get all users. */
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
+    }
+
+    /** Admin: activate a user by id. */
+    public void adminActivateUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        user.setDeactivated(false);
+        userRepository.save(user);
+    }
+
+    /** Admin: deactivate a user by id. */
+    public void adminDeactivateUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        user.setDeactivated(true);
+        userRepository.save(user);
+    }
+
     private String generateToken() {
         SecureRandom random = new SecureRandom();
         byte[] bytes = new byte[32];
@@ -189,20 +190,4 @@ public class AuthService {
         return rawPassword.equals(storedHash);
     }
 
-    private void dbg(String location, String hypothesisId, Map<String, Object> data) {
-        try {
-            StringBuilder sb = new StringBuilder();
-            for (Map.Entry<String, Object> e : data.entrySet()) {
-                if (sb.length() > 0) sb.append(",");
-                sb.append("\"").append(e.getKey().replace("\"", "\\\"")).append("\":");
-                Object v = e.getValue();
-                if (v instanceof Boolean) sb.append(v);
-                else if (v instanceof Number) sb.append(v);
-                else sb.append("\"").append(String.valueOf(v).replace("\\", "\\\\").replace("\"", "\\\"")).append("\"");
-            }
-            Path p = Paths.get(System.getProperty("user.dir")).resolve("debug-515b60.log");
-            String line = "{\"sessionId\":\"515b60\",\"location\":\"" + location + "\",\"message\":\"login debug\",\"data\":{" + sb + "},\"timestamp\":" + System.currentTimeMillis() + ",\"hypothesisId\":\"" + hypothesisId + "\"}\n";
-            Files.writeString(p, line, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
-        } catch (Exception ignored) {}
-    }
 }

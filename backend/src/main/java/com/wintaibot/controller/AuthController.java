@@ -25,13 +25,6 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest req) {
-        // #region agent log
-        try {
-            java.nio.file.Path p = java.nio.file.Paths.get(System.getProperty("user.dir")).resolve("debug-515b60.log");
-            String line = "{\"sessionId\":\"515b60\",\"location\":\"AuthController.login:entry\",\"message\":\"request received\",\"data\":{\"emailPresent\":\"" + (req.getEmail() != null) + "\"},\"timestamp\":" + System.currentTimeMillis() + ",\"hypothesisId\":\"D\"}\n";
-            java.nio.file.Files.writeString(p, line, java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.APPEND);
-        } catch (Exception ignored) {}
-        // #endregion
         LoginResponse res = authService.login(req);
         return ResponseEntity.ok(res);
     }

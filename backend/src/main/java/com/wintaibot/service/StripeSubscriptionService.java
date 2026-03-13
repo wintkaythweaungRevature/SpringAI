@@ -142,6 +142,87 @@ public class StripeSubscriptionService {
         }
     }
 
+    /** Returns the last 10 invoices for the user from Stripe. */
+    public java.util.List<java.util.Map<String, Object>> getInvoices(Long userId) {
+        Stripe.apiKey = stripeSecretKey;
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        String customerId = user.getStripeCustomerId();
+        if (customerId == null || customerId.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+        try {
+            var params = com.stripe.param.InvoiceListParams.builder()
+                    .setCustomer(customerId)
+                    .setLimit(10L)
+                    .build();
+            var invoices = com.stripe.model.Invoice.list(params);
+            java.util.List<java.util.Map<String, Object>> result = new java.util.ArrayList<>();
+            for (var inv : invoices.getData()) {
+                java.util.Map<String, Object> item = new java.util.HashMap<>();
+                item.put("id", inv.getId());
+                item.put("number", inv.getNumber());
+                item.put("status", inv.getStatus());
+                item.put("amountPaid", inv.getAmountPaid());
+                item.put("currency", inv.getCurrency());
+                item.put("created", inv.getCreated());
+                item.put("invoicePdf", inv.getInvoicePdf());
+                item.put("hostedInvoiceUrl", inv.getHostedInvoiceUrl());
+                result.add(item);
+            }
+            return result;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to retrieve invoices: " + e.getMessage());
+        }
+    }
+
+    /** Returns subscription status for the current user. */
+    public java.util.Map<String, Object> getSubscriptionStatus(Long userId) {
+        Stripe.apiKey = stripeSecretKey;
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        java.util.Map<String, Object> status = new java.util.HashMap<>();
+        status.put("plan", user.getMembershipType().name());
+        status.put("active", user.getMembershipType() == User.MembershipType.MEMBER);
+        status.put("stripeCustomerId", user.getStripeCustomerId());
+
+        String subId = user.getStripeSubscriptionId();
+        if (subId != null && !subId.isEmpty()) {
+            try {
+                Subscription sub = Subscription.retrieve(subId);
+                status.put("subscriptionStatus", sub.getStatus());
+                status.put("cancelAtPeriodEnd", sub.getCancelAtPeriodEnd());
+                if (sub.getCurrentPeriodEnd() != null) {
+                    status.put("subscriptionPeriodEnd",
+                            java.time.Instant.ofEpochSecond(sub.getCurrentPeriodEnd())
+                                    .toString().substring(0, 10));
+                }
+            } catch (Exception e) {
+                status.put("subscriptionStatus", "unknown");
+            }
+        }
+        return status;
+    }
+
+    /** Cancels the subscription at period end. */
+    public void cancelSubscriptionAtPeriodEnd(Long userId) {
+        Stripe.apiKey = stripeSecretKey;
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        String subId = user.getStripeSubscriptionId();
+        if (subId == null || subId.isEmpty()) {
+            throw new RuntimeException("No active subscription to cancel");
+        }
+        try {
+            var params = com.stripe.param.SubscriptionUpdateParams.builder()
+                    .setCancelAtPeriodEnd(true)
+                    .build();
+            Subscription.retrieve(subId).update(params);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to cancel subscription: " + e.getMessage());
+        }
+    }
+
     public void handleWebhook(String payload, String sigHeader) {
         if (webhookSecret == null || webhookSecret.isEmpty()) {
             return;

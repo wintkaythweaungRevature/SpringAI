@@ -153,19 +153,37 @@ public class AuthService {
         return userRepository.findAll();
     }
 
-    /** Admin: activate a user by id. */
+    /**
+     * Admin: activate a user by id.
+     * Account is restored as FREE — user must re-subscribe to regain MEMBER access.
+     */
     public void adminActivateUser(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         user.setDeactivated(false);
+        user.setMembershipType(User.MembershipType.FREE);
+        user.setStripeSubscriptionId(null);
         userRepository.save(user);
     }
 
-    /** Admin: deactivate a user by id. */
+    /**
+     * Admin: deactivate a user by id.
+     * Cancels any active Stripe subscription and sets membership to FREE.
+     */
     public void adminDeactivateUser(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+        // Cancel Stripe subscription if active
+        if (stripeService != null && user.getStripeSubscriptionId() != null) {
+            try {
+                stripeService.cancelSubscription(user.getStripeSubscriptionId());
+            } catch (Exception ignored) {
+                // Continue deactivation even if Stripe cancel fails
+            }
+        }
         user.setDeactivated(true);
+        user.setMembershipType(User.MembershipType.FREE);
+        user.setStripeSubscriptionId(null);
         userRepository.save(user);
     }
 

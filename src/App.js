@@ -28,34 +28,22 @@ function App() {
   return (
     <div className="App">
       <header className="header">
-        <h1>Wint's AI Bot</h1>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <h1>Wintaibot</h1>
+        <div className="auth-btns">
           {loading ? (
             <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.8)' }}>...</span>
           ) : user ? (
             <>
-              <span style={{ fontSize: '14px', color: '#fff' }}>
+              <span className="user-info">
                 {user.email}
-                {user?.membershipType === 'MEMBER' && <span style={{ color: '#7cff7c', marginLeft: '6px' }}>✓ Member</span>}
+                {user?.membershipType === 'MEMBER' && <span className="member-badge">✓ Member</span>}
               </span>
-              <button onClick={logout} style={{ padding: '6px 12px', fontSize: '14px', backgroundColor: 'rgba(255,255,255,0.2)', color: '#fff', border: '1px solid rgba(255,255,255,0.5)', borderRadius: '6px', cursor: 'pointer' }}>
-                Logout
-              </button>
+              <button onClick={logout} className="btn-logout">Logout</button>
             </>
           ) : (
             <>
-              <button
-                onClick={() => { setAuthMode('login'); setShowAuthModal(true); }}
-                style={{ padding: '6px 14px', fontSize: '14px', backgroundColor: 'rgba(255,255,255,0.2)', color: '#fff', border: '1px solid rgba(255,255,255,0.5)', borderRadius: '6px', cursor: 'pointer' }}
-              >
-                Login
-              </button>
-              <button
-                onClick={() => { setAuthMode('signup'); setShowAuthModal(true); }}
-                style={{ padding: '6px 14px', fontSize: '14px', backgroundColor: '#fff', color: '#0070f3', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}
-              >
-                Sign Up
-              </button>
+              <button onClick={() => { setAuthMode('login'); setShowAuthModal(true); }} className="btn-login">Login</button>
+              <button onClick={() => { setAuthMode('signup'); setShowAuthModal(true); }} className="btn-signup">Sign Up</button>
             </>
           )}
         </div>
@@ -63,14 +51,9 @@ function App() {
 
       {/* Auth Modal */}
       {showAuthModal && !user && (
-        <div
-          onClick={() => setShowAuthModal(false)}
-          style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-        >
-          <div onClick={(e) => e.stopPropagation()} style={{ backgroundColor: '#fff', borderRadius: '12px', padding: '8px', maxWidth: '400px', width: '90%', boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }}>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '4px 8px 0' }}>
-              <button onClick={() => setShowAuthModal(false)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#666' }}>✕</button>
-            </div>
+        <div className="auth-modal-overlay" onClick={() => setShowAuthModal(false)}>
+          <div className="auth-modal" onClick={(e) => e.stopPropagation()} style={{ position: 'relative' }}>
+            <button onClick={() => setShowAuthModal(false)} className="auth-modal-close" aria-label="Close">✕</button>
             {authMode === 'login' ? (
               <Login onSuccess={() => setShowAuthModal(false)} onSwitchToSignup={() => setAuthMode('signup')} />
             ) : (

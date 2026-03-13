@@ -113,20 +113,21 @@ export default function LandingSection({ onGetStarted }) {
 
       {/* ── HERO ────────────────────────────────────────────── */}
       <section className="ls-hero" aria-labelledby="hero-heading">
-        <div className="ls-hero-badge">7 AI Tools · One Platform · Free to Start</div>
+        <div className="ls-hero-badge">AI Assistant for PDFs, Documents &amp; Productivity</div>
         <h1 id="hero-heading" className="ls-hero-h1">
-          The All-in-One AI Assistant<br />for Work, Study &amp; Creativity
+          Analyze PDFs, Transcribe Audio,<br />and Automate Your Work with AI
         </h1>
         <p className="ls-hero-sub">
-          Wintaibot is a web-based AI platform that lets you chat with an AI, extract data
-          from PDFs, transcribe audio, generate images, write emails, prepare for interviews,
-          and plan meals — all without installing anything.
+          Wintaibot is an AI assistant that extracts data from PDFs and documents,
+          transcribes audio, generates images, writes email replies, prepares you
+          for job interviews, and answers any question — all in one platform,
+          no installs required.
         </p>
         <div className="ls-hero-actions">
           <button className="ls-btn-primary" onClick={onGetStarted}>
             Try Free — No Credit Card
           </button>
-          <a className="ls-btn-ghost" href="#pricing">See Pricing →</a>
+          <a className="ls-btn-ghost" href="/features">See All Features →</a>
         </div>
         <p className="ls-hero-note">
           Free tier includes <strong>Ask AI</strong> and <strong>Recipe Generator</strong>.
@@ -411,11 +412,12 @@ export default function LandingSection({ onGetStarted }) {
           <a href="mailto:contact@wintaibot.com">contact@wintaibot.com</a>
         </p>
         <nav className="ls-footer-nav" aria-label="Footer navigation">
-          <a href="#features">Features</a>
-          <a href="#how-it-works">How It Works</a>
-          <a href="#pricing">Pricing</a>
+          <a href="/features">Features</a>
+          <a href="/pricing">Pricing</a>
+          <a href="/use-cases">Use Cases</a>
+          <a href="/docs">Docs</a>
           <a href="#faq">FAQ</a>
-          <a href="#about">About</a>
+          <a href="https://github.com/wintkaythweaungRevature" target="_blank" rel="noopener noreferrer">GitHub</a>
         </nav>
       </footer>
 

@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Documentation – Wintaibot AI Platform Guide</title>
+<meta name="description" content="Wintaibot documentation: learn how to use DocuWizard for PDF analysis, EchoScribe for transcription, AI image generation, Resume Warlock for interview prep, and all other AI tools." />
+<meta name="keywords" content="Wintaibot docs, how to use AI PDF extractor, AI document analysis guide, voice transcription tutorial, AI chatbot documentation" />
+<meta name="robots" content="index, follow" />
+<link rel="canonical" href="https://wintaibot.com/docs" />
+<meta property="og:title" content="Wintaibot Documentation – How to Use All AI Tools" />
+<meta property="og:description" content="Step-by-step guides for every Wintaibot feature: PDF analysis, transcription, image generation, email writing, and interview prep." />
+<meta property="og:url" content="https://wintaibot.com/docs" />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="https://wintaibot.com/android-chrome-512x512.png" />
+<link rel="icon" href="/favicon.ico" />
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Wintaibot Documentation",
+  "description": "Official documentation for Wintaibot AI platform covering all 7 tools.",
+  "url": "https://wintaibot.com/docs",
+  "author": { "@type": "Person", "name": "Wint Kay Thwe Aung" },
+  "publisher": { "@type": "Organization", "name": "Wintaibot", "url": "https://wintaibot.com" }
+}
+</script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #1a1a2e; line-height: 1.6; background: #f8fafc; }
+  a { color: #1e3a8a; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  nav { background: #0f172a; padding: 0 32px; display: flex; align-items: center; justify-content: space-between; height: 60px; }
+  .nav-brand { color: #fff; font-size: 1.1rem; font-weight: 800; }
+  .nav-links { display: flex; gap: 24px; }
+  .nav-links a { color: rgba(255,255,255,0.8); font-size: 0.875rem; font-weight: 500; }
+  .nav-links a:hover { color: #fff; text-decoration: none; }
+  .nav-cta { background: #1d4ed8; color: #fff !important; padding: 8px 18px; border-radius: 6px; font-weight: 700 !important; }
+
+  .hero { background: linear-gradient(135deg, #0f172a, #1e3a8a); color: #fff; padding: 64px 32px; text-align: center; }
+  .hero h1 { font-size: clamp(1.8rem, 4vw, 2.4rem); font-weight: 900; margin-bottom: 12px; }
+  .hero p { font-size: 1rem; opacity: 0.9; max-width: 560px; margin: 0 auto; }
+
+  .docs-layout { display: flex; max-width: 1060px; margin: 0 auto; padding: 48px 24px 80px; gap: 40px; }
+  .docs-sidebar { width: 220px; flex-shrink: 0; }
+  .docs-sidebar-title { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #94a3b8; margin-bottom: 12px; }
+  .docs-sidebar ul { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+  .docs-sidebar li a { font-size: 0.875rem; color: #475569; padding: 5px 8px; display: block; border-radius: 6px; }
+  .docs-sidebar li a:hover { background: #f1f5f9; color: #0f172a; text-decoration: none; }
+
+  .docs-content { flex: 1; min-width: 0; }
+  .doc-section { margin-bottom: 56px; padding-top: 8px; }
+  .doc-section h2 { font-size: 1.4rem; font-weight: 800; color: #0f172a; margin-bottom: 16px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
+  .doc-section h3 { font-size: 1rem; font-weight: 700; color: #1e3a8a; margin: 20px 0 8px; }
+  .doc-section p { color: #475569; font-size: 0.9rem; margin-bottom: 12px; line-height: 1.7; }
+  .doc-section ul, .doc-section ol { padding-left: 20px; color: #475569; font-size: 0.9rem; line-height: 1.9; margin-bottom: 12px; }
+  .step-box { background: #f0f4ff; border-left: 3px solid #1e3a8a; border-radius: 0 8px 8px 0; padding: 12px 16px; margin: 12px 0; font-size: 0.875rem; color: #334155; }
+  .note-box { background: #fefce8; border-left: 3px solid #ca8a04; border-radius: 0 8px 8px 0; padding: 12px 16px; margin: 12px 0; font-size: 0.875rem; color: #713f12; }
+  .badge { display: inline-block; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; margin-left: 8px; }
+  .badge-free { background: #dcfce7; color: #166534; }
+  .badge-member { background: #dbeafe; color: #1e40af; }
+
+  .api-block { background: #0f172a; border-radius: 8px; padding: 16px 20px; margin: 12px 0; }
+  .api-block code { color: #7dd3fc; font-family: "Courier New", monospace; font-size: 0.85rem; }
+  .api-method { display: inline-block; background: #1d4ed8; color: #fff; font-size: 0.75rem; font-weight: 700; padding: 2px 8px; border-radius: 4px; margin-right: 8px; }
+  .api-method.post { background: #16a34a; }
+
+  footer { background: #0f172a; color: rgba(255,255,255,0.6); text-align: center; padding: 32px 24px; font-size: 0.85rem; }
+  footer a { color: rgba(255,255,255,0.7); }
+  .footer-links { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin-top: 12px; }
+
+  @media (max-width: 700px) {
+    .docs-layout { flex-direction: column; }
+    .docs-sidebar { width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="nav-brand">Wintaibot</a>
+  <div class="nav-links">
+    <a href="/features">Features</a>
+    <a href="/pricing">Pricing</a>
+    <a href="/use-cases">Use Cases</a>
+    <a href="/docs" style="color:#fff">Docs</a>
+    <a href="/" class="nav-cta">Open App →</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <h1>Wintaibot Documentation</h1>
+  <p>Everything you need to get the most out of all 7 Wintaibot AI tools.</p>
+</div>
+
+<div class="docs-layout">
+
+  <aside class="docs-sidebar">
+    <div class="docs-sidebar-title">Getting Started</div>
+    <ul>
+      <li><a href="#getting-started">Quick Start</a></li>
+      <li><a href="#account">Account &amp; Billing</a></li>
+    </ul>
+    <div class="docs-sidebar-title" style="margin-top:24px">Tools</div>
+    <ul>
+      <li><a href="#ask-ai">Ask AI</a></li>
+      <li><a href="#recipe-generator">Recipe Generator</a></li>
+      <li><a href="#docuwizard">DocuWizard</a></li>
+      <li><a href="#echoscribe">EchoScribe</a></li>
+      <li><a href="#image-generator">Image Generator</a></li>
+      <li><a href="#reply-enchanter">Reply Enchanter</a></li>
+      <li><a href="#resume-warlock">Resume Warlock</a></li>
+    </ul>
+    <div class="docs-sidebar-title" style="margin-top:24px">API</div>
+    <ul>
+      <li><a href="#api">REST API Reference</a></li>
+    </ul>
+  </aside>
+
+  <main class="docs-content">
+
+    <div class="doc-section" id="getting-started">
+      <h2>Quick Start</h2>
+      <p>Wintaibot runs entirely in your browser — no installation required.</p>
+      <h3>Step 1: Open the App</h3>
+      <p>Visit <a href="https://wintaibot.com">wintaibot.com</a> and click any tool tab at the top of the page.</p>
+      <h3>Step 2: Create a Free Account</h3>
+      <p>Click <strong>Sign Up</strong> in the header. Enter your email and password. Verify your email via the confirmation link.</p>
+      <h3>Step 3: Start Using Free Tools</h3>
+      <p>After verifying your email, you have immediate access to <strong>Ask AI</strong> and <strong>Recipe Generator</strong> — no payment required.</p>
+      <h3>Step 4: Upgrade for Full Access</h3>
+      <p>To use DocuWizard, EchoScribe, Image Generator, Reply Enchanter, and Resume Warlock, go to <strong>Account Settings → Upgrade to Member</strong> ($5.99/month via Stripe).</p>
+    </div>
+
+    <div class="doc-section" id="account">
+      <h2>Account &amp; Billing</h2>
+      <h3>Managing Your Subscription</h3>
+      <p>Go to <strong>Account</strong> tab (visible when logged in) to:</p>
+      <ul>
+        <li>View your current plan (Free or Member)</li>
+        <li>Upgrade to Member ($5.99/month)</li>
+        <li>Cancel your subscription (access continues until period end)</li>
+        <li>View invoices and update payment method via Stripe Billing Portal</li>
+        <li>Deactivate your account</li>
+      </ul>
+      <div class="note-box">Payments are processed by Stripe. Wintaibot never stores your card details.</div>
+    </div>
+
+    <div class="doc-section" id="ask-ai">
+      <h2>Ask AI <span class="badge badge-free">Free</span></h2>
+      <p>Ask AI is Wintaibot's general-purpose AI chatbot. Use it for questions, writing, coding, research, and more.</p>
+      <h3>How to Use</h3>
+      <div class="step-box">1. Click the <strong>Ask AI</strong> tab → 2. Type your question or request → 3. Press Enter or click Send</div>
+      <h3>Example Prompts</h3>
+      <ul>
+        <li>"Explain how React hooks work in simple terms"</li>
+        <li>"Write a professional bio for my LinkedIn profile"</li>
+        <li>"Debug this Python code: [paste code]"</li>
+        <li>"What are the main differences between REST and GraphQL?"</li>
+        <li>"Summarize the key points from this text: [paste text]"</li>
+      </ul>
+    </div>
+
+    <div class="doc-section" id="recipe-generator">
+      <h2>Recipe Generator <span class="badge badge-free">Free</span></h2>
+      <p>Enter ingredients you have and get complete recipes with instructions.</p>
+      <h3>How to Use</h3>
+      <div class="step-box">1. Click <strong>Recipe Generator</strong> → 2. List your ingredients (comma-separated) → 3. Optionally specify dietary preferences → 4. Click Generate</div>
+      <h3>Tips</h3>
+      <ul>
+        <li>Include pantry staples (oil, salt, garlic) for more realistic recipes</li>
+        <li>Specify "vegetarian", "under 30 minutes", or "high protein" for tailored results</li>
+      </ul>
+    </div>
+
+    <div class="doc-section" id="docuwizard">
+      <h2>DocuWizard – PDF &amp; Document AI <span class="badge badge-member">Member</span></h2>
+      <p>Upload PDF, Excel, or Word documents for AI-powered extraction and analysis.</p>
+      <h3>Supported File Types</h3>
+      <ul>
+        <li>PDF (.pdf)</li>
+        <li>Excel (.xlsx, .xls)</li>
+        <li>Word (.docx)</li>
+      </ul>
+      <h3>How to Use</h3>
+      <div class="step-box">1. Click <strong>DocuWizard</strong> → 2. Upload your file (drag &amp; drop or browse) → 3. Ask a question or request a summary → 4. Copy or download the result</div>
+      <h3>Example Queries</h3>
+      <ul>
+        <li>"Summarize this document in 5 bullet points"</li>
+        <li>"What is the total amount on this invoice?"</li>
+        <li>"Extract all line items from this PDF as a table"</li>
+        <li>"What are the key findings in this research paper?"</li>
+      </ul>
+    </div>
+
+    <div class="doc-section" id="echoscribe">
+      <h2>EchoScribe – Voice Transcription <span class="badge badge-member">Member</span></h2>
+      <p>Convert audio recordings to accurate text.</p>
+      <h3>How to Use</h3>
+      <div class="step-box">1. Click <strong>EchoScribe</strong> → 2. Upload an audio file or record live → 3. Click Transcribe → 4. Review, copy, or export the text</div>
+      <h3>Tips for Best Accuracy</h3>
+      <ul>
+        <li>Use clear recordings with minimal background noise</li>
+        <li>Speak at a natural pace — avoid rushing</li>
+        <li>After transcription, paste text into Ask AI for summaries or notes</li>
+      </ul>
+    </div>
+
+    <div class="doc-section" id="image-generator">
+      <h2>AI Image Generator <span class="badge badge-member">Member</span></h2>
+      <p>Generate images from text descriptions.</p>
+      <h3>How to Use</h3>
+      <div class="step-box">1. Click <strong>Image Generator</strong> → 2. Type a detailed description of the image → 3. Click Generate → 4. Download your image</div>
+      <h3>Writing Better Prompts</h3>
+      <ul>
+        <li>Be specific: "A minimalist logo with a blue robot icon on white background"</li>
+        <li>Include style: "flat design", "realistic photo", "watercolor painting"</li>
+        <li>Specify dimensions or use: "YouTube thumbnail", "LinkedIn banner", "product mockup"</li>
+      </ul>
+    </div>
+
+    <div class="doc-section" id="reply-enchanter">
+      <h2>Reply Enchanter – AI Email Writer <span class="badge badge-member">Member</span></h2>
+      <p>Paste an email and get a polished AI-drafted reply.</p>
+      <h3>How to Use</h3>
+      <div class="step-box">1. Click <strong>Reply Enchanter</strong> → 2. Paste the original email → 3. Select tone (Professional/Friendly/Casual/Urgent) → 4. Click Generate → 5. Copy the reply</div>
+    </div>
+
+    <div class="doc-section" id="resume-warlock">
+      <h2>Resume Warlock – Interview Prep <span class="badge badge-member">Member</span></h2>
+      <p>Upload your resume and receive AI-generated interview questions tailored to your experience.</p>
+      <h3>How to Use</h3>
+      <div class="step-box">1. Click <strong>Resume Warlock</strong> → 2. Upload your resume (PDF or Word) → 3. Review the AI-generated questions → 4. Practice answers with Ask AI</div>
+      <h3>Getting the Most Out of Resume Warlock</h3>
+      <ul>
+        <li>After generating questions, paste them into Ask AI and ask "How should I answer this?"</li>
+        <li>Ask AI to critique your practice answers</li>
+        <li>Request questions for a specific job title: "Generate questions for a Java backend developer role"</li>
+      </ul>
+    </div>
+
+    <div class="doc-section" id="api">
+      <h2>REST API Reference</h2>
+      <p>Wintaibot's backend exposes a Spring Boot REST API. The full interactive API documentation is available via Swagger UI.</p>
+      <p><a href="https://api.wintaibot.com/swagger-ui.html" target="_blank" rel="noopener noreferrer">→ Open Swagger API Docs</a></p>
+      <h3>Base URL</h3>
+      <div class="api-block"><code>https://api.wintaibot.com</code></div>
+      <h3>Authentication</h3>
+      <p>Most endpoints require a Bearer token obtained via login:</p>
+      <div class="api-block">
+        <span class="api-method post">POST</span><code>/api/auth/login</code><br><br>
+        <code>Authorization: Bearer &lt;token&gt;</code>
+      </div>
+      <h3>Key Endpoints</h3>
+      <div class="api-block">
+        <span class="api-method post">POST</span><code>/api/ai/ask</code> — AI chatbot<br>
+        <span class="api-method post">POST</span><code>/api/ai/reply</code> — Email reply generator<br>
+        <span class="api-method post">POST</span><code>/api/ai/analyze</code> — Document analysis<br>
+        <span class="api-method post">POST</span><code>/api/ai/transcribe</code> — Voice transcription<br>
+        <span class="api-method post">POST</span><code>/api/ai/image</code> — Image generation<br>
+        <span class="api-method post">POST</span><code>/api/ai/resume</code> — Interview prep
+      </div>
+      <p>Built with <strong>Spring AI</strong> and <strong>Java 21</strong>. Source available on <a href="https://github.com/wintkaythweaungRevature" target="_blank" rel="noopener noreferrer">GitHub</a>.</p>
+    </div>
+
+  </main>
+</div>
+
+<footer>
+  <p>© 2026 Wintaibot · Built by <a href="https://github.com/wintkaythweaungRevature">Wint Kay Thwe Aung</a> · <a href="mailto:contact@wintaibot.com">contact@wintaibot.com</a></p>
+  <nav class="footer-links" aria-label="Footer">
+    <a href="/">Home</a>
+    <a href="/features">Features</a>
+    <a href="/pricing">Pricing</a>
+    <a href="/use-cases">Use Cases</a>
+    <a href="/docs">Docs</a>
+  </nav>
+</footer>
+
+</body>
+</html>

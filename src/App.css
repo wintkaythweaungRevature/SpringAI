@@ -1,247 +1,219 @@
-.App {
-  text-align: center;
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 20px;
+/* ─── Wintaibot – Professional App Styles ──────────────────── */
+
+:root {
+  --color-primary: #2563eb;
+  --color-primary-dark: #1d4ed8;
+  --color-primary-light: #3b82f6;
+  --color-surface: #ffffff;
+  --color-surface-alt: #f8fafc;
+  --color-border: #e2e8f0;
+  --color-text: #0f172a;
+  --color-text-muted: #64748b;
+  --color-success: #16a34a;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.1);
 }
 
-/* .tabs {
-  display: flex;
-  justify-content: space-around;
-  margin-bottom: 20px;
-}
-
-button {
-  padding: 10px 20px;
-  cursor: pointer;
-  border: none;
-  background-color: #f0f0f0;
-  font-weight: bold;
-} */
-
-button.active {
-  background-color: #007bff;
-  color: #fff;
-}
-
-input {
-  padding: 10px;
-  width: calc(100% - 22px);
-  margin-bottom: 10px;
+* {
   box-sizing: border-box;
 }
 
-.tab-content {
-  margin-top: 20px;
-}
-
-.image-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
-  margin-top: 20px;
-}
-
-img {
-  width: 100%;
-  height: auto;
-  border: 2px solid #ccc;
-  border-radius: 5px;
-}
-
-.empty-image-slot {
-  width: 100%;
-  height: 0;
-  padding-bottom: 75%; /* Maintain aspect ratio for empty slots */
-  border: 2px dashed #ccc;
-  border-radius: 5px;
-  background-color: #f9f9f9;
-}
-
-.output {
-  margin-top: 20px;
-  text-align: left;
-  background-color: #f4f4f4;
-  padding: 10px;
-  border-radius: 5px;
-}
-
-
-.recipe-text {
-  max-width: 100%; /* Adjust based on your specific layout needs */
-  padding: 10px;
-  box-sizing: border-box; /* Ensures padding is included in width calculation */
-  word-wrap: break-word;
-  overflow-y: auto; /* Allows scrolling for excessive text */
-  font-size: calc(12px + 0.5vw); /* Responsive font size */
-  line-height: 1.6; /* Improves readability */
-  border: 1px solid #ccc; /* Optional: adds a border around the text container */
-  margin-bottom: 20px; /* Spacing below the text container */
-}*
- {
-  color: #000000 !important; /* စာသားအားလုံးကို အနက်ရောင်ဖြစ်အောင် အတင်းသတ်မှတ်ခြင်း */
-}.App {
-  position: relative;
-  z-index: 1;
-}
-.header {
-  background: linear-gradient(135deg,#401187,#717cb3,#0c0e60);
-  padding: 20px;
-  border-radius: 22px;
-  margin-bottom: 24px;
-  box-shadow: 0 15px 35px rgba(0,0,0,0.25);
-  transition: all 0.3s ease;
-}
-.header:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 20px 50px rgba(0,0,0,0.3);
-}
-.title {
+body {
   margin: 0;
-  font-size: 2.4rem;
-  font-weight: 800;
-  background: linear-gradient(90deg,#d3e3e3,#7cffcb);
-
-  -webkit-text-fill-color: transparent;
-}
-.tab-buttons {
-  display: flex;
-  justify-content: center;
-  gap: 14px;
-  margin-bottom: 25px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%);
+  min-height: 100vh;
+  color: var(--color-text);
 }
 
-.tab-btn {
-  padding: 12px 26px;
-  border-radius: 999px;
-  border: 1px solid rgba(0,0,0,0.15);
-  background: rgba(255,255,255,0.85);
-  color: #0f2027;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.25s ease;
-}
-
-.tab-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 20px rgba(137, 6, 6, 0.1);
-}
-
-.tab-btn.active {
- background: rgba(255,255,255,0.9); /* almost same as inactive */
-  color: #401187; /* dark text, matches header */
-  font-weight: 700;
-  border: none;
-  box-shadow: 0 0 25px rgba(124,255,203,0.9);
-  transform: translateY(-2px);
-}
- .tabs {
-  display: flex;
-  justify-content: space-around;
-  margin-bottom: 20px;
-}
-
-button {
-  /* padding: 10px 20px;
-  cursor: pointer;
-  border: none;
-  background-color: #f0f0f0;
-  font-weight: bold; */
-
-padding: 12px 26px;
-  border-radius: 999px;
-  border: 1px solid rgba(0,0,0,0.15);
-  background: rgba(255,255,255,0.85);
-  color: #9793ae;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.25s ease;
-}
-
-
-
-.content {
-  background: rgba(0,0,0,0.08);
-  border-radius: 22px;
-  padding: 20px;
-  box-shadow: 0 15px 30px rgba(0,0,0,0.2);
-  font-size: 1.15rem;
-}
-/* 1. FIX THE SCALE - Allow the app to be wider for the Resume tool */
 .App {
-  text-align: center;
-  max-width: 1250px; /* Increased from 800px */
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 40px 20px;
-  position: relative;
-  z-index: 1;
-  
+  padding: 24px 20px 48px;
+  min-height: 100vh;
 }
 
-/* 2. PREVENT OVERFLOW - Crucial for the text boxes */
-* {
-  box-sizing: border-box;
-}
-
-/* 3. DANGER: REMOVE OR MODIFY THIS */
-/* This line in your original code makes everything black, even on dark panels. 
-   If you want white text in Resume Worlock, remove the !important below. */
-* {
-  color: inherit; 
-}
-
-/* 4. HEADER STYLING */
+/* ─── Header ───────────────────────────────────────────────── */
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
   gap: 16px;
-  background: linear-gradient(135deg, #401187, #717cb3, #0c0e60);
-  padding: 30px;
-  border-radius: 22px;
-  margin-bottom: 30px;
-  box-shadow: 0 15px 35px rgba(0,0,0,0.25);
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #2563eb 100%);
+  padding: 20px 28px;
+  border-radius: var(--radius-lg);
+  margin-bottom: 28px;
+  box-shadow: var(--shadow-lg);
 }
 
 .header h1 {
   margin: 0;
-  color: white !important; /* Ensure title is white */
-  font-size: 2.4rem;
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.02em;
 }
 
-/* 5. TAB BUTTONS ALIGNMENT */
-.tab-buttons {
+.header button {
+  font-family: inherit;
+}
+
+.header .auth-btns {
   display: flex;
-  justify-content: center;
-  flex-wrap: wrap; /* Allows buttons to wrap on smaller screens */
-  gap: 10px;
-  margin-bottom: 30px;
+  align-items: center;
+  gap: 12px;
 }
 
-.tab-btn {
-  padding: 10px 20px;
-  border-radius: 999px;
-  border: 1px solid rgba(0,0,0,0.1);
-  background: white;
+.header .user-info {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.header .member-badge {
+  color: #86efac;
+  margin-left: 8px;
   font-weight: 600;
+}
+
+.header .btn-login {
+  padding: 8px 18px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.tab-btn.active {
-  background: #401187;
-  color: white !important;
-  box-shadow: 0 8px 20px rgba(64, 17, 135, 0.3);
-  border: none;
+.header .btn-login:hover {
+  background: rgba(255, 255, 255, 0.25);
 }
 
-/* 6. CONTENT AREA */
+.header .btn-signup {
+  padding: 8px 18px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: #fff;
+  color: var(--color-primary);
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.header .btn-signup:hover {
+  background: #f8fafc;
+  transform: translateY(-1px);
+}
+
+.header .btn-logout {
+  padding: 8px 16px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.header .btn-logout:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* ─── Tab Buttons ───────────────────────────────────────────── */
+.tab-buttons {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.tab-btn {
+  padding: 10px 20px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.tab-btn:hover {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+  background: #fff;
+  box-shadow: var(--shadow-md);
+}
+
+.tab-btn.active {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+}
+
+/* ─── Content Area ──────────────────────────────────────────── */
 .content {
-  background: #ffffff; /* Clean white background */
-  border: 1px solid #e2e8f0;
-  border-radius: 24px;
-  padding: 30px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-  min-height: 500px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: 32px;
+  min-height: 480px;
+  box-shadow: var(--shadow-md);
+}
+
+/* ─── Auth Modal ───────────────────────────────────────────── */
+.auth-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.auth-modal {
+  background: #fff;
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  max-width: 420px;
+  width: 100%;
+  box-shadow: var(--shadow-lg);
+}
+
+.auth-modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+}
+
+.auth-modal-close:hover {
+  color: var(--color-text);
 }

@@ -8,12 +8,17 @@ import Transcription from './components/Transcription';
 import Content from './components/Content';
 import Resume from './components/Resume';
 import AccountSettings from './components/AccountSettings';
+import Login from './components/Login';
+import Signup from './components/Signup';
 import { useAuth } from './context/AuthContext';
 import MemberGate from './components/MemberGate';
 import AskAIGate from './components/AskAIGate';
+import LandingSection from './components/LandingSection';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('image-generator');
+  const [activeTab, setActiveTab] = useState(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authMode, setAuthMode] = useState('login'); // 'login' | 'signup'
   const { user, logout, loading } = useAuth();
 
   const handleTabChange = (tab) => {
@@ -38,10 +43,42 @@ function App() {
               </button>
             </>
           ) : (
-            <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.9)' }}>Sign in to use AI</span>
+            <>
+              <button
+                onClick={() => { setAuthMode('login'); setShowAuthModal(true); }}
+                style={{ padding: '6px 14px', fontSize: '14px', backgroundColor: 'rgba(255,255,255,0.2)', color: '#fff', border: '1px solid rgba(255,255,255,0.5)', borderRadius: '6px', cursor: 'pointer' }}
+              >
+                Login
+              </button>
+              <button
+                onClick={() => { setAuthMode('signup'); setShowAuthModal(true); }}
+                style={{ padding: '6px 14px', fontSize: '14px', backgroundColor: '#fff', color: '#0070f3', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}
+              >
+                Sign Up
+              </button>
+            </>
           )}
         </div>
       </header>
+
+      {/* Auth Modal */}
+      {showAuthModal && !user && (
+        <div
+          onClick={() => setShowAuthModal(false)}
+          style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        >
+          <div onClick={(e) => e.stopPropagation()} style={{ backgroundColor: '#fff', borderRadius: '12px', padding: '8px', maxWidth: '400px', width: '90%', boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '4px 8px 0' }}>
+              <button onClick={() => setShowAuthModal(false)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#666' }}>✕</button>
+            </div>
+            {authMode === 'login' ? (
+              <Login onSuccess={() => setShowAuthModal(false)} onSwitchToSignup={() => setAuthMode('signup')} />
+            ) : (
+              <Signup onSuccess={() => setShowAuthModal(false)} onSwitchToLogin={() => setAuthMode('login')} />
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="tab-buttons">
          <button 
@@ -82,6 +119,9 @@ function App() {
       </div>
       
       <div className="content">
+        {!activeTab && (
+          <LandingSection onGetStarted={() => handleTabChange('chat')} />
+        )}
         {activeTab === 'image-generator' && <MemberGate featureName="Image Generator"><ImageGenerator /></MemberGate>}
         {activeTab === 'chat' && <AskAIGate featureName="Ask AI"><ChatComponent /></AskAIGate>}
         {activeTab === 'analyzer' && <MemberGate featureName="DocuWizard"><SpendingAnalyzer /></MemberGate>}

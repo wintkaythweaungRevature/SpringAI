@@ -1,0 +1,169 @@
+.landing-section {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 40px 20px 60px;
+  font-family: inherit;
+  color: #1a1a2e;
+}
+
+/* Hero */
+.landing-hero {
+  text-align: center;
+  padding: 48px 20px 40px;
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+  border-radius: 16px;
+  color: #fff;
+  margin-bottom: 48px;
+}
+
+.landing-headline {
+  font-size: clamp(1.6rem, 4vw, 2.4rem);
+  font-weight: 800;
+  margin: 0 0 16px;
+  line-height: 1.2;
+}
+
+.landing-subheadline {
+  font-size: clamp(0.95rem, 2vw, 1.15rem);
+  max-width: 680px;
+  margin: 0 auto 28px;
+  opacity: 0.9;
+  line-height: 1.6;
+}
+
+.landing-cta {
+  background: #fff;
+  color: #1e3a8a;
+  border: none;
+  padding: 14px 32px;
+  font-size: 1rem;
+  font-weight: 700;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.landing-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
+
+/* Feature Cards */
+.landing-features {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+  margin-bottom: 56px;
+}
+
+.feature-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: box-shadow 0.2s;
+}
+
+.feature-card:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+}
+
+.feature-icon {
+  font-size: 2rem;
+  margin-bottom: 12px;
+}
+
+.feature-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1e3a8a;
+  margin: 0 0 8px;
+}
+
+.feature-desc {
+  font-size: 0.9rem;
+  color: #475569;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Why section */
+.landing-why {
+  background: #f0f4ff;
+  border-radius: 12px;
+  padding: 36px 32px;
+  margin-bottom: 48px;
+}
+
+.landing-why h2 {
+  font-size: 1.5rem;
+  color: #1e3a8a;
+  margin: 0 0 20px;
+}
+
+.landing-why ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.landing-why li {
+  font-size: 0.95rem;
+  color: #334155;
+  padding-left: 24px;
+  position: relative;
+  line-height: 1.6;
+}
+
+.landing-why li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: #2563eb;
+  font-weight: bold;
+}
+
+/* Use Cases */
+.landing-usecases h2 {
+  font-size: 1.5rem;
+  color: #1e3a8a;
+  margin: 0 0 24px;
+  text-align: center;
+}
+
+.usecase-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+.usecase-item {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 20px;
+}
+
+.usecase-item h3 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1e3a8a;
+  margin: 0 0 8px;
+}
+
+.usecase-item p {
+  font-size: 0.875rem;
+  color: #475569;
+  line-height: 1.6;
+  margin: 0;
+}
+
+@media (max-width: 600px) {
+  .landing-hero {
+    padding: 36px 16px 32px;
+  }
+}

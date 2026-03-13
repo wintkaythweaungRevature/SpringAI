@@ -13,9 +13,10 @@ import Signup from './components/Signup';
 import { useAuth } from './context/AuthContext';
 import MemberGate from './components/MemberGate';
 import AskAIGate from './components/AskAIGate';
+import LandingSection from './components/LandingSection';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('chat');
+  const [activeTab, setActiveTab] = useState(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState('login'); // 'login' | 'signup'
   const { user, logout, loading } = useAuth();
@@ -118,6 +119,9 @@ function App() {
       </div>
       
       <div className="content">
+        {!activeTab && (
+          <LandingSection onGetStarted={() => handleTabChange('chat')} />
+        )}
         {activeTab === 'image-generator' && <MemberGate featureName="Image Generator"><ImageGenerator /></MemberGate>}
         {activeTab === 'chat' && <AskAIGate featureName="Ask AI"><ChatComponent /></AskAIGate>}
         {activeTab === 'analyzer' && <MemberGate featureName="DocuWizard"><SpendingAnalyzer /></MemberGate>}

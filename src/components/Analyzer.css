@@ -1,57 +1,118 @@
 /* src/components/Analyzer.css */
 
 .analyzer-card {
-  padding: 20px;
-  max-width: 800px;
+  padding: 28px;
+  max-width: 900px;
   margin: 20px auto;
   background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
   font-family: Arial, sans-serif;
+}
+
+.analyzer-header-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.analyzer-main-title {
+  margin: 0;
+  font-size: 22px;
+  color: #1a1a2e;
+}
+
+.analyzer-sub-title {
+  margin: 0 0 20px;
+  color: #666;
+  font-size: 14px;
 }
 
 .analyzer-input {
   padding: 10px;
-  margin-bottom: 15px;
+  margin-bottom: 12px;
   border: 1px solid #ddd;
-  border-radius: 4px;
+  border-radius: 6px;
   width: 100%;
+  box-sizing: border-box;
+}
+
+.analyzer-prompt-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #333;
+  resize: vertical;
+  line-height: 1.5;
+}
+.analyzer-prompt-input:focus {
+  outline: none;
+  border-color: #28a745;
+  box-shadow: 0 0 0 2px rgba(40,167,69,0.15);
 }
 
 .analyzer-button {
-  padding: 10px 20px;
+  padding: 10px 22px;
   background-color: #28a745;
   color: #fff;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
   font-weight: bold;
+  font-size: 14px;
+}
+.analyzer-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .analyzer-export-button {
-  padding: 10px 20px;
+  padding: 10px 22px;
   background-color: #007bff;
   color: #fff;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
   font-weight: bold;
+  font-size: 14px;
 }
 
 .analyzer-clear-button {
-  padding: 10px 20px;
+  padding: 10px 22px;
   background-color: #6c757d;
   color: #fff;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
+  font-size: 14px;
 }
 
+/* Dashboard */
 .analyzer-dashboard {
-  margin-top: 30px;
+  margin-top: 24px;
   text-align: left;
 }
 
+/* Document Type Badge */
+.analyzer-doc-type-row {
+  margin-bottom: 16px;
+}
+.analyzer-doc-badge {
+  display: inline-block;
+  padding: 4px 14px;
+  border-radius: 20px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+}
+
+/* Summary */
 .analyzer-summary-card {
   padding: 20px;
   background-color: #f0f9ff;
@@ -60,32 +121,75 @@
   border-left: 6px solid #28a745;
 }
 
-.analyzer-insights-card {
-  padding: 20px;
-  background-color: #fffbe6;
-  border-radius: 10px;
-  margin-bottom: 20px;
-  border-left: 6px solid #fadb14;
-}
-
 .analyzer-card-header {
   margin-top: 0;
+  margin-bottom: 10px;
   color: #333;
+  font-size: 15px;
   border-bottom: 1px solid #eee;
-  padding-bottom: 10px;
+  padding-bottom: 8px;
 }
 
 .analyzer-summary-text {
   font-size: 15px;
-  line-height: 1.6;
-  color: #555;
+  line-height: 1.7;
+  color: #444;
+  margin: 0;
+}
+
+/* Key Metrics */
+.analyzer-section {
+  margin-bottom: 24px;
+}
+.analyzer-section-title {
+  font-size: 15px;
+  font-weight: bold;
+  color: #333;
+  margin: 0 0 12px;
+}
+
+.analyzer-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.analyzer-metric-card {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  color: #fff;
+  border-radius: 10px;
+  padding: 16px 14px;
+  text-align: center;
+}
+
+.analyzer-metric-value {
+  font-size: 20px;
+  font-weight: bold;
+  color: #4ade80;
+  margin-bottom: 4px;
+  word-break: break-word;
+}
+
+.analyzer-metric-label {
+  font-size: 12px;
+  color: #aaa;
+}
+
+/* Table */
+.analyzer-table-section {
+  margin-bottom: 24px;
+}
+.analyzer-table-section h4 {
+  font-size: 15px;
+  font-weight: bold;
+  color: #333;
+  margin: 0 0 10px;
 }
 
 .analyzer-table-wrapper {
   overflow-x: auto;
   border-radius: 8px;
   border: 1px solid #eee;
-  margin-bottom: 30px;
 }
 
 .analyzer-table {
@@ -97,38 +201,106 @@
 .analyzer-th {
   background-color: #28a745;
   color: #fff;
-  padding: 12px;
+  padding: 12px 14px;
   text-align: left;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .analyzer-td {
-  padding: 12px;
-  border-bottom: 1px solid #eee;
-  font-size: 14px;
+  padding: 11px 14px;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 13px;
   color: #444;
 }
 
 .analyzer-alt-row {
-  background-color: #f9f9f9;
+  background-color: #fafafa;
+}
+
+/* Two-column layout for insights + actions */
+.analyzer-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+@media (max-width: 600px) {
+  .analyzer-two-col {
+    grid-template-columns: 1fr;
+  }
+}
+
+.analyzer-insights-card {
+  padding: 18px;
+  background-color: #fffbe6;
+  border-radius: 10px;
+  border-left: 5px solid #fadb14;
+}
+
+.analyzer-actions-card {
+  padding: 18px;
+  background-color: #f0fff4;
+  border-radius: 10px;
+  border-left: 5px solid #28a745;
 }
 
 .analyzer-list {
-  padding-left: 20px;
+  padding-left: 0;
   margin: 0;
+  list-style: none;
 }
 
 .analyzer-list-item {
   margin-bottom: 8px;
   font-size: 14px;
   color: #444;
+  line-height: 1.5;
 }
 
+/* Entities */
+.analyzer-entities-section {
+  margin-bottom: 20px;
+}
+
+.analyzer-entities-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+}
+
+.analyzer-entity-group {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.analyzer-entity-header {
+  font-size: 13px;
+  font-weight: bold;
+  color: #555;
+  margin-bottom: 10px;
+}
+
+.analyzer-tag {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  margin: 3px 3px 3px 0;
+  font-weight: 500;
+}
+
+.analyzer-tag-blue   { background: #dbeafe; color: #1d4ed8; }
+.analyzer-tag-purple { background: #ede9fe; color: #6d28d9; }
+.analyzer-tag-green  { background: #dcfce7; color: #15803d; }
+.analyzer-tag-orange { background: #ffedd5; color: #c2410c; }
+
+/* Error */
 .analyzer-error-area {
   margin-top: 20px;
   padding: 15px;
   background-color: #fff5f5;
-  border-radius: 4px;
+  border-radius: 6px;
   border: 1px solid #feb2b2;
   color: #c53030;
 }
@@ -137,4 +309,5 @@
   white-space: pre-wrap;
   word-wrap: break-word;
   font-size: 12px;
+  margin: 0;
 }

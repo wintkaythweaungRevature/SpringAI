@@ -1,9 +1,16 @@
 import React, { useState, useMemo, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 
+const DOC_TYPE_COLORS = {
+  Invoice: "#e67e22", Resume: "#2563eb", Contract: "#8e44ad",
+  Report: "#16a085", Financial: "#27ae60", Legal: "#c0392b",
+  Medical: "#e74c3c", Academic: "#f39c12", Other: "#7f8c8d",
+};
+
 function PdfAnalyzer() {
   const { token, apiBase } = useAuth();
   const [file, setFile] = useState(null);
+  const [customPrompt, setCustomPrompt] = useState("");
   const [loading, setLoading] = useState(false);
   const [recipe, setRecipe] = useState("");
   const [dragOver, setDragOver] = useState(false);
@@ -53,14 +60,11 @@ function PdfAnalyzer() {
       parsedData.table_headers.join(","),
       ...(parsedData.table_rows || []).map((row) => row.map((cell) => `"${cell}"`).join(",")),
     ].join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `Data_Export_${Date.now()}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `Data_Export_${Date.now()}.csv`;
+    a.click();
   };
 
   return (

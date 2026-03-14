@@ -1,6 +1,8 @@
 import React, { useState, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 
+const SUPPORTED = ["mp3", "mp4", "mpeg", "mpga", "m4a", "wav", "webm"];
+
 function Transcription() {
   const { token, apiBase } = useAuth();
   const [file, setFile] = useState(null);
@@ -29,8 +31,8 @@ function Transcription() {
       if (token) headers.Authorization = `Bearer ${token}`;
       const response = await fetch(url, { method: "POST", headers, body: formData });
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Server Error (${response.status}): ${errorText || "Error"}`);
+        const err = await response.text();
+        throw new Error(`Server Error (${response.status}): ${err || "Error"}`);
       }
       const data = await response.text();
       setTranscript(data);

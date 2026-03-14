@@ -11,6 +11,7 @@ function RecipeGenerator() {
   const [dietaryRestriction, setDietaryRestrictions] = useState("");
   const [recipe, setRecipe] = useState("");
   const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const createRecipe = async () => {
     if (!ingredients) return;
@@ -163,6 +164,11 @@ function RecipeGenerator() {
         )}
 
       </div>
+
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        input:focus, select:focus { outline: none; border-color: #2563eb !important; box-shadow: 0 0 0 3px rgba(37,99,235,0.12) !important; }
+      `}</style>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useAuth } from "../context/AuthContext";
+import "./Auth.css";
 
 export default function Login({ onSuccess, onSwitchToSignup }) {
   const { login, reactivateAccount } = useAuth();
@@ -40,86 +41,71 @@ export default function Login({ onSuccess, onSwitchToSignup }) {
   };
 
   return (
-    <div style={styles.container}>
-      <div style={styles.card}>
-        <h2 style={styles.title}>Member Login</h2>
-        <form onSubmit={handleSubmit} style={styles.form}>
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={styles.input}
-            required
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={styles.input}
-            required
-          />
-          {error && <p style={styles.error}>{error}</p>}
+    <div className="auth-form-wrap">
+      <div className="auth-form-card">
+        <div className="auth-form-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+            <circle cx="12" cy="7" r="4" />
+          </svg>
+        </div>
+        <h2 className="auth-form-title">Welcome back</h2>
+        <p className="auth-form-sub">Sign in to your Wintaibot account</p>
+
+        <form onSubmit={handleSubmit} className="auth-form">
+          <div className="auth-field">
+            <label className="auth-label">Email</label>
+            <input
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="auth-input"
+              required
+            />
+          </div>
+          <div className="auth-field">
+            <label className="auth-label">Password</label>
+            <input
+              type="password"
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="auth-input"
+              required
+            />
+          </div>
+
+          {error && (
+            <div className="auth-error">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              {error}
+            </div>
+          )}
+
           {showReactivate && (
-            <div style={{ marginBottom: "12px", padding: "12px", backgroundColor: "#fff3cd", borderRadius: "8px", border: "1px solid #ffc107" }}>
-              <p style={{ margin: "0 0 8px 0", fontSize: "14px", color: "#856404" }}>Your account was deactivated.</p>
-              <button type="button" onClick={handleReactivate} disabled={loading} style={{ ...styles.button, backgroundColor: "#28a745" }}>
+            <div className="auth-reactivate-box">
+              <p>Your account was deactivated. Would you like to reactivate it?</p>
+              <button type="button" onClick={handleReactivate} disabled={loading} className="auth-btn auth-btn-success">
                 {loading ? "Reactivating..." : "Reactivate Account"}
               </button>
             </div>
           )}
-          <button type="submit" disabled={loading} style={styles.button}>
-            {loading ? "Logging in..." : "Login"}
+
+          <button type="submit" disabled={loading} className="auth-btn auth-btn-primary">
+            {loading ? "Signing in..." : "Sign In"}
           </button>
         </form>
-        <p style={styles.footer}>
-          Not a member?{" "}
-          <button type="button" onClick={onSwitchToSignup} style={styles.link}>
-            Sign up
+
+        <p className="auth-footer">
+          Don't have an account?{" "}
+          <button type="button" onClick={onSwitchToSignup} className="auth-switch-btn">
+            Sign up free
           </button>
         </p>
       </div>
     </div>
   );
 }
-
-const styles = {
-  container: { padding: "20px", display: "flex", justifyContent: "center" },
-  card: {
-    backgroundColor: "#fff",
-    padding: "24px",
-    borderRadius: "12px",
-    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-    width: "100%",
-    maxWidth: "360px",
-  },
-  title: { textAlign: "center", marginBottom: "20px", color: "#333" },
-  form: { display: "flex", flexDirection: "column", gap: "12px" },
-  input: {
-    padding: "12px",
-    borderRadius: "8px",
-    border: "1px solid #ddd",
-    fontSize: "16px",
-  },
-  error: { color: "#dc3545", fontSize: "14px", margin: 0 },
-  button: {
-    padding: "12px",
-    backgroundColor: "#007bff",
-    color: "#fff",
-    border: "none",
-    borderRadius: "8px",
-    fontSize: "16px",
-    fontWeight: "bold",
-    cursor: "pointer",
-  },
-  footer: { textAlign: "center", marginTop: "16px", fontSize: "14px", color: "#666" },
-  link: {
-    background: "none",
-    border: "none",
-    color: "#007bff",
-    cursor: "pointer",
-    textDecoration: "underline",
-    fontSize: "14px",
-  },
-};

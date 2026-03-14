@@ -3,14 +3,8 @@ import { useAuth } from "../context/AuthContext";
 
 export default function AccountSettings() {
   const {
-    user,
-    isSubscribed,
-    checkoutSubscription,
-    cancelSubscription,
-    reactivateSubscription,
-    openBillingPortal,
-    deactivateAccount,
-    logout,
+    user, isSubscribed, checkoutSubscription, cancelSubscription,
+    reactivateSubscription, openBillingPortal, deactivateAccount, logout,
   } = useAuth();
 
   const [loading, setLoading] = useState(null);
@@ -30,30 +24,20 @@ export default function AccountSettings() {
 
   const handleUpgrade = async () => {
     setLoading("upgrade");
-    try {
-      await checkoutSubscription();
-    } catch (e) {
-      showMessage(e.message || "Checkout failed", true);
-    } finally {
-      setLoading(null);
-    }
+    try { await checkoutSubscription(); }
+    catch (e) { showMessage(e.message || "Checkout failed", true); }
+    finally { setLoading(null); }
   };
 
   const handleCancelSub = async () => {
-    if (!confirmCancelSub) {
-      setConfirmCancelSub(true);
-      return;
-    }
+    if (!confirmCancelSub) { setConfirmCancelSub(true); return; }
     setLoading("cancel-sub");
     try {
       await cancelSubscription();
       setConfirmCancelSub(false);
-      showMessage("Subscription will cancel at the end of the current period. You keep access until then.");
-    } catch (e) {
-      showMessage(e.message || "Could not cancel subscription", true);
-    } finally {
-      setLoading(null);
-    }
+      showMessage("Subscription will cancel at the end of the current period.");
+    } catch (e) { showMessage(e.message || "Could not cancel subscription", true); }
+    finally { setLoading(null); }
   };
 
   const handleReactivateSub = async () => {
@@ -61,114 +45,81 @@ export default function AccountSettings() {
     try {
       await reactivateSubscription();
       showMessage("Subscription reactivated! Your membership will continue.");
-    } catch (e) {
-      showMessage(e.message || "Could not reactivate subscription", true);
-    } finally {
-      setLoading(null);
-    }
+    } catch (e) { showMessage(e.message || "Could not reactivate subscription", true); }
+    finally { setLoading(null); }
   };
 
   const handleBilling = async () => {
     setLoading("billing");
-    try {
-      await openBillingPortal();
-    } catch (e) {
-      showMessage(e.message || "Failed to open billing portal. Subscribe first to manage invoices.", true);
-    } finally {
-      setLoading(null);
-    }
+    try { await openBillingPortal(); }
+    catch (e) { showMessage(e.message || "Failed to open billing portal.", true); }
+    finally { setLoading(null); }
   };
 
   const handleDeactivate = async () => {
-    if (!confirmDeactivate) {
-      setConfirmDeactivate(true);
-      return;
-    }
+    if (!confirmDeactivate) { setConfirmDeactivate(true); return; }
     setLoading("deactivate");
     try {
       await deactivateAccount(deactivatePassword);
       logout();
-    } catch (e) {
-      showMessage(e.message || "Deactivation failed", true);
-    } finally {
-      setLoading(null);
-    }
+    } catch (e) { showMessage(e.message || "Deactivation failed", true); }
+    finally { setLoading(null); }
   };
 
   return (
-    <div style={styles.container}>
-      <div style={styles.card}>
-        <h2 style={styles.title}>Account Settings</h2>
-        <p style={styles.email}>{user?.email}</p>
+    <div style={s.wrap}>
+      <div style={s.card}>
+        <h2 style={s.cardTitle}>Account Settings</h2>
+        <p style={s.cardEmail}>{user?.email}</p>
 
+        {/* Toast */}
         {message && (
-          <div style={{ ...styles.messageBanner, backgroundColor: message.error ? "#f8d7da" : "#d4edda", color: message.error ? "#721c24" : "#155724" }}>
-            {message.text}
+          <div style={{
+            ...s.toast,
+            background: message.error ? "#fef2f2" : "#f0fdf4",
+            color: message.error ? "#b91c1c" : "#15803d",
+            borderColor: message.error ? "#fecaca" : "#bbf7d0",
+          }}>
+            {message.error ? "⚠ " : "✓ "}{message.text}
           </div>
         )}
 
-        {/* Subscription Status */}
-        <section style={styles.section}>
-          <h3 style={styles.sectionTitle}>Subscription</h3>
-          <div style={styles.statusBadge}>
-            <span style={{ ...styles.badge, backgroundColor: isMember ? "#28a745" : "#6c757d" }}>
+        {/* Subscription */}
+        <div style={s.section}>
+          <h3 style={s.sectionTitle}>Subscription</h3>
+          <div style={s.badgeRow}>
+            <span style={isMember ? s.memberBadge : s.freeBadge}>
               {isMember ? "Member" : "Free"}
             </span>
             {isMember && cancelAtPeriodEnd && (
-              <span style={{ ...styles.badge, backgroundColor: "#ffc107", color: "#333", marginLeft: "8px" }}>
-                Cancels {periodEnd ? `on ${periodEnd}` : "at period end"}
-              </span>
+              <span style={s.warnBadge}>Cancels {periodEnd ? `on ${periodEnd}` : "at period end"}</span>
             )}
             {isMember && !cancelAtPeriodEnd && periodEnd && (
-              <span style={{ color: "#666", fontSize: "13px", marginLeft: "8px" }}>
-                Renews {periodEnd}
-              </span>
+              <span style={s.renewText}>Renews {periodEnd}</span>
             )}
           </div>
 
-          {/* FREE user: show upgrade button */}
           {!isMember && (
-            <div style={{ marginTop: "12px" }}>
-              <p style={styles.desc}>Upgrade to Member ($5.99/month) to unlock Image Generator, Transcription, DocuWizard, Reply Enchanter, and Resume Worlock.</p>
-              <button
-                onClick={handleUpgrade}
-                disabled={!!loading}
-                style={{ ...styles.btn, ...styles.btnSuccess }}
-              >
-                {loading === "upgrade" ? "Redirecting..." : "Upgrade to Member ($5.99/month)"}
+            <div style={{ marginTop: 12 }}>
+              <p style={s.desc}>Upgrade to Member ($5.99/month) to unlock Image Generator, Transcription, DocuWizard, Reply Enchanter, and Resume Worlock.</p>
+              <button onClick={handleUpgrade} disabled={!!loading} style={s.btnSuccess}>
+                {loading === "upgrade" ? "Redirecting..." : "Upgrade to Member — $5.99/mo"}
               </button>
             </div>
           )}
 
-          {/* MEMBER with active (not cancelling) subscription: show cancel */}
           {isMember && !cancelAtPeriodEnd && (
-            <div style={{ marginTop: "12px" }}>
+            <div style={{ marginTop: 12 }}>
               {!confirmCancelSub ? (
-                <button
-                  onClick={() => setConfirmCancelSub(true)}
-                  disabled={!!loading}
-                  style={{ ...styles.btn, ...styles.btnWarning }}
-                >
+                <button onClick={() => setConfirmCancelSub(true)} disabled={!!loading} style={s.btnWarning}>
                   Cancel Subscription
                 </button>
               ) : (
-                <div style={styles.confirmBox}>
-                  <p style={styles.warning}>
-                    Your subscription will be cancelled at the end of the current period
-                    {periodEnd ? ` (${periodEnd})` : ""}. You can still use all member features until then.
-                  </p>
-                  <div style={styles.actionRow}>
-                    <button
-                      onClick={() => setConfirmCancelSub(false)}
-                      style={{ ...styles.btn, ...styles.btnSecondary }}
-                    >
-                      Keep Subscription
-                    </button>
-                    <button
-                      onClick={handleCancelSub}
-                      disabled={loading === "cancel-sub"}
-                      style={{ ...styles.btn, ...styles.btnWarning }}
-                    >
+                <div style={s.confirmBox}>
+                  <p style={s.warnMsg}>Your subscription will cancel at period end{periodEnd ? ` (${periodEnd})` : ""}. You keep access until then.</p>
+                  <div style={s.btnRow}>
+                    <button onClick={() => setConfirmCancelSub(false)} style={s.btnGhost}>Keep Subscription</button>
+                    <button onClick={handleCancelSub} disabled={loading === "cancel-sub"} style={s.btnWarning}>
                       {loading === "cancel-sub" ? "Cancelling..." : "Confirm Cancel"}
                     </button>
                   </div>
@@ -177,141 +128,127 @@ export default function AccountSettings() {
             </div>
           )}
 
-          {/* MEMBER with cancel_at_period_end: show reactivate */}
           {isMember && cancelAtPeriodEnd && (
-            <div style={{ marginTop: "12px" }}>
-              <p style={styles.desc}>
-                Your subscription is set to cancel{periodEnd ? ` on ${periodEnd}` : " at period end"}. Reactivate to keep your membership.
-              </p>
-              <button
-                onClick={handleReactivateSub}
-                disabled={loading === "reactivate-sub"}
-                style={{ ...styles.btn, ...styles.btnSuccess }}
-              >
+            <div style={{ marginTop: 12 }}>
+              <p style={s.desc}>Your subscription ends soon. Reactivate to keep your membership.</p>
+              <button onClick={handleReactivateSub} disabled={loading === "reactivate-sub"} style={s.btnSuccess}>
                 {loading === "reactivate-sub" ? "Reactivating..." : "Reactivate Subscription"}
               </button>
             </div>
           )}
-        </section>
+        </div>
 
-        {/* Billing & Invoices */}
-        <section style={styles.section}>
-          <h3 style={styles.sectionTitle}>Billing & Invoices</h3>
-          <p style={styles.desc}>
-            View invoice history, update payment method, or manage your subscription via Stripe.
-          </p>
-          <button
-            onClick={handleBilling}
-            disabled={!!loading}
-            style={{ ...styles.btn, ...styles.btnPrimary }}
-          >
+        {/* Billing */}
+        <div style={s.section}>
+          <h3 style={s.sectionTitle}>Billing &amp; Invoices</h3>
+          <p style={s.desc}>View invoice history, update payment method, or manage your subscription via Stripe.</p>
+          <button onClick={handleBilling} disabled={!!loading} style={s.btnPrimary}>
             {loading === "billing" ? "Opening..." : "Manage Billing & Invoices"}
           </button>
-        </section>
+        </div>
 
-        {/* Deactivate Account */}
-        <section style={styles.section}>
-          <h3 style={styles.sectionTitle}>Deactivate Account</h3>
-          <p style={styles.desc}>
-            Deactivate your account. You can reactivate it anytime by logging in with your credentials.
-          </p>
+        {/* Deactivate */}
+        <div style={s.section}>
+          <h3 style={s.sectionTitle}>Deactivate Account</h3>
+          <p style={s.desc}>Deactivate your account. You can reactivate it anytime by logging in with your credentials.</p>
           {!confirmDeactivate ? (
-            <button
-              onClick={() => setConfirmDeactivate(true)}
-              style={{ ...styles.btn, ...styles.btnDanger }}
-            >
+            <button onClick={() => setConfirmDeactivate(true)} style={s.btnDanger}>
               Deactivate Account
             </button>
           ) : (
-            <div style={styles.confirmBox}>
-              <p style={styles.warning}>
-                Enter your password to confirm account deactivation. You can reactivate later by signing in.
-              </p>
+            <div style={s.confirmBox}>
+              <p style={s.warnMsg}>Enter your password to confirm account deactivation. You can reactivate later by signing in.</p>
               <input
                 type="password"
                 placeholder="Your password"
                 value={deactivatePassword}
                 onChange={(e) => setDeactivatePassword(e.target.value)}
-                style={styles.input}
+                style={s.input}
               />
-              <div style={styles.actionRow}>
-                <button
-                  onClick={() => {
-                    setConfirmDeactivate(false);
-                    setDeactivatePassword("");
-                  }}
-                  style={{ ...styles.btn, ...styles.btnSecondary }}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleDeactivate}
-                  disabled={loading === "deactivate" || !deactivatePassword}
-                  style={{ ...styles.btn, ...styles.btnDanger }}
-                >
+              <div style={s.btnRow}>
+                <button onClick={() => { setConfirmDeactivate(false); setDeactivatePassword(""); }} style={s.btnGhost}>Cancel</button>
+                <button onClick={handleDeactivate} disabled={loading === "deactivate" || !deactivatePassword} style={s.btnDanger}>
                   {loading === "deactivate" ? "Deactivating..." : "Confirm Deactivate"}
                 </button>
               </div>
             </div>
           )}
-        </section>
+        </div>
       </div>
     </div>
   );
 }
 
-const styles = {
-  container: { padding: "24px", maxWidth: "520px", margin: "0 auto" },
+const s = {
+  wrap: { padding: "4px 0" },
   card: {
-    backgroundColor: "#fff",
+    background: "#ffffff",
     borderRadius: "12px",
-    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-    padding: "28px",
+    border: "1px solid #e2e8f0",
+    padding: "28px 32px",
+    maxWidth: "560px",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+    fontFamily: "'Inter', -apple-system, sans-serif",
   },
-  title: { margin: "0 0 8px 0", color: "#333", fontSize: "24px" },
-  email: { margin: "0 0 20px 0", color: "#666", fontSize: "14px" },
-  messageBanner: {
-    padding: "10px 14px",
-    borderRadius: "8px",
-    marginBottom: "16px",
-    fontSize: "14px",
-    lineHeight: 1.5,
+  cardTitle: { margin: "0 0 6px", color: "#0f172a", fontSize: "20px", fontWeight: "700" },
+  cardEmail: { margin: "0 0 20px", color: "#64748b", fontSize: "14px" },
+  toast: {
+    padding: "10px 14px", borderRadius: "8px", border: "1px solid",
+    marginBottom: "16px", fontSize: "14px", fontWeight: "500",
   },
-  section: { marginBottom: "28px", borderTop: "1px solid #f0f0f0", paddingTop: "20px" },
-  sectionTitle: { margin: "0 0 8px 0", color: "#333", fontSize: "16px", fontWeight: "600" },
-  desc: { margin: "0 0 12px 0", color: "#666", fontSize: "14px", lineHeight: 1.5 },
-  statusBadge: { display: "flex", alignItems: "center", marginBottom: "4px" },
-  badge: {
-    display: "inline-block",
-    padding: "3px 10px",
-    borderRadius: "12px",
-    fontSize: "12px",
-    fontWeight: "600",
-    color: "#fff",
+  section: { borderTop: "1px solid #f1f5f9", paddingTop: "20px", marginTop: "20px" },
+  sectionTitle: { margin: "0 0 10px", color: "#0f172a", fontSize: "15px", fontWeight: "700" },
+  desc: { margin: "0 0 14px", color: "#64748b", fontSize: "14px", lineHeight: "1.6" },
+  badgeRow: { display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" },
+  memberBadge: {
+    padding: "3px 12px", borderRadius: "20px",
+    background: "#22c55e", color: "#fff",
+    fontSize: "12px", fontWeight: "700",
   },
-  btn: {
-    padding: "10px 18px",
-    borderRadius: "8px",
-    fontSize: "14px",
-    fontWeight: "600",
-    cursor: "pointer",
-    border: "none",
+  freeBadge: {
+    padding: "3px 12px", borderRadius: "20px",
+    background: "#94a3b8", color: "#fff",
+    fontSize: "12px", fontWeight: "700",
   },
-  btnPrimary: { backgroundColor: "#007bff", color: "#fff" },
-  btnSuccess: { backgroundColor: "#28a745", color: "#fff" },
-  btnWarning: { backgroundColor: "#fd7e14", color: "#fff" },
-  btnSecondary: { backgroundColor: "#e9ecef", color: "#495057" },
-  btnDanger: { backgroundColor: "#dc3545", color: "#fff" },
-  confirmBox: { padding: "12px 0" },
-  warning: { color: "#856404", marginBottom: "12px", fontSize: "14px", lineHeight: 1.5 },
-  actionRow: { display: "flex", gap: "12px", flexWrap: "wrap" },
+  warnBadge: {
+    padding: "3px 12px", borderRadius: "20px",
+    background: "#fbbf24", color: "#1c1917",
+    fontSize: "12px", fontWeight: "600",
+  },
+  renewText: { color: "#64748b", fontSize: "13px" },
+  confirmBox: { paddingTop: "4px" },
+  warnMsg: { color: "#92400e", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: "8px", padding: "10px 12px", fontSize: "13px", lineHeight: "1.5", marginBottom: "12px" },
+  btnRow: { display: "flex", gap: "10px", flexWrap: "wrap" },
   input: {
-    width: "100%",
-    padding: "10px 12px",
-    borderRadius: "8px",
-    border: "1px solid #ddd",
-    fontSize: "14px",
-    marginBottom: "12px",
-    boxSizing: "border-box",
+    width: "100%", padding: "10px 12px", borderRadius: "8px",
+    border: "1px solid #e2e8f0", fontSize: "14px",
+    marginBottom: "12px", boxSizing: "border-box", outline: "none",
+    fontFamily: "inherit",
+  },
+  btnPrimary: {
+    padding: "10px 20px", borderRadius: "8px", border: "none",
+    background: "#2563eb", color: "#fff",
+    fontSize: "14px", fontWeight: "600", cursor: "pointer", fontFamily: "inherit",
+  },
+  btnSuccess: {
+    padding: "10px 20px", borderRadius: "8px", border: "none",
+    background: "#22c55e", color: "#fff",
+    fontSize: "14px", fontWeight: "600", cursor: "pointer", fontFamily: "inherit",
+  },
+  btnWarning: {
+    padding: "10px 20px", borderRadius: "8px", border: "none",
+    background: "#f97316", color: "#fff",
+    fontSize: "14px", fontWeight: "600", cursor: "pointer", fontFamily: "inherit",
+  },
+  btnDanger: {
+    padding: "10px 20px", borderRadius: "8px", border: "none",
+    background: "#ef4444", color: "#fff",
+    fontSize: "14px", fontWeight: "600", cursor: "pointer", fontFamily: "inherit",
+  },
+  btnGhost: {
+    padding: "10px 18px", borderRadius: "8px",
+    border: "1px solid #e2e8f0", background: "#fff",
+    color: "#475057", fontSize: "14px", fontWeight: "600",
+    cursor: "pointer", fontFamily: "inherit",
   },
 };

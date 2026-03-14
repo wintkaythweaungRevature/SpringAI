@@ -8,26 +8,19 @@ function Transcription() {
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [transcript, setTranscript] = useState("");
-  const [copied, setCopied] = useState(false);
   const [dragOver, setDragOver] = useState(false);
-  const inputRef = useRef();
-
-  const pickFile = (f) => {
-    if (!f) return;
-    const ext = f.name.split(".").pop().toLowerCase();
-    if (!SUPPORTED.includes(ext)) return alert(`Unsupported format. Use: ${SUPPORTED.join(", ")}`);
-    setFile(f);
-    setTranscript("");
-  };
+  const [copied, setCopied] = useState(false);
+  const fileInputRef = useRef();
 
   const handleDrop = (e) => {
     e.preventDefault();
     setDragOver(false);
-    pickFile(e.dataTransfer.files[0]);
+    const dropped = e.dataTransfer.files[0];
+    if (dropped && dropped.type.startsWith("audio/")) setFile(dropped);
   };
 
   const handleProcess = async () => {
-    if (!file) return alert("Please upload an audio file!");
+    if (!file) return;
     const formData = new FormData();
     formData.append("file", file);
     setLoading(true);
@@ -41,7 +34,8 @@ function Transcription() {
         const err = await response.text();
         throw new Error(`Server Error (${response.status}): ${err || "Error"}`);
       }
-      setTranscript(await response.text());
+      const data = await response.text();
+      setTranscript(data);
     } catch (error) {
       setTranscript(`Transcription failed: ${error.message}`);
     } finally {
@@ -55,159 +49,228 @@ function Transcription() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleDownload = () => {
-    const blob = new Blob([transcript], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `transcript_${Date.now()}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const wordCount = transcript ? transcript.trim().split(/\s+/).filter(Boolean).length : 0;
-  const charCount = transcript.length;
   const isError = transcript.startsWith("Transcription failed");
 
   return (
-    <div style={S.page}>
-      <div style={S.card}>
+    <div style={s.page}>
+      <div style={s.container}>
+
         {/* Header */}
-        <div style={S.header}>
-          <div style={S.headerIcon}>🎙️</div>
+        <div style={s.header}>
+          <div style={s.iconWrap}>🎙️</div>
           <div>
-            <h2 style={S.headerTitle}>AI Voice Transcriber</h2>
-            <p style={S.headerSub}>Convert MP3 / WAV / M4A audio to text using Whisper AI</p>
+            <h2 style={s.title}>EchoScribe</h2>
+            <p style={s.subtitle}>AI-powered audio to text transcription</p>
           </div>
         </div>
 
-        <div style={S.body}>
-          {/* Drop zone */}
-          <div
-            style={{ ...S.dropzone, ...(dragOver ? S.dropzoneActive : {}), ...(file ? S.dropzoneFilled : {}) }}
-            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-            onDragLeave={() => setDragOver(false)}
-            onDrop={handleDrop}
-            onClick={() => inputRef.current.click()}
+        {/* Upload Zone */}
+        <div
+          style={{ ...s.dropZone, ...(dragOver ? s.dropZoneActive : {}), ...(file ? s.dropZoneFilled : {}) }}
+          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={handleDrop}
+          onClick={() => !file && fileInputRef.current.click()}
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="audio/*"
+            onChange={(e) => setFile(e.target.files[0])}
+            style={{ display: "none" }}
+          />
+          {file ? (
+            <div style={s.filePreview}>
+              <span style={s.fileIcon}>🎵</span>
+              <div style={{ flex: 1 }}>
+                <div style={s.fileName}>{file.name}</div>
+                <div style={s.fileSize}>{(file.size / 1024).toFixed(1)} KB · {file.type}</div>
+              </div>
+              <button
+                style={s.removeBtn}
+                onClick={(e) => { e.stopPropagation(); setFile(null); setTranscript(""); }}
+              >✕</button>
+            </div>
+          ) : (
+            <div style={s.dropContent}>
+              <div style={s.dropIcon}>🎧</div>
+              <div style={s.dropText}>Drop your audio file here</div>
+              <div style={s.dropHint}>MP3, WAV, M4A, OGG supported · click to browse</div>
+            </div>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div style={s.actions}>
+          <button
+            onClick={handleProcess}
+            disabled={loading || !file}
+            style={{ ...s.btnPrimary, opacity: !file ? 0.5 : 1 }}
           >
-            <input ref={inputRef} type="file" accept="audio/*" style={{ display: "none" }} onChange={(e) => pickFile(e.target.files[0])} />
-            {file ? (
-              <div style={{ textAlign: "center" }}>
-                <div style={{ fontSize: "36px", marginBottom: "8px" }}>🎵</div>
-                <div style={S.fileName}>{file.name}</div>
-                <div style={S.fileSize}>{(file.size / 1024 / 1024).toFixed(2)} MB</div>
-                <button onClick={(e) => { e.stopPropagation(); setFile(null); setTranscript(""); }}
-                  style={S.removeBtn}>✕ Remove</button>
-              </div>
-            ) : (
-              <div style={{ textAlign: "center" }}>
-                <div style={{ fontSize: "40px", marginBottom: "10px" }}>📂</div>
-                <div style={S.dropText}>Drag & drop your audio file here</div>
-                <div style={S.dropSub}>or click to browse</div>
-                <div style={S.formatBadges}>
-                  {SUPPORTED.map(f => <span key={f} style={S.badge}>.{f}</span>)}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Actions */}
-          <div style={{ display: "flex", gap: "10px" }}>
-            <button onClick={handleProcess} disabled={loading || !file}
-              style={{ ...S.btn, flex: 1, ...(loading || !file ? S.btnDisabled : {}) }}>
-              {loading ? (
-                <span style={{ display: "flex", alignItems: "center", gap: "8px", justifyContent: "center" }}>
-                  <span style={S.spinner} /> Transcribing...
-                </span>
-              ) : "▶ Start Transcription"}
+            {loading
+              ? <><span style={s.spinner} /> Transcribing...</>
+              : "✦ Start Transcription"}
+          </button>
+          {transcript && (
+            <button onClick={() => { setTranscript(""); setFile(null); }} style={s.btnGhost}>
+              Clear
             </button>
-            {transcript && (
-              <button onClick={() => { setTranscript(""); setFile(null); }} style={S.clearBtn}>
-                Clear
-              </button>
-            )}
-          </div>
+          )}
         </div>
 
-        {/* Result */}
-        {transcript && (
-          <div style={S.resultSection}>
-            <div style={S.resultHeader}>
-              <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-                <span style={S.resultTitle}>{isError ? "❌ Error" : "📝 Transcript"}</span>
-                {!isError && (
-                  <>
-                    <span style={S.statBadge}>{wordCount} words</span>
-                    <span style={{ ...S.statBadge, background: "#fef3c7", color: "#92400e" }}>{charCount} chars</span>
-                  </>
-                )}
-              </div>
+        {/* Loading Animation */}
+        {loading && (
+          <div style={s.loadingCard}>
+            <div style={s.waveWrap}>
+              {[...Array(12)].map((_, i) => (
+                <div key={i} style={{ ...s.wavebar, animationDelay: `${i * 0.1}s`, height: `${Math.random() * 24 + 8}px` }} />
+              ))}
+            </div>
+            <p style={s.loadingText}>Processing your audio...</p>
+          </div>
+        )}
+
+        {/* Transcript Result */}
+        {transcript && !loading && (
+          <div style={{ ...s.resultCard, ...(isError ? s.errorCard : {}) }}>
+            <div style={s.resultHeader}>
+              <span style={s.resultIcon}>{isError ? "⚠" : "📝"}</span>
+              <span style={s.resultTitle}>{isError ? "Error" : "Transcript"}</span>
               {!isError && (
-                <div style={{ display: "flex", gap: "8px" }}>
-                  <button onClick={handleCopy} style={S.actionBtn}>{copied ? "✓ Copied" : "Copy"}</button>
-                  <button onClick={handleDownload} style={{ ...S.actionBtn, background: "#059669" }}>↓ TXT</button>
+                <div style={s.resultActions}>
+                  <span style={s.wordCount}>{transcript.split(/\s+/).filter(Boolean).length} words</span>
+                  <button onClick={handleCopy} style={s.copyBtn}>
+                    {copied ? "✓ Copied!" : "📋 Copy"}
+                  </button>
                 </div>
               )}
             </div>
-            <div style={{ ...S.transcriptBody, ...(isError ? S.errorBody : {}) }}>
+            <div style={{ ...s.transcriptText, color: isError ? "#fca5a5" : "#cbd5e1" }}>
               {transcript}
             </div>
           </div>
         )}
 
-        {/* Loading overlay hint */}
-        {loading && (
-          <div style={S.loadingBar}>
-            <div style={S.loadingInner} />
-          </div>
-        )}
       </div>
 
       <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes progress { 0% { width: 0%; } 80% { width: 85%; } 100% { width: 100%; } }
+        @keyframes wave {
+          0%, 100% { transform: scaleY(0.4); }
+          50% { transform: scaleY(1); }
+        }
       `}</style>
     </div>
   );
 }
 
-const S = {
-  page: { minHeight: "100vh", background: "#f1f5f9", padding: "32px 20px", fontFamily: "'Segoe UI', Arial, sans-serif" },
-  card: { maxWidth: "680px", margin: "0 auto", background: "#fff", borderRadius: "16px", overflow: "hidden", boxShadow: "0 4px 24px rgba(0,0,0,0.09)" },
-
-  header: { background: "linear-gradient(135deg, #1e1b4b 0%, #7c3aed 100%)", padding: "28px 32px", display: "flex", alignItems: "center", gap: "18px" },
-  headerIcon: { fontSize: "44px", lineHeight: 1 },
-  headerTitle: { margin: 0, fontSize: "22px", fontWeight: "700", color: "#fff" },
-  headerSub: { margin: "4px 0 0", fontSize: "13px", color: "#c4b5fd" },
-
-  body: { padding: "28px 32px" },
-
-  dropzone: { border: "2px dashed #cbd5e1", borderRadius: "12px", padding: "36px 20px", cursor: "pointer", transition: "all 0.2s", marginBottom: "20px", background: "#f8fafc" },
-  dropzoneActive: { borderColor: "#7c3aed", background: "#faf5ff" },
-  dropzoneFilled: { borderColor: "#059669", background: "#f0fdf4", borderStyle: "solid" },
-  dropText: { fontSize: "15px", fontWeight: "600", color: "#475569", marginBottom: "4px" },
-  dropSub: { fontSize: "13px", color: "#94a3b8", marginBottom: "12px" },
-  formatBadges: { display: "flex", justifyContent: "center", gap: "6px", flexWrap: "wrap" },
-  badge: { background: "#ede9fe", color: "#6d28d9", fontSize: "11px", fontWeight: "600", padding: "2px 8px", borderRadius: "10px" },
-  fileName: { fontSize: "15px", fontWeight: "700", color: "#0f172a", marginBottom: "4px" },
-  fileSize: { fontSize: "12px", color: "#64748b", marginBottom: "10px" },
-  removeBtn: { padding: "4px 12px", background: "#fee2e2", color: "#dc2626", border: "none", borderRadius: "6px", fontSize: "12px", cursor: "pointer", fontWeight: "600" },
-
-  btn: { padding: "14px", background: "linear-gradient(135deg, #7c3aed, #6d28d9)", color: "#fff", border: "none", borderRadius: "10px", fontSize: "15px", fontWeight: "700", cursor: "pointer" },
-  btnDisabled: { background: "#94a3b8", cursor: "not-allowed" },
-  clearBtn: { padding: "14px 20px", background: "#f1f5f9", color: "#64748b", border: "1px solid #e2e8f0", borderRadius: "10px", fontSize: "14px", fontWeight: "600", cursor: "pointer" },
-  spinner: { width: "16px", height: "16px", border: "2px solid rgba(255,255,255,0.3)", borderTop: "2px solid #fff", borderRadius: "50%", display: "inline-block", animation: "spin 0.8s linear infinite" },
-
-  resultSection: { borderTop: "1px solid #e2e8f0" },
-  resultHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px", padding: "14px 32px", background: "#f8fafc", borderBottom: "1px solid #e2e8f0" },
-  resultTitle: { fontSize: "14px", fontWeight: "700", color: "#1e293b" },
-  statBadge: { fontSize: "11px", background: "#ede9fe", color: "#6d28d9", padding: "2px 8px", borderRadius: "10px", fontWeight: "600" },
-  actionBtn: { padding: "6px 14px", background: "#7c3aed", color: "#fff", border: "none", borderRadius: "6px", fontSize: "12px", fontWeight: "600", cursor: "pointer" },
-  transcriptBody: { padding: "24px 32px", whiteSpace: "pre-wrap", fontSize: "14px", lineHeight: "1.85", color: "#334155" },
-  errorBody: { color: "#dc2626", background: "#fff5f5" },
-
-  loadingBar: { height: "3px", background: "#e2e8f0", overflow: "hidden" },
-  loadingInner: { height: "100%", background: "linear-gradient(90deg, #7c3aed, #a78bfa)", animation: "progress 3s ease-out forwards" },
-};
-
 export default Transcription;
+
+const s = {
+  page: {
+    minHeight: "100vh",
+    background: "linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%)",
+    padding: "40px 16px",
+    fontFamily: "'Inter', -apple-system, sans-serif",
+  },
+  container: { maxWidth: "680px", margin: "0 auto" },
+  header: { display: "flex", alignItems: "center", gap: "16px", marginBottom: "32px" },
+  iconWrap: { fontSize: "40px" },
+  title: { margin: 0, fontSize: "26px", fontWeight: "800", color: "#e2e8f0", letterSpacing: "-0.5px" },
+  subtitle: { margin: "4px 0 0", fontSize: "14px", color: "#64748b" },
+  dropZone: {
+    border: "2px dashed rgba(255,255,255,0.12)",
+    borderRadius: "16px",
+    padding: "48px 40px",
+    cursor: "pointer",
+    textAlign: "center",
+    marginBottom: "20px",
+    transition: "all 0.2s",
+    background: "rgba(255,255,255,0.02)",
+  },
+  dropZoneActive: {
+    borderColor: "#667eea",
+    background: "rgba(102,126,234,0.08)",
+    transform: "scale(1.01)",
+  },
+  dropZoneFilled: {
+    border: "2px solid rgba(102,126,234,0.4)",
+    cursor: "default",
+    background: "rgba(102,126,234,0.05)",
+    padding: "20px 24px",
+  },
+  dropContent: {},
+  dropIcon: { fontSize: "44px", marginBottom: "14px" },
+  dropText: { color: "#e2e8f0", fontSize: "16px", fontWeight: "600", marginBottom: "6px" },
+  dropHint: { color: "#475569", fontSize: "13px" },
+  filePreview: { display: "flex", alignItems: "center", gap: "14px", textAlign: "left" },
+  fileIcon: { fontSize: "32px", flexShrink: 0 },
+  fileName: { color: "#e2e8f0", fontSize: "15px", fontWeight: "600" },
+  fileSize: { color: "#64748b", fontSize: "12px", marginTop: "4px" },
+  removeBtn: {
+    background: "rgba(239,68,68,0.2)", border: "none",
+    color: "#fca5a5", borderRadius: "8px",
+    padding: "6px 10px", cursor: "pointer", fontSize: "13px", fontWeight: "700",
+  },
+  actions: { display: "flex", gap: "12px", flexWrap: "wrap", marginBottom: "20px" },
+  btnPrimary: {
+    padding: "12px 28px", borderRadius: "10px", border: "none",
+    background: "linear-gradient(135deg, #667eea, #764ba2)",
+    color: "#fff", fontSize: "14px", fontWeight: "700", cursor: "pointer",
+    display: "flex", alignItems: "center", gap: "8px",
+  },
+  btnGhost: {
+    padding: "12px 20px", borderRadius: "10px",
+    border: "1px solid rgba(255,255,255,0.1)",
+    background: "transparent", color: "#64748b",
+    fontSize: "14px", fontWeight: "600", cursor: "pointer",
+  },
+  spinner: {
+    width: "12px", height: "12px", borderRadius: "50%",
+    border: "2px solid rgba(255,255,255,0.3)", borderTop: "2px solid #fff",
+    display: "inline-block",
+  },
+  loadingCard: {
+    background: "rgba(255,255,255,0.03)",
+    border: "1px solid rgba(255,255,255,0.06)",
+    borderRadius: "16px", padding: "28px",
+    textAlign: "center", marginBottom: "20px",
+  },
+  waveWrap: {
+    display: "flex", alignItems: "center", justifyContent: "center",
+    gap: "4px", height: "40px", marginBottom: "16px",
+  },
+  wavebar: {
+    width: "4px", borderRadius: "2px",
+    background: "linear-gradient(180deg, #667eea, #764ba2)",
+    animation: "wave 1.2s ease-in-out infinite",
+  },
+  loadingText: { color: "#64748b", fontSize: "13px", margin: 0 },
+  resultCard: {
+    background: "rgba(255,255,255,0.04)",
+    border: "1px solid rgba(102,126,234,0.2)",
+    borderRadius: "20px", overflow: "hidden",
+  },
+  errorCard: {
+    border: "1px solid rgba(239,68,68,0.25)",
+    background: "rgba(239,68,68,0.06)",
+  },
+  resultHeader: {
+    display: "flex", alignItems: "center", gap: "10px",
+    padding: "16px 24px",
+    background: "rgba(102,126,234,0.08)",
+    borderBottom: "1px solid rgba(102,126,234,0.12)",
+  },
+  resultIcon: { fontSize: "18px" },
+  resultTitle: { color: "#a5b4fc", fontSize: "14px", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.8px" },
+  resultActions: { marginLeft: "auto", display: "flex", alignItems: "center", gap: "12px" },
+  wordCount: { color: "#475569", fontSize: "12px" },
+  copyBtn: {
+    background: "rgba(102,126,234,0.2)", border: "1px solid rgba(102,126,234,0.3)",
+    color: "#a5b4fc", fontSize: "12px", fontWeight: "600",
+    padding: "5px 12px", borderRadius: "8px", cursor: "pointer",
+  },
+  transcriptText: {
+    padding: "24px", fontSize: "15px", lineHeight: "1.8",
+    whiteSpace: "pre-wrap", wordBreak: "break-word",
+  },
+};

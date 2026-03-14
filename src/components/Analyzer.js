@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 
 const DOC_TYPE_COLORS = {
@@ -13,12 +13,21 @@ function PdfAnalyzer() {
   const [customPrompt, setCustomPrompt] = useState("");
   const [loading, setLoading] = useState(false);
   const [recipe, setRecipe] = useState("");
+  const [dragOver, setDragOver] = useState(false);
+  const fileInputRef = useRef();
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragOver(false);
+    const dropped = e.dataTransfer.files[0];
+    if (dropped && dropped.type === "application/pdf") setFile(dropped);
+  };
 
   const handleProcess = async () => {
-    if (!file) return alert("Please upload a PDF!");
+    if (!file) return;
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("prompt", customPrompt.trim() || "Analyze this document and extract all important information.");
+    formData.append("prompt", "Analyze this document and extract all important information.");
     setLoading(true);
     setRecipe("");
     try {
@@ -41,14 +50,15 @@ function PdfAnalyzer() {
 
   const parsedData = useMemo(() => {
     if (!recipe || recipe.startsWith("Analysis failed")) return null;
-    try { return JSON.parse(recipe); } catch { return null; }
+    try { return JSON.parse(recipe); }
+    catch (e) { return null; }
   }, [recipe]);
 
   const downloadCSV = () => {
-    if (!parsedData?.table_headers) return;
-    const csv = [
+    if (!parsedData || !parsedData.table_headers) return;
+    const csvContent = [
       parsedData.table_headers.join(","),
-      ...(parsedData.table_rows || []).map(row => row.map(c => `"${c}"`).join(",")),
+      ...(parsedData.table_rows || []).map((row) => row.map((cell) => `"${cell}"`).join(",")),
     ].join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const a = document.createElement("a");
@@ -58,107 +68,118 @@ function PdfAnalyzer() {
   };
 
   return (
-    <div style={S.page}>
-      <div style={S.card}>
+    <div style={s.page}>
+      <div style={s.container}>
+
         {/* Header */}
-        <div style={S.header}>
-          <div style={{ fontSize: "44px", lineHeight: 1 }}>🧙‍♂️</div>
+        <div style={s.header}>
+          <div style={s.iconWrap}>🧙‍♂️</div>
           <div>
-            <h2 style={S.headerTitle}>Smart Parser DocuWizard</h2>
-            <p style={S.headerSub}>AI-powered PDF extraction &amp; interactive analytics</p>
+            <h2 style={s.title}>DocuWizard</h2>
+            <p style={s.subtitle}>AI-powered PDF extraction & analytics</p>
           </div>
         </div>
 
-        <div style={S.body}>
-          {/* File picker */}
-          <label style={S.label}>UPLOAD PDF DOCUMENT</label>
-          <div style={{ ...S.fileRow, ...(file ? S.fileRowFilled : {}) }}>
-            <label style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: "10px", flex: 1 }}>
-              <input type="file" onChange={(e) => { setFile(e.target.files[0]); setRecipe(""); }} accept=".pdf" style={{ display: "none" }} />
-              <span style={{ fontSize: "22px" }}>{file ? "📄" : "📂"}</span>
-              <span style={{ fontSize: "14px", color: file ? "#059669" : "#64748b", fontWeight: file ? "600" : "400" }}>
-                {file ? file.name : "Click to choose a PDF file"}
-              </span>
-              {file && <span style={S.fileSizeBadge}>{(file.size / 1024).toFixed(0)} KB</span>}
-            </label>
-            {file && (
-              <button onClick={() => { setFile(null); setRecipe(""); }} style={S.removeBtn}>✕</button>
-            )}
-          </div>
-
-          {/* Focus prompt */}
-          <label style={{ ...S.label, marginTop: "16px" }}>
-            ANALYSIS FOCUS <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", fontSize: "11px" }}>(optional)</span>
-          </label>
-          <textarea
-            style={S.textarea}
-            placeholder="e.g. 'Extract all financial figures and payment terms' — leave blank for full analysis"
-            value={customPrompt}
-            onChange={(e) => setCustomPrompt(e.target.value)}
-            rows={2}
+        {/* Upload Zone */}
+        <div
+          style={{ ...s.dropZone, ...(dragOver ? s.dropZoneActive : {}), ...(file ? s.dropZoneFilled : {}) }}
+          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={handleDrop}
+          onClick={() => !file && fileInputRef.current.click()}
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf"
+            onChange={(e) => setFile(e.target.files[0])}
+            style={{ display: "none" }}
           />
-
-          {/* Actions */}
-          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-            <button onClick={handleProcess} disabled={loading} style={{ ...S.btn, flex: 1, ...(loading ? S.btnDisabled : {}) }}>
-              {loading ? (
-                <span style={{ display: "flex", alignItems: "center", gap: "8px", justifyContent: "center" }}>
-                  <span style={S.spinner} /> Analyzing...
-                </span>
-              ) : "🔍 Analyze PDF"}
-            </button>
-            {parsedData?.table_headers?.length > 0 && (
-              <button onClick={downloadCSV} style={S.exportBtn}>📊 CSV</button>
-            )}
-            {recipe && (
-              <button onClick={() => { setRecipe(""); setFile(null); setCustomPrompt(""); }} style={S.clearBtn}>Clear</button>
-            )}
-          </div>
+          {file ? (
+            <div style={s.filePreview}>
+              <span style={s.fileIcon}>📄</span>
+              <div>
+                <div style={s.fileName}>{file.name}</div>
+                <div style={s.fileSize}>{(file.size / 1024).toFixed(1)} KB</div>
+              </div>
+              <button
+                style={s.removeBtn}
+                onClick={(e) => { e.stopPropagation(); setFile(null); setRecipe(""); }}
+              >✕</button>
+            </div>
+          ) : (
+            <div style={s.dropContent}>
+              <div style={s.dropIcon}>📂</div>
+              <div style={s.dropText}>Drop your PDF here</div>
+              <div style={s.dropHint}>or click to browse</div>
+            </div>
+          )}
         </div>
+
+        {/* Actions */}
+        <div style={s.actions}>
+          <button
+            onClick={handleProcess}
+            disabled={loading || !file}
+            style={{ ...s.btnPrimary, opacity: !file ? 0.5 : 1 }}
+          >
+            {loading ? (
+              <><span style={s.spinnerDot} />  Analyzing...</>
+            ) : "✦ Analyze PDF"}
+          </button>
+
+          {parsedData && (
+            <button onClick={downloadCSV} style={s.btnOutline}>
+              ⬇ Export CSV
+            </button>
+          )}
+          {recipe && (
+            <button onClick={() => { setRecipe(""); setFile(null); }} style={s.btnGhost}>
+              Clear
+            </button>
+          )}
+        </div>
+
+        {/* Loading Bar */}
+        {loading && (
+          <div style={s.progressWrap}>
+            <div style={s.progressBar} />
+          </div>
+        )}
 
         {/* Results */}
         {parsedData ? (
-          <div style={S.results}>
+          <div style={s.results}>
 
-            {/* Doc type + summary */}
-            <div style={S.summaryBlock}>
-              {parsedData.document_type && (
-                <span style={{ ...S.docBadge, background: DOC_TYPE_COLORS[parsedData.document_type] || "#7f8c8d" }}>
-                  {parsedData.document_type}
-                </span>
-              )}
-              <h4 style={S.sectionTitle}>📄 AI Document Summary</h4>
-              <p style={S.summaryText}>{parsedData.summary || "No summary available."}</p>
+            {/* Summary */}
+            <div style={s.resultCard}>
+              <div style={s.resultCardHeader}>
+                <span>📄</span>
+                <span>Document Summary</span>
+              </div>
+              <p style={s.summaryText}>{parsedData.summary || "No summary available."}</p>
             </div>
 
-            {/* Key Metrics */}
-            {parsedData.key_metrics?.length > 0 && (
-              <div style={S.section}>
-                <h4 style={S.sectionTitle}>📈 Key Metrics</h4>
-                <div style={S.metricsGrid}>
-                  {parsedData.key_metrics.map((m, i) => (
-                    <div key={i} style={S.metricCard}>
-                      <div style={S.metricValue}>{m.value}</div>
-                      <div style={S.metricLabel}>{m.label}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* Table */}
-            {parsedData.table_headers?.length > 0 && (
-              <div style={S.section}>
-                <h4 style={S.sectionTitle}>📊 Extracted Details</h4>
-                <div style={S.tableWrap}>
-                  <table style={S.table}>
+            {parsedData.table_headers && (
+              <div style={s.resultCard}>
+                <div style={s.resultCardHeader}>
+                  <span>📊</span>
+                  <span>Extracted Data</span>
+                </div>
+                <div style={s.tableWrap}>
+                  <table style={s.table}>
                     <thead>
-                      <tr>{parsedData.table_headers.map((h, i) => <th key={i} style={S.th}>{h}</th>)}</tr>
+                      <tr>
+                        {parsedData.table_headers.map((h, i) => (
+                          <th key={i} style={s.th}>{h}</th>
+                        ))}
+                      </tr>
                     </thead>
                     <tbody>
                       {parsedData.table_rows?.map((row, i) => (
-                        <tr key={i} style={i % 2 ? { background: "#f8fafc" } : {}}>
-                          {row.map((cell, j) => <td key={j} style={S.td}>{cell}</td>)}
+                        <tr key={i} style={i % 2 === 0 ? {} : s.altRow}>
+                          {row.map((cell, j) => <td key={j} style={s.td}>{cell}</td>)}
                         </tr>
                       ))}
                     </tbody>
@@ -167,122 +188,154 @@ function PdfAnalyzer() {
               </div>
             )}
 
-            {/* Insights + Actions */}
-            <div style={S.twoCol}>
-              {parsedData.insights?.length > 0 && (
-                <div style={S.insightsCard}>
-                  <h4 style={S.cardTitle}>💡 Key Insights</h4>
-                  <ul style={S.list}>
-                    {parsedData.insights.map((item, i) => (
-                      <li key={i} style={S.listItem}>✦ {item}</li>
-                    ))}
-                  </ul>
+            {/* Insights */}
+            {parsedData.insights && (
+              <div style={s.resultCard}>
+                <div style={s.resultCardHeader}>
+                  <span>💡</span>
+                  <span>Key Insights</span>
                 </div>
-              )}
-              {parsedData.action_items?.length > 0 && (
-                <div style={S.actionsCard}>
-                  <h4 style={S.cardTitle}>✅ Action Items</h4>
-                  <ul style={S.list}>
-                    {parsedData.action_items.map((item, i) => (
-                      <li key={i} style={S.listItem}>→ {item}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-
-            {/* Entities */}
-            {parsedData.entities && (
-              <div style={S.section}>
-                <h4 style={S.sectionTitle}>🔍 Extracted Entities</h4>
-                <div style={S.entitiesGrid}>
-                  {[
-                    { key: "people", label: "👤 People", cls: { bg: "#dbeafe", color: "#1d4ed8" } },
-                    { key: "organizations", label: "🏢 Organizations", cls: { bg: "#ede9fe", color: "#6d28d9" } },
-                    { key: "dates", label: "📅 Dates", cls: { bg: "#dcfce7", color: "#15803d" } },
-                    { key: "amounts", label: "💰 Amounts", cls: { bg: "#ffedd5", color: "#c2410c" } },
-                  ].filter(e => parsedData.entities[e.key]?.length > 0).map(e => (
-                    <div key={e.key} style={S.entityGroup}>
-                      <div style={S.entityHeader}>{e.label}</div>
-                      <div>{parsedData.entities[e.key].map((v, i) => (
-                        <span key={i} style={{ ...S.tag, background: e.cls.bg, color: e.cls.color }}>{v}</span>
-                      ))}</div>
-                    </div>
+                <ul style={s.insightList}>
+                  {parsedData.insights.map((insight, i) => (
+                    <li key={i} style={s.insightItem}>
+                      <span style={s.insightDot}>▸</span>
+                      {insight}
+                    </li>
                   ))}
-                </div>
+                </ul>
               </div>
             )}
-
           </div>
-        ) : recipe && (
-          <div style={S.errorBox}>
-            <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", margin: 0, fontSize: "13px" }}>{recipe}</pre>
-          </div>
+        ) : (
+          recipe && !loading && (
+            <div style={s.errorCard}>
+              <pre style={s.errorPre}>{recipe}</pre>
+            </div>
+          )
         )}
       </div>
-
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-        textarea:focus { outline: none; border-color: #16a085 !important; box-shadow: 0 0 0 3px rgba(22,160,133,0.12) !important; }
-      `}</style>
     </div>
   );
 }
 
-const S = {
-  page: { minHeight: "100vh", background: "#f1f5f9", padding: "32px 20px", fontFamily: "'Segoe UI', Arial, sans-serif" },
-  card: { maxWidth: "860px", margin: "0 auto", background: "#fff", borderRadius: "16px", overflow: "hidden", boxShadow: "0 4px 24px rgba(0,0,0,0.09)" },
-
-  header: { background: "linear-gradient(135deg, #134e4a 0%, #0d9488 100%)", padding: "28px 32px", display: "flex", alignItems: "center", gap: "18px" },
-  headerTitle: { margin: 0, fontSize: "22px", fontWeight: "700", color: "#fff" },
-  headerSub: { margin: "4px 0 0", fontSize: "13px", color: "#99f6e4" },
-
-  body: { padding: "28px 32px" },
-  label: { display: "block", fontSize: "11px", fontWeight: "700", color: "#64748b", letterSpacing: "0.8px", marginBottom: "8px" },
-
-  fileRow: { display: "flex", alignItems: "center", padding: "14px 16px", border: "2px dashed #cbd5e1", borderRadius: "10px", background: "#f8fafc", marginBottom: "4px", transition: "all 0.2s", gap: "10px" },
-  fileRowFilled: { borderColor: "#0d9488", borderStyle: "solid", background: "#f0fdfa" },
-  fileSizeBadge: { fontSize: "11px", background: "#ccfbf1", color: "#0f766e", padding: "2px 8px", borderRadius: "10px", fontWeight: "600", marginLeft: "auto" },
-  removeBtn: { padding: "4px 10px", background: "#fee2e2", color: "#dc2626", border: "none", borderRadius: "6px", fontSize: "12px", cursor: "pointer", fontWeight: "700", flexShrink: 0 },
-
-  textarea: { width: "100%", boxSizing: "border-box", padding: "11px 14px", border: "1.5px solid #e2e8f0", borderRadius: "8px", fontSize: "14px", color: "#334155", resize: "vertical", lineHeight: "1.5", background: "#f8fafc", marginBottom: "18px", transition: "border 0.2s" },
-
-  btn: { padding: "14px", background: "linear-gradient(135deg, #0d9488, #0f766e)", color: "#fff", border: "none", borderRadius: "10px", fontSize: "15px", fontWeight: "700", cursor: "pointer" },
-  btnDisabled: { background: "#94a3b8", cursor: "not-allowed" },
-  exportBtn: { padding: "14px 20px", background: "#2563eb", color: "#fff", border: "none", borderRadius: "10px", fontSize: "14px", fontWeight: "700", cursor: "pointer" },
-  clearBtn: { padding: "14px 20px", background: "#f1f5f9", color: "#64748b", border: "1px solid #e2e8f0", borderRadius: "10px", fontSize: "14px", fontWeight: "600", cursor: "pointer" },
-  spinner: { width: "16px", height: "16px", border: "2px solid rgba(255,255,255,0.3)", borderTop: "2px solid #fff", borderRadius: "50%", display: "inline-block", animation: "spin 0.8s linear infinite" },
-
-  results: { borderTop: "1px solid #e2e8f0", padding: "28px 32px" },
-  summaryBlock: { background: "#f0fdfa", borderRadius: "12px", padding: "20px", marginBottom: "24px", borderLeft: "5px solid #0d9488" },
-  docBadge: { display: "inline-block", padding: "3px 12px", borderRadius: "20px", color: "#fff", fontSize: "12px", fontWeight: "700", marginBottom: "10px" },
-  sectionTitle: { margin: "0 0 12px", fontSize: "14px", fontWeight: "700", color: "#1e293b" },
-  summaryText: { margin: 0, fontSize: "14px", lineHeight: "1.75", color: "#475569" },
-
-  section: { marginBottom: "24px" },
-  metricsGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "12px" },
-  metricCard: { background: "linear-gradient(135deg, #1a1a2e, #16213e)", borderRadius: "10px", padding: "16px 14px", textAlign: "center" },
-  metricValue: { fontSize: "20px", fontWeight: "700", color: "#4ade80", marginBottom: "4px", wordBreak: "break-word" },
-  metricLabel: { fontSize: "11px", color: "#94a3b8" },
-
-  tableWrap: { overflowX: "auto", borderRadius: "8px", border: "1px solid #e2e8f0" },
-  table: { width: "100%", borderCollapse: "collapse", background: "#fff" },
-  th: { background: "#0d9488", color: "#fff", padding: "11px 14px", textAlign: "left", fontSize: "13px", fontWeight: "600" },
-  td: { padding: "11px 14px", borderBottom: "1px solid #f1f5f9", fontSize: "13px", color: "#475569" },
-
-  twoCol: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "24px" },
-  insightsCard: { background: "#fffbe6", borderRadius: "10px", padding: "18px", borderLeft: "4px solid #eab308" },
-  actionsCard: { background: "#f0fdf4", borderRadius: "10px", padding: "18px", borderLeft: "4px solid #22c55e" },
-  cardTitle: { margin: "0 0 12px", fontSize: "13px", fontWeight: "700", color: "#1e293b" },
-  list: { padding: 0, margin: 0, listStyle: "none" },
-  listItem: { fontSize: "13px", color: "#475569", lineHeight: "1.6", marginBottom: "7px" },
-
-  entitiesGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "14px" },
-  entityGroup: { background: "#f8fafc", borderRadius: "8px", padding: "14px" },
-  entityHeader: { fontSize: "12px", fontWeight: "700", color: "#64748b", marginBottom: "10px" },
-  tag: { display: "inline-block", padding: "3px 10px", borderRadius: "12px", fontSize: "12px", margin: "3px 3px 3px 0", fontWeight: "500" },
-
-  errorBox: { margin: "0 32px 28px", padding: "16px", background: "#fff5f5", borderRadius: "8px", border: "1px solid #fecaca", color: "#dc2626" },
-};
-
 export default PdfAnalyzer;
+
+const s = {
+  page: {
+    minHeight: "100vh",
+    background: "linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%)",
+    padding: "40px 16px",
+    fontFamily: "'Inter', -apple-system, sans-serif",
+  },
+  container: { maxWidth: "720px", margin: "0 auto" },
+  header: {
+    display: "flex", alignItems: "center", gap: "16px", marginBottom: "32px",
+  },
+  iconWrap: { fontSize: "40px" },
+  title: { margin: 0, fontSize: "26px", fontWeight: "800", color: "#e2e8f0", letterSpacing: "-0.5px" },
+  subtitle: { margin: "4px 0 0", fontSize: "14px", color: "#64748b" },
+  dropZone: {
+    border: "2px dashed rgba(255,255,255,0.12)",
+    borderRadius: "16px",
+    padding: "40px",
+    cursor: "pointer",
+    textAlign: "center",
+    marginBottom: "20px",
+    transition: "all 0.2s",
+    background: "rgba(255,255,255,0.02)",
+  },
+  dropZoneActive: {
+    borderColor: "#667eea",
+    background: "rgba(102,126,234,0.08)",
+    transform: "scale(1.01)",
+  },
+  dropZoneFilled: {
+    border: "2px solid rgba(102,126,234,0.4)",
+    cursor: "default",
+    background: "rgba(102,126,234,0.05)",
+  },
+  dropContent: {},
+  dropIcon: { fontSize: "40px", marginBottom: "12px" },
+  dropText: { color: "#e2e8f0", fontSize: "16px", fontWeight: "600", marginBottom: "6px" },
+  dropHint: { color: "#475569", fontSize: "13px" },
+  filePreview: {
+    display: "flex", alignItems: "center", gap: "14px", textAlign: "left",
+  },
+  fileIcon: { fontSize: "32px", flexShrink: 0 },
+  fileName: { color: "#e2e8f0", fontSize: "15px", fontWeight: "600" },
+  fileSize: { color: "#64748b", fontSize: "12px", marginTop: "4px" },
+  removeBtn: {
+    marginLeft: "auto", background: "rgba(239,68,68,0.2)", border: "none",
+    color: "#fca5a5", borderRadius: "8px", padding: "6px 10px", cursor: "pointer",
+    fontSize: "13px", fontWeight: "700",
+  },
+  actions: { display: "flex", gap: "12px", flexWrap: "wrap", marginBottom: "20px" },
+  btnPrimary: {
+    padding: "12px 28px", borderRadius: "10px", border: "none",
+    background: "linear-gradient(135deg, #667eea, #764ba2)",
+    color: "#fff", fontSize: "14px", fontWeight: "700", cursor: "pointer",
+    display: "flex", alignItems: "center", gap: "8px", transition: "opacity 0.2s",
+  },
+  btnOutline: {
+    padding: "12px 20px", borderRadius: "10px",
+    border: "1px solid rgba(102,126,234,0.5)",
+    background: "transparent", color: "#a5b4fc",
+    fontSize: "14px", fontWeight: "600", cursor: "pointer",
+  },
+  btnGhost: {
+    padding: "12px 20px", borderRadius: "10px",
+    border: "1px solid rgba(255,255,255,0.1)",
+    background: "transparent", color: "#64748b",
+    fontSize: "14px", fontWeight: "600", cursor: "pointer",
+  },
+  spinnerDot: {
+    width: "12px", height: "12px", borderRadius: "50%",
+    border: "2px solid rgba(255,255,255,0.3)", borderTop: "2px solid #fff",
+    display: "inline-block",
+  },
+  progressWrap: {
+    height: "3px", borderRadius: "2px",
+    background: "rgba(255,255,255,0.06)", marginBottom: "24px", overflow: "hidden",
+  },
+  progressBar: {
+    height: "100%", width: "60%",
+    background: "linear-gradient(90deg, #667eea, #764ba2)",
+    animation: "shimmer 1.5s infinite",
+    borderRadius: "2px",
+  },
+  results: { display: "flex", flexDirection: "column", gap: "16px" },
+  resultCard: {
+    background: "rgba(255,255,255,0.04)",
+    border: "1px solid rgba(255,255,255,0.08)",
+    borderRadius: "16px", padding: "20px",
+    backdropFilter: "blur(12px)",
+  },
+  resultCardHeader: {
+    display: "flex", alignItems: "center", gap: "10px",
+    color: "#a5b4fc", fontSize: "14px", fontWeight: "700",
+    marginBottom: "14px", textTransform: "uppercase", letterSpacing: "0.8px",
+  },
+  summaryText: { color: "#cbd5e1", fontSize: "14px", lineHeight: "1.7", margin: 0 },
+  tableWrap: { overflowX: "auto" },
+  table: { width: "100%", borderCollapse: "collapse" },
+  th: {
+    textAlign: "left", padding: "10px 14px",
+    background: "rgba(102,126,234,0.15)",
+    color: "#a5b4fc", fontSize: "12px", fontWeight: "700",
+    textTransform: "uppercase", letterSpacing: "0.5px",
+    borderBottom: "1px solid rgba(255,255,255,0.06)",
+  },
+  td: {
+    padding: "10px 14px", color: "#cbd5e1", fontSize: "13px",
+    borderBottom: "1px solid rgba(255,255,255,0.04)",
+  },
+  altRow: { background: "rgba(255,255,255,0.02)" },
+  insightList: { listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "10px" },
+  insightItem: { display: "flex", gap: "10px", color: "#cbd5e1", fontSize: "14px", lineHeight: "1.6" },
+  insightDot: { color: "#667eea", fontWeight: "700", flexShrink: 0, marginTop: "1px" },
+  errorCard: {
+    background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)",
+    borderRadius: "12px", padding: "16px",
+  },
+  errorPre: { color: "#fca5a5", fontSize: "13px", margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word" },
+};

@@ -1,10 +1,19 @@
 import React, { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 
+const SUGGESTIONS = [
+  "A futuristic city with golden pagodas at sunset",
+  "Watercolor mountain landscape with cherry blossoms",
+  "Cyberpunk street market at night, neon lights",
+  "Minimalist Japanese zen garden, aerial view",
+  "Abstract galaxy portrait, vibrant colors",
+  "Medieval castle surrounded by glowing forest",
+];
+
 function ImageGenerator() {
   const { token, apiBase } = useAuth();
   const [prompt, setPrompt] = useState("");
-  const [imageUrls, setImageUrls] = useState([]);
+  const [imageUrl, setImageUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -12,6 +21,7 @@ function ImageGenerator() {
     if (!prompt.trim()) return;
     setLoading(true);
     setError("");
+    setImageUrl("");
     try {
       const url = `${apiBase || "https://api.wintaibot.com"}/api/ai/generate-image?prompt=${encodeURIComponent(prompt)}`;
       const headers = {};
@@ -19,11 +29,8 @@ function ImageGenerator() {
       const response = await fetch(url, { headers });
       if (!response.ok) throw new Error(`Server error: ${response.status}`);
       const data = await response.json();
-      if (data.url) {
-        setImageUrls([data.url]);
-      } else {
-        setError("Image URL not found in response.");
-      }
+      if (data.url) setImageUrl(data.url);
+      else setError("Image URL not found in response.");
     } catch (err) {
       setError("Failed to generate image. Please try again.");
     } finally {
@@ -33,118 +40,97 @@ function ImageGenerator() {
 
   return (
     <div style={s.page}>
-      <div style={s.container}>
+      <div style={s.layout}>
 
-        {/* Header */}
-        <div style={s.header}>
-          <div style={s.iconWrap}>🎨</div>
-          <div>
-            <h2 style={s.title}>AI Image Generator</h2>
-            <p style={s.subtitle}>Turn your words into stunning visuals with DALL·E 3</p>
+        {/* ── LEFT PANEL: Controls ── */}
+        <div style={s.left}>
+          <div style={s.panelHeader}>
+            <span style={s.panelIcon}>🎨</span>
+            <div>
+              <h2 style={s.panelTitle}>Image Generator</h2>
+              <p style={s.panelSub}>DALL·E 3 powered</p>
+            </div>
           </div>
-        </div>
 
-        {/* Prompt Input */}
-        <div style={s.inputCard}>
-          <label style={s.inputLabel}>
-            <span style={{ fontSize: "14px" }}>✏️</span> Describe your image
-          </label>
-          <div style={s.inputRow}>
-            <input
-              type="text"
+          <div style={s.field}>
+            <label style={s.label}>Prompt</label>
+            <textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && !loading && generateImage()}
-              placeholder="e.g. A futuristic city in Myanmar with golden pagodas at sunset..."
-              style={s.input}
+              placeholder="Describe the image you want to create..."
+              style={s.textarea}
               disabled={loading}
+              rows={4}
             />
-            <button
-              onClick={generateImage}
-              disabled={loading || !prompt.trim()}
-              style={{ ...s.btnGenerate, opacity: !prompt.trim() ? 0.5 : 1 }}
-            >
-              {loading ? <><span style={s.spinner} /> Generating...</> : "✦ Generate"}
-            </button>
           </div>
 
-          {/* Prompt suggestions */}
-          <div style={s.suggestions}>
-            {["Cyberpunk city at night", "Watercolor mountain landscape", "Abstract galaxy portrait", "Minimalist Japanese garden"].map((s_) => (
-              <button key={s_} style={s.chip} onClick={() => setPrompt(s_)}>
-                {s_}
-              </button>
-            ))}
+          <div style={s.field}>
+            <label style={s.label}>Suggestions</label>
+            <div style={s.chipGrid}>
+              {SUGGESTIONS.map((s_) => (
+                <button key={s_} style={s.chip} onClick={() => setPrompt(s_)}>
+                  {s_}
+                </button>
+              ))}
+            </div>
           </div>
+
+          <button
+            onClick={generateImage}
+            disabled={loading || !prompt.trim()}
+            style={{ ...s.btnGenerate, opacity: !prompt.trim() ? 0.5 : 1 }}
+          >
+            {loading ? <><span style={s.spinner} />  Generating...</> : "✦ Generate Image"}
+          </button>
+
+          {error && <div style={s.errorBox}>⚠ {error}</div>}
+
+          {imageUrl && (
+            <div style={s.linksGroup}>
+              <a href={imageUrl} target="_blank" rel="noreferrer" style={s.linkBtn}>🔍 Full Size</a>
+              <a href={imageUrl} download="image.png" style={s.linkBtnGreen}>⬇ Download</a>
+              <button style={s.linkBtnRed} onClick={() => { setImageUrl(""); setPrompt(""); }}>✕ Clear</button>
+            </div>
+          )}
         </div>
 
-        {/* Error */}
-        {error && (
-          <div style={s.errorBox}>⚠ {error}</div>
-        )}
-
-        {/* Result */}
-        {loading && (
-          <div style={s.canvas}>
-            <div style={s.loadingContent}>
-              <div style={s.loadingIcon}>🖼️</div>
-              <p style={s.loadingText}>Crafting your image...</p>
-              <p style={s.loadingHint}>This may take up to 15 seconds</p>
-              <div style={s.progressWrap}>
-                <div style={s.progressBar} />
+        {/* ── RIGHT PANEL: Canvas ── */}
+        <div style={s.right}>
+          {loading ? (
+            <div style={s.canvas}>
+              <div style={s.canvasInner}>
+                <div style={s.loadingIcon}>🖼️</div>
+                <p style={s.loadingText}>Creating your image...</p>
+                <p style={s.loadingHint}>This takes up to 15 seconds</p>
+                <div style={s.progressWrap}><div style={s.progressBar} /></div>
               </div>
             </div>
-          </div>
-        )}
-
-        {!loading && imageUrls.length > 0 && (
-          <div style={s.resultCard}>
-            <div style={s.resultHeader}>
-              <span style={s.resultLabel}>✦ Generated Image</span>
-              <div style={s.resultActions}>
-                <a href={imageUrls[0]} target="_blank" rel="noreferrer" style={s.viewBtn}>
-                  🔍 View Full Size
-                </a>
-                <a href={imageUrls[0]} download="generated-image.png" style={s.downloadBtn}>
-                  ⬇ Download
-                </a>
-                <button style={s.clearBtn} onClick={() => { setImageUrls([]); setPrompt(""); }}>
-                  ✕ Clear
-                </button>
-              </div>
-            </div>
-            <div style={s.imageWrap}>
+          ) : imageUrl ? (
+            <div style={s.imageCard}>
               <img
-                src={imageUrls[0]}
+                src={imageUrl}
                 alt="Generated"
                 style={s.image}
-                onError={(e) => { e.target.src = "https://via.placeholder.com/500?text=Image+Not+Available"; }}
+                onError={(e) => { e.target.src = "https://via.placeholder.com/500?text=Not+Available"; }}
               />
+              <div style={s.caption}>
+                <span style={s.captionLabel}>Prompt — </span>{prompt}
+              </div>
             </div>
-            <div style={s.promptCaption}>
-              <span style={s.captionLabel}>Prompt:</span> {prompt}
+          ) : (
+            <div style={s.canvas}>
+              <div style={s.canvasInner}>
+                <div style={s.placeholderIcon}>✨</div>
+                <p style={s.placeholderText}>Your image appears here</p>
+                <p style={s.placeholderHint}>Enter a prompt and click Generate</p>
+              </div>
             </div>
-          </div>
-        )}
-
-        {!loading && imageUrls.length === 0 && !error && (
-          <div style={s.canvas}>
-            <div style={s.placeholderContent}>
-              <div style={s.placeholderIcon}>🖼️</div>
-              <p style={s.placeholderText}>Your image will appear here</p>
-              <p style={s.placeholderHint}>Type a description above and click Generate</p>
-            </div>
-          </div>
-        )}
-
+          )}
+        </div>
       </div>
 
       <style>{`
-        @keyframes pulse-bar {
-          0% { width: 15%; }
-          50% { width: 75%; }
-          100% { width: 15%; }
-        }
+        @keyframes pulse-bar { 0%,100%{width:15%} 50%{width:80%} }
       `}</style>
     </div>
   );
@@ -153,133 +139,95 @@ function ImageGenerator() {
 export default ImageGenerator;
 
 const s = {
-  page: {
-    minHeight: "100vh",
-    background: "linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%)",
-    padding: "40px 16px",
-    fontFamily: "'Inter', -apple-system, sans-serif",
-  },
-  container: { maxWidth: "700px", margin: "0 auto" },
-  header: { display: "flex", alignItems: "center", gap: "16px", marginBottom: "28px" },
-  iconWrap: { fontSize: "40px" },
-  title: { margin: 0, fontSize: "26px", fontWeight: "800", color: "#e2e8f0", letterSpacing: "-0.5px" },
-  subtitle: { margin: "4px 0 0", fontSize: "14px", color: "#64748b" },
+  page: { padding: "4px 0", fontFamily: "'Inter',-apple-system,sans-serif" },
+  layout: { display: "flex", gap: "20px", alignItems: "flex-start" },
 
-  inputCard: {
-    background: "rgba(255,255,255,0.04)",
-    border: "1px solid rgba(255,255,255,0.08)",
-    borderRadius: "20px", padding: "24px",
-    marginBottom: "20px",
-    backdropFilter: "blur(12px)",
+  left: {
+    width: "320px", minWidth: "280px", flexShrink: 0,
+    background: "#fff", borderRadius: "16px",
+    border: "1px solid #e2e8f0",
+    padding: "24px",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
   },
-  inputLabel: {
-    display: "flex", alignItems: "center", gap: "8px",
-    color: "#94a3b8", fontSize: "12px", fontWeight: "700",
-    textTransform: "uppercase", letterSpacing: "0.8px",
-    marginBottom: "12px",
+  panelHeader: { display: "flex", alignItems: "center", gap: "12px", marginBottom: "24px" },
+  panelIcon: { fontSize: "32px" },
+  panelTitle: { margin: 0, fontSize: "18px", fontWeight: "800", color: "#0f172a" },
+  panelSub: { margin: "2px 0 0", fontSize: "12px", color: "#94a3b8" },
+
+  field: { marginBottom: "18px" },
+  label: { display: "block", fontSize: "11px", fontWeight: "700", color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.8px", marginBottom: "8px" },
+  textarea: {
+    width: "100%", padding: "12px 14px", borderRadius: "10px",
+    border: "1px solid #e2e8f0", fontSize: "13px", color: "#0f172a",
+    outline: "none", resize: "none", fontFamily: "inherit",
+    background: "#f8fafc", boxSizing: "border-box", lineHeight: "1.6",
   },
-  inputRow: { display: "flex", gap: "12px", marginBottom: "16px" },
-  input: {
-    flex: 1, padding: "14px 18px", borderRadius: "12px",
-    border: "1px solid rgba(255,255,255,0.1)",
-    background: "rgba(255,255,255,0.05)",
-    color: "#e2e8f0", fontSize: "14px", outline: "none",
-    fontFamily: "inherit",
+  chipGrid: { display: "flex", flexDirection: "column", gap: "6px" },
+  chip: {
+    padding: "8px 12px", borderRadius: "8px", textAlign: "left",
+    border: "1px solid #e2e8f0", background: "#f8fafc",
+    color: "#475569", fontSize: "12px", cursor: "pointer", fontFamily: "inherit",
+    transition: "all 0.15s",
   },
   btnGenerate: {
-    padding: "14px 24px", borderRadius: "12px", border: "none",
-    background: "linear-gradient(135deg, #667eea, #764ba2)",
+    width: "100%", padding: "13px", borderRadius: "10px", border: "none",
+    background: "linear-gradient(135deg, #2563eb, #7c3aed)",
     color: "#fff", fontSize: "14px", fontWeight: "700",
     cursor: "pointer", display: "flex", alignItems: "center",
-    gap: "8px", whiteSpace: "nowrap", fontFamily: "inherit",
-    boxShadow: "0 4px 20px rgba(102,126,234,0.3)",
+    justifyContent: "center", gap: "8px", fontFamily: "inherit",
+    marginBottom: "14px",
+    boxShadow: "0 4px 14px rgba(37,99,235,0.3)",
   },
   spinner: {
     width: "12px", height: "12px", borderRadius: "50%",
-    border: "2px solid rgba(255,255,255,0.3)", borderTop: "2px solid #fff",
+    border: "2px solid rgba(255,255,255,0.35)", borderTop: "2px solid #fff",
     display: "inline-block",
   },
-  suggestions: { display: "flex", flexWrap: "wrap", gap: "8px" },
-  chip: {
-    padding: "6px 14px", borderRadius: "20px",
-    border: "1px solid rgba(255,255,255,0.1)",
-    background: "rgba(255,255,255,0.04)",
-    color: "#64748b", fontSize: "12px", cursor: "pointer",
-    fontFamily: "inherit", transition: "all 0.15s",
-  },
   errorBox: {
-    background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)",
-    borderRadius: "12px", padding: "14px 18px",
-    color: "#fca5a5", fontSize: "14px", marginBottom: "20px",
+    background: "#fef2f2", border: "1px solid #fecaca",
+    borderRadius: "8px", padding: "10px 14px",
+    color: "#b91c1c", fontSize: "13px", marginBottom: "14px",
+  },
+  linksGroup: { display: "flex", gap: "8px", flexWrap: "wrap" },
+  linkBtn: {
+    padding: "7px 14px", borderRadius: "8px",
+    background: "#eff6ff", border: "1px solid #bfdbfe",
+    color: "#2563eb", fontSize: "12px", fontWeight: "600", textDecoration: "none",
+  },
+  linkBtnGreen: {
+    padding: "7px 14px", borderRadius: "8px",
+    background: "#f0fdf4", border: "1px solid #bbf7d0",
+    color: "#16a34a", fontSize: "12px", fontWeight: "600", textDecoration: "none",
+  },
+  linkBtnRed: {
+    padding: "7px 14px", borderRadius: "8px",
+    background: "#fef2f2", border: "1px solid #fecaca",
+    color: "#dc2626", fontSize: "12px", fontWeight: "600",
+    cursor: "pointer", fontFamily: "inherit",
   },
 
+  right: { flex: 1, minWidth: 0 },
   canvas: {
-    border: "2px dashed rgba(255,255,255,0.08)",
-    borderRadius: "20px", minHeight: "320px",
+    background: "#fff", border: "2px dashed #e2e8f0",
+    borderRadius: "16px", minHeight: "480px",
     display: "flex", alignItems: "center", justifyContent: "center",
-    background: "rgba(255,255,255,0.02)",
   },
-  loadingContent: { textAlign: "center", padding: "40px" },
+  canvasInner: { textAlign: "center", padding: "40px" },
   loadingIcon: { fontSize: "48px", marginBottom: "16px" },
-  loadingText: { color: "#e2e8f0", fontSize: "16px", fontWeight: "600", margin: "0 0 8px" },
-  loadingHint: { color: "#475569", fontSize: "13px", margin: "0 0 20px" },
-  progressWrap: {
-    height: "3px", background: "rgba(255,255,255,0.06)",
-    borderRadius: "2px", overflow: "hidden", width: "200px", margin: "0 auto",
-  },
-  progressBar: {
-    height: "100%", borderRadius: "2px",
-    background: "linear-gradient(90deg, #667eea, #764ba2)",
-    animation: "pulse-bar 2s ease-in-out infinite",
-  },
+  loadingText: { color: "#0f172a", fontSize: "16px", fontWeight: "600", margin: "0 0 6px" },
+  loadingHint: { color: "#94a3b8", fontSize: "13px", margin: "0 0 20px" },
+  progressWrap: { height: "3px", background: "#e2e8f0", borderRadius: "2px", overflow: "hidden", width: "180px", margin: "0 auto" },
+  progressBar: { height: "100%", borderRadius: "2px", background: "linear-gradient(90deg,#2563eb,#7c3aed)", animation: "pulse-bar 2s ease-in-out infinite" },
+  placeholderIcon: { fontSize: "52px", marginBottom: "16px", opacity: 0.25 },
+  placeholderText: { color: "#94a3b8", fontSize: "16px", fontWeight: "600", margin: "0 0 6px" },
+  placeholderHint: { color: "#cbd5e1", fontSize: "13px", margin: 0 },
 
-  placeholderContent: { textAlign: "center", padding: "40px" },
-  placeholderIcon: { fontSize: "52px", marginBottom: "16px", opacity: 0.3 },
-  placeholderText: { color: "#475569", fontSize: "16px", fontWeight: "600", margin: "0 0 8px" },
-  placeholderHint: { color: "#334155", fontSize: "13px", margin: 0 },
-
-  resultCard: {
-    background: "rgba(255,255,255,0.04)",
-    border: "1px solid rgba(102,126,234,0.2)",
-    borderRadius: "20px", overflow: "hidden",
+  imageCard: {
+    background: "#fff", border: "1px solid #e2e8f0",
+    borderRadius: "16px", overflow: "hidden",
+    boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
   },
-  resultHeader: {
-    display: "flex", alignItems: "center", justifyContent: "space-between",
-    flexWrap: "wrap", gap: "12px",
-    padding: "16px 20px",
-    background: "rgba(102,126,234,0.08)",
-    borderBottom: "1px solid rgba(102,126,234,0.12)",
-  },
-  resultLabel: { color: "#a5b4fc", fontSize: "13px", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.8px" },
-  resultActions: { display: "flex", gap: "8px", flexWrap: "wrap" },
-  viewBtn: {
-    padding: "6px 14px", borderRadius: "8px",
-    background: "rgba(102,126,234,0.15)", border: "1px solid rgba(102,126,234,0.3)",
-    color: "#a5b4fc", fontSize: "12px", fontWeight: "600",
-    textDecoration: "none",
-  },
-  downloadBtn: {
-    padding: "6px 14px", borderRadius: "8px",
-    background: "rgba(52,211,153,0.1)", border: "1px solid rgba(52,211,153,0.25)",
-    color: "#6ee7b7", fontSize: "12px", fontWeight: "600",
-    textDecoration: "none",
-  },
-  clearBtn: {
-    padding: "6px 12px", borderRadius: "8px",
-    background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)",
-    color: "#fca5a5", fontSize: "12px", fontWeight: "600", cursor: "pointer",
-    fontFamily: "inherit",
-  },
-  imageWrap: { padding: "20px" },
-  image: {
-    width: "100%", borderRadius: "12px",
-    boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
-    display: "block",
-  },
-  promptCaption: {
-    padding: "12px 20px 16px",
-    color: "#475569", fontSize: "13px",
-    borderTop: "1px solid rgba(255,255,255,0.04)",
-  },
-  captionLabel: { color: "#64748b", fontWeight: "600" },
+  image: { width: "100%", display: "block" },
+  caption: { padding: "12px 18px", color: "#64748b", fontSize: "13px", borderTop: "1px solid #f1f5f9" },
+  captionLabel: { fontWeight: "600", color: "#94a3b8" },
 };

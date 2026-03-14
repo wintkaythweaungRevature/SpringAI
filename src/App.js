@@ -108,9 +108,12 @@ function App() {
       {/* ═══════════════ MAIN ═══════════════ */}
       <div style={s.main}>
 
-        {/* Top Bar */}
+        {/* Top Bar - Wintaibot logo left, search center, icons + user right */}
         <header style={s.topBar}>
-          <button style={s.menuBtn} onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>
+          <div style={s.topLeft}>
+            <button style={s.menuBtn} onClick={() => setSidebarOpen(!sidebarOpen)} aria-label="Menu">☰</button>
+            <span style={s.topBarLogo}>Wintaibot</span>
+          </div>
 
           <div style={s.searchBox}>
             <span style={{ opacity: 0.4, fontSize: '14px' }}>🔍</span>
@@ -122,12 +125,21 @@ function App() {
               <span style={{ color: '#94a3b8', fontSize: '13px' }}>...</span>
             ) : user ? (
               <>
+                <button style={s.iconBtn} title="Messages">💬</button>
+                <button style={s.iconBtn} title="Notifications">
+                  <span style={s.bellWrap}>🔔<span style={s.redDot} /></span>
+                </button>
+                <button style={s.iconBtn} onClick={() => go('account')} title="Settings">
+                  <span style={s.bellWrap}>⚙️<span style={s.redDot} /></span>
+                </button>
+                <button style={s.avatarBtn} onClick={() => go('account')} title={user.email}>
+                  <div style={s.avatar}>{userInitials}</div>
+                </button>
                 <span style={s.topEmail} title={user.email}>{user.email}</span>
                 {user?.membershipType === 'MEMBER' && (
                   <span style={s.memberBadge}>✓ Member</span>
                 )}
                 <button onClick={logout} style={s.logoutBtn}>Logout</button>
-                <div style={s.avatar}>{userInitials}</div>
               </>
             ) : (
               <>
@@ -274,7 +286,7 @@ const s = {
   /* Main */
   main: {
     flex: 1, display: 'flex', flexDirection: 'column',
-    overflow: 'hidden', background: '#f0f4f8',
+    overflow: 'hidden', background: '#f1f5f9',
   },
 
   /* Top Bar */
@@ -286,10 +298,31 @@ const s = {
     padding: '0 20px', gap: '14px',
     boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
   },
+  topLeft: {
+    display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0,
+  },
+  topBarLogo: {
+    color: '#1a2547', fontSize: '16px', fontWeight: '800',
+    letterSpacing: '-0.3px',
+  },
   menuBtn: {
-    background: 'none', border: 'none', color: '#94a3b8',
+    background: 'none', border: 'none', color: '#64748b',
     fontSize: '18px', cursor: 'pointer', padding: '4px 6px',
     borderRadius: '6px', flexShrink: 0, lineHeight: 1,
+  },
+  iconBtn: {
+    background: 'none', border: 'none', cursor: 'pointer',
+    fontSize: '18px', padding: '6px', borderRadius: '8px',
+    color: '#64748b', lineHeight: 1, position: 'relative',
+  },
+  bellWrap: { position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' },
+  redDot: {
+    position: 'absolute', top: '-2px', right: '-2px',
+    width: '8px', height: '8px', borderRadius: '50%',
+    background: '#ef4444', border: '1.5px solid #fff',
+  },
+  avatarBtn: {
+    background: 'none', border: 'none', cursor: 'pointer', padding: 0,
   },
   searchBox: {
     display: 'flex', alignItems: 'center', gap: '8px',

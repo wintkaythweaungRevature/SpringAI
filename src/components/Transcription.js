@@ -98,7 +98,7 @@ function Transcription() {
           <div style={s.infoBox}>
             <div style={s.infoTitle}>Supported formats</div>
             <div style={s.infoText}>MP3, MP4, WAV, M4A, OGG, WEBM</div>
-            <div style={s.infoTitle} style={{ marginTop: "10px" }}>Powered by</div>
+            <div style={{ ...s.infoTitle, marginTop: "10px" }}>Powered by</div>
             <div style={s.infoText}>OpenAI Whisper</div>
           </div>
         </div>

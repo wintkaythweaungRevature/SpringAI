@@ -106,7 +106,7 @@ function App() {
           <LandingSection onGetStarted={() => handleTabChange('chat')} />
         )}
         {activeTab === 'image-generator' && <MemberGate featureName="Image Generator"><ImageGenerator /></MemberGate>}
-        {activeTab === 'chat' && <AskAIGate featureName="Ask AI"><ChatComponent /></AskAIGate>}
+        {activeTab === 'chat' && <ChatComponent />}
         {activeTab === 'analyzer' && <MemberGate featureName="DocuWizard"><SpendingAnalyzer /></MemberGate>}
         {activeTab === 'recipe-generator' && <AskAIGate featureName="Recipe Generator"><ReceipeGenerator /></AskAIGate>}
         {activeTab === 'transcription' && <MemberGate featureName="EchoScribe"><Transcription /></MemberGate>}

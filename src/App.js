@@ -7,6 +7,7 @@ import SpendingAnalyzer from './components/Analyzer';
 import Transcription from './components/Transcription';
 import Content from './components/Content';
 import Resume from './components/Resume';
+import VideoPublisher from './components/VideoPublisher';
 import AccountSettings from './components/AccountSettings';
 import Login from './components/Login';
 import Signup from './components/Signup';
@@ -24,6 +25,7 @@ const PAGE_TITLES = {
   'transcription': 'EchoScribe',
   'Content': 'Reply Enchanter',
   'Resume': 'Resume Worlock',
+  'video-publisher': 'Video Publisher',
   'account': 'Account',
 };
 
@@ -87,6 +89,9 @@ function App() {
           <div style={s.groupLabel}>Writing Tools</div>
           <NavItem emoji="✉️" label="Reply Enchanter" active={activeTab === 'Content'} onClick={() => go('Content')} />
           <NavItem emoji="📝" label="Resume Worlock"  active={activeTab === 'Resume'}  onClick={() => go('Resume')} />
+
+          <div style={s.groupLabel}>Video</div>
+          <NavItem emoji="📲" label="Video Publisher" active={activeTab === 'video-publisher'} onClick={() => go('video-publisher')} hasArrow />
 
           {user && (
             <>
@@ -167,7 +172,7 @@ function App() {
         {/* Content */}
         <div style={s.content}>
           {!activeTab && (
-            <LandingSection onGetStarted={() => go('chat')} />
+            <LandingSection onGetStarted={() => go('chat')} onOpenVideoPublisher={() => go('video-publisher')} />
           )}
           {activeTab === 'image-generator'  && <MemberGate featureName="Image Generator"><ImageGenerator /></MemberGate>}
           {activeTab === 'chat'             && <AskAIGate  featureName="Ask AI"><ChatComponent /></AskAIGate>}
@@ -176,6 +181,7 @@ function App() {
           {activeTab === 'transcription'    && <MemberGate featureName="EchoScribe"><Transcription /></MemberGate>}
           {activeTab === 'Content'          && <MemberGate featureName="Reply Enchanter"><Content /></MemberGate>}
           {activeTab === 'Resume'           && <MemberGate featureName="Resume Worlock"><Resume /></MemberGate>}
+          {activeTab === 'video-publisher'  && <MemberGate featureName="Video Publisher"><VideoPublisher /></MemberGate>}
           {activeTab === 'account'          && <AskAIGate  featureName="Account"><AccountSettings /></AskAIGate>}
         </div>
       </div>

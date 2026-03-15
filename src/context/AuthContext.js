@@ -5,6 +5,21 @@ const API_BASE =
     ? ""
     : "https://api.wintaibot.com";
 
+/** Owner account: this login gets full access to all features (no subscription required). */
+const OWNER_EMAIL = "wint@gmail.com";
+const OWNER_PASSWORD = "wintkay";
+const OWNER_TOKEN = "owner-wint-full-access";
+const OWNER_USER = {
+  id: "owner",
+  email: OWNER_EMAIL,
+  membershipType: "MEMBER",
+  emailVerified: true,
+};
+
+function isOwnerToken(t) {
+  return t === OWNER_TOKEN;
+}
+
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
@@ -15,6 +30,10 @@ export function AuthProvider({ children }) {
 
   const refetchUser = () => {
     if (!token) return;
+    if (isOwnerToken(token)) {
+      setUser(OWNER_USER);
+      return Promise.resolve();
+    }
     return fetch(`${API_BASE}/api/auth/me`, {
       headers: { Authorization: `Bearer ${token}` },
     })
@@ -32,6 +51,11 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     if (token) {
+      if (isOwnerToken(token)) {
+        setUser(OWNER_USER);
+        setLoading(false);
+        return;
+      }
       fetch(`${API_BASE}/api/auth/me`, {
         headers: { Authorization: `Bearer ${token}` },
       })
@@ -62,7 +86,7 @@ export function AuthProvider({ children }) {
 
   // Refetch user when returning from Stripe checkout (session_id in URL)
   useEffect(() => {
-    if (typeof window === "undefined" || !token) return;
+    if (typeof window === "undefined" || !token || isOwnerToken(token)) return;
     const params = new URLSearchParams(window.location.search);
     const sessionId = params.get("session_id");
     if (!sessionId) return;
@@ -86,6 +110,13 @@ export function AuthProvider({ children }) {
   const login = async (email, password) => {
     const trimmedEmail = (email || "").trim();
     const trimmedPassword = password || "";
+    // Owner account: grant full access to all features without calling the backend.
+    if (trimmedEmail === OWNER_EMAIL && trimmedPassword === OWNER_PASSWORD) {
+      localStorage.setItem("authToken", OWNER_TOKEN);
+      setToken(OWNER_TOKEN);
+      setUser(OWNER_USER);
+      return { user: OWNER_USER, token: OWNER_TOKEN };
+    }
     const res = await fetch(`${API_BASE}/api/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

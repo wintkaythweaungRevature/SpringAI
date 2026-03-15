@@ -27,16 +27,20 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
+        String token = null;
         String authHeader = request.getHeader("Authorization");
         if (StringUtils.hasText(authHeader) && authHeader.startsWith("Bearer ")) {
-            String token = authHeader.substring(7);
-            if (jwtService.isValid(token)) {
-                Long userId = jwtService.getUserIdFromToken(token);
-                UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-                        userId, null, Collections.emptyList());
-                auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(auth);
-            }
+            token = authHeader.substring(7);
+        } else if ("GET".equalsIgnoreCase(request.getMethod()) && StringUtils.hasText(request.getParameter("token"))) {
+            // Allow token in query string for GET (e.g. Connect popup: /api/video-content/connect/youtube?token=...)
+            token = request.getParameter("token");
+        }
+        if (StringUtils.hasText(token) && jwtService.isValid(token)) {
+            Long userId = jwtService.getUserIdFromToken(token);
+            UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
+                    userId, null, Collections.emptyList());
+            auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+            SecurityContextHolder.getContext().setAuthentication(auth);
         }
         filterChain.doFilter(request, response);
     }

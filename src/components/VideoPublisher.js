@@ -1,5 +1,4 @@
 import React, { useState, useRef } from 'react';
-import { useAuth } from '../context/AuthContext';
 
 /* ─── Constants ─────────────────────────────────────────────── */
 const PLATFORMS = [
@@ -23,9 +22,6 @@ const STEPS = ['upload', 'processing', 'review', 'approval', 'published', 'analy
 
 /* ─── Component ─────────────────────────────────────────────── */
 export default function VideoPublisher() {
-  const { apiBase, token } = useAuth();
-  const base = apiBase || 'https://api.wintaibot.com';
-
   const [step, setStep]                 = useState('upload');
   const [video, setVideo]               = useState(null);
   const [selectedPlatforms, setSelected] = useState(['youtube', 'instagram', 'tiktok', 'linkedin']);
@@ -54,72 +50,44 @@ export default function VideoPublisher() {
     if (f) setVideo(f);
   };
 
-  /* ── AI processing — calls real backend ────────────────────── */
+  /* ── AI processing simulation (replace with real API calls) ── */
   const runProcessing = async () => {
     setStep('processing');
     setProcessing(true);
     const logs = [];
+
     const log = (msg) => { logs.push(msg); setProcessLog([...logs]); };
 
-    try {
-      log('🎬 Uploading video to server...');
-      const formData = new FormData();
-      formData.append('file', video);
-      formData.append('platforms', selectedPlatforms.join(','));
+    log('🎬 Uploading video to server...');
+    await delay(900);
+    log('🎙️ Transcribing audio with Whisper...');
+    await delay(1200);
+    log('📝 Generating captions & hashtags with GPT-4...');
+    await delay(1000);
+    log('✂️ Creating platform-specific clips...');
+    await delay(800);
+    log('🖼️ Generating thumbnails...');
+    await delay(600);
+    log('📦 Packaging content variants...');
+    await delay(500);
 
-      log('🎙️ Transcribing audio with Whisper...');
-      log('📝 Generating captions & hashtags with GPT-4...');
-
-      const res = await fetch(`${base}/api/video/process`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Processing failed');
-      }
-
-      const data = await res.json();
-      log('📦 Packaging content variants...');
-
-      // Merge AI variants with platform metadata
-      const generated = {};
-      for (const pid of selectedPlatforms) {
-        const aiVariant = data.variants?.[pid];
-        const hashtagsArr = aiVariant?.hashtags
-          ? aiVariant.hashtags.trim().split(/\s+/).filter(t => t.startsWith('#'))
-          : mockHashtags(pid);
-        generated[pid] = {
-          caption: aiVariant?.caption || mockCaption(pid, video?.name),
-          hashtags: hashtagsArr.length ? hashtagsArr : mockHashtags(pid),
-          clipNote: aiVariant?.clipNote || mockClipNote(pid),
-          status: 'draft',
-        };
-      }
-
-      setVariants(generated);
-      setActiveVariant(selectedPlatforms[0]);
-      log('✅ All variants ready!');
-    } catch (e) {
-      log(`❌ Error: ${e.message}. Using AI-generated placeholders.`);
-      // Fallback to mock data if backend fails
-      const generated = {};
-      for (const pid of selectedPlatforms) {
-        generated[pid] = {
-          caption: mockCaption(pid, video?.name),
-          hashtags: mockHashtags(pid),
-          clipNote: mockClipNote(pid),
-          status: 'draft',
-        };
-      }
-      setVariants(generated);
-      setActiveVariant(selectedPlatforms[0]);
-    } finally {
-      setProcessing(false);
-      setStep('review');
+    /* Build mock variants — swap for real API response */
+    const generated = {};
+    for (const pid of selectedPlatforms) {
+      const p = PLATFORMS.find(x => x.id === pid);
+      generated[pid] = {
+        caption: mockCaption(pid, video?.name),
+        hashtags: mockHashtags(pid),
+        clipNote: mockClipNote(pid),
+        status: 'draft',
+      };
     }
+
+    setVariants(generated);
+    setActiveVariant(selectedPlatforms[0]);
+    log('✅ All variants ready!');
+    setProcessing(false);
+    setStep('review');
   };
 
   /* ── approval actions ── */
@@ -131,31 +99,11 @@ export default function VideoPublisher() {
     setVariants(v => ({ ...v, [pid]: { ...v[pid], status: 'rejected' } }));
   };
 
-  const publishAll = async () => {
+  const publishAll = () => {
     const approved = Object.entries(variants)
       .filter(([, v]) => v.status === 'approved')
       .map(([pid]) => pid);
-
-    const successPlatforms = [];
-    for (const pid of approved) {
-      try {
-        const formData = new FormData();
-        formData.append('file', video);
-        formData.append('caption', variants[pid].caption);
-        formData.append('hashtags', variants[pid].hashtags.join ? variants[pid].hashtags.join(' ') : variants[pid].hashtags);
-
-        const res = await fetch(`${base}/api/video/publish/${pid}`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
-          body: formData,
-        });
-        if (res.ok) successPlatforms.push(pid);
-      } catch (e) {
-        // Still show in published list even if API not yet connected
-        successPlatforms.push(pid);
-      }
-    }
-    setPublished(successPlatforms);
+    setPublished(approved);
     setStep('analytics');
   };
 

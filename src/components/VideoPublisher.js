@@ -88,6 +88,7 @@ export default function VideoPublisher() {
   const [trendsLoading, setTrendsLoading] = useState(false);
   const [connectMessage, setConnectMessage] = useState('');
   const [connectRefreshing, setConnectRefreshing] = useState(false);
+  const [connectLoading, setConnectLoading] = useState(null);
   const fileRef = useRef();
 
   const [videoId, setVideoId] = useState(null); // backend video id after upload
@@ -162,8 +163,15 @@ export default function VideoPublisher() {
   const displayNews = (trends?.news?.length ? trends.news : defaultNews).slice(0, 3);
 
   const connectPlatform = (platformId) => {
+    setConnectLoading(platformId);
+    setConnectMessage('');
     fetch(socialApi('/connect/' + platformId), { headers: authHeaders() })
-      .then(res => res.ok ? res.json() : null)
+      .then(res => {
+        if (!res.ok) {
+          return res.text().then(t => { throw new Error(`${res.status}: ${t || res.statusText}`); });
+        }
+        return res.json();
+      })
       .then(data => {
         const url = data?.url || data?.authUrl;
         if (url) {
@@ -175,13 +183,15 @@ export default function VideoPublisher() {
           window.addEventListener('focus', onFocus);
         } else {
           setConnectMessage('Could not get connect URL');
-          setTimeout(() => setConnectMessage(''), 3000);
+          setTimeout(() => setConnectMessage(''), 4000);
         }
       })
-      .catch(() => {
-        setConnectMessage('Connect failed');
-        setTimeout(() => setConnectMessage(''), 3000);
-      });
+      .catch(err => {
+        const msg = err.message || 'Connect failed';
+        setConnectMessage(msg.startsWith('Failed') ? 'Connect failed (network or CORS). Check api base and backend.' : msg);
+        setTimeout(() => setConnectMessage(''), 5000);
+      })
+      .finally(() => setConnectLoading(null));
   };
 
   const disconnectPlatform = (platformId) => {
@@ -586,8 +596,9 @@ export default function VideoPublisher() {
                         type="button"
                         style={{ ...s.connectBtn, ...(connected ? s.connectBtnDone : {}), borderColor: p.color, color: connected ? '#fff' : p.color }}
                         onClick={() => connected ? disconnectPlatform(pid) : connectPlatform(pid)}
+                        disabled={connectLoading === pid}
                       >
-                        {connected ? '✓ Connected' : 'Connect'}
+                        {connected ? '✓ Connected' : connectLoading === pid ? 'Connecting…' : 'Connect'}
                       </button>
                     </div>
                   );

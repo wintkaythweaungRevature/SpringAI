@@ -55,7 +55,9 @@ jobs:
           tags: ${{ secrets.DOCKER_USERNAME }}/spring-ai-backend:latest
 
       # ── Deploy to EC2 ─────────────────────────────────────────
-      # Required repo secrets: EC2_HOST, EC2_SSH_KEY (Settings → Secrets and variables → Actions)
+      # Required secrets: EC2_HOST (public IP or DNS), EC2_SSH_KEY (private key).
+      # If you see "dial tcp ***:22: i/o timeout": open port 22 in EC2 Security Group
+      # (Inbound rules → SSH from 0.0.0.0/0 or https://api.github.com/meta for GitHub IPs).
       - name: Check deploy secrets
         run: |
           if [ -z "${{ secrets.EC2_HOST }}" ]; then

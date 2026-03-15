@@ -188,7 +188,7 @@ export default function VideoPublisher() {
       })
       .catch(err => {
         const msg = err.message || 'Connect failed';
-        setConnectMessage(msg.startsWith('Failed') ? 'Connect failed (network or CORS). Check api base and backend.' : msg);
+        setConnectMessage(msg.startsWith('Failed') ? 'Connect failed (network or CORS). Set REACT_APP_API_BASE to your backend and ensure CORS allows this origin.' : msg);
         setTimeout(() => setConnectMessage(''), 5000);
       })
       .finally(() => setConnectLoading(null));

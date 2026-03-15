@@ -1,9 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 
-const API_BASE =
-  typeof window !== "undefined" && window.location.hostname === "localhost"
-    ? ""
-    : "https://api.wintaibot.com";
+const getApiBase = () => {
+  if (typeof window === "undefined") return "https://api.wintaibot.com";
+  if (process.env.REACT_APP_API_BASE) return process.env.REACT_APP_API_BASE.replace(/\/$/, "");
+  if (window.location.hostname === "localhost") return ""; // use dev proxy when available
+  return "https://api.wintaibot.com";
+};
+const API_BASE = getApiBase();
 
 /** Owner account: this login gets full access to all features (no subscription required). */
 const OWNER_EMAIL = "wint@gmail.com";
@@ -117,11 +120,19 @@ export function AuthProvider({ children }) {
       setUser(OWNER_USER);
       return { user: OWNER_USER, token: OWNER_TOKEN };
     }
-    const res = await fetch(`${API_BASE}/api/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: trimmedEmail, password: trimmedPassword }),
-    });
+    let res;
+    try {
+      res = await fetch(`${API_BASE}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: trimmedEmail, password: trimmedPassword }),
+      });
+    } catch (err) {
+      const isNetwork = err?.message === "Failed to fetch" || err?.name === "TypeError";
+      throw new Error(isNetwork
+        ? "Cannot reach server (network or CORS). Set REACT_APP_API_BASE to your backend URL and ensure CORS allows this origin."
+        : (err?.message || "Login failed"));
+    }
     if (!res.ok) {
       const text = await res.text();
       let msg = "Invalid email or password";
@@ -156,17 +167,25 @@ export function AuthProvider({ children }) {
   };
 
   const signup = async (email, password, name) => {
-    const res = await fetch(`${API_BASE}/api/auth/register`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email,
-        password,
-        name: name || "",
-        firstName: name || "",
-        lastName: "",
-      }),
-    });
+    let res;
+    try {
+      res = await fetch(`${API_BASE}/api/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          password,
+          name: name || "",
+          firstName: name || "",
+          lastName: "",
+        }),
+      });
+    } catch (err) {
+      const isNetwork = err?.message === "Failed to fetch" || err?.name === "TypeError";
+      throw new Error(isNetwork
+        ? "Cannot reach server (network or CORS). Set REACT_APP_API_BASE to your backend URL and ensure CORS allows this origin."
+        : (err?.message || "Signup failed"));
+    }
     if (!res.ok) {
       const text = await res.text();
       let msg = "Signup failed";

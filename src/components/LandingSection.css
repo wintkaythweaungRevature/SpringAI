@@ -253,6 +253,12 @@
   line-height: 1.65;
 }
 
+.ls-feature-card .ls-feature-cta {
+  margin-top: 14px;
+  padding: 8px 16px;
+  font-size: 0.85rem;
+}
+
 .ls-features-note {
   font-size: 0.875rem;
   color: #64748b;

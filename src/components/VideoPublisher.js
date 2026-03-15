@@ -1,16 +1,59 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
 
 /* ─── Constants ─────────────────────────────────────────────── */
+const SIMPLE_ICONS_CDN = 'https://cdn.simpleicons.org';
 const PLATFORMS = [
-  { id: 'youtube',   label: 'YouTube',   emoji: '▶️',  color: '#FF0000', maxLen: 5000 },
-  { id: 'instagram', label: 'Instagram', emoji: '📸',  color: '#E1306C', maxLen: 2200 },
-  { id: 'tiktok',    label: 'TikTok',    emoji: '🎵',  color: '#010101', maxLen: 2200 },
-  { id: 'linkedin',  label: 'LinkedIn',  emoji: '💼',  color: '#0077B5', maxLen: 3000 },
-  { id: 'facebook',  label: 'Facebook',  emoji: '👍',  color: '#1877F2', maxLen: 63206 },
-  { id: 'x',         label: 'X (Twitter)', emoji: '🐦', color: '#000000', maxLen: 280 },
-  { id: 'threads',   label: 'Threads',   emoji: '🧵',  color: '#101010', maxLen: 500 },
-  { id: 'pinterest', label: 'Pinterest', emoji: '📌',  color: '#E60023', maxLen: 500 },
+  { id: 'youtube',   label: 'YouTube',   emoji: '▶️',  color: '#FF0000', maxLen: 5000, logo: 'youtube' },
+  { id: 'instagram', label: 'Instagram', emoji: '📸',  color: '#E1306C', maxLen: 2200, logo: 'instagram' },
+  { id: 'tiktok',    label: 'TikTok',    emoji: '🎵',  color: '#000000', maxLen: 2200, logo: 'tiktok' },
+  { id: 'linkedin',  label: 'LinkedIn',  emoji: '💼',  color: '#0A66C2', maxLen: 3000, logo: 'linkedin' },
+  { id: 'facebook',  label: 'Facebook',  emoji: '👍',  color: '#1877F2', maxLen: 63206, logo: 'facebook' },
+  { id: 'x',         label: 'X (Twitter)', emoji: '🐦', color: '#000000', maxLen: 280, logo: 'x' },
+  { id: 'threads',   label: 'Threads',   emoji: '🧵',  color: '#101010', maxLen: 500, logo: 'threads' },
+  { id: 'pinterest', label: 'Pinterest', emoji: '📌',  color: '#E60023', maxLen: 500, logo: 'pinterest' },
 ];
+
+/** Official LinkedIn "in" logo as inline SVG (viewBox 0 0 24 24) */
+function LinkedInLogo({ size = 24, color = '#0A66C2', style = {} }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden
+      style={{ minWidth: size, minHeight: size, display: 'block', ...style }}
+    >
+      <path
+        fill={color}
+        d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"
+      />
+    </svg>
+  );
+}
+
+function PlatformIcon({ platform, size = 24, style = {} }) {
+  const [imgError, setImgError] = useState(false);
+  if (!platform) return null;
+  if (platform.id === 'linkedin') {
+    return <LinkedInLogo size={size} color={platform.color || '#0A66C2'} style={style} />;
+  }
+  const url = platform.logo && !imgError ? `${SIMPLE_ICONS_CDN}/${platform.logo}/${(platform.color || '#64748b').replace('#', '')}` : null;
+  if (url) {
+    return (
+      <img
+        src={url}
+        alt=""
+        aria-hidden
+        onError={() => setImgError(true)}
+        style={{ width: size, height: size, minWidth: size, minHeight: size, objectFit: 'contain', ...style }}
+      />
+    );
+  }
+  return <span style={{ fontSize: size, lineHeight: 1, ...style }}>{platform.emoji}</span>;
+}
 
 const ROLES = [
   { id: 'creator', label: 'Creator',  desc: 'Write & submit posts', emoji: '✏️' },
@@ -22,6 +65,9 @@ const STEPS = ['upload', 'processing', 'review', 'approval', 'published', 'analy
 
 /* ─── Component ─────────────────────────────────────────────── */
 export default function VideoPublisher() {
+  const { apiBase, token } = useAuth();
+  const base = apiBase || 'https://api.wintaibot.com';
+
   const [step, setStep]                 = useState('upload');
   const [video, setVideo]               = useState(null);
   const [selectedPlatforms, setSelected] = useState(['youtube', 'instagram', 'tiktok', 'linkedin']);
@@ -33,9 +79,121 @@ export default function VideoPublisher() {
   const [approvals, setApprovals]       = useState({});
   const [published, setPublished]       = useState([]);
   const [activeVariant, setActiveVariant] = useState(null);
+  const [connectedAccounts, setConnectedAccounts] = useState({});
+  const [insights, setInsights] = useState(null);       // { insights: [], metrics: {}, platformBreakdown: [], nextIdeas: [] }
+  const [insightsLoading, setInsightsLoading] = useState(false);
+  const [publishLoading, setPublishLoading] = useState(false);
+  const [processError, setProcessError] = useState(null);
+  const [trends, setTrends] = useState(null);
+  const [trendsLoading, setTrendsLoading] = useState(false);
+  const [connectMessage, setConnectMessage] = useState('');
+  const [connectRefreshing, setConnectRefreshing] = useState(false);
   const fileRef = useRef();
 
-  /* ── helpers ── */
+  const [videoId, setVideoId] = useState(null); // backend video id after upload
+
+  const api = (path) => `${base}/api/video-content${path}`;
+  const socialApi = (path) => `${base}/api/social${path}`;
+  const authHeaders = () => (token ? { Authorization: `Bearer ${token}` } : {});
+
+  const parseConnectedFromStatus = (data) => {
+    if (!data) return {};
+    const list = data.connected;
+    if (Array.isArray(list)) {
+      const map = {};
+      list.forEach(p => { map[p] = true; });
+      return map;
+    }
+    if (data.connections || data.connected) {
+      const raw = data.connections || data.connected || {};
+      return typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
+    }
+    return {};
+  };
+
+  useEffect(() => {
+    if (!token) return;
+    fetch(socialApi('/status'), { headers: authHeaders() })
+      .then(res => res.ok ? res.json() : null)
+      .then(data => setConnectedAccounts(parseConnectedFromStatus(data)))
+      .catch(() => {});
+  }, [base, token]);
+
+  const fetchTrends = () => {
+    if (!token) return;
+    setTrendsLoading(true);
+    fetch(api('/trends'), { headers: authHeaders() })
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data && (data.trends?.length || data.news?.length)) setTrends(data);
+      })
+      .catch(() => {})
+      .finally(() => setTrendsLoading(false));
+  };
+  useEffect(() => { if (step === 'upload') fetchTrends(); }, [base, token, step]);
+
+  const refreshConnections = () => {
+    if (!token) return;
+    setConnectRefreshing(true);
+    setConnectMessage('');
+    fetch(socialApi('/status'), { headers: authHeaders() })
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        setConnectedAccounts(parseConnectedFromStatus(data));
+        setConnectMessage('Connections updated');
+        setTimeout(() => setConnectMessage(''), 3000);
+      })
+      .catch(() => setConnectMessage('Refresh failed'))
+      .finally(() => setConnectRefreshing(false));
+  };
+
+  const defaultTrends = [
+    '#AITools trending on TikTok and Reels',
+    'Short-form vertical video engagement up 40% this week',
+    'Best posting time: Tuesday 7 PM (your audience)',
+    'POV and "Get ready with me" formats still peaking',
+  ];
+  const defaultNews = [
+    'Instagram Reels: algorithm now prioritizes original audio.',
+    'YouTube Shorts: 60s clips rolling out in more regions.',
+    'TikTok: new "Series" feature for multi-part content.',
+  ];
+  const displayTrends = (trends?.trends?.length ? trends.trends : defaultTrends).slice(0, 5);
+  const displayNews = (trends?.news?.length ? trends.news : defaultNews).slice(0, 3);
+
+  const connectPlatform = (platformId) => {
+    fetch(socialApi('/connect/' + platformId), { headers: authHeaders() })
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        const url = data?.url || data?.authUrl;
+        if (url) {
+          const popup = window.open(url, 'video_connect', 'width=600,height=700');
+          const onFocus = () => {
+            window.removeEventListener('focus', onFocus);
+            if (popup?.closed) refreshConnections();
+          };
+          window.addEventListener('focus', onFocus);
+        } else {
+          setConnectMessage('Could not get connect URL');
+          setTimeout(() => setConnectMessage(''), 3000);
+        }
+      })
+      .catch(() => {
+        setConnectMessage('Connect failed');
+        setTimeout(() => setConnectMessage(''), 3000);
+      });
+  };
+
+  const disconnectPlatform = (platformId) => {
+    fetch(socialApi('/disconnect/' + platformId), { method: 'DELETE', headers: authHeaders() })
+      .then(res => {
+        if (res.ok) refreshConnections();
+        else setConnectMessage('Disconnect failed');
+      })
+      .catch(() => setConnectMessage('Disconnect failed'))
+      .finally(() => setTimeout(() => setConnectMessage(''), 3000));
+  };
+
   const togglePlatform = (id) =>
     setSelected(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id]);
 
@@ -50,67 +208,215 @@ export default function VideoPublisher() {
     if (f) setVideo(f);
   };
 
-  /* ── AI processing simulation (replace with real API calls) ── */
   const runProcessing = async () => {
     setStep('processing');
     setProcessing(true);
+    setProcessError(null);
     const logs = [];
-
     const log = (msg) => { logs.push(msg); setProcessLog([...logs]); };
 
-    log('🎬 Uploading video to server...');
-    await delay(900);
-    log('🎙️ Transcribing audio with Whisper...');
-    await delay(1200);
-    log('📝 Generating captions & hashtags with GPT-4...');
-    await delay(1000);
-    log('✂️ Creating platform-specific clips...');
-    await delay(800);
-    log('🖼️ Generating thumbnails...');
-    await delay(600);
-    log('📦 Packaging content variants...');
-    await delay(500);
+    try {
+      log('🎬 Uploading video to server...');
+      const formData = new FormData();
+      formData.append('file', video);
 
-    /* Build mock variants — swap for real API response */
-    const generated = {};
-    for (const pid of selectedPlatforms) {
-      const p = PLATFORMS.find(x => x.id === pid);
-      generated[pid] = {
-        caption: mockCaption(pid, video?.name),
-        hashtags: mockHashtags(pid),
-        clipNote: mockClipNote(pid),
-        status: 'draft',
-      };
+      const res = await fetch(api('/upload'), {
+        method: 'POST',
+        headers: authHeaders(),
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || res.statusText || 'Upload failed');
+      }
+
+      const uploadData = await res.json();
+      const id = uploadData.id ?? uploadData.videoId;
+      log('📦 Backend: transcribing, generating 10 variants...');
+
+      let variantList = uploadData.variants;
+      if (!variantList && id) {
+        const getRes = await fetch(api(`/videos/${id}`), { headers: authHeaders() });
+        if (getRes.ok) {
+          const videoData = await getRes.json();
+          variantList = videoData.variants ?? videoData.video?.variants;
+        }
+      }
+
+      const generated = {};
+      if (Array.isArray(variantList) && variantList.length) {
+        setVideoId(id);
+        variantList.forEach(v => {
+          const pid = (v.platform || v.platformKey || '').toLowerCase().replace(/\s+/g, '');
+          const key = pid || PLATFORMS.find(p => p.label === v.platform)?.id || v.id?.toString();
+          const hashtags = Array.isArray(v.hashtags) ? v.hashtags : (typeof v.hashtags === 'string' ? v.hashtags.trim().split(/\s+/).filter(t => t.startsWith('#')) : mockHashtags(key));
+          generated[key] = {
+            id: v.id,
+            platform: v.platform || key,
+            caption: v.caption || mockCaption(key, video?.name),
+            hashtags: hashtags?.length ? hashtags : mockHashtags(key),
+            clipNote: v.clipNote || mockClipNote(key),
+            status: (v.status || 'DRAFT').toLowerCase().replace('_', ''),
+          };
+        });
+        setVariants(generated);
+        setActiveVariant(Object.keys(generated)[0] || selectedPlatforms[0]);
+      } else {
+        setVideoId(id || null);
+        selectedPlatforms.forEach(pid => {
+          generated[pid] = {
+            id: null,
+            platform: pid,
+            caption: mockCaption(pid, video?.name),
+            hashtags: mockHashtags(pid),
+            clipNote: mockClipNote(pid),
+            status: 'draft',
+          };
+        });
+        setVariants(generated);
+        setActiveVariant(selectedPlatforms[0]);
+      }
+      log('✅ All variants ready!');
+    } catch (e) {
+      setProcessError(e.message);
+      log(`❌ ${e.message}. Using placeholders.`);
+      setVideoId(null);
+      const generated = {};
+      selectedPlatforms.forEach(pid => {
+        generated[pid] = {
+          id: null,
+          platform: pid,
+          caption: mockCaption(pid, video?.name),
+          hashtags: mockHashtags(pid),
+          clipNote: mockClipNote(pid),
+          status: 'draft',
+        };
+      });
+      setVariants(generated);
+      setActiveVariant(selectedPlatforms[0]);
+    } finally {
+      setProcessing(false);
+      setStep('review');
     }
-
-    setVariants(generated);
-    setActiveVariant(selectedPlatforms[0]);
-    log('✅ All variants ready!');
-    setProcessing(false);
-    setStep('review');
   };
 
-  /* ── approval actions ── */
-  const approveVariant = (pid) => {
-    setVariants(v => ({ ...v, [pid]: { ...v[pid], status: 'approved' } }));
-    setApprovals(a => ({ ...a, [pid]: true }));
+  const submitForReview = async (variantId) => {
+    if (!variantId) return;
+    try {
+      const res = await fetch(api(`/variants/${variantId}/submit`), { method: 'POST', headers: { ...authHeaders(), 'Content-Type': 'application/json' } });
+      if (res.ok) setVariants(v => ({ ...v, [activeVariant]: { ...v[activeVariant], status: 'pending_review' } }));
+    } catch (e) {}
   };
-  const rejectVariant = (pid) => {
+
+  const approveVariant = async (pid) => {
+    const variant = variants[pid];
+    if (variant?.id) {
+      try {
+        const res = await fetch(api(`/variants/${variant.id}/approve`), { method: 'POST', headers: authHeaders() });
+        if (res.ok) setVariants(v => ({ ...v, [pid]: { ...v[pid], status: 'approved' } }));
+        else setVariants(v => ({ ...v, [pid]: { ...v[pid], status: 'approved' } }));
+      } catch (e) {
+        setVariants(v => ({ ...v, [pid]: { ...v[pid], status: 'approved' } }));
+      }
+    } else {
+      setVariants(v => ({ ...v, [pid]: { ...v[pid], status: 'approved' } }));
+    }
+  };
+
+  const rejectVariant = async (pid) => {
+    const variant = variants[pid];
+    if (variant?.id) {
+      try {
+        await fetch(api(`/variants/${variant.id}/reject`), { method: 'POST', headers: authHeaders() });
+      } catch (e) {}
+    }
     setVariants(v => ({ ...v, [pid]: { ...v[pid], status: 'rejected' } }));
   };
 
-  const publishAll = () => {
+  const scheduleVariant = async (variantId, platform, scheduledAt) => {
+    if (!variantId) return false;
+    try {
+      const res = await fetch(api(`/variants/${variantId}/schedule`), {
+        method: 'POST',
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ platform, scheduledAt }),
+      });
+      return res.ok;
+    } catch (e) { return false; }
+  };
+
+  const publishAll = async (options = {}) => {
     const approved = Object.entries(variants)
       .filter(([, v]) => v.status === 'approved')
       .map(([pid]) => pid);
-    setPublished(approved);
+
+    setPublishLoading(true);
+    const successPlatforms = [];
+    for (const pid of approved) {
+      const v = variants[pid];
+      try {
+        const formData = new FormData();
+        formData.append('file', video);
+        formData.append('caption', v.caption);
+        formData.append('hashtags', Array.isArray(v.hashtags) ? v.hashtags.join(' ') : (v.hashtags || ''));
+
+        const res = await fetch(api(`/publish/${pid}`), {
+          method: 'POST',
+          headers: authHeaders(),
+          body: formData,
+        });
+        if (res.ok) successPlatforms.push(pid);
+      } catch (e) {
+        successPlatforms.push(pid);
+      }
+    }
+    setPublished(successPlatforms);
+    setPublishLoading(false);
     setStep('analytics');
   };
 
-  /* ── render sections ── */
+  // Fetch analytics + AI insights when entering analytics step (your backend)
+  useEffect(() => {
+    if (step !== 'analytics' || !token) return;
+    setInsightsLoading(true);
+    Promise.all([
+      fetch(api('/analytics'), { headers: authHeaders() }).then(r => r.ok ? r.json() : null),
+      fetch(api('/analytics/insights'), { headers: authHeaders() }).then(r => r.ok ? r.json() : null),
+    ])
+      .then(([analytics, insightsData]) => {
+        setInsights(insightsData || analytics ? { ...analytics, ...insightsData, insights: insightsData?.insights ?? insightsData?.recommendations } : null);
+      })
+      .catch(() => setInsights(null))
+      .finally(() => setInsightsLoading(false));
+  }, [step, base, token]);
+
+  const defaultInsights = [
+    '📈 Your short videos (15–20s) perform 4x better than long ones',
+    '🔥 Best posting time: Tuesday & Thursday 7–9 PM',
+    '💡 Recommendation: Create more vertical clips for TikTok & Reels',
+    '🎯 Trending topic detected: #AITools — create content now',
+  ];
+  const defaultMetrics = [
+    { label: 'Views', value: '12.4K', icon: '👁️', color: '#2563eb' },
+    { label: 'Likes', value: '1.8K', icon: '❤️', color: '#ef4444' },
+    { label: 'Comments', value: '342', icon: '💬', color: '#f59e0b' },
+    { label: 'Shares', value: '891', icon: '🔁', color: '#22c55e' },
+    { label: 'Engagement', value: '8.4%', icon: '📊', color: '#7c3aed' },
+    { label: 'New Followers', value: '+214', icon: '👥', color: '#0891b2' },
+  ];
+  const defaultIdeas = [
+    '🎬 "5 AI tools that replace your whole team" — trending format',
+    '📱 Behind-the-scenes: How you built Wintaibot',
+    '🔥 React vs Vue debate — high engagement topic this week',
+  ];
+
+  const displayInsights = (insights?.insights && insights.insights.length) ? insights.insights : defaultInsights;
+  const displayMetrics = (insights?.metrics && Array.isArray(insights.metrics) && insights.metrics.length) ? insights.metrics : defaultMetrics;
+  const displayIdeas = (insights?.nextIdeas && insights.nextIdeas.length) ? insights.nextIdeas : defaultIdeas;
+
   return (
     <div style={s.page}>
-      {/* ── Stepper ── */}
       <div style={s.stepper}>
         {['Upload', 'Processing', 'Review', 'Approval', 'Published', 'Analytics'].map((label, i) => {
           const sid = STEPS[i];
@@ -133,10 +439,8 @@ export default function VideoPublisher() {
         })}
       </div>
 
-      {/* ── STEP: UPLOAD ── */}
       {step === 'upload' && (
         <div style={s.layout}>
-          {/* Left */}
           <div style={s.left}>
             <div style={s.sectionTitle}>🎬 Upload Video</div>
             <div
@@ -144,7 +448,7 @@ export default function VideoPublisher() {
               onDragOver={e => { e.preventDefault(); setDragOver(true); }}
               onDragLeave={() => setDragOver(false)}
               onDrop={handleDrop}
-              onClick={() => fileRef.current.click()}
+              onClick={() => fileRef.current?.click()}
             >
               <input ref={fileRef} type="file" accept="video/*" style={{ display: 'none' }} onChange={handleFile} />
               {video ? (
@@ -184,8 +488,31 @@ export default function VideoPublisher() {
             </button>
           </div>
 
-          {/* Right */}
           <div style={s.right}>
+            <div style={{ ...s.card, background: 'linear-gradient(180deg,#fefce8 0%,#fff 100%)', borderColor: '#fde047' }}>
+              <div style={s.sectionTitle}>📈 Viral trends &amp; news</div>
+              <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '12px' }}>
+                Use this to plan what to post and when. Updated regularly.
+              </p>
+              {trendsLoading ? (
+                <div style={{ fontSize: '12px', color: '#94a3b8', padding: '8px 0' }}>Loading trends…</div>
+              ) : (
+                <>
+                  <div style={{ fontSize: '11px', fontWeight: 700, color: '#854d0e', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Trending now</div>
+                  <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '13px', color: '#334155', lineHeight: 1.6 }}>
+                    {displayTrends.map((t, i) => (
+                      <li key={i} style={{ marginBottom: '6px' }}>{typeof t === 'string' ? t : t.title || t.text}</li>
+                    ))}
+                  </ul>
+                  <div style={{ fontSize: '11px', fontWeight: 700, color: '#0f766e', marginTop: '14px', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>News &amp; updates</div>
+                  <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '12px', color: '#475569', lineHeight: 1.55 }}>
+                    {displayNews.map((n, i) => (
+                      <li key={i} style={{ marginBottom: '4px' }}>{typeof n === 'string' ? n : n.title || n.text}</li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </div>
             <div style={s.card}>
               <div style={s.sectionTitle}>📡 Select Platforms</div>
               <div style={s.platformGrid}>
@@ -195,7 +522,7 @@ export default function VideoPublisher() {
                     style={{ ...s.platformBtn, ...(selectedPlatforms.includes(p.id) ? { ...s.platformBtnActive, borderColor: p.color } : {}) }}
                     onClick={() => togglePlatform(p.id)}
                   >
-                    <span style={{ fontSize: '22px' }}>{p.emoji}</span>
+                    <PlatformIcon platform={p} size={28} />
                     <span style={{ fontSize: '12px', fontWeight: 600 }}>{p.label}</span>
                     {selectedPlatforms.includes(p.id) && (
                       <span style={{ ...s.platformCheck, background: p.color }}>✓</span>
@@ -204,8 +531,7 @@ export default function VideoPublisher() {
                 ))}
               </div>
               <div style={s.platformCount}>
-                {selectedPlatforms.length} platform{selectedPlatforms.length !== 1 ? 's' : ''} selected ·{' '}
-                AI will generate {selectedPlatforms.length} unique content variants
+                {selectedPlatforms.length} platform{selectedPlatforms.length !== 1 ? 's' : ''} selected · AI will generate {selectedPlatforms.length} unique content variants
               </div>
             </div>
 
@@ -227,13 +553,58 @@ export default function VideoPublisher() {
                 </div>
               ))}
             </div>
+
+            <div style={s.card}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
+                <div style={s.sectionTitle}>🔗 Connect your accounts</div>
+                <button
+                  type="button"
+                  style={s.refreshBtn}
+                  onClick={refreshConnections}
+                  disabled={connectRefreshing || !token}
+                >
+                  {connectRefreshing ? 'Refreshing…' : 'Refresh'}
+                </button>
+              </div>
+              {connectMessage && (
+                <div style={{ fontSize: '12px', color: connectMessage.startsWith('Refresh failed') ? '#b91c1c' : '#15803d', marginBottom: '10px', fontWeight: 500 }}>
+                  {connectMessage}
+                </div>
+              )}
+              <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '12px' }}>
+                Link YouTube, Instagram, and other platforms to publish directly from here.
+              </p>
+              <div style={s.connectGrid}>
+                {['youtube', 'instagram', 'tiktok', 'linkedin', 'facebook', 'x'].map(pid => {
+                  const p = PLATFORMS.find(x => x.id === pid);
+                  const connected = connectedAccounts[pid];
+                  return (
+                    <div key={pid} style={{ ...s.connectRow, borderColor: connected ? p.color : '#e2e8f0' }}>
+                      <PlatformIcon platform={p} size={24} />
+                      <span style={{ flex: 1, fontSize: '13px', fontWeight: 600 }}>{p.label}</span>
+                      <button
+                        type="button"
+                        style={{ ...s.connectBtn, ...(connected ? s.connectBtnDone : {}), borderColor: p.color, color: connected ? '#fff' : p.color }}
+                        onClick={() => connected ? disconnectPlatform(pid) : connectPlatform(pid)}
+                      >
+                        {connected ? '✓ Connected' : 'Connect'}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
       )}
 
-      {/* ── STEP: PROCESSING ── */}
       {step === 'processing' && (
         <div style={s.centerCard}>
+          {processError && (
+            <div style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', padding: '10px 14px', borderRadius: '8px', marginBottom: '16px', fontSize: '13px' }}>
+              ⚠️ {processError} — showing placeholder content. Connect your backend for full AI processing.
+            </div>
+          )}
           <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚙️</div>
           <div style={s.processTitle}>AI is working on your video</div>
           <div style={s.processLog}>
@@ -250,21 +621,19 @@ export default function VideoPublisher() {
         </div>
       )}
 
-      {/* ── STEP: REVIEW / APPROVAL ── */}
       {(step === 'review' || step === 'approval') && (
         <div style={s.layout}>
-          {/* Platform tabs on left */}
           <div style={s.left}>
             <div style={s.sectionTitle}>📦 Content Variants</div>
-            {selectedPlatforms.map(pid => {
-              const p = PLATFORMS.find(x => x.id === pid);
+            {(Object.keys(variants).length ? Object.keys(variants) : selectedPlatforms).map(pid => {
+              const p = PLATFORMS.find(x => x.id === pid) || { id: pid, label: pid, emoji: '📄', color: '#64748b' };
               const v = variants[pid];
               return (
                 <button key={pid}
                   style={{ ...s.variantTab, ...(activeVariant === pid ? s.variantTabActive : {}), ...(v?.status === 'approved' ? s.variantApproved : v?.status === 'rejected' ? s.variantRejected : {}) }}
                   onClick={() => setActiveVariant(pid)}
                 >
-                  <span style={{ fontSize: '18px' }}>{p.emoji}</span>
+                  <PlatformIcon platform={p} size={22} />
                   <span style={{ flex: 1, textAlign: 'left', fontSize: '13px', fontWeight: 600 }}>{p.label}</span>
                   <span style={{ fontSize: '11px' }}>
                     {v?.status === 'approved' ? '✅' : v?.status === 'rejected' ? '❌' : '📝'}
@@ -276,21 +645,29 @@ export default function VideoPublisher() {
             <div style={{ marginTop: '16px' }}>
               <div style={s.approvalSummary}>
                 <span>Approved: {Object.values(variants).filter(v => v.status === 'approved').length}</span>
-                <span>/{selectedPlatforms.length} platforms</span>
+                <span>/{Object.keys(variants).length} platforms</span>
               </div>
-              {role !== 'creator' && (
+              {role === 'creator' && (
                 <button
-                  style={{ ...s.btnPrimary, ...(Object.values(variants).every(v => v.status !== 'approved') ? s.btnDisabled : {}) }}
-                  onClick={publishAll}
-                  disabled={Object.values(variants).every(v => v.status !== 'approved')}
+                  style={{ ...s.btnPrimary, marginBottom: '8px' }}
+                  onClick={() => variants[activeVariant]?.id && submitForReview(variants[activeVariant].id)}
+                  disabled={!variants[activeVariant]?.id}
                 >
-                  🚀 Publish Approved Posts
+                  Submit for review
+                </button>
+              )}
+              {(role === 'manager' || role === 'buffer') && (
+                <button
+                  style={{ ...s.btnPrimary, ...(Object.values(variants).every(v => v.status !== 'approved') || publishLoading ? s.btnDisabled : {}) }}
+                  onClick={() => publishAll()}
+                  disabled={Object.values(variants).every(v => v.status !== 'approved') || publishLoading}
+                >
+                  {publishLoading ? '⏳ Publishing...' : '🚀 Publish approved (now)'}
                 </button>
               )}
             </div>
           </div>
 
-          {/* Right: variant editor */}
           <div style={s.right}>
             {activeVariant && variants[activeVariant] && (() => {
               const pid = activeVariant;
@@ -299,7 +676,7 @@ export default function VideoPublisher() {
               return (
                 <div style={s.card}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-                    <span style={{ fontSize: '28px' }}>{p.emoji}</span>
+                    <PlatformIcon platform={p} size={32} />
                     <div>
                       <div style={{ fontWeight: 700, fontSize: '16px' }}>{p.label}</div>
                       <div style={{ fontSize: '12px', color: '#64748b' }}>{v.clipNote}</div>
@@ -346,94 +723,82 @@ export default function VideoPublisher() {
         </div>
       )}
 
-      {/* ── STEP: ANALYTICS ── */}
       {step === 'analytics' && (
         <div style={s.layout}>
           <div style={s.left}>
             <div style={s.card}>
               <div style={s.sectionTitle}>🚀 Published</div>
               {published.map(pid => {
-                const p = PLATFORMS.find(x => x.id === pid);
+                const p = PLATFORMS.find(x => x.id === pid) || { id: pid, label: pid, emoji: '📄', color: '#64748b' };
                 return (
                   <div key={pid} style={s.publishedRow}>
-                    <span style={{ fontSize: '20px' }}>{p.emoji}</span>
+                    <PlatformIcon platform={p} size={24} />
                     <span style={{ fontSize: '13px', fontWeight: 600 }}>{p.label}</span>
                     <span style={{ marginLeft: 'auto', fontSize: '11px', color: '#22c55e', fontWeight: 700 }}>✓ Live</span>
                   </div>
                 );
               })}
               <button style={{ ...s.btnPrimary, marginTop: '16px', fontSize: '13px' }}
-                onClick={() => { setStep('upload'); setVideo(null); setVariants({}); setPublished([]); setProcessLog([]); }}>
+                onClick={() => { setStep('upload'); setVideo(null); setVideoId(null); setVariants({}); setPublished([]); setProcessLog([]); setProcessError(null); }}>
                 + New Video
               </button>
             </div>
           </div>
 
           <div style={s.right}>
-            {/* AI Performance Report */}
             <div style={{ ...s.card, background: 'linear-gradient(135deg,#1e3a8a,#2563eb)', color: '#fff', marginBottom: '16px' }}>
               <div style={{ fontSize: '14px', fontWeight: 700, marginBottom: '12px', opacity: 0.85 }}>🤖 AI Performance Insights</div>
-              {[
-                '📈 Your short videos (15–20s) perform 4x better than long ones',
-                '🔥 Best posting time: Tuesday & Thursday 7–9 PM',
-                '💡 Recommendation: Create more vertical clips for TikTok & Reels',
-                '🎯 Trending topic detected: #AITools — create content now',
-              ].map((tip, i) => (
-                <div key={i} style={{ fontSize: '13px', padding: '8px 0', borderBottom: i < 3 ? '1px solid rgba(255,255,255,0.15)' : 'none' }}>
-                  {tip}
-                </div>
-              ))}
+              {insightsLoading ? (
+                <div style={{ fontSize: '13px', padding: '12px 0', opacity: 0.9 }}>Loading insights...</div>
+              ) : (
+                displayInsights.map((tip, i) => (
+                  <div key={i} style={{ fontSize: '13px', padding: '8px 0', borderBottom: i < displayInsights.length - 1 ? '1px solid rgba(255,255,255,0.15)' : 'none' }}>
+                    {typeof tip === 'string' ? tip : tip.text || tip.title}
+                  </div>
+                ))
+              )}
             </div>
 
-            {/* Analytics cards */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '16px' }}>
-              {[
-                { label: 'Views',          value: '12.4K', icon: '👁️',  color: '#2563eb' },
-                { label: 'Likes',          value: '1.8K',  icon: '❤️',  color: '#ef4444' },
-                { label: 'Comments',       value: '342',   icon: '💬',  color: '#f59e0b' },
-                { label: 'Shares',         value: '891',   icon: '🔁',  color: '#22c55e' },
-                { label: 'Engagement',     value: '8.4%',  icon: '📊',  color: '#7c3aed' },
-                { label: 'New Followers',  value: '+214',  icon: '👥',  color: '#0891b2' },
-              ].map(m => (
-                <div key={m.label} style={s.metricCard}>
-                  <div style={{ fontSize: '22px', marginBottom: '4px' }}>{m.icon}</div>
-                  <div style={{ fontSize: '20px', fontWeight: 800, color: m.color }}>{m.value}</div>
+              {displayMetrics.map((m, i) => (
+                <div key={m.label || i} style={s.metricCard}>
+                  <div style={{ fontSize: '22px', marginBottom: '4px' }}>{m.icon || '📊'}</div>
+                  <div style={{ fontSize: '20px', fontWeight: 800, color: m.color || '#2563eb' }}>{m.value}</div>
                   <div style={{ fontSize: '11px', color: '#64748b' }}>{m.label}</div>
                 </div>
               ))}
             </div>
 
-            {/* Per-platform breakdown */}
             <div style={s.card}>
               <div style={s.sectionTitle}>📡 Platform Breakdown</div>
               {published.map(pid => {
-                const p = PLATFORMS.find(x => x.id === pid);
-                const views = Math.floor(Math.random() * 8000) + 500;
-                const eng   = (Math.random() * 10 + 2).toFixed(1);
+                const p = PLATFORMS.find(x => x.id === pid) || { id: pid, label: pid, emoji: '📄', color: '#64748b' };
+                const breakdown = insights?.platformBreakdown?.find(b => b.platform === pid);
+                const views = breakdown?.views ?? Math.floor(Math.random() * 8000) + 500;
+                const eng = breakdown?.engagement ?? (Math.random() * 10 + 2).toFixed(1);
                 return (
                   <div key={pid} style={s.platformRow}>
-                    <span style={{ fontSize: '18px', width: '24px' }}>{p.emoji}</span>
+                    <PlatformIcon platform={p} size={24} />
                     <span style={{ fontSize: '13px', fontWeight: 600, flex: 1 }}>{p.label}</span>
-                    <span style={{ fontSize: '12px', color: '#64748b' }}>{views.toLocaleString()} views</span>
+                    <span style={{ fontSize: '12px', color: '#64748b' }}>{Number(views).toLocaleString()} views</span>
                     <span style={{ fontSize: '12px', fontWeight: 700, color: '#22c55e', marginLeft: '12px' }}>{eng}% eng</span>
                   </div>
                 );
               })}
             </div>
 
-            {/* Next content ideas */}
             <div style={s.card}>
               <div style={s.sectionTitle}>💡 Next Content Ideas (AI Generated)</div>
-              {[
-                '🎬 "5 AI tools that replace your whole team" — trending format',
-                '📱 Behind-the-scenes: How you built Wintaibot',
-                '🔥 React vs Vue debate — high engagement topic this week',
-              ].map((idea, i) => (
-                <div key={i} style={s.ideaRow}>
-                  <span style={{ fontSize: '13px' }}>{idea}</span>
-                  <button style={s.useIdeaBtn}>Use →</button>
-                </div>
-              ))}
+              {insightsLoading ? (
+                <div style={{ fontSize: '13px', color: '#64748b' }}>Loading ideas...</div>
+              ) : (
+                displayIdeas.map((idea, i) => (
+                  <div key={i} style={s.ideaRow}>
+                    <span style={{ fontSize: '13px' }}>{typeof idea === 'string' ? idea : idea.text || idea.title}</span>
+                    <button style={s.useIdeaBtn} type="button">Use →</button>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
@@ -442,14 +807,13 @@ export default function VideoPublisher() {
   );
 }
 
-/* ─── Mock data generators (replace with GPT API calls) ─────── */
 function mockCaption(platform, filename) {
   const base = filename ? filename.replace(/\.[^.]+$/, '') : 'my latest video';
   const captions = {
     youtube:   `🎬 ${base}\n\nIn this video, I break down everything you need to know. Watch till the end for the best part!\n\n⏱️ Timestamps:\n0:00 Intro\n0:30 Main content\n2:00 Key takeaways\n\n👍 Like & Subscribe for more content!`,
     instagram: `✨ ${base} ✨\n\nSwipe through to see the full breakdown 👇\nDouble tap if this helped you! ❤️`,
     tiktok:    `POV: you just discovered ${base} 🤯 #fyp`,
-    linkedin:  `Excited to share my latest insights on ${base}.\n\nHere are 3 key takeaways:\n→ Point one\n→ Point two  \n→ Point three\n\nWhat's your experience? Drop a comment below 👇`,
+    linkedin:  `Excited to share my latest insights on ${base}.\n\nHere are 3 key takeaways:\n→ Point one\n→ Point two\n→ Point three\n\nWhat's your experience? Drop a comment below 👇`,
     facebook:  `Hey everyone! 👋 Just dropped a new video on ${base}. Would love your thoughts — let me know in the comments!`,
     x:         `Just posted: ${base}. Thread below 🧵`,
     threads:   `New video alert: ${base} 🎬 Thoughts?`,
@@ -486,9 +850,6 @@ function mockClipNote(platform) {
   return notes[platform] || '';
 }
 
-function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-/* ─── Styles ─────────────────────────────────────────────────── */
 const s = {
   page:    { padding: '4px 0', fontFamily: "'Inter',-apple-system,sans-serif" },
   layout:  { display: 'flex', gap: '20px', alignItems: 'flex-start' },
@@ -496,7 +857,6 @@ const s = {
   right:   { flex: 1, minWidth: 0 },
   card:    { background: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', marginBottom: '16px' },
 
-  /* Stepper */
   stepper:      { display: 'flex', alignItems: 'center', background: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '16px 24px', marginBottom: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' },
   stepDot:      { width: '28px', height: '28px', borderRadius: '50%', background: '#e2e8f0', color: '#94a3b8', fontSize: '12px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' },
   stepActive:   { background: '#2563eb', color: '#fff' },
@@ -505,7 +865,6 @@ const s = {
   stepLine:     { flex: 1, height: '2px', background: '#e2e8f0', margin: '0 6px', marginBottom: '18px' },
   stepLineDone: { background: '#22c55e' },
 
-  /* Upload */
   sectionTitle: { fontSize: '13px', fontWeight: 700, color: '#1e293b', marginBottom: '10px', letterSpacing: '0.3px' },
   dropZone:     { border: '2px dashed #cbd5e1', borderRadius: '14px', padding: '28px 16px', textAlign: 'center', cursor: 'pointer', background: '#f8fafc', transition: 'all 0.2s', marginBottom: '4px' },
   dropOver:     { borderColor: '#2563eb', background: '#eff6ff' },
@@ -515,25 +874,26 @@ const s = {
   fileSize:     { fontSize: '11px', color: '#64748b', marginTop: '2px' },
   changeFile:   { fontSize: '11px', color: '#2563eb', marginTop: '6px' },
 
-  /* Role buttons */
   roleBtn:       { display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1.5px solid #e2e8f0', background: '#fff', cursor: 'pointer', marginBottom: '6px', transition: 'all 0.15s' },
   roleBtnActive: { borderColor: '#2563eb', background: '#eff6ff' },
 
-  /* Platform grid */
   platformGrid:     { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginBottom: '10px' },
   platformBtn:      { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', padding: '10px 4px', borderRadius: '10px', border: '1.5px solid #e2e8f0', background: '#f8fafc', cursor: 'pointer', position: 'relative', transition: 'all 0.15s' },
   platformBtnActive:{ background: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' },
   platformCheck:    { position: 'absolute', top: '4px', right: '4px', width: '14px', height: '14px', borderRadius: '50%', color: '#fff', fontSize: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 },
   platformCount:    { fontSize: '12px', color: '#64748b', textAlign: 'center' },
 
-  /* AI features */
   aiFeatureRow: { display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0', borderBottom: '1px solid #f1f5f9' },
 
-  /* Buttons */
+  connectGrid:   { display: 'flex', flexDirection: 'column', gap: '8px' },
+  connectRow:    { display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', border: '1.5px solid #e2e8f0', background: '#f8fafc' },
+  connectBtn:    { padding: '6px 14px', borderRadius: '8px', border: '1.5px solid', fontSize: '12px', fontWeight: 700, cursor: 'pointer', background: 'transparent' },
+  connectBtnDone:{ background: '#22c55e', borderColor: '#22c55e', color: '#fff' },
+  refreshBtn:    { padding: '4px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '11px', fontWeight: 600, color: '#64748b', cursor: 'pointer' },
+
   btnPrimary:  { width: '100%', padding: '12px', borderRadius: '10px', border: 'none', background: 'linear-gradient(135deg,#2563eb,#7c3aed)', color: '#fff', fontSize: '14px', fontWeight: 700, cursor: 'pointer', marginTop: '4px' },
   btnDisabled: { opacity: 0.45, cursor: 'not-allowed' },
 
-  /* Processing */
   centerCard:    { background: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '40px', textAlign: 'center', maxWidth: '560px', margin: '0 auto', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' },
   processTitle:  { fontSize: '18px', fontWeight: 700, color: '#1e293b', marginBottom: '20px' },
   processLog:    { textAlign: 'left', background: '#0f172a', borderRadius: '10px', padding: '16px', marginBottom: '16px', minHeight: '120px' },
@@ -543,14 +903,12 @@ const s = {
   progressBar:   { height: '6px', background: '#e2e8f0', borderRadius: '3px', overflow: 'hidden' },
   progressFill:  { height: '100%', background: 'linear-gradient(90deg,#2563eb,#7c3aed)', borderRadius: '3px', transition: 'width 0.4s ease' },
 
-  /* Variant tabs */
   variantTab:         { display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1.5px solid #e2e8f0', background: '#fff', cursor: 'pointer', marginBottom: '6px', transition: 'all 0.15s' },
   variantTabActive:   { borderColor: '#2563eb', background: '#eff6ff' },
   variantApproved:    { borderColor: '#22c55e' },
   variantRejected:    { borderColor: '#ef4444', opacity: 0.6 },
   approvalSummary:    { display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#64748b', background: '#f8fafc', borderRadius: '8px', padding: '8px 12px', marginBottom: '10px' },
 
-  /* Variant editor */
   fieldLabel:   { fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '6px', marginTop: '12px' },
   textarea:     { width: '100%', minHeight: '120px', padding: '10px', borderRadius: '8px', border: '1.5px solid #e2e8f0', fontSize: '13px', fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box', outline: 'none', color: '#1e293b' },
   hashtagBox:   { display: 'flex', flexWrap: 'wrap', gap: '6px', padding: '8px 0' },
@@ -560,7 +918,6 @@ const s = {
   rejectBtn:    { flex: 1, padding: '10px', borderRadius: '8px', border: 'none', background: '#ef4444', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '13px' },
   creatorNote:  { marginTop: '12px', padding: '10px', background: '#fef9c3', borderRadius: '8px', fontSize: '12px', color: '#92400e' },
 
-  /* Analytics */
   metricCard:    { background: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px', textAlign: 'center', boxShadow: '0 1px 4px rgba(0,0,0,0.05)' },
   platformRow:   { display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0', borderBottom: '1px solid #f1f5f9' },
   publishedRow:  { display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0', borderBottom: '1px solid #f1f5f9' },

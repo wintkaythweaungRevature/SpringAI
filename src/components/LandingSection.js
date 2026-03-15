@@ -53,13 +53,20 @@ const features = [
       "Upload your resume and receive AI-generated interview questions tailored to your experience. Practice answers, sharpen weak areas, and land your next role.",
     badge: "Member",
   },
+  {
+    icon: "🎬",
+    title: "Video Publisher – One Video, Every Platform",
+    description:
+      "Upload once, publish everywhere. Connect YouTube, Instagram, TikTok, and more. Get AI captions and hashtags per platform, schedule each post when you want (e.g. YouTube tomorrow 4 AM, Instagram 6 PM), and see viral trends and news to plan your next video.",
+    badge: "Member",
+  },
 ];
 
 const steps = [
   {
     num: "1",
     title: "Choose a Tool",
-    desc: "Select from 7 AI-powered tools — chatbot, document analyzer, transcription, image generator, email writer, interview prep, or recipe planner.",
+    desc: "Select from 8 AI-powered tools — chatbot, document analyzer, transcription, image generator, email writer, interview prep, recipe planner, or video publisher for socials.",
   },
   {
     num: "2",
@@ -105,7 +112,7 @@ const techStack = [
 
 /* ─── Component ─────────────────────────────────────────────── */
 
-export default function LandingSection({ onGetStarted }) {
+export default function LandingSection({ onGetStarted, onOpenVideoPublisher }) {
   const [openFaq, setOpenFaq] = useState(null);
 
   return (
@@ -115,12 +122,13 @@ export default function LandingSection({ onGetStarted }) {
       <section className="ls-hero" aria-labelledby="hero-heading">
         <div className="ls-hero-badge">AI Assistant for PDFs, Documents &amp; Productivity</div>
         <h1 id="hero-heading" className="ls-hero-h1">
-          Analyze PDFs, Transcribe Audio,<br />and Automate Your Work with AI
+          Analyze PDFs, Transcribe Audio,<br />Publish Videos &amp; Automate Your Work with AI
         </h1>
         <p className="ls-hero-sub">
           Wintaibot is an AI assistant that extracts data from PDFs and documents,
           transcribes audio, generates images, writes email replies, prepares you
-          for job interviews, and answers any question — all in one platform,
+          for job interviews, publishes videos to YouTube and socials with smart scheduling
+          and viral trends, and answers any question — all in one platform,
           no installs required.
         </p>
         <div className="ls-hero-actions">
@@ -141,18 +149,19 @@ export default function LandingSection({ onGetStarted }) {
         <p>
           Wintaibot is an AI productivity platform built on{" "}
           <strong>Spring AI</strong> and <strong>React</strong>. It combines
-          seven specialized AI tools into a single, easy-to-use dashboard — so
+          eight specialized AI tools into a single, easy-to-use dashboard — so
           you stop juggling multiple apps and subscriptions.
         </p>
         <p>
           Whether you are a <strong>job seeker</strong> preparing for interviews,
           a <strong>professional</strong> drowning in emails and documents, a{" "}
-          <strong>student</strong> who needs lecture transcriptions, or a{" "}
-          <strong>creator</strong> generating visuals — Wintaibot has a dedicated
+          <strong>student</strong> who needs lecture transcriptions, a{" "}
+          <strong>creator</strong> publishing to YouTube and socials, or a{" "}
+          <strong>content team</strong> scheduling posts per platform — Wintaibot has a dedicated
           tool built for your workflow.
         </p>
         <div className="ls-stat-row">
-          <div className="ls-stat"><span className="ls-stat-num">7</span><span>AI Tools</span></div>
+          <div className="ls-stat"><span className="ls-stat-num">8</span><span>AI Tools</span></div>
           <div className="ls-stat"><span className="ls-stat-num">Free</span><span>To Start</span></div>
           <div className="ls-stat"><span className="ls-stat-num">$5.99</span><span>Full Access / mo</span></div>
           <div className="ls-stat"><span className="ls-stat-num">0</span><span>Installs Required</span></div>
@@ -163,8 +172,8 @@ export default function LandingSection({ onGetStarted }) {
       <section className="ls-section" id="features" aria-labelledby="features-heading">
         <h2 id="features-heading">Everything You Need, Built In</h2>
         <p className="ls-section-sub">
-          No more switching between ChatGPT, Whisper, DALL·E, and five other tools.
-          Wintaibot puts them all in one place.
+          No more switching between ChatGPT, Whisper, DALL·E, and a dozen other tools.
+          Wintaibot puts documents, audio, images, email, resumes, recipes, and video publishing in one place.
         </p>
         <div className="ls-features-grid" role="list">
           {features.map((f) => (
@@ -175,6 +184,11 @@ export default function LandingSection({ onGetStarted }) {
               </div>
               <h3 className="ls-feature-title">{f.title}</h3>
               <p className="ls-feature-desc">{f.description}</p>
+              {onOpenVideoPublisher && f.title.startsWith("Video Publisher") && (
+                <button type="button" className="ls-btn-outline ls-feature-cta" onClick={onOpenVideoPublisher}>
+                  Try Video Publisher →
+                </button>
+              )}
             </article>
           ))}
         </div>
@@ -228,11 +242,9 @@ export default function LandingSection({ onGetStarted }) {
             </p>
           </div>
           <div className="ls-usecase">
-            <h3>Content Creators</h3>
+            <h3>Content Creators &amp; Social Managers</h3>
             <p>
-              Generate custom thumbnails and artwork with the <strong>AI Image Generator</strong>,
-              transcribe video scripts, and use <strong>Ask AI</strong> for content ideas,
-              captions, and SEO copy.
+              Use <strong>Video Publisher</strong> to upload once and publish to YouTube, Instagram, TikTok, and more. Get AI captions and hashtags per platform, <strong>schedule each post</strong> when you want (e.g. YouTube tomorrow 4 AM, Instagram 6 PM), and check <strong>viral trends and news</strong> to plan your next video. Plus the <strong>AI Image Generator</strong> and <strong>Ask AI</strong> for thumbnails, scripts, and ideas.
             </p>
           </div>
           <div className="ls-usecase">
@@ -285,6 +297,7 @@ export default function LandingSection({ onGetStarted }) {
               <li>AI Image Generator</li>
               <li>Reply Enchanter (Email AI)</li>
               <li>Resume Warlock (Interview Prep)</li>
+              <li>Video Publisher (multi-platform, schedule per channel, viral trends)</li>
               <li>Cancel anytime</li>
             </ul>
             <button className="ls-btn-primary" onClick={onGetStarted}>Start Free Trial</button>
@@ -372,6 +385,10 @@ export default function LandingSection({ onGetStarted }) {
             q: "Is my data secure?",
             a: "Files you upload are processed to generate your results and are not stored permanently. Payments are handled by Stripe — we never store your card details.",
           },
+          {
+            q: "What does Video Publisher do?",
+            a: "Video Publisher lets you upload one video and publish it to YouTube, Instagram, TikTok, LinkedIn, and more. You get AI-generated captions and hashtags per platform, can schedule each platform at a different time (e.g. YouTube tomorrow 4 AM, Instagram 6 PM), and see viral trends and news to plan your next content.",
+          },
         ].map((item, i) => (
           <div className="ls-faq-item" key={i}>
             <button
@@ -394,7 +411,7 @@ export default function LandingSection({ onGetStarted }) {
         <h2>Ready to Save Hours Every Week?</h2>
         <p>
           Join users who use Wintaibot to automate documents, emails, transcriptions,
-          and more. Start free — no credit card needed.
+          video publishing to socials, and more. Start free — no credit card needed.
         </p>
         <button className="ls-btn-primary ls-btn-lg" onClick={onGetStarted}>
           Get Started Free →

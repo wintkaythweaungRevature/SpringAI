@@ -15,6 +15,7 @@ import MemberGate from './components/MemberGate';
 import AskAIGate from './components/AskAIGate';
 import LandingSection from './components/LandingSection';
 import VideoPublisher from './components/VideoPublisher';
+import SocialConnect from './components/SocialConnect';
 
 const PAGE_TITLES = {
   null: 'Dashboard',
@@ -27,6 +28,7 @@ const PAGE_TITLES = {
   'Resume': 'Resume Worlock',
   'account': 'Account',
   'video-publisher': 'Video Publisher',
+  'social-connect': 'Connected Accounts',
 };
 
 /* ─── NavItem ─────────────────────────────────────────────── */
@@ -88,6 +90,7 @@ function App() {
 
           <div style={s.groupLabel}>Social Media</div>
           <NavItem emoji="📲" label="Video Publisher" active={activeTab === 'video-publisher'} onClick={() => go('video-publisher')} hasArrow />
+          <NavItem emoji="🔗" label="Connected Accounts" active={activeTab === 'social-connect'} onClick={() => go('social-connect')} />
 
           <div style={s.groupLabel}>Writing Tools</div>
           <NavItem emoji="✉️" label="Reply Enchanter" active={activeTab === 'Content'} onClick={() => go('Content')} />
@@ -183,6 +186,7 @@ function App() {
           {activeTab === 'Resume'           && <MemberGate featureName="Resume Worlock"><Resume /></MemberGate>}
           {activeTab === 'account'          && <AccountSettings />}
           {activeTab === 'video-publisher'  && <MemberGate featureName="Video Publisher"><VideoPublisher /></MemberGate>}
+          {activeTab === 'social-connect'   && <MemberGate featureName="Connected Accounts"><SocialConnect /></MemberGate>}
         </div>
       </div>
 

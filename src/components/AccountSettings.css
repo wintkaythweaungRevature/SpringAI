@@ -1,0 +1,261 @@
+/* ─── Account Settings ──────────────────────────────────────── */
+.as-container {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 8px;
+}
+
+.as-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 28px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.as-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.as-header-info h2 {
+  margin: 0 0 3px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.as-header-info p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+/* Toast message */
+.as-toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  margin-bottom: 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.as-toast--success {
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  color: #15803d;
+}
+
+.as-toast--error {
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  color: #dc2626;
+}
+
+/* Section */
+.as-section {
+  margin-bottom: 28px;
+  padding-bottom: 28px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.as-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.as-section-title {
+  margin: 0 0 4px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.as-section-desc {
+  margin: 0 0 16px;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+/* Status row */
+.as-status-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.as-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.as-badge--member {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #86efac;
+}
+
+.as-badge--free {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+.as-badge--cancelling {
+  background: #fffbeb;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+}
+
+.as-renews {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+/* Buttons */
+.as-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.as-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.as-btn--primary {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.as-btn--primary:hover:not(:disabled) {
+  background: var(--color-primary-dark);
+}
+
+.as-btn--success {
+  background: #16a34a;
+  color: #fff;
+}
+
+.as-btn--success:hover:not(:disabled) {
+  background: #15803d;
+}
+
+.as-btn--warning {
+  background: #ea580c;
+  color: #fff;
+}
+
+.as-btn--warning:hover:not(:disabled) {
+  background: #c2410c;
+}
+
+.as-btn--secondary {
+  background: var(--color-surface-alt);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+}
+
+.as-btn--secondary:hover:not(:disabled) {
+  background: var(--color-border);
+}
+
+.as-btn--danger {
+  background: #dc2626;
+  color: #fff;
+}
+
+.as-btn--danger:hover:not(:disabled) {
+  background: #b91c1c;
+}
+
+/* Confirm box */
+.as-confirm-box {
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin-top: 12px;
+}
+
+.as-confirm-box p {
+  margin: 0 0 14px;
+  font-size: 0.875rem;
+  color: #92400e;
+  line-height: 1.5;
+}
+
+.as-confirm-box--danger p {
+  color: #991b1b;
+}
+
+.as-action-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.as-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: 0.875rem;
+  color: var(--color-text);
+  background: #fff;
+  margin-bottom: 14px;
+  box-sizing: border-box;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.as-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+/* Upgrade card */
+.as-upgrade-card {
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  border: 1px solid #bfdbfe;
+  border-radius: var(--radius-md);
+  padding: 18px;
+  margin-top: 4px;
+}
+
+.as-upgrade-card p {
+  margin: 0 0 14px;
+  font-size: 0.875rem;
+  color: #1e40af;
+  line-height: 1.5;
+}

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useAuth } from "../context/AuthContext";
+import "./Auth.css";
 
 export default function Signup({ onSuccess, onSwitchToLogin }) {
   const { signup } = useAuth();
@@ -8,7 +9,6 @@ export default function Signup({ onSuccess, onSwitchToLogin }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
   const [success, setSuccess] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -27,56 +27,82 @@ export default function Signup({ onSuccess, onSwitchToLogin }) {
   };
 
   return (
-    <div style={styles.container}>
-      <div style={styles.card}>
-        <h2 style={styles.title}>Member Registration</h2>
-        <p style={styles.subtitle}>Sign up to access all AI features</p>
+    <div className="auth-form-wrap">
+      <div className="auth-form-card">
+        <div className="auth-form-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <line x1="19" y1="8" x2="19" y2="14" />
+            <line x1="22" y1="11" x2="16" y2="11" />
+          </svg>
+        </div>
+        <h2 className="auth-form-title">Create an account</h2>
+        <p className="auth-form-sub">Free to start — no credit card required</p>
+
         {success ? (
-          <div style={{ padding: "16px", backgroundColor: "#d4edda", borderRadius: "8px", color: "#155724" }}>
-            <strong>Registration successful!</strong>
-            <p style={{ margin: "8px 0 0", fontSize: "14px" }}>
-              You can now log in to use Ask AI and other features.
-            </p>
-            <button type="button" onClick={onSwitchToLogin} style={{ ...styles.link, marginTop: "12px", display: "block" }}>
-              Go to Login
+          <div className="auth-success-box">
+            <strong>Account created!</strong>
+            <p>You can now sign in and start using Ask AI and other free features.</p>
+            <button type="button" onClick={onSwitchToLogin} className="auth-btn auth-btn-primary">
+              Go to Sign In
             </button>
           </div>
         ) : (
           <>
-            <form onSubmit={handleSubmit} style={styles.form}>
-              <input
-                type="text"
-                placeholder="Name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                style={styles.input}
-              />
-              <input
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                style={styles.input}
-                required
-              />
-              <input
-                type="password"
-                placeholder="Password (min 6 chars)"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                style={styles.input}
-                minLength={6}
-                required
-              />
-              {error && <p style={styles.error}>{error}</p>}
-              <button type="submit" disabled={loading} style={styles.button}>
-                {loading ? "Creating account..." : "Sign Up"}
+            <form onSubmit={handleSubmit} className="auth-form">
+              <div className="auth-field">
+                <label className="auth-label">Name</label>
+                <input
+                  type="text"
+                  placeholder="Your name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="auth-input"
+                />
+              </div>
+              <div className="auth-field">
+                <label className="auth-label">Email</label>
+                <input
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="auth-input"
+                  required
+                />
+              </div>
+              <div className="auth-field">
+                <label className="auth-label">Password</label>
+                <input
+                  type="password"
+                  placeholder="At least 6 characters"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="auth-input"
+                  minLength={6}
+                  required
+                />
+              </div>
+
+              {error && (
+                <div className="auth-error">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+                  </svg>
+                  {error}
+                </div>
+              )}
+
+              <button type="submit" disabled={loading} className="auth-btn auth-btn-primary">
+                {loading ? "Creating account..." : "Create Account"}
               </button>
             </form>
-            <p style={styles.footer}>
-              Already a member?{" "}
-              <button type="button" onClick={onSwitchToLogin} style={styles.link}>
-                Log in
+
+            <p className="auth-footer">
+              Already have an account?{" "}
+              <button type="button" onClick={onSwitchToLogin} className="auth-switch-btn">
+                Sign in
               </button>
             </p>
           </>
@@ -85,44 +111,3 @@ export default function Signup({ onSuccess, onSwitchToLogin }) {
     </div>
   );
 }
-
-const styles = {
-  container: { padding: "20px", display: "flex", justifyContent: "center" },
-  card: {
-    backgroundColor: "#fff",
-    padding: "24px",
-    borderRadius: "12px",
-    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-    width: "100%",
-    maxWidth: "360px",
-  },
-  title: { textAlign: "center", marginBottom: "8px", color: "#333" },
-  subtitle: { textAlign: "center", marginBottom: "20px", color: "#666", fontSize: "14px" },
-  form: { display: "flex", flexDirection: "column", gap: "12px" },
-  input: {
-    padding: "12px",
-    borderRadius: "8px",
-    border: "1px solid #ddd",
-    fontSize: "16px",
-  },
-  error: { color: "#dc3545", fontSize: "14px", margin: 0 },
-  button: {
-    padding: "12px",
-    backgroundColor: "#28a745",
-    color: "#fff",
-    border: "none",
-    borderRadius: "8px",
-    fontSize: "16px",
-    fontWeight: "bold",
-    cursor: "pointer",
-  },
-  footer: { textAlign: "center", marginTop: "16px", fontSize: "14px", color: "#666" },
-  link: {
-    background: "none",
-    border: "none",
-    color: "#007bff",
-    cursor: "pointer",
-    textDecoration: "underline",
-    fontSize: "14px",
-  },
-};

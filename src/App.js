@@ -15,6 +15,7 @@ import { useAuth } from './context/AuthContext';
 import MemberGate from './components/MemberGate';
 import AskAIGate from './components/AskAIGate';
 import LandingSection from './components/LandingSection';
+import VideoPublisher from './components/VideoPublisher';
 
 const PAGE_TITLES = {
   null: 'Dashboard',
@@ -27,6 +28,7 @@ const PAGE_TITLES = {
   'Resume': 'Resume Worlock',
   'video-publisher': 'Video Publisher',
   'account': 'Account',
+  'video-publisher': 'Video Publisher',
 };
 
 /* ─── NavItem ─────────────────────────────────────────────── */
@@ -85,6 +87,9 @@ function App() {
           <div style={s.groupLabel}>Documents</div>
           <NavItem emoji="🧙‍♂️" label="DocuWizard" active={activeTab === 'analyzer'}     onClick={() => go('analyzer')} />
           <NavItem emoji="🎙️" label="EchoScribe"  active={activeTab === 'transcription'} onClick={() => go('transcription')} />
+
+          <div style={s.groupLabel}>Social Media</div>
+          <NavItem emoji="📲" label="Video Publisher" active={activeTab === 'video-publisher'} onClick={() => go('video-publisher')} hasArrow />
 
           <div style={s.groupLabel}>Writing Tools</div>
           <NavItem emoji="✉️" label="Reply Enchanter" active={activeTab === 'Content'} onClick={() => go('Content')} />
@@ -183,6 +188,7 @@ function App() {
           {activeTab === 'Resume'           && <MemberGate featureName="Resume Worlock"><Resume /></MemberGate>}
           {activeTab === 'video-publisher'  && <MemberGate featureName="Video Publisher"><VideoPublisher /></MemberGate>}
           {activeTab === 'account'          && <AskAIGate  featureName="Account"><AccountSettings /></AskAIGate>}
+        
         </div>
       </div>
 

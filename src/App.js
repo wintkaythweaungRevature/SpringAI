@@ -181,7 +181,7 @@ function App() {
           {activeTab === 'transcription'    && <MemberGate featureName="EchoScribe"><Transcription /></MemberGate>}
           {activeTab === 'Content'          && <MemberGate featureName="Reply Enchanter"><Content /></MemberGate>}
           {activeTab === 'Resume'           && <MemberGate featureName="Resume Worlock"><Resume /></MemberGate>}
-          {activeTab === 'account'          && <AskAIGate  featureName="Account"><AccountSettings /></AskAIGate>}
+          {activeTab === 'account'          && <AccountSettings />}
           {activeTab === 'video-publisher'  && <MemberGate featureName="Video Publisher"><VideoPublisher /></MemberGate>}
         </div>
       </div>

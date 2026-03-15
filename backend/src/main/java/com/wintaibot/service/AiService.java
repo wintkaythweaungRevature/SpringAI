@@ -15,8 +15,8 @@ import java.util.*;
 @Service
 public class AiService {
 
-    @Value("${anthropic.api-key}")
-    private String anthropicApiKey;
+    @Value("${openai.api-key}")
+    private String openAiApiKey;
 
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -24,7 +24,7 @@ public class AiService {
     public Map<String, Object> prepareInterview(MultipartFile file, String jd) throws Exception {
         String resumeText = extractPdfText(file);
         String prompt = buildPrompt(resumeText, jd);
-        String aiResponse = callAnthropic(prompt);
+        String aiResponse = callOpenAi(prompt);
         return parseAiResponse(aiResponse);
     }
 
@@ -68,29 +68,30 @@ public class AiService {
     }
 
     @SuppressWarnings("unchecked")
-    private String callAnthropic(String prompt) throws Exception {
+    private String callOpenAi(String prompt) throws Exception {
         HttpHeaders headers = new HttpHeaders();
-        headers.set("x-api-key", anthropicApiKey);
-        headers.set("anthropic-version", "2023-06-01");
+        headers.setBearerAuth(openAiApiKey);
         headers.setContentType(MediaType.APPLICATION_JSON);
 
         Map<String, Object> body = new HashMap<>();
-        body.put("model", "claude-sonnet-4-6");
-        body.put("max_tokens", 8096);
+        body.put("model", "gpt-4o");
+        body.put("response_format", Map.of("type", "json_object"));
         body.put("messages", List.of(
+                Map.of("role", "system", "content", "You are an expert career coach. Always respond with valid JSON only."),
                 Map.of("role", "user", "content", prompt)
         ));
 
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
         ResponseEntity<Map> response = restTemplate.postForEntity(
-                "https://api.anthropic.com/v1/messages", request, Map.class);
+                "https://api.openai.com/v1/chat/completions", request, Map.class);
 
         if (!response.getStatusCode().is2xxSuccessful()) {
-            throw new RuntimeException("Anthropic API error: " + response.getStatusCode());
+            throw new RuntimeException("OpenAI API error: " + response.getStatusCode());
         }
 
-        List<Map<String, Object>> content = (List<Map<String, Object>>) response.getBody().get("content");
-        return (String) content.get(0).get("text");
+        List<Map<String, Object>> choices = (List<Map<String, Object>>) response.getBody().get("choices");
+        Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
+        return (String) message.get("content");
     }
 
     @SuppressWarnings("unchecked")

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
@@ -9,8 +9,21 @@ import TermsOfService from './components/TermsOfService';
 
 const rootElement = document.getElementById('root');
 
+function getPath() {
+  if (typeof window === 'undefined') return '';
+  return (window.location.pathname || '/').replace(/\/+$/, '') || '/';
+}
+
 function Root() {
-  const path = typeof window !== 'undefined' ? window.location.pathname : '';
+  const [path, setPath] = useState(getPath);
+
+  useEffect(() => {
+    setPath(getPath());
+    const onPopState = () => setPath(getPath());
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
   if (path === '/privacy-policy') return <PrivacyPolicy />;
   if (path === '/terms-of-service') return <TermsOfService />;
   return (

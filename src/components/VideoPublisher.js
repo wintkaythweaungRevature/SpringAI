@@ -429,7 +429,7 @@ export default function VideoPublisher() {
   const displayMetrics  = (insights?.metrics?.length)  ? insights.metrics  : defaultMetrics;
   const displayIdeas    = (insights?.nextIdeas?.length) ? insights.nextIdeas : defaultIdeas;
 
-  const useIdeaForActiveVariant = (ideaText) => {
+  const applyIdeaToVariant = (ideaText) => {
     const text = (typeof ideaText === 'string' ? ideaText : ideaText?.text || ideaText?.title || ideaText?.content || ideaText?.idea || '')?.trim();
     if (!text) return;
     const targetPlatform = activeVariant || (published?.length ? published[0] : selectedPlatforms[0]) || 'youtube';
@@ -827,7 +827,7 @@ export default function VideoPublisher() {
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          useIdeaForActiveVariant(text);
+                          applyIdeaToVariant(text);
                         }}
                       >
                         Use →

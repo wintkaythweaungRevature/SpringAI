@@ -131,20 +131,10 @@ function App() {
             ) : user ? (
               <>
                 <button style={s.iconBtn} title="Messages">💬</button>
-                <button style={s.iconBtn} title="Notifications">
-                  <span style={s.bellWrap}>🔔<span style={s.redDot} /></span>
-                </button>
-                <button style={s.iconBtn} onClick={() => go('account')} title="Settings">
-                  <span style={s.bellWrap}>⚙️<span style={s.redDot} /></span>
-                </button>
                 <button style={s.avatarBtn} onClick={() => go('account')} title={user.email}>
                   <div style={s.avatar}>{userInitials}</div>
                 </button>
                 <span style={s.topEmail} title={user.email}>{user.email}</span>
-                {user?.membershipType === 'MEMBER' && (
-                  <span style={s.memberBadge}>✓ Member</span>
-                )}
-                <button onClick={logout} style={s.logoutBtn}>Logout</button>
               </>
             ) : (
               <>

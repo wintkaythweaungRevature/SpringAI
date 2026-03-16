@@ -55,13 +55,7 @@ function PlatformIcon({ platform, size = 24, style = {} }) {
   return <span style={{ fontSize: size, lineHeight: 1, ...style }}>{platform.emoji}</span>;
 }
 
-const ROLES = [
-  { id: 'creator', label: 'Creator',  desc: 'Write & submit posts', emoji: '✏️' },
-  { id: 'manager', label: 'Manager',  desc: 'Review & approve',      emoji: '✅' },
-  { id: 'buffer',  label: 'Buffer',   desc: 'Schedule & publish',    emoji: '🚀' },
-];
-
-const STEPS = ['upload', 'processing', 'review', 'approval', 'published', 'analytics'];
+const STEPS = ['upload', 'processing', 'review', 'published', 'analytics'];
 
 /* ─── Component ─────────────────────────────────────────────── */
 export default function VideoPublisher() {
@@ -71,14 +65,13 @@ export default function VideoPublisher() {
   const [step, setStep]                 = useState('upload');
   const [video, setVideo]               = useState(null);
   const [selectedPlatforms, setSelected] = useState(['youtube', 'instagram', 'tiktok', 'linkedin']);
-  const [role, setRole]                 = useState('creator');
   const [dragOver, setDragOver]         = useState(false);
   const [processing, setProcessing]     = useState(false);
   const [processLog, setProcessLog]     = useState([]);
   const [variants, setVariants]         = useState({});
-  const [approvals, setApprovals]       = useState({});
   const [published, setPublished]       = useState([]);
   const [activeVariant, setActiveVariant] = useState(null);
+  const [scheduledTimes, setScheduledTimes] = useState({}); // { [platformId]: ISO datetime string or null (publish now) }
   const [connectedAccounts, setConnectedAccounts] = useState({});
   const [insights, setInsights] = useState(null);       // { insights: [], metrics: {}, platformBreakdown: [], nextIdeas: [] }
   const [insightsLoading, setInsightsLoading] = useState(false);
@@ -172,6 +165,9 @@ export default function VideoPublisher() {
   const connectPlatform = (platformId) => {
     setConnectLoading(platformId);
     setConnectMessage('');
+    // Open the popup synchronously (must happen in the click handler, not inside async .then())
+    // so browsers don't block it as an unwanted popup.
+    const popup = window.open('about:blank', 'video_connect', 'width=600,height=700');
     fetch(socialApi('/connect/' + platformId), { headers: authHeaders() })
       .then(res => {
         if (!res.ok) {
@@ -184,19 +180,21 @@ export default function VideoPublisher() {
       })
       .then(data => {
         const url = data?.url || data?.authUrl;
-        if (url) {
-          const popup = window.open(url, 'video_connect', 'width=600,height=700');
+        if (url && popup && !popup.closed) {
+          popup.location.href = url;
           const onFocus = () => {
             window.removeEventListener('focus', onFocus);
             if (popup?.closed) refreshConnections();
           };
           window.addEventListener('focus', onFocus);
         } else {
+          if (popup && !popup.closed) popup.close();
           setConnectMessage('Could not get connect URL');
           setTimeout(() => setConnectMessage(''), 4000);
         }
       })
       .catch(err => {
+        if (popup && !popup.closed) popup.close();
         const msg = err.message || 'Connect failed';
         const isNetwork = msg.startsWith('Failed') || msg.includes('CORS') || msg.includes('NetworkError');
         const display = isNetwork
@@ -325,39 +323,6 @@ export default function VideoPublisher() {
     }
   };
 
-  const submitForReview = async (variantId) => {
-    if (!variantId) return;
-    try {
-      const res = await fetch(api(`/variants/${variantId}/submit`), { method: 'POST', headers: { ...authHeaders(), 'Content-Type': 'application/json' } });
-      if (res.ok) setVariants(v => ({ ...v, [activeVariant]: { ...v[activeVariant], status: 'pending_review' } }));
-    } catch (e) {}
-  };
-
-  const approveVariant = async (pid) => {
-    const variant = variants[pid];
-    if (variant?.id) {
-      try {
-        const res = await fetch(api(`/variants/${variant.id}/approve`), { method: 'POST', headers: authHeaders() });
-        if (res.ok) setVariants(v => ({ ...v, [pid]: { ...v[pid], status: 'approved' } }));
-        else setVariants(v => ({ ...v, [pid]: { ...v[pid], status: 'approved' } }));
-      } catch (e) {
-        setVariants(v => ({ ...v, [pid]: { ...v[pid], status: 'approved' } }));
-      }
-    } else {
-      setVariants(v => ({ ...v, [pid]: { ...v[pid], status: 'approved' } }));
-    }
-  };
-
-  const rejectVariant = async (pid) => {
-    const variant = variants[pid];
-    if (variant?.id) {
-      try {
-        await fetch(api(`/variants/${variant.id}/reject`), { method: 'POST', headers: authHeaders() });
-      } catch (e) {}
-    }
-    setVariants(v => ({ ...v, [pid]: { ...v[pid], status: 'rejected' } }));
-  };
-
   const scheduleVariant = async (variantId, platform, scheduledAt) => {
     if (!variantId) return false;
     try {
@@ -370,29 +335,33 @@ export default function VideoPublisher() {
     } catch (e) { return false; }
   };
 
-  const publishAll = async (options = {}) => {
-    const approved = Object.entries(variants)
-      .filter(([, v]) => v.status === 'approved')
-      .map(([pid]) => pid);
-
+  const scheduleAndPublishAll = async () => {
+    const platformIds = Object.keys(variants);
     setPublishLoading(true);
     const successPlatforms = [];
-    for (const pid of approved) {
+    for (const pid of platformIds) {
       const v = variants[pid];
-      try {
-        const formData = new FormData();
-        formData.append('file', video);
-        formData.append('caption', v.caption);
-        formData.append('hashtags', Array.isArray(v.hashtags) ? v.hashtags.join(' ') : (v.hashtags || ''));
+      const scheduledAt = scheduledTimes[pid] || null; // null or '' = publish now
+      const hasSchedule = scheduledAt && scheduledAt.trim() !== '';
+      if (hasSchedule && v?.id) {
+        const ok = await scheduleVariant(v.id, pid, scheduledAt);
+        if (ok) successPlatforms.push(pid);
+      } else {
+        try {
+          const formData = new FormData();
+          formData.append('file', video);
+          formData.append('caption', v.caption);
+          formData.append('hashtags', Array.isArray(v.hashtags) ? v.hashtags.join(' ') : (v.hashtags || ''));
 
-        const res = await fetch(api(`/publish/${pid}`), {
-          method: 'POST',
-          headers: authHeaders(),
-          body: formData,
-        });
-        if (res.ok) successPlatforms.push(pid);
-      } catch (e) {
-        successPlatforms.push(pid);
+          const res = await fetch(api(`/publish/${pid}`), {
+            method: 'POST',
+            headers: authHeaders(),
+            body: formData,
+          });
+          if (res.ok) successPlatforms.push(pid);
+        } catch (e) {
+          successPlatforms.push(pid);
+        }
       }
     }
     setPublished(successPlatforms);
@@ -442,7 +411,7 @@ export default function VideoPublisher() {
   return (
     <div style={s.page}>
       <div style={s.stepper}>
-        {['Upload', 'Processing', 'Review', 'Approval', 'Published', 'Analytics'].map((label, i) => {
+        {['Upload', 'Processing', 'Review & Schedule', 'Published', 'Analytics'].map((label, i) => {
           const sid = STEPS[i];
           const idx = STEPS.indexOf(step);
           const done = i < idx;
@@ -457,7 +426,7 @@ export default function VideoPublisher() {
                   {label}
                 </span>
               </div>
-              {i < 5 && <div style={{ ...s.stepLine, ...(done ? s.stepLineDone : {}) }} />}
+              {i < 4 && <div style={{ ...s.stepLine, ...(done ? s.stepLineDone : {}) }} />}
             </React.Fragment>
           );
         })}
@@ -490,18 +459,6 @@ export default function VideoPublisher() {
                 </>
               )}
             </div>
-
-            <div style={s.sectionTitle}>🎯 Your Role</div>
-            {ROLES.map(r => (
-              <button key={r.id} style={{ ...s.roleBtn, ...(role === r.id ? s.roleBtnActive : {}) }}
-                onClick={() => setRole(r.id)}>
-                <span style={{ fontSize: '18px' }}>{r.emoji}</span>
-                <div style={{ textAlign: 'left' }}>
-                  <div style={{ fontWeight: 700, fontSize: '13px' }}>{r.label}</div>
-                  <div style={{ fontSize: '11px', opacity: 0.65 }}>{r.desc}</div>
-                </div>
-              </button>
-            ))}
 
             <button
               style={{ ...s.btnPrimary, ...((!video || selectedPlatforms.length === 0) ? s.btnDisabled : {}) }}
@@ -566,7 +523,7 @@ export default function VideoPublisher() {
                 ['✍️', 'Write platform-specific captions', 'tone-matched per platform'],
                 ['#️⃣', 'Generate hashtags', 'trending + relevant'],
                 ['✂️', 'Create clip variants', 'optimized per platform format'],
-                ['🖼️', 'Generate thumbnail ideas', 'high click-through'],
+                ['📅', 'You choose date & time per platform', 'schedule or publish now — no approval step'],
               ].map(([icon, title, sub]) => (
                 <div key={title} style={s.aiFeatureRow}>
                   <span style={{ fontSize: '20px' }}>{icon}</span>
@@ -646,50 +603,36 @@ export default function VideoPublisher() {
         </div>
       )}
 
-      {(step === 'review' || step === 'approval') && (
+      {step === 'review' && (
         <div style={s.layout}>
           <div style={s.left}>
-            <div style={s.sectionTitle}>📦 Content Variants</div>
+            <div style={s.sectionTitle}>📦 Content by platform</div>
             {(Object.keys(variants).length ? Object.keys(variants) : selectedPlatforms).map(pid => {
               const p = PLATFORMS.find(x => x.id === pid) || { id: pid, label: pid, emoji: '📄', color: '#64748b' };
-              const v = variants[pid];
+              const hasSchedule = scheduledTimes[pid] && scheduledTimes[pid].trim() !== '';
               return (
                 <button key={pid}
-                  style={{ ...s.variantTab, ...(activeVariant === pid ? s.variantTabActive : {}), ...(v?.status === 'approved' ? s.variantApproved : v?.status === 'rejected' ? s.variantRejected : {}) }}
+                  style={{ ...s.variantTab, ...(activeVariant === pid ? s.variantTabActive : {}) }}
                   onClick={() => setActiveVariant(pid)}
                 >
                   <PlatformIcon platform={p} size={22} />
                   <span style={{ flex: 1, textAlign: 'left', fontSize: '13px', fontWeight: 600 }}>{p.label}</span>
-                  <span style={{ fontSize: '11px' }}>
-                    {v?.status === 'approved' ? '✅' : v?.status === 'rejected' ? '❌' : '📝'}
-                  </span>
+                  <span style={{ fontSize: '11px' }}>{hasSchedule ? '📅' : '⏱️'}</span>
                 </button>
               );
             })}
 
             <div style={{ marginTop: '16px' }}>
-              <div style={s.approvalSummary}>
-                <span>Approved: {Object.values(variants).filter(v => v.status === 'approved').length}</span>
-                <span>/{Object.keys(variants).length} platforms</span>
-              </div>
-              {role === 'creator' && (
-                <button
-                  style={{ ...s.btnPrimary, marginBottom: '8px' }}
-                  onClick={() => variants[activeVariant]?.id && submitForReview(variants[activeVariant].id)}
-                  disabled={!variants[activeVariant]?.id}
-                >
-                  Submit for review
-                </button>
-              )}
-              {(role === 'manager' || role === 'buffer') && (
-                <button
-                  style={{ ...s.btnPrimary, ...(Object.values(variants).every(v => v.status !== 'approved') || publishLoading ? s.btnDisabled : {}) }}
-                  onClick={() => publishAll()}
-                  disabled={Object.values(variants).every(v => v.status !== 'approved') || publishLoading}
-                >
-                  {publishLoading ? '⏳ Publishing...' : '🚀 Publish approved (now)'}
-                </button>
-              )}
+              <button
+                style={{ ...s.btnPrimary, ...(publishLoading ? s.btnDisabled : {}) }}
+                onClick={() => scheduleAndPublishAll()}
+                disabled={publishLoading}
+              >
+                {publishLoading ? '⏳ Scheduling & publishing...' : '🚀 Schedule & Publish'}
+              </button>
+              <p style={{ fontSize: '11px', color: '#64748b', marginTop: '8px', marginBottom: '0' }}>
+                Set date & time per platform below, or leave empty to publish now.
+              </p>
             </div>
           </div>
 
@@ -698,6 +641,13 @@ export default function VideoPublisher() {
               const pid = activeVariant;
               const p = PLATFORMS.find(x => x.id === pid);
               const v = variants[pid];
+              const hashtags = Array.isArray(v.hashtags) ? v.hashtags : [];
+              const scheduleVal = scheduledTimes[pid] || '';
+              const defaultDatetime = () => {
+                const d = new Date();
+                d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+                return d.toISOString().slice(0, 16);
+              };
               return (
                 <div style={s.card}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
@@ -705,11 +655,6 @@ export default function VideoPublisher() {
                     <div>
                       <div style={{ fontWeight: 700, fontSize: '16px' }}>{p.label}</div>
                       <div style={{ fontSize: '12px', color: '#64748b' }}>{v.clipNote}</div>
-                    </div>
-                    <div style={{ marginLeft: 'auto' }}>
-                      <span style={{ ...s.statusBadge, background: v.status === 'approved' ? '#22c55e' : v.status === 'rejected' ? '#ef4444' : '#f59e0b' }}>
-                        {v.status}
-                      </span>
                     </div>
                   </div>
 
@@ -725,22 +670,29 @@ export default function VideoPublisher() {
 
                   <div style={s.fieldLabel}>Hashtags</div>
                   <div style={s.hashtagBox}>
-                    {v.hashtags.map(h => (
+                    {hashtags.map(h => (
                       <span key={h} style={{ ...s.hashtagChip, borderColor: p.color, color: p.color }}>{h}</span>
                     ))}
                   </div>
 
-                  {role !== 'creator' && (
-                    <div style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
-                      <button style={s.approveBtn} onClick={() => approveVariant(pid)}>✅ Approve</button>
-                      <button style={s.rejectBtn} onClick={() => rejectVariant(pid)}>❌ Reject</button>
-                    </div>
-                  )}
-                  {role === 'creator' && (
-                    <div style={s.creatorNote}>
-                      ℹ️ As Creator you can edit content. A Manager must approve before publishing.
-                    </div>
-                  )}
+                  <div style={{ ...s.fieldLabel, marginTop: '16px' }}>📅 When to post on {p.label}</div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={!scheduleVal || scheduleVal.trim() === ''}
+                      onChange={e => {
+                        if (e.target.checked) setScheduledTimes(prev => ({ ...prev, [pid]: null }));
+                      }}
+                    />
+                    <span>Publish now</span>
+                  </label>
+                  <label style={{ display: 'block', fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>Or pick date & time:</label>
+                  <input
+                    type="datetime-local"
+                    value={scheduleVal || defaultDatetime()}
+                    onChange={e => setScheduledTimes(prev => ({ ...prev, [pid]: e.target.value || null }))}
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1.5px solid #e2e8f0', fontSize: '13px', boxSizing: 'border-box' }}
+                  />
                 </div>
               );
             })()}
@@ -753,7 +705,7 @@ export default function VideoPublisher() {
           <div style={s.left}>
             <div style={s.card}>
               <div style={s.sectionTitle}>🚀 Published</div>
-              {published.map(pid => {
+              {(Array.isArray(published) ? published : []).map(pid => {
                 const p = PLATFORMS.find(x => x.id === pid) || { id: pid, label: pid, emoji: '📄', color: '#64748b' };
                 return (
                   <div key={pid} style={s.publishedRow}>
@@ -764,7 +716,7 @@ export default function VideoPublisher() {
                 );
               })}
               <button style={{ ...s.btnPrimary, marginTop: '16px', fontSize: '13px' }}
-                onClick={() => { setStep('upload'); setVideo(null); setVideoId(null); setVariants({}); setPublished([]); setProcessLog([]); setProcessError(null); }}>
+                onClick={() => { setStep('upload'); setVideo(null); setVideoId(null); setVariants({}); setPublished([]); setScheduledTimes({}); setProcessLog([]); setProcessError(null); }}>
                 + New Video
               </button>
             </div>
@@ -796,7 +748,7 @@ export default function VideoPublisher() {
 
             <div style={s.card}>
               <div style={s.sectionTitle}>📡 Platform Breakdown</div>
-              {published.map(pid => {
+              {(Array.isArray(published) ? published : []).map(pid => {
                 const p = PLATFORMS.find(x => x.id === pid) || { id: pid, label: pid, emoji: '📄', color: '#64748b' };
                 const breakdown = insights?.platformBreakdown?.find(b => b.platform === pid);
                 const views = breakdown?.views ?? Math.floor(Math.random() * 8000) + 500;

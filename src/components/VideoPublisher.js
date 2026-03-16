@@ -162,13 +162,23 @@ export default function VideoPublisher() {
   const displayTrends = (trends?.trends?.length ? trends.trends : defaultTrends).slice(0, 5);
   const displayNews = (trends?.news?.length ? trends.news : defaultNews).slice(0, 3);
 
+  const friendlyConnectError = (status, body) => {
+    if (status === 502 || status === 503 || status === 504) return 'Server temporarily unavailable. Try again in a few minutes.';
+    if (typeof body === 'string' && (body.trim().startsWith('<') || /<\/?html>/i.test(body))) return `Server error (${status}). Try again later.`;
+    if (body && typeof body === 'string' && body.length > 200) return `Server error (${status}). Try again later.`;
+    return null;
+  };
+
   const connectPlatform = (platformId) => {
     setConnectLoading(platformId);
     setConnectMessage('');
     fetch(socialApi('/connect/' + platformId), { headers: authHeaders() })
       .then(res => {
         if (!res.ok) {
-          return res.text().then(t => { throw new Error(`${res.status}: ${t || res.statusText}`); });
+          return res.text().then(t => {
+            const friendly = friendlyConnectError(res.status, t);
+            throw new Error(friendly || `${res.status}: ${(t || res.statusText || '').slice(0, 120)}`);
+          });
         }
         return res.json();
       })
@@ -188,7 +198,11 @@ export default function VideoPublisher() {
       })
       .catch(err => {
         const msg = err.message || 'Connect failed';
-        setConnectMessage(msg.startsWith('Failed') ? 'Connect failed (network or CORS). Set REACT_APP_API_BASE to your backend and ensure CORS allows this origin.' : msg);
+        const isNetwork = msg.startsWith('Failed') || msg.includes('CORS') || msg.includes('NetworkError');
+        const display = isNetwork
+          ? 'Connect failed (network or CORS). Set REACT_APP_API_BASE to your backend and ensure CORS allows this origin.'
+          : (msg.includes('<') && msg.includes('>') ? 'Server error. Try again later.' : msg);
+        setConnectMessage(display);
         setTimeout(() => setConnectMessage(''), 5000);
       })
       .finally(() => setConnectLoading(null));

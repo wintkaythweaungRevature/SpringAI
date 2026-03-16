@@ -116,10 +116,17 @@ export default function VideoPublisher() {
   const fetchTrends = () => {
     if (!token) return;
     setTrendsLoading(true);
-    fetch(api('/trends'), { headers: authHeaders() })
+    // Backend exposes both /trending and /trends — use /trending (primary)
+    fetch(api('/trending'), { headers: authHeaders() })
       .then(res => res.ok ? res.json() : null)
       .then(data => {
-        if (data && (data.trends?.length || data.news?.length)) setTrends(data);
+        if (!data) return;
+        // Normalise: backend may return trendingTopics / newsSummary
+        const trends = data.trends?.length ? data.trends
+          : data.trendingTopics?.length ? data.trendingTopics : null;
+        const news = data.news?.length ? data.news
+          : data.newsSummary ? [data.newsSummary] : null;
+        if (trends || news) setTrends({ trends, news });
       })
       .catch(() => {})
       .finally(() => setTrendsLoading(false));
@@ -371,21 +378,33 @@ export default function VideoPublisher() {
     setStep('analytics');
   };
 
-  // Fetch analytics + AI insights when entering analytics step (your backend)
+  // Fetch AI-generated analytics + insights when entering analytics step
   useEffect(() => {
     if (step !== 'analytics' || !token) return;
     setInsightsLoading(true);
-    Promise.all([
-      fetch(api('/analytics'), { headers: authHeaders() }).then(r => r.ok ? r.json() : null),
-      fetch(api('/analytics/insights'), { headers: authHeaders() }).then(r => r.ok ? r.json() : null),
-    ])
-      .then(([analytics, insightsData]) => {
-        setInsights(insightsData || analytics ? { ...analytics, ...insightsData, insights: insightsData?.insights ?? insightsData?.recommendations } : null);
+    // /analytics/insights now returns { insights:[...], nextIdeas:[...], metrics:[...] }
+    // /analytics returns raw engagement summary (totals); insights endpoint already includes metrics
+    fetch(api('/analytics/insights'), { headers: authHeaders() })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data) return;
+        // Handle edge case: backend may still return insights as a raw string
+        const insightsArr = Array.isArray(data.insights)
+          ? data.insights
+          : typeof data.insights === 'string'
+            ? data.insights.split('\n').map(l => l.trim()).filter(l => l.length > 2)
+            : null;
+        setInsights({
+          insights:   insightsArr,
+          nextIdeas:  Array.isArray(data.nextIdeas) ? data.nextIdeas : null,
+          metrics:    Array.isArray(data.metrics)   ? data.metrics   : null,
+        });
       })
       .catch(() => setInsights(null))
       .finally(() => setInsightsLoading(false));
   }, [step, base, token]);
 
+  // Fallbacks shown while loading or when backend is unavailable
   const defaultInsights = [
     '📈 Your short videos (15–20s) perform 4x better than long ones',
     '🔥 Best posting time: Tuesday & Thursday 7–9 PM',
@@ -393,27 +412,27 @@ export default function VideoPublisher() {
     '🎯 Trending topic detected: #AITools — create content now',
   ];
   const defaultMetrics = [
-    { label: 'Views', value: '12.4K', icon: '👁️', color: '#2563eb' },
-    { label: 'Likes', value: '1.8K', icon: '❤️', color: '#ef4444' },
-    { label: 'Comments', value: '342', icon: '💬', color: '#f59e0b' },
-    { label: 'Shares', value: '891', icon: '🔁', color: '#22c55e' },
-    { label: 'Engagement', value: '8.4%', icon: '📊', color: '#7c3aed' },
-    { label: 'New Followers', value: '+214', icon: '👥', color: '#0891b2' },
+    { label: 'Views',    value: '—', icon: '👁️', color: '#2563eb' },
+    { label: 'Likes',    value: '—', icon: '❤️', color: '#ef4444' },
+    { label: 'Comments', value: '—', icon: '💬', color: '#f59e0b' },
+    { label: 'Shares',   value: '—', icon: '🔁', color: '#22c55e' },
+    { label: 'Engagement', value: '—', icon: '📊', color: '#7c3aed' },
+    { label: 'Posts',    value: '—', icon: '📅', color: '#0891b2' },
   ];
   const defaultIdeas = [
     '🎬 "5 AI tools that replace your whole team" — trending format',
-    '📱 Behind-the-scenes: How you built Wintaibot',
+    '📱 Behind-the-scenes: How you built this product',
     '🔥 React vs Vue debate — high engagement topic this week',
   ];
 
-  const displayInsights = (insights?.insights && insights.insights.length) ? insights.insights : defaultInsights;
-  const displayMetrics = (insights?.metrics && Array.isArray(insights.metrics) && insights.metrics.length) ? insights.metrics : defaultMetrics;
-  const displayIdeas = (insights?.nextIdeas && insights.nextIdeas.length) ? insights.nextIdeas : defaultIdeas;
+  const displayInsights = (insights?.insights?.length) ? insights.insights : defaultInsights;
+  const displayMetrics  = (insights?.metrics?.length)  ? insights.metrics  : defaultMetrics;
+  const displayIdeas    = (insights?.nextIdeas?.length) ? insights.nextIdeas : defaultIdeas;
 
   const useIdeaForActiveVariant = (ideaText) => {
-    if (!ideaText) return;
-    const targetPlatform = activeVariant || (published?.length ? published[0] : selectedPlatforms[0]);
-    if (!targetPlatform) return;
+    const text = (typeof ideaText === 'string' ? ideaText : ideaText?.text || ideaText?.title || ideaText?.content || ideaText?.idea || '')?.trim();
+    if (!text) return;
+    const targetPlatform = activeVariant || (published?.length ? published[0] : selectedPlatforms[0]) || 'youtube';
     setActiveVariant(targetPlatform);
     setStep('review');
     setVariants(prev => {
@@ -422,7 +441,7 @@ export default function VideoPublisher() {
         ...prev,
         [targetPlatform]: {
           ...v,
-          caption: ideaText,
+          caption: text,
           hashtags: v.hashtags || mockHashtags(targetPlatform),
           clipNote: v.clipNote || mockClipNote(targetPlatform),
           status: v.status || 'draft',
@@ -798,14 +817,18 @@ export default function VideoPublisher() {
                 <div style={{ fontSize: '13px', color: '#64748b' }}>Loading ideas...</div>
               ) : (
                 displayIdeas.map((idea, i) => {
-                  const text = typeof idea === 'string' ? idea : (idea.text || idea.title);
+                  const text = typeof idea === 'string' ? idea : (idea.text || idea.title || idea.content || idea.idea || '');
                   return (
                     <div key={i} style={s.ideaRow}>
                       <span style={{ fontSize: '13px' }}>{text}</span>
                       <button
                         style={s.useIdeaBtn}
                         type="button"
-                        onClick={() => useIdeaForActiveVariant(text)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          useIdeaForActiveVariant(text);
+                        }}
                       >
                         Use →
                       </button>

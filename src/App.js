@@ -140,6 +140,7 @@ function App() {
                   <div style={s.avatar}>{userInitials}</div>
                 </button>
                 <span style={s.topEmail} title={user.email}>{userDisplayName || user.email}</span>
+                <button style={s.logoutBtn} onClick={logout}>Log out</button>
               </>
             ) : (
               <>

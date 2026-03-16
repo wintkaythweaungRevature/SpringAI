@@ -15,6 +15,8 @@ const OWNER_TOKEN = "owner-wint-full-access";
 const OWNER_USER = {
   id: "owner",
   email: OWNER_EMAIL,
+  firstName: "Wint",
+  lastName: "Kay",
   membershipType: "MEMBER",
   emailVerified: true,
 };

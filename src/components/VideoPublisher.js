@@ -156,6 +156,8 @@ export default function VideoPublisher() {
   const displayNews = (trends?.news?.length ? trends.news : defaultNews).slice(0, 3);
 
   const friendlyConnectError = (status, body) => {
+    if (status === 401) return 'Session expired or invalid. Please log in again with a real account.';
+    if (status === 404) return 'Connect API not available. Ensure your backend is running and includes /api/social endpoints.';
     if (status === 502 || status === 503 || status === 504) return 'Server temporarily unavailable. Try again in a few minutes.';
     if (typeof body === 'string' && (body.trim().startsWith('<') || /<\/?html>/i.test(body))) return `Server error (${status}). Try again later.`;
     if (body && typeof body === 'string' && body.length > 200) return `Server error (${status}). Try again later.`;
@@ -736,6 +738,11 @@ export default function VideoPublisher() {
               )}
             </div>
 
+            {!insights?.metrics?.length && (
+              <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '12px', background: '#f8fafc', padding: '10px 14px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                📊 Connect your social accounts and publish content to see real Views, Comments, and other metrics from your platforms.
+              </p>
+            )}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '16px' }}>
               {displayMetrics.map((m, i) => (
                 <div key={m.label || i} style={s.metricCard}>

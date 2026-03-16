@@ -59,7 +59,12 @@ function App() {
 
   const go = (tab) => setActiveTab(tab);
   const pageTitle = PAGE_TITLES[activeTab] ?? 'Dashboard';
-  const userInitials = user?.email ? user.email.slice(0, 2).toUpperCase() : '??';
+  const userDisplayName = user?.firstName || user?.lastName
+    ? [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim()
+    : (user?.email || '').split('@')[0] || '';
+  const userInitials = user?.firstName && user?.lastName
+    ? (user.firstName[0] + user.lastName[0]).toUpperCase()
+    : (user?.email ? user.email.slice(0, 2).toUpperCase() : '??');
 
   return (
     <div style={s.shell}>
@@ -134,7 +139,7 @@ function App() {
                 <button style={s.avatarBtn} onClick={() => go('account')} title={user.email}>
                   <div style={s.avatar}>{userInitials}</div>
                 </button>
-                <span style={s.topEmail} title={user.email}>{user.email}</span>
+                <span style={s.topEmail} title={user.email}>{userDisplayName || user.email}</span>
               </>
             ) : (
               <>
@@ -150,7 +155,7 @@ function App() {
           <h2 style={s.pageTitle}>{pageTitle}</h2>
           {user && (
             <div style={s.pageRight}>
-              <span style={s.pageEmail}>{user.email}</span>
+              <span style={s.pageEmail}>{userDisplayName || user.email}</span>
               {user?.membershipType === 'MEMBER' && (
                 <span style={s.pageMemberBadge}>✓ Member</span>
               )}

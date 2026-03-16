@@ -410,6 +410,27 @@ export default function VideoPublisher() {
   const displayMetrics = (insights?.metrics && Array.isArray(insights.metrics) && insights.metrics.length) ? insights.metrics : defaultMetrics;
   const displayIdeas = (insights?.nextIdeas && insights.nextIdeas.length) ? insights.nextIdeas : defaultIdeas;
 
+  const useIdeaForActiveVariant = (ideaText) => {
+    if (!ideaText) return;
+    const targetPlatform = activeVariant || (published?.length ? published[0] : selectedPlatforms[0]);
+    if (!targetPlatform) return;
+    setActiveVariant(targetPlatform);
+    setStep('review');
+    setVariants(prev => {
+      const v = prev[targetPlatform] || {};
+      return {
+        ...prev,
+        [targetPlatform]: {
+          ...v,
+          caption: ideaText,
+          hashtags: v.hashtags || mockHashtags(targetPlatform),
+          clipNote: v.clipNote || mockClipNote(targetPlatform),
+          status: v.status || 'draft',
+        },
+      };
+    });
+  };
+
   return (
     <div style={s.page}>
       <div style={s.stepper}>
@@ -776,12 +797,21 @@ export default function VideoPublisher() {
               {insightsLoading ? (
                 <div style={{ fontSize: '13px', color: '#64748b' }}>Loading ideas...</div>
               ) : (
-                displayIdeas.map((idea, i) => (
-                  <div key={i} style={s.ideaRow}>
-                    <span style={{ fontSize: '13px' }}>{typeof idea === 'string' ? idea : idea.text || idea.title}</span>
-                    <button style={s.useIdeaBtn} type="button">Use →</button>
-                  </div>
-                ))
+                displayIdeas.map((idea, i) => {
+                  const text = typeof idea === 'string' ? idea : (idea.text || idea.title);
+                  return (
+                    <div key={i} style={s.ideaRow}>
+                      <span style={{ fontSize: '13px' }}>{text}</span>
+                      <button
+                        style={s.useIdeaBtn}
+                        type="button"
+                        onClick={() => useIdeaForActiveVariant(text)}
+                      >
+                        Use →
+                      </button>
+                    </div>
+                  );
+                })
               )}
             </div>
           </div>

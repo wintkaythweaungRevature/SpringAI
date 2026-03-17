@@ -123,6 +123,23 @@ export default function VideoPublisher() {
       .catch(() => {});
   }, [base, token]);
 
+  // Handle OAuth callback redirect: ?social_connect=success&platform=instagram
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const socialConnect = params.get('social_connect');
+    const platform = params.get('platform');
+    if (socialConnect === 'success' && platform && token) {
+      const platformLabel = PLATFORMS.find(p => p.id === platform)?.label || platform;
+      refreshConnections(`${platformLabel} connected successfully!`);
+      // Clean URL
+      params.delete('social_connect');
+      params.delete('platform');
+      const newSearch = params.toString();
+      const newUrl = window.location.pathname + (newSearch ? '?' + newSearch : '') + window.location.hash;
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, [token]);
+
   const fetchTrends = () => {
     if (!token) return;
     setTrendsLoading(true);
@@ -143,7 +160,7 @@ export default function VideoPublisher() {
   };
   useEffect(() => { if (step === 'upload') fetchTrends(); }, [base, token, step]);
 
-  const refreshConnections = () => {
+  const refreshConnections = (successMessage = 'Connections updated') => {
     if (!token) return;
     setConnectRefreshing(true);
     setConnectMessage('');
@@ -151,8 +168,8 @@ export default function VideoPublisher() {
       .then(res => res.ok ? res.json() : null)
       .then(data => {
         setConnectedAccounts(parseConnectedFromStatus(data));
-        setConnectMessage('Connections updated');
-        setTimeout(() => setConnectMessage(''), 3000);
+        setConnectMessage(successMessage);
+        setTimeout(() => setConnectMessage(''), 4000);
       })
       .catch(() => setConnectMessage('Refresh failed'))
       .finally(() => setConnectRefreshing(false));

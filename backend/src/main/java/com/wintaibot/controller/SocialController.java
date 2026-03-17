@@ -1,10 +1,14 @@
 package com.wintaibot.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URI;
 import java.util.*;
 
 /**
@@ -14,6 +18,9 @@ import java.util.*;
 @RestController
 @RequestMapping("/api/social")
 public class SocialController {
+
+    @Value("${app.base-url:http://localhost:3000}")
+    private String appBaseUrl;
 
     // In-memory stub: userId -> Set of connected platform IDs. Replace with DB in production.
     private static final Map<Long, Set<String>> CONNECTED = new HashMap<>();
@@ -50,12 +57,20 @@ public class SocialController {
     }
 
     @GetMapping("/oauth-placeholder")
-    public String oauthPlaceholder(
+    public ResponseEntity<?> oauthPlaceholder(
             @RequestParam(required = false) String platform,
             @RequestParam(required = false) String status) {
-        // Simple HTML page for popup - no auth required so OAuth callback can land here
+        // Redirect to frontend with ?social_connect=success&platform=... so the app can refresh connections
+        String pid = platform != null ? normalizePlatform(platform) : null;
+        if (pid != null && "connected".equalsIgnoreCase(status)) {
+            String redirectUrl = appBaseUrl + "?social_connect=success&platform=" + pid;
+            HttpHeaders headers = new HttpHeaders();
+            headers.setLocation(URI.create(redirectUrl));
+            return new ResponseEntity<>(headers, HttpStatus.FOUND);
+        }
+        // Fallback: simple HTML for popup (e.g. when opened without platform param)
         String platformName = platform != null ? platform : "platform";
-        return "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><title>Connect</title>" +
+        String html = "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><title>Connect</title>" +
                 "<style>body{font-family:system-ui;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f8fafc}" +
                 ".box{background:#fff;padding:32px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.1);text-align:center;max-width:360px}" +
                 "h2{color:#1e293b;margin:0 0 12px}.p{color:#64748b;font-size:14px;line-height:1.6}" +
@@ -64,6 +79,7 @@ public class SocialController {
                 "<p class=\"p\">You can close this window and return to Wintaibot.</p>" +
                 "<p class=\"ok\">" + (status != null ? "Connection saved." : "Setup complete.") + "</p></div>" +
                 "<script>setTimeout(function(){window.close()},2000)</script></body></html>";
+        return ResponseEntity.ok(html);
     }
 
     @DeleteMapping("/disconnect/{platform}")

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './App.css';
 import ImageGenerator from './components/ImageGenerator';
 import ChatComponent from './components/ChatComponent';
@@ -59,6 +59,14 @@ function App() {
 
   const go = (tab) => setActiveTab(tab);
   const pageTitle = PAGE_TITLES[activeTab] ?? 'Dashboard';
+
+  // When OAuth callback redirects with ?social_connect=success&platform=instagram, show Video Publisher
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('social_connect') === 'success' && params.get('platform')) {
+      setActiveTab('video-publisher');
+    }
+  }, []);
   const userDisplayName = user?.firstName || user?.lastName
     ? [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim()
     : (user?.email || '').split('@')[0] || '';

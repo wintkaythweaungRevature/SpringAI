@@ -89,6 +89,16 @@ export default function VideoPublisher() {
   const api = (path) => `${base}/api/video-content${path}`;
   const socialApi = (path) => `${base}/api/social${path}`;
   const authHeaders = () => (token ? { Authorization: `Bearer ${token}` } : {});
+  // Map frontend platform key to backend path (youtube, instagram, tiktok, linkedin, etc.)
+  const toApiPlatform = (pid) => {
+    if (!pid) return pid;
+    const p = String(pid).toLowerCase().replace(/\s+/g, '');
+    if (p.startsWith('youtube')) return 'youtube';
+    if (p.startsWith('instagram')) return 'instagram';
+    if (p === 'tiktok' || p === 'linkedin' || p === 'facebook' || p === 'x') return p;
+    if (p.includes('twitter')) return 'x';
+    return p;
+  };
 
   const parseConnectedFromStatus = (data) => {
     if (!data) return {};
@@ -357,17 +367,30 @@ export default function VideoPublisher() {
         if (ok) successPlatforms.push(pid);
       } else {
         try {
-          const formData = new FormData();
-          formData.append('file', video);
-          formData.append('caption', v.caption);
-          formData.append('hashtags', Array.isArray(v.hashtags) ? v.hashtags.join(' ') : (v.hashtags || ''));
-
-          const res = await fetch(api(`/publish/${pid}`), {
-            method: 'POST',
-            headers: authHeaders(),
-            body: formData,
-          });
-          if (res.ok) successPlatforms.push(pid);
+          const apiPlatform = toApiPlatform(pid);
+          if (v?.id != null) {
+            const res = await fetch(api(`/publish/${apiPlatform}/variant`), {
+              method: 'POST',
+              headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                variantId: v.id,
+                caption: v.caption,
+                hashtags: Array.isArray(v.hashtags) ? v.hashtags.join(' ') : (v.hashtags || ''),
+              }),
+            });
+            if (res.ok) successPlatforms.push(pid);
+          } else {
+            const formData = new FormData();
+            formData.append('file', video);
+            formData.append('caption', v.caption);
+            formData.append('hashtags', Array.isArray(v.hashtags) ? v.hashtags.join(' ') : (v.hashtags || ''));
+            const res = await fetch(api(`/publish/${apiPlatform}`), {
+              method: 'POST',
+              headers: authHeaders(),
+              body: formData,
+            });
+            if (res.ok) successPlatforms.push(pid);
+          }
         } catch (e) {
           successPlatforms.push(pid);
         }

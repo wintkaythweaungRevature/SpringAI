@@ -57,6 +57,62 @@ window.addEventListener('message', (e) => {
 });
 ```
 
+## Popup callback: spec and implementation
+
+The backend redirects with `?social_connect=error&platform=...` (or `success`) when the OAuth callback fails or succeeds. The frontend must handle these params so the popup closes and the user sees a clear message.
+
+### Success (`?social_connect=success&platform=linkedin`)
+- `postMessage` to opener, then `window.close()`.
+- Show "Closing..." only (no full app).
+
+### Error (`?social_connect=error&platform=linkedin`)
+- Show red banner with message, "Closing in a few seconds...", then `window.close()` after 4 seconds.
+- LinkedIn message: "LinkedIn didn't connect. If the popup showed an error or blank page, it may be a temporary LinkedIn issue. Try again in a few minutes."
+- Other platforms: "{Platform} connection failed. Try again later."
+
+### Copy-paste implementation
+
+At top of root component (App.js), before rendering the rest of the app:
+
+```javascript
+const params = new URLSearchParams(window.location.search);
+const socialConnect = params.get('social_connect');
+const platform = params.get('platform');
+const isPopup = !!window.opener;
+
+const errorMessage =
+  platform === 'linkedin'
+    ? "LinkedIn didn't connect. If the popup showed an error or blank page, it may be a temporary LinkedIn issue. Try again in a few minutes."
+    : `${platform ? platform.charAt(0).toUpperCase() + platform.slice(1) : ''} connection failed. Try again later.`;
+
+if (socialConnect && platform && isPopup) {
+  if (socialConnect === 'success') {
+    try {
+      window.opener.postMessage({ type: 'SOCIAL_CONNECT_DONE', platform }, window.location.origin);
+    } catch (_) {}
+    window.close();
+    return <div style={{ padding: 24, textAlign: 'center' }}>Closing...</div>;
+  }
+  if (socialConnect === 'error') {
+    setTimeout(() => window.close(), 4000);
+    return (
+      <div style={{ padding: 24 }}>
+        <div style={{ padding: 12, background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 14, color: '#991b1b' }}>
+          {errorMessage}
+          <div style={{ marginTop: 8 }}>Closing in a few seconds...</div>
+        </div>
+      </div>
+    );
+  }
+}
+
+const mainWindowError = !isPopup && socialConnect === 'error' && platform ? errorMessage : null;
+```
+
+Then in your normal layout, render `{mainWindowError && <div>...</div>}` at the top when `mainWindowError` is set.
+
+---
+
 ## Supported Platforms
 
 - LinkedIn (real OAuth with `client_id`)

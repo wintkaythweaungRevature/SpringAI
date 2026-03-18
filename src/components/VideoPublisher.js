@@ -286,6 +286,12 @@ export default function VideoPublisher() {
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
+        if (res.status === 504) {
+          throw new Error('Upload timed out. Try a smaller video or check your connection.');
+        }
+        if (res.status === 413) {
+          throw new Error('Video too large. Max 500MB recommended.');
+        }
         throw new Error(err.error || res.statusText || 'Upload failed');
       }
 

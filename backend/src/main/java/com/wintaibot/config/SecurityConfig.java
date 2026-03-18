@@ -41,7 +41,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/ai/**").permitAll()
                         .requestMatchers("/api/subscription/webhook").permitAll()
                         .requestMatchers("/api/health/**").permitAll()
-                        .requestMatchers("/api/social/oauth-placeholder").permitAll()
+                        .requestMatchers("/api/social/oauth-placeholder", "/api/social/callback/**").permitAll()
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll()
                 )

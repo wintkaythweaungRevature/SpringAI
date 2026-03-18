@@ -47,7 +47,7 @@ public class VideoContentController {
     }
 
     @PostMapping("/publish/{platform}")
-    public ResponseEntity<Map<String, String>> publish(
+    public ResponseEntity<?> publish(
             @PathVariable String platform,
             @RequestParam(value = "file", required = false) MultipartFile file,
             @RequestParam(value = "caption", required = false) String caption,
@@ -56,8 +56,28 @@ public class VideoContentController {
         if (auth == null || !(auth.getPrincipal() instanceof Long)) {
             return ResponseEntity.status(401).build();
         }
-        // Stub: accept and return success. Real impl would post to YouTube/Instagram/etc.
-        return ResponseEntity.ok(Map.of("status", "ok", "platform", platform));
+        try {
+            // Stub: accept and return success. Real impl would post to YouTube/Instagram/etc.
+            return ResponseEntity.ok(Map.of("status", "ok", "platform", platform));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Publish failed"));
+        }
+    }
+
+    @PostMapping("/publish/{platform}/variant")
+    public ResponseEntity<?> publishVariant(
+            @PathVariable String platform,
+            @RequestBody Map<String, Object> body,
+            Authentication auth) {
+        if (auth == null || !(auth.getPrincipal() instanceof Long)) {
+            return ResponseEntity.status(401).build();
+        }
+        try {
+            // Stub: accept variantId, caption, hashtags and return success
+            return ResponseEntity.ok(Map.of("status", "ok", "platform", platform));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Publish failed"));
+        }
     }
 
     @GetMapping("/trends")

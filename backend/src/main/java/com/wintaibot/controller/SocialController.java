@@ -9,6 +9,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**
@@ -21,6 +23,12 @@ public class SocialController {
 
     @Value("${app.base-url:http://localhost:3000}")
     private String appBaseUrl;
+
+    @Value("${linkedin.client-id:}")
+    private String linkedinClientId;
+
+    @Value("${linkedin.scope:openid profile email w_member_social}")
+    private String linkedinScope;
 
     // In-memory stub: userId -> Set of connected platform IDs. Replace with DB in production.
     private static final Map<Long, Set<String>> CONNECTED = new HashMap<>();
@@ -50,10 +58,58 @@ public class SocialController {
         Long userId = (Long) auth.getPrincipal();
         CONNECTED.computeIfAbsent(userId, k -> new HashSet<>()).add(pid);
 
-        // Stub: return placeholder URL. In production, generate real OAuth URL.
         String baseUrl = request.getRequestURL().toString().replace(request.getRequestURI(), "");
-        String placeholderUrl = baseUrl + "/api/social/oauth-placeholder?platform=" + pid + "&status=connected";
-        return ResponseEntity.ok(Map.of("url", placeholderUrl));
+        String callbackUrl = baseUrl + "/api/social/callback/" + pid;
+
+        // LinkedIn: build real OAuth URL with client_id
+        if ("linkedin".equals(pid)) {
+            if (linkedinClientId == null || linkedinClientId.isBlank()) {
+                return ResponseEntity.status(500).body(Map.of(
+                    "error", "LinkedIn OAuth not configured. Set linkedin.client-id in application.properties or LINKEDIN_CLIENT_ID env var."
+                ));
+            }
+            try {
+                String state = UUID.randomUUID().toString();
+                String authUrl = "https://www.linkedin.com/oauth/v2/authorization"
+                    + "?response_type=code"
+                    + "&client_id=" + URLEncoder.encode(linkedinClientId, StandardCharsets.UTF_8)
+                    + "&redirect_uri=" + URLEncoder.encode(callbackUrl, StandardCharsets.UTF_8)
+                    + "&state=" + URLEncoder.encode(state, StandardCharsets.UTF_8)
+                    + "&scope=" + URLEncoder.encode(linkedinScope, StandardCharsets.UTF_8);
+                return ResponseEntity.ok(Map.of("url", authUrl));
+            } catch (Exception e) {
+                return ResponseEntity.status(500).body(Map.of("error", "Failed to build LinkedIn OAuth URL: " + e.getMessage()));
+            }
+        }
+
+        // Other platforms: return callback URL (stub; configure real OAuth per platform)
+        return ResponseEntity.ok(Map.of("url", callbackUrl));
+    }
+
+    /**
+     * OAuth callback: TikTok, Instagram, etc. redirect here after user approves.
+     * URL pattern: /api/social/callback/{platform} (e.g. /api/social/callback/tiktok, /api/social/callback/instagram)
+     */
+    @GetMapping("/callback/{platform}")
+    public ResponseEntity<?> callback(
+            @PathVariable String platform,
+            @RequestParam(required = false) String code,
+            @RequestParam(required = false) String state,
+            @RequestParam(required = false) String error) {
+        String pid = normalizePlatform(platform);
+        if (pid == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Unknown platform: " + platform));
+        }
+        if (error != null) {
+            // OAuth error (user denied, etc.) - redirect to app with error
+            String redirectUrl = appBaseUrl + "?social_connect=error&platform=" + pid + "&error=" + error;
+            return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(redirectUrl)).build();
+        }
+        // TODO: Exchange code for token, store per user (state can carry userId/session), then redirect
+        String redirectUrl = appBaseUrl + "?social_connect=success&platform=" + pid;
+        HttpHeaders headers = new HttpHeaders();
+        headers.setLocation(URI.create(redirectUrl));
+        return new ResponseEntity<>(headers, HttpStatus.FOUND);
     }
 
     @GetMapping("/oauth-placeholder")

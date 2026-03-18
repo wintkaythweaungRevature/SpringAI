@@ -1,8 +1,8 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import PlatformIcon from './PlatformIcon';
 
 /* ─── Constants ─────────────────────────────────────────────── */
-const SIMPLE_ICONS_CDN = 'https://cdn.simpleicons.org';
 const PLATFORMS = [
   { id: 'youtube',   label: 'YouTube',   emoji: '▶️',  color: '#FF0000', maxLen: 5000, logo: 'youtube' },
   { id: 'instagram', label: 'Instagram', emoji: '📸',  color: '#E1306C', maxLen: 2200, logo: 'instagram' },
@@ -14,38 +14,7 @@ const PLATFORMS = [
   { id: 'pinterest', label: 'Pinterest', emoji: '📌',  color: '#E60023', maxLen: 500, logo: 'pinterest' },
 ];
 
-/** Official LinkedIn "in" logo as inline SVG */
-function LinkedInLogo({ size = 24, color = '#0A66C2', style = {} }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden style={{ minWidth: size, minHeight: size, display: 'block', ...style }}>
-      <path fill={color} d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
-    </svg>
-  );
-}
-
-function PlatformIcon({ platform, size = 24, style = {} }) {
-  const [imgError, setImgError] = useState(false);
-  if (!platform) return null;
-  if (platform.id === 'linkedin') {
-    return <LinkedInLogo size={size} color={platform.color || '#0A66C2'} style={style} />;
-  }
-  const url = platform.logo && !imgError ? `${SIMPLE_ICONS_CDN}/${platform.logo}/${(platform.color || '#64748b').replace('#', '')}` : null;
-  if (url) {
-    return (
-      <img src={url} alt="" aria-hidden onError={() => setImgError(true)}
-        style={{ width: size, height: size, minWidth: size, minHeight: size, objectFit: 'contain', ...style }} />
-    );
-  }
-  return <span style={{ fontSize: size, lineHeight: 1, ...style }}>{platform.emoji}</span>;
-}
-
-const ROLES = [
-  { id: 'creator', label: 'Creator',  desc: 'Write & submit posts', emoji: '✏️' },
-  { id: 'manager', label: 'Manager',  desc: 'Review & approve',      emoji: '✅' },
-  { id: 'buffer',  label: 'Buffer',   desc: 'Schedule & publish',    emoji: '🚀' },
-];
-
-const STEPS = ['upload', 'processing', 'review', 'approval', 'published', 'analytics'];
+const STEPS = ['upload', 'processing', 'review', 'published', 'analytics'];
 
 /* ─── Component ─────────────────────────────────────────────── */
 export default function VideoPublisher() {
@@ -55,15 +24,95 @@ export default function VideoPublisher() {
   const [step, setStep]                 = useState('upload');
   const [video, setVideo]               = useState(null);
   const [selectedPlatforms, setSelected] = useState(['youtube', 'instagram', 'tiktok', 'linkedin']);
-  const [role, setRole]                 = useState('creator');
   const [dragOver, setDragOver]         = useState(false);
   const [processing, setProcessing]     = useState(false);
   const [processLog, setProcessLog]     = useState([]);
   const [variants, setVariants]         = useState({});
-  const [approvals, setApprovals]       = useState({});
   const [published, setPublished]       = useState([]);
   const [activeVariant, setActiveVariant] = useState(null);
+  const [scheduledTimes, setScheduledTimes] = useState({}); // { [platformId]: ISO datetime or null }
+  const [connectedAccounts, setConnectedAccounts] = useState({});
+  const [connectLoading, setConnectLoading] = useState(null);
+  const [connectMessage, setConnectMessage] = useState('');
   const fileRef = useRef();
+
+  const api = (path) => `${base}/api/video-content${path}`;
+  const socialApi = (path) => `${base}/api/social${path}`;
+  const authHeaders = () => (token ? { Authorization: `Bearer ${token}` } : {});
+
+  useEffect(() => {
+    if (!token) return;
+    fetch(socialApi('/status'), { headers: authHeaders() })
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        const list = data?.connected;
+        if (Array.isArray(list)) {
+          const map = {};
+          list.forEach(p => { map[p] = true; });
+          setConnectedAccounts(map);
+        }
+      })
+      .catch(() => {});
+  }, [base, token]);
+
+  const refreshConnections = () => {
+    if (!token) return;
+    fetch(socialApi('/status'), { headers: authHeaders() })
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        const list = data?.connected;
+        if (Array.isArray(list)) {
+          const map = {};
+          list.forEach(p => { map[p] = true; });
+          setConnectedAccounts(map);
+        }
+      })
+      .catch(() => {});
+  };
+
+  const connectPlatform = async (platformId) => {
+    setConnectLoading(platformId);
+    setConnectMessage('');
+    try {
+      const res = await fetch(socialApi(`/connect/${platformId}`), { headers: authHeaders() });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        setConnectMessage(err.error || 'Could not start connect');
+        setTimeout(() => setConnectMessage(''), 5000);
+        return;
+      }
+      const data = await res.json();
+      const url = data?.url || data?.authUrl;
+      if (!url) {
+        setConnectMessage('Could not get connect URL');
+        setTimeout(() => setConnectMessage(''), 4000);
+        return;
+      }
+      const popup = window.open(url, 'social-connect', 'width=600,height=700');
+      if (!popup || popup.closed) {
+        setConnectMessage('Popup blocked. Allow popups and try again.');
+        setTimeout(() => setConnectMessage(''), 5000);
+        return;
+      }
+      const interval = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(interval);
+          refreshConnections();
+        }
+      }, 500);
+    } catch (e) {
+      setConnectMessage(e.message || 'Connect failed');
+      setTimeout(() => setConnectMessage(''), 5000);
+    } finally {
+      setConnectLoading(null);
+    }
+  };
+
+  const disconnectPlatform = (platformId) => {
+    fetch(socialApi(`/disconnect/${platformId}`), { method: 'DELETE', headers: authHeaders() })
+      .then(res => { if (res.ok) refreshConnections(); })
+      .catch(() => {});
+  };
 
   /* ── helpers ── */
   const togglePlatform = (id) =>
@@ -163,65 +212,68 @@ export default function VideoPublisher() {
     }
   };
 
-  /* ── approval actions ── */
-  const approveVariant = (pid) => {
-    setVariants(v => ({ ...v, [pid]: { ...v[pid], status: 'approved' } }));
-    setApprovals(a => ({ ...a, [pid]: true }));
-  };
-  const rejectVariant = (pid) => {
-    setVariants(v => ({ ...v, [pid]: { ...v[pid], status: 'rejected' } }));
+  const scheduleVariant = async (variantId, platform, scheduledAt) => {
+    if (!variantId) return false;
+    try {
+      const res = await fetch(api(`/variants/${variantId}/schedule`), {
+        method: 'POST',
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ platform, scheduledAt }),
+      });
+      return res.ok;
+    } catch (e) { return false; }
   };
 
-  const publishAll = async () => {
-    const approved = Object.entries(variants)
-      .filter(([, v]) => v.status === 'approved')
-      .map(([pid]) => pid);
-
+  const scheduleAndPublishAll = async () => {
+    const toPublish = selectedPlatforms.filter(pid => variants[pid]);
     const successPlatforms = [];
     const errors = {};
 
-    for (const pid of approved) {
-      try {
-        const variant = variants[pid];
-        const hashtags = variant.hashtags?.join ? variant.hashtags.join(' ') : (variant.hashtags || '');
+    for (const pid of toPublish) {
+      const variant = variants[pid];
+      const scheduledAt = scheduledTimes[pid];
+      const hasSchedule = scheduledAt && String(scheduledAt).trim() !== '';
 
-        // Use variantId if available (no file re-upload needed)
-        if (variant.variantId) {
-          const res = await fetch(`${base}/api/video-content/publish/${pid}/variant`, {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ variantId: variant.variantId, caption: variant.caption, hashtags }),
-          });
-          const data = await res.json().catch(() => ({}));
-          if (res.ok) {
-            successPlatforms.push(pid);
-          } else if (data.requiresConnect) {
-            errors[pid] = `Connect your ${pid} account in Connected Accounts first`;
-          } else {
-            errors[pid] = data.error || 'Publish failed';
-          }
+      if (hasSchedule) {
+        if (variant?.variantId) {
+          const ok = await scheduleVariant(variant.variantId, pid, scheduledAt);
+          if (ok) successPlatforms.push(pid);
+          else errors[pid] = 'Schedule failed';
         } else {
-          // Fallback: send file directly
-          const formData = new FormData();
-          formData.append('file', video);
-          formData.append('caption', variant.caption);
-          formData.append('hashtags', hashtags);
-          const res = await fetch(`${base}/api/video-content/publish/${pid}`, {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${token}` },
-            body: formData,
-          });
-          const data = await res.json().catch(() => ({}));
-          if (res.ok) {
-            successPlatforms.push(pid);
-          } else if (data.requiresConnect) {
-            errors[pid] = `Connect your ${pid} account in Connected Accounts first`;
-          } else {
-            errors[pid] = data.error || 'Publish failed';
-          }
+          errors[pid] = 'Cannot schedule without variant. Publish now or re-upload.';
         }
-      } catch (e) {
-        errors[pid] = e.message;
+      } else {
+        try {
+          const hashtags = variant.hashtags?.join ? variant.hashtags.join(' ') : (variant.hashtags || '');
+
+          if (variant.variantId) {
+            const res = await fetch(`${base}/api/video-content/publish/${pid}/variant`, {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ variantId: variant.variantId, caption: variant.caption, hashtags }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (res.ok) successPlatforms.push(pid);
+            else if (data.requiresConnect) errors[pid] = `Connect your ${pid} account first`;
+            else errors[pid] = data.error || 'Publish failed';
+          } else {
+            const formData = new FormData();
+            formData.append('file', video);
+            formData.append('caption', variant.caption);
+            formData.append('hashtags', hashtags);
+            const res = await fetch(`${base}/api/video-content/publish/${pid}`, {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${token}` },
+              body: formData,
+            });
+            const data = await res.json().catch(() => ({}));
+            if (res.ok) successPlatforms.push(pid);
+            else if (data.requiresConnect) errors[pid] = `Connect your ${pid} account first`;
+            else errors[pid] = data.error || 'Publish failed';
+          }
+        } catch (e) {
+          errors[pid] = e.message;
+        }
       }
     }
 
@@ -230,7 +282,7 @@ export default function VideoPublisher() {
       alert(`Some platforms failed:\n\n${errMsg}`);
     }
 
-    setPublished(successPlatforms.length > 0 ? successPlatforms : approved);
+    setPublished(successPlatforms.length > 0 ? successPlatforms : toPublish);
     setStep('analytics');
   };
 
@@ -239,7 +291,7 @@ export default function VideoPublisher() {
     <div style={s.page}>
       {/* ── Stepper ── */}
       <div style={s.stepper}>
-        {['Upload', 'Processing', 'Review', 'Approval', 'Published', 'Analytics'].map((label, i) => {
+        {['Upload', 'Processing', 'Review & Schedule', 'Published', 'Analytics'].map((label, i) => {
           const sid = STEPS[i];
           const idx = STEPS.indexOf(step);
           const done = i < idx;
@@ -254,7 +306,7 @@ export default function VideoPublisher() {
                   {label}
                 </span>
               </div>
-              {i < 5 && <div style={{ ...s.stepLine, ...(done ? s.stepLineDone : {}) }} />}
+              {i < 4 && <div style={{ ...s.stepLine, ...(done ? s.stepLineDone : {}) }} />}
             </React.Fragment>
           );
         })}
@@ -289,18 +341,6 @@ export default function VideoPublisher() {
                 </>
               )}
             </div>
-
-            <div style={s.sectionTitle}>🎯 Your Role</div>
-            {ROLES.map(r => (
-              <button key={r.id} style={{ ...s.roleBtn, ...(role === r.id ? s.roleBtnActive : {}) }}
-                onClick={() => setRole(r.id)}>
-                <span style={{ fontSize: '18px' }}>{r.emoji}</span>
-                <div style={{ textAlign: 'left' }}>
-                  <div style={{ fontWeight: 700, fontSize: '13px' }}>{r.label}</div>
-                  <div style={{ fontSize: '11px', opacity: 0.65 }}>{r.desc}</div>
-                </div>
-              </button>
-            ))}
 
             <button
               style={{ ...s.btnPrimary, ...((!video || selectedPlatforms.length === 0) ? s.btnDisabled : {}) }}
@@ -354,6 +394,38 @@ export default function VideoPublisher() {
                 </div>
               ))}
             </div>
+
+            <div style={s.card}>
+              <div style={s.sectionTitle}>🔗 Connect your accounts</div>
+              {connectMessage && (
+                <div style={{ fontSize: '12px', color: connectMessage.includes('failed') ? '#b91c1c' : '#15803d', marginBottom: '10px', fontWeight: 500 }}>
+                  {connectMessage}
+                </div>
+              )}
+              <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '12px' }}>
+                Link platforms to publish directly from here.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {['youtube', 'instagram', 'tiktok', 'linkedin', 'facebook', 'x'].map(pid => {
+                  const p = PLATFORMS.find(x => x.id === pid);
+                  const connected = connectedAccounts[pid];
+                  return (
+                    <div key={pid} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', border: `1.5px solid ${connected ? p.color : '#e2e8f0'}`, background: '#f8fafc' }}>
+                      <PlatformIcon platform={p} size={24} />
+                      <span style={{ flex: 1, fontSize: '13px', fontWeight: 600 }}>{p.label}</span>
+                      <button
+                        type="button"
+                        style={{ padding: '6px 14px', borderRadius: '8px', border: `1.5px solid ${p.color}`, fontSize: '12px', fontWeight: 700, cursor: 'pointer', background: connected ? p.color : 'transparent', color: connected ? '#fff' : p.color }}
+                        onClick={() => connected ? disconnectPlatform(pid) : connectPlatform(pid)}
+                        disabled={connectLoading === pid}
+                      >
+                        {connected ? '✓ Connected' : connectLoading === pid ? 'Connecting…' : 'Connect'}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -377,8 +449,8 @@ export default function VideoPublisher() {
         </div>
       )}
 
-      {/* ── STEP: REVIEW / APPROVAL ── */}
-      {(step === 'review' || step === 'approval') && (
+      {/* ── STEP: REVIEW & PUBLISH ── */}
+      {step === 'review' && (
         <div style={s.layout}>
           {/* Platform tabs on left */}
           <div style={s.left}>
@@ -386,34 +458,26 @@ export default function VideoPublisher() {
             {selectedPlatforms.map(pid => {
               const p = PLATFORMS.find(x => x.id === pid);
               const v = variants[pid];
+              const hasSchedule = scheduledTimes[pid] && String(scheduledTimes[pid]).trim() !== '';
               return (
                 <button key={pid}
-                  style={{ ...s.variantTab, ...(activeVariant === pid ? s.variantTabActive : {}), ...(v?.status === 'approved' ? s.variantApproved : v?.status === 'rejected' ? s.variantRejected : {}) }}
+                  style={{ ...s.variantTab, ...(activeVariant === pid ? s.variantTabActive : {}) }}
                   onClick={() => setActiveVariant(pid)}
                 >
                   <PlatformIcon platform={p} size={22} />
                   <span style={{ flex: 1, textAlign: 'left', fontSize: '13px', fontWeight: 600 }}>{p.label}</span>
-                  <span style={{ fontSize: '11px' }}>
-                    {v?.status === 'approved' ? '✅' : v?.status === 'rejected' ? '❌' : '📝'}
-                  </span>
+                  <span style={{ fontSize: '11px' }}>{hasSchedule ? '📅' : '⏱️'}</span>
                 </button>
               );
             })}
 
             <div style={{ marginTop: '16px' }}>
-              <div style={s.approvalSummary}>
-                <span>Approved: {Object.values(variants).filter(v => v.status === 'approved').length}</span>
-                <span>/{selectedPlatforms.length} platforms</span>
-              </div>
-              {role !== 'creator' && (
-                <button
-                  style={{ ...s.btnPrimary, ...(Object.values(variants).every(v => v.status !== 'approved') ? s.btnDisabled : {}) }}
-                  onClick={publishAll}
-                  disabled={Object.values(variants).every(v => v.status !== 'approved')}
-                >
-                  🚀 Publish Approved Posts
-                </button>
-              )}
+              <button style={s.btnPrimary} onClick={scheduleAndPublishAll}>
+                🚀 Schedule & Publish
+              </button>
+              <p style={{ fontSize: '11px', color: '#64748b', marginTop: '8px', marginBottom: 0 }}>
+                Set date & time per platform below, or leave empty to publish now.
+              </p>
             </div>
           </div>
 
@@ -430,11 +494,6 @@ export default function VideoPublisher() {
                     <div>
                       <div style={{ fontWeight: 700, fontSize: '16px' }}>{p.label}</div>
                       <div style={{ fontSize: '12px', color: '#64748b' }}>{v.clipNote}</div>
-                    </div>
-                    <div style={{ marginLeft: 'auto' }}>
-                      <span style={{ ...s.statusBadge, background: v.status === 'approved' ? '#22c55e' : v.status === 'rejected' ? '#ef4444' : '#f59e0b' }}>
-                        {v.status}
-                      </span>
                     </div>
                   </div>
 
@@ -455,17 +514,34 @@ export default function VideoPublisher() {
                     ))}
                   </div>
 
-                  {role !== 'creator' && (
-                    <div style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
-                      <button style={s.approveBtn} onClick={() => approveVariant(pid)}>✅ Approve</button>
-                      <button style={s.rejectBtn} onClick={() => rejectVariant(pid)}>❌ Reject</button>
-                    </div>
-                  )}
-                  {role === 'creator' && (
-                    <div style={s.creatorNote}>
-                      ℹ️ As Creator you can edit content. A Manager must approve before publishing.
-                    </div>
-                  )}
+                  <div style={{ ...s.fieldLabel, marginTop: '16px' }}>📅 When to post on {p.label}</div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={!scheduledTimes[pid] || String(scheduledTimes[pid]).trim() === ''}
+                      onChange={e => {
+                        if (e.target.checked) {
+                          setScheduledTimes(prev => ({ ...prev, [pid]: null }));
+                        } else {
+                          const d = new Date();
+                          d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+                          setScheduledTimes(prev => ({ ...prev, [pid]: d.toISOString().slice(0, 16) }));
+                        }
+                      }}
+                    />
+                    <span>Publish now</span>
+                  </label>
+                  <label style={{ display: 'block', fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>Or pick date & time:</label>
+                  <input
+                    type="datetime-local"
+                    value={scheduledTimes[pid] || (() => {
+                      const d = new Date();
+                      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+                      return d.toISOString().slice(0, 16);
+                    })()}
+                    onChange={e => setScheduledTimes(prev => ({ ...prev, [pid]: e.target.value || null }))}
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1.5px solid #e2e8f0', fontSize: '13px', boxSizing: 'border-box' }}
+                  />
                 </div>
               );
             })()}
@@ -490,7 +566,7 @@ export default function VideoPublisher() {
                 );
               })}
               <button style={{ ...s.btnPrimary, marginTop: '16px', fontSize: '13px' }}
-                onClick={() => { setStep('upload'); setVideo(null); setVariants({}); setPublished([]); setProcessLog([]); }}>
+                onClick={() => { setStep('upload'); setVideo(null); setVariants({}); setPublished([]); setScheduledTimes({}); setProcessLog([]); }}>
                 + New Video
               </button>
             </div>
@@ -642,10 +718,6 @@ const s = {
   fileSize:     { fontSize: '11px', color: '#64748b', marginTop: '2px' },
   changeFile:   { fontSize: '11px', color: '#2563eb', marginTop: '6px' },
 
-  /* Role buttons */
-  roleBtn:       { display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1.5px solid #e2e8f0', background: '#fff', cursor: 'pointer', marginBottom: '6px', transition: 'all 0.15s' },
-  roleBtnActive: { borderColor: '#2563eb', background: '#eff6ff' },
-
   /* Platform grid */
   platformGrid:     { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginBottom: '10px' },
   platformBtn:      { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', padding: '10px 4px', borderRadius: '10px', border: '1.5px solid #e2e8f0', background: '#f8fafc', cursor: 'pointer', position: 'relative', transition: 'all 0.15s' },
@@ -673,19 +745,12 @@ const s = {
   /* Variant tabs */
   variantTab:         { display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1.5px solid #e2e8f0', background: '#fff', cursor: 'pointer', marginBottom: '6px', transition: 'all 0.15s' },
   variantTabActive:   { borderColor: '#2563eb', background: '#eff6ff' },
-  variantApproved:    { borderColor: '#22c55e' },
-  variantRejected:    { borderColor: '#ef4444', opacity: 0.6 },
-  approvalSummary:    { display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#64748b', background: '#f8fafc', borderRadius: '8px', padding: '8px 12px', marginBottom: '10px' },
 
   /* Variant editor */
   fieldLabel:   { fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '6px', marginTop: '12px' },
   textarea:     { width: '100%', minHeight: '120px', padding: '10px', borderRadius: '8px', border: '1.5px solid #e2e8f0', fontSize: '13px', fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box', outline: 'none', color: '#1e293b' },
   hashtagBox:   { display: 'flex', flexWrap: 'wrap', gap: '6px', padding: '8px 0' },
   hashtagChip:  { padding: '4px 10px', borderRadius: '20px', border: '1.5px solid', fontSize: '12px', fontWeight: 600, background: '#f8fafc' },
-  statusBadge:  { padding: '3px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 700, color: '#fff', textTransform: 'uppercase' },
-  approveBtn:   { flex: 1, padding: '10px', borderRadius: '8px', border: 'none', background: '#22c55e', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '13px' },
-  rejectBtn:    { flex: 1, padding: '10px', borderRadius: '8px', border: 'none', background: '#ef4444', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '13px' },
-  creatorNote:  { marginTop: '12px', padding: '10px', background: '#fef9c3', borderRadius: '8px', fontSize: '12px', color: '#92400e' },
 
   /* Analytics */
   metricCard:    { background: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px', textAlign: 'center', boxShadow: '0 1px 4px rgba(0,0,0,0.05)' },

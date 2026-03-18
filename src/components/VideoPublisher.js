@@ -35,6 +35,7 @@ export default function VideoPublisher() {
   const [connectLoading, setConnectLoading] = useState(null);
   const [connectMessage, setConnectMessage] = useState('');
   const [canSkipProcessing, setCanSkipProcessing] = useState(false);
+  const [contentIdea, setContentIdea] = useState(null);
   const fileRef = useRef();
   const skippedRef = useRef(false);
 
@@ -131,6 +132,16 @@ export default function VideoPublisher() {
     if (f) setVideo(f);
   };
 
+  const useIdeaForNextVideo = (idea) => {
+    setStep('upload');
+    setVideo(null);
+    setVariants({});
+    setPublished([]);
+    setScheduledTimes({});
+    setProcessLog([]);
+    setContentIdea(idea);
+  };
+
   const usePlaceholders = () => {
     skippedRef.current = true;
     const generated = {};
@@ -163,6 +174,7 @@ export default function VideoPublisher() {
       log('🎬 Uploading video to server...');
       const formData = new FormData();
       formData.append('file', video);
+      if (contentIdea) formData.append('prompt', contentIdea);
 
       const res = await fetch(`${base}/api/video-content/upload?async=true`, {
         method: 'POST',
@@ -354,6 +366,12 @@ export default function VideoPublisher() {
           {/* Left */}
           <div style={s.left}>
             <div style={s.sectionTitle}>🎬 Upload Video</div>
+            {contentIdea && (
+              <div style={{ marginBottom: '16px', padding: '12px 16px', borderRadius: '10px', background: 'linear-gradient(135deg,#eff6ff,#dbeafe)', border: '1px solid #93c5fd', fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                <span><strong>💡 Next idea:</strong> {contentIdea}</span>
+                <button type="button" onClick={() => setContentIdea(null)} style={{ padding: '4px 10px', borderRadius: '6px', border: '1px solid #93c5fd', background: '#fff', fontSize: '12px', cursor: 'pointer', color: '#64748b' }}>Clear</button>
+              </div>
+            )}
             <div
               style={{ ...s.dropZone, ...(dragOver ? s.dropOver : {}) }}
               onDragOver={e => { e.preventDefault(); setDragOver(true); }}
@@ -611,7 +629,7 @@ export default function VideoPublisher() {
                 );
               })}
               <button style={{ ...s.btnPrimary, marginTop: '16px', fontSize: '13px' }}
-                onClick={() => { setStep('upload'); setVideo(null); setVariants({}); setPublished([]); setScheduledTimes({}); setProcessLog([]); }}>
+                onClick={() => { setStep('upload'); setVideo(null); setVariants({}); setPublished([]); setScheduledTimes({}); setProcessLog([]); setContentIdea(null); }}>
                 + New Video
               </button>
             </div>
@@ -679,7 +697,7 @@ export default function VideoPublisher() {
               ].map((idea, i) => (
                 <div key={i} style={s.ideaRow}>
                   <span style={{ fontSize: '13px' }}>{idea}</span>
-                  <button style={s.useIdeaBtn}>Use →</button>
+                  <button type="button" style={s.useIdeaBtn} onClick={() => useIdeaForNextVideo(idea)}>Use →</button>
                 </div>
               ))}
             </div>

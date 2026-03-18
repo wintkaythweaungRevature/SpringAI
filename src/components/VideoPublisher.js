@@ -2,16 +2,42 @@ import React, { useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 
 /* ─── Constants ─────────────────────────────────────────────── */
+const SIMPLE_ICONS_CDN = 'https://cdn.simpleicons.org';
 const PLATFORMS = [
-  { id: 'youtube',   label: 'YouTube',   emoji: '▶️',  color: '#FF0000', maxLen: 5000 },
-  { id: 'instagram', label: 'Instagram', emoji: '📸',  color: '#E1306C', maxLen: 2200 },
-  { id: 'tiktok',    label: 'TikTok',    emoji: '🎵',  color: '#010101', maxLen: 2200 },
-  { id: 'linkedin',  label: 'LinkedIn',  emoji: '💼',  color: '#0077B5', maxLen: 3000 },
-  { id: 'facebook',  label: 'Facebook',  emoji: '👍',  color: '#1877F2', maxLen: 63206 },
-  { id: 'x',         label: 'X (Twitter)', emoji: '🐦', color: '#000000', maxLen: 280 },
-  { id: 'threads',   label: 'Threads',   emoji: '🧵',  color: '#101010', maxLen: 500 },
-  { id: 'pinterest', label: 'Pinterest', emoji: '📌',  color: '#E60023', maxLen: 500 },
+  { id: 'youtube',   label: 'YouTube',   emoji: '▶️',  color: '#FF0000', maxLen: 5000, logo: 'youtube' },
+  { id: 'instagram', label: 'Instagram', emoji: '📸',  color: '#E1306C', maxLen: 2200, logo: 'instagram' },
+  { id: 'tiktok',    label: 'TikTok',    emoji: '🎵',  color: '#010101', maxLen: 2200, logo: 'tiktok' },
+  { id: 'linkedin',  label: 'LinkedIn',   emoji: '💼',  color: '#0A66C2', maxLen: 3000, logo: 'linkedin' },
+  { id: 'facebook',  label: 'Facebook',   emoji: '👍',  color: '#1877F2', maxLen: 63206, logo: 'facebook' },
+  { id: 'x',         label: 'X (Twitter)', emoji: '🐦', color: '#000000', maxLen: 280, logo: 'x' },
+  { id: 'threads',   label: 'Threads',   emoji: '🧵',  color: '#101010', maxLen: 500, logo: 'threads' },
+  { id: 'pinterest', label: 'Pinterest', emoji: '📌',  color: '#E60023', maxLen: 500, logo: 'pinterest' },
 ];
+
+/** Official LinkedIn "in" logo as inline SVG */
+function LinkedInLogo({ size = 24, color = '#0A66C2', style = {} }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden style={{ minWidth: size, minHeight: size, display: 'block', ...style }}>
+      <path fill={color} d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+    </svg>
+  );
+}
+
+function PlatformIcon({ platform, size = 24, style = {} }) {
+  const [imgError, setImgError] = useState(false);
+  if (!platform) return null;
+  if (platform.id === 'linkedin') {
+    return <LinkedInLogo size={size} color={platform.color || '#0A66C2'} style={style} />;
+  }
+  const url = platform.logo && !imgError ? `${SIMPLE_ICONS_CDN}/${platform.logo}/${(platform.color || '#64748b').replace('#', '')}` : null;
+  if (url) {
+    return (
+      <img src={url} alt="" aria-hidden onError={() => setImgError(true)}
+        style={{ width: size, height: size, minWidth: size, minHeight: size, objectFit: 'contain', ...style }} />
+    );
+  }
+  return <span style={{ fontSize: size, lineHeight: 1, ...style }}>{platform.emoji}</span>;
+}
 
 const ROLES = [
   { id: 'creator', label: 'Creator',  desc: 'Write & submit posts', emoji: '✏️' },
@@ -296,7 +322,7 @@ export default function VideoPublisher() {
                     style={{ ...s.platformBtn, ...(selectedPlatforms.includes(p.id) ? { ...s.platformBtnActive, borderColor: p.color } : {}) }}
                     onClick={() => togglePlatform(p.id)}
                   >
-                    <span style={{ fontSize: '22px' }}>{p.emoji}</span>
+                    <PlatformIcon platform={p} size={28} />
                     <span style={{ fontSize: '12px', fontWeight: 600 }}>{p.label}</span>
                     {selectedPlatforms.includes(p.id) && (
                       <span style={{ ...s.platformCheck, background: p.color }}>✓</span>
@@ -365,7 +391,7 @@ export default function VideoPublisher() {
                   style={{ ...s.variantTab, ...(activeVariant === pid ? s.variantTabActive : {}), ...(v?.status === 'approved' ? s.variantApproved : v?.status === 'rejected' ? s.variantRejected : {}) }}
                   onClick={() => setActiveVariant(pid)}
                 >
-                  <span style={{ fontSize: '18px' }}>{p.emoji}</span>
+                  <PlatformIcon platform={p} size={22} />
                   <span style={{ flex: 1, textAlign: 'left', fontSize: '13px', fontWeight: 600 }}>{p.label}</span>
                   <span style={{ fontSize: '11px' }}>
                     {v?.status === 'approved' ? '✅' : v?.status === 'rejected' ? '❌' : '📝'}
@@ -400,7 +426,7 @@ export default function VideoPublisher() {
               return (
                 <div style={s.card}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-                    <span style={{ fontSize: '28px' }}>{p.emoji}</span>
+                    <PlatformIcon platform={p} size={32} />
                     <div>
                       <div style={{ fontWeight: 700, fontSize: '16px' }}>{p.label}</div>
                       <div style={{ fontSize: '12px', color: '#64748b' }}>{v.clipNote}</div>
@@ -457,7 +483,7 @@ export default function VideoPublisher() {
                 const p = PLATFORMS.find(x => x.id === pid);
                 return (
                   <div key={pid} style={s.publishedRow}>
-                    <span style={{ fontSize: '20px' }}>{p.emoji}</span>
+                    <PlatformIcon platform={p} size={24} />
                     <span style={{ fontSize: '13px', fontWeight: 600 }}>{p.label}</span>
                     <span style={{ marginLeft: 'auto', fontSize: '11px', color: '#22c55e', fontWeight: 700 }}>✓ Live</span>
                   </div>
@@ -513,7 +539,7 @@ export default function VideoPublisher() {
                 const eng   = (Math.random() * 10 + 2).toFixed(1);
                 return (
                   <div key={pid} style={s.platformRow}>
-                    <span style={{ fontSize: '18px', width: '24px' }}>{p.emoji}</span>
+                    <PlatformIcon platform={p} size={24} />
                     <span style={{ fontSize: '13px', fontWeight: 600, flex: 1 }}>{p.label}</span>
                     <span style={{ fontSize: '12px', color: '#64748b' }}>{views.toLocaleString()} views</span>
                     <span style={{ fontSize: '12px', fontWeight: 700, color: '#22c55e', marginLeft: '12px' }}>{eng}% eng</span>

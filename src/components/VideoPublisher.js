@@ -159,7 +159,7 @@ export default function VideoPublisher() {
       log('🎙️ Transcribing audio with Whisper...');
       log('📝 Generating captions & hashtags with GPT-4...');
 
-      // Poll until status is READY (max 3 minutes)
+      // Poll until status is READY or FAILED (max 3 minutes)
       let pollData = null;
       for (let i = 0; i < 36; i++) {
         await new Promise(r => setTimeout(r, 5000));
@@ -170,6 +170,10 @@ export default function VideoPublisher() {
           if (pollRes.ok) {
             pollData = await pollRes.json();
             if (pollData.variants && pollData.variants.length > 0) break;
+            if (pollData.status === 'FAILED') {
+              log('⚠️ Transcription failed (no audio or unsupported format). Using template captions — edit them before publishing.');
+              break;
+            }
           }
         } catch (_) {}
       }
@@ -255,7 +259,7 @@ export default function VideoPublisher() {
             const data = await res.json().catch(() => ({}));
             if (res.ok) successPlatforms.push(pid);
             else if (data.requiresConnect) errors[pid] = `Connect your ${pid} account first`;
-            else errors[pid] = data.error || 'Publish failed';
+            else errors[pid] = formatPublishError(pid, data.error || 'Publish failed');
           } else {
             const formData = new FormData();
             formData.append('file', video);
@@ -269,7 +273,7 @@ export default function VideoPublisher() {
             const data = await res.json().catch(() => ({}));
             if (res.ok) successPlatforms.push(pid);
             else if (data.requiresConnect) errors[pid] = `Connect your ${pid} account first`;
-            else errors[pid] = data.error || 'Publish failed';
+            else errors[pid] = formatPublishError(pid, data.error || 'Publish failed');
           }
         } catch (e) {
           errors[pid] = e.message;
@@ -643,6 +647,21 @@ export default function VideoPublisher() {
       )}
     </div>
   );
+}
+
+/* ─── Error formatter ───────────────────────────────────────── */
+function formatPublishError(platform, rawError) {
+  const s = rawError || '';
+  if (s.includes('"code":190') || s.includes('Invalid OAuth access token') || s.includes('Cannot parse access token')) {
+    return `${platform} token expired — go to Connected Accounts and reconnect.`;
+  }
+  if (s.includes('"code":200') || s.includes('permissions')) {
+    return `${platform} lacks required permissions. Reconnect in Connected Accounts.`;
+  }
+  if (s.includes('rate limit') || s.includes('too many')) {
+    return `${platform} rate limit hit. Try again in a few minutes.`;
+  }
+  return s.length > 120 ? s.substring(0, 120) + '…' : s;
 }
 
 /* ─── Mock data generators (replace with GPT API calls) ─────── */

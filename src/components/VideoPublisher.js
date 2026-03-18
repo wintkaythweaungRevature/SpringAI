@@ -218,8 +218,13 @@ export default function VideoPublisher() {
     setConnectLoading(platformId);
     setConnectMessage('');
     try {
-      // Call backend API with same auth as other API calls (Bearer token)
-      const res = await fetch(socialApi('/connect/' + platformId), { headers: authHeaders() });
+      // Explicit backend URL: base must be api.wintaibot.com, not wintaibot.com
+      const connectUrl = `${base}/api/social/connect/${platformId}`;
+      const res = await fetch(connectUrl, {
+        method: 'GET',
+        headers: authHeaders(),
+        credentials: 'include',
+      });
       if (!res.ok) {
         const body = await res.text();
         const err = (() => { try { return JSON.parse(body); } catch (_) { return {}; } })();

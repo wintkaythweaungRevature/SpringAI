@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 
+// API base must point to backend (api.wintaibot.com), not frontend (wintaibot.com).
+// In production build, set REACT_APP_API_BASE=https://api.wintaibot.com so all API calls (including connect) hit the backend.
 const getApiBase = () => {
   if (typeof window === "undefined") return "https://api.wintaibot.com";
   if (process.env.REACT_APP_API_BASE) return process.env.REACT_APP_API_BASE.replace(/\/$/, "");

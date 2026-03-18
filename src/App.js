@@ -60,19 +60,22 @@ function App() {
   const go = (tab) => setActiveTab(tab);
   const pageTitle = PAGE_TITLES[activeTab] ?? 'Dashboard';
 
-  // Popup callback: detect ?social_connect=success&platform=linkedin, postMessage to opener, close
-  const [isPopupCallback, setIsPopupCallback] = useState(false);
-  useEffect(() => {
+  // Detect popup callback SYNCHRONOUSLY so we never render full app (no Connect button in popup)
+  const isPopupCallback = (() => {
+    if (typeof window === 'undefined') return false;
     const params = new URLSearchParams(window.location.search);
-    const socialConnect = params.get('social_connect');
-    const platform = params.get('platform');
-    if (window.opener && socialConnect === 'success' && platform) {
-      setIsPopupCallback(true);
+    return !!(window.opener && params.get('social_connect') === 'success' && params.get('platform'));
+  })();
+
+  useEffect(() => {
+    if (isPopupCallback) {
+      const params = new URLSearchParams(window.location.search);
+      const platform = params.get('platform');
       const origin = window.location.origin;
       window.opener.postMessage({ type: 'SOCIAL_CONNECT_DONE', platform }, origin);
       window.close();
     }
-  }, []);
+  }, [isPopupCallback]);
 
   // When OAuth callback redirects (same tab, not popup): show Video Publisher
   useEffect(() => {

@@ -60,12 +60,43 @@ function App() {
   const go = (tab) => setActiveTab(tab);
   const pageTitle = PAGE_TITLES[activeTab] ?? 'Dashboard';
 
-  // When OAuth callback redirects with ?social_connect=success&platform=instagram, show Video Publisher
+  // Popup callback: detect ?social_connect=success&platform=linkedin, postMessage to opener, close
+  const [isPopupCallback, setIsPopupCallback] = useState(false);
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const socialConnect = params.get('social_connect');
+    const platform = params.get('platform');
+    if (window.opener && socialConnect === 'success' && platform) {
+      setIsPopupCallback(true);
+      const origin = window.location.origin;
+      window.opener.postMessage({ type: 'SOCIAL_CONNECT_DONE', platform }, origin);
+      window.close();
+    }
+  }, []);
+
+  // When OAuth callback redirects (same tab, not popup): show Video Publisher
+  useEffect(() => {
+    if (isPopupCallback) return;
     const params = new URLSearchParams(window.location.search);
     if (params.get('social_connect') === 'success' && params.get('platform')) {
       setActiveTab('video-publisher');
     }
+  }, [isPopupCallback]);
+
+  // Opener: listen for postMessage from popup, switch to Video Publisher and dispatch refresh
+  useEffect(() => {
+    const allowedOrigin = window.location.origin;
+    const handler = (e) => {
+      if (e.origin !== allowedOrigin) return;
+      if (e.data?.type === 'SOCIAL_CONNECT_DONE' && e.data?.platform) {
+        setActiveTab('video-publisher');
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('social-connect-success', { detail: { platform: e.data.platform } }));
+        }, 0);
+      }
+    };
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
   }, []);
   const userDisplayName = user?.firstName || user?.lastName
     ? [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim()
@@ -73,6 +104,15 @@ function App() {
   const userInitials = user?.firstName && user?.lastName
     ? (user.firstName[0] + user.lastName[0]).toUpperCase()
     : (user?.email ? user.email.slice(0, 2).toUpperCase() : '??');
+
+  // Popup callback: show minimal "Closing..." while postMessage + close run
+  if (isPopupCallback) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', fontFamily: 'system-ui', background: '#f8fafc' }}>
+        <p style={{ color: '#64748b', fontSize: '14px' }}>Closing...</p>
+      </div>
+    );
+  }
 
   return (
     <div style={s.shell}>

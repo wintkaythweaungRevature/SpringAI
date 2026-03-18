@@ -123,8 +123,10 @@ export default function VideoPublisher() {
       .catch(() => {});
   }, [base, token]);
 
-  // Handle OAuth callback redirect: ?social_connect=success&platform=instagram
+  // Handle OAuth callback redirect (same tab): ?social_connect=success&platform=linkedin
+  // Skip when in popup (window.opener) - popup posts to opener and closes; opener handles via message
   useEffect(() => {
+    if (window.opener) return; // Popup: App.js handles postMessage + close
     const params = new URLSearchParams(window.location.search);
     const socialConnect = params.get('social_connect');
     const platform = params.get('platform');
@@ -138,6 +140,19 @@ export default function VideoPublisher() {
       const newUrl = window.location.pathname + (newSearch ? '?' + newSearch : '') + window.location.hash;
       window.history.replaceState({}, '', newUrl);
     }
+  }, [token]);
+
+  // Opener: listen for social-connect-success from popup (postMessage → CustomEvent)
+  useEffect(() => {
+    const handler = (e) => {
+      const platform = e.detail?.platform;
+      if (platform && token) {
+        const platformLabel = PLATFORMS.find(p => p.id === platform)?.label || platform;
+        refreshConnections(`${platformLabel} connected successfully!`);
+      }
+    };
+    window.addEventListener('social-connect-success', handler);
+    return () => window.removeEventListener('social-connect-success', handler);
   }, [token]);
 
   const fetchTrends = () => {
@@ -198,48 +213,47 @@ export default function VideoPublisher() {
     return null;
   };
 
-  const connectPlatform = (platformId) => {
+  const connectPlatform = async (platformId) => {
     setConnectLoading(platformId);
     setConnectMessage('');
-    // Open the popup synchronously (must happen in the click handler, not inside async .then())
-    // so browsers don't block it as an unwanted popup.
-    const popup = window.open('about:blank', 'video_connect', 'width=600,height=700');
-    fetch(socialApi('/connect/' + platformId), { headers: authHeaders() })
-      .then(res => {
-        if (!res.ok) {
-          return res.text().then(t => {
-            const friendly = friendlyConnectError(res.status, t);
-            throw new Error(friendly || `${res.status}: ${(t || res.statusText || '').slice(0, 120)}`);
-          });
-        }
-        return res.json();
-      })
-      .then(data => {
-        const url = data?.url || data?.authUrl;
-        if (url && popup && !popup.closed) {
-          popup.location.href = url;
-          const onFocus = () => {
-            window.removeEventListener('focus', onFocus);
-            if (popup?.closed) refreshConnections();
-          };
-          window.addEventListener('focus', onFocus);
-        } else {
-          if (popup && !popup.closed) popup.close();
-          setConnectMessage('Could not get connect URL');
-          setTimeout(() => setConnectMessage(''), 4000);
-        }
-      })
-      .catch(err => {
-        if (popup && !popup.closed) popup.close();
-        const msg = err.message || 'Connect failed';
-        const isNetwork = msg.startsWith('Failed') || msg.includes('CORS') || msg.includes('NetworkError');
-        const display = isNetwork
-          ? 'Connect failed (network or CORS). Set REACT_APP_API_BASE to your backend and ensure CORS allows this origin.'
-          : (msg.includes('<') && msg.includes('>') ? 'Server error. Try again later.' : msg);
-        setConnectMessage(display);
+    try {
+      const res = await fetch(socialApi('/connect/' + platformId), { headers: authHeaders() });
+      if (!res.ok) {
+        const body = await res.text();
+        const err = (() => { try { return JSON.parse(body); } catch (_) { return {}; } })();
+        const friendly = friendlyConnectError(res.status, body);
+        throw new Error(friendly || err.error || err.message || 'Could not start connect. Please log in.');
+      }
+      const data = await res.json();
+      const url = data?.url || data?.authUrl;
+      if (!url) {
+        setConnectMessage('Could not get connect URL');
+        setTimeout(() => setConnectMessage(''), 4000);
+        return;
+      }
+      // Open popup directly with provider URL (LinkedIn, etc.) - do NOT open to frontend first
+      const popup = window.open(url, 'social-connect', 'width=600,height=700');
+      if (!popup || popup.closed) {
+        setConnectMessage('Popup blocked. Please allow popups for this site and try again.');
         setTimeout(() => setConnectMessage(''), 5000);
-      })
-      .finally(() => setConnectLoading(null));
+        return;
+      }
+      const onFocus = () => {
+        window.removeEventListener('focus', onFocus);
+        if (popup?.closed) refreshConnections();
+      };
+      window.addEventListener('focus', onFocus);
+    } catch (err) {
+      const msg = err.message || 'Connect failed';
+      const isNetwork = msg.startsWith('Failed') || msg.includes('CORS') || msg.includes('NetworkError');
+      const display = isNetwork
+        ? 'Connect failed (network or CORS). Set REACT_APP_API_BASE to your backend and ensure CORS allows this origin.'
+        : (msg.includes('<') && msg.includes('>') ? 'Server error. Try again later.' : msg);
+      setConnectMessage(display);
+      setTimeout(() => setConnectMessage(''), 5000);
+    } finally {
+      setConnectLoading(null);
+    }
   };
 
   const disconnectPlatform = (platformId) => {

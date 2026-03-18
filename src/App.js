@@ -61,30 +61,55 @@ function App() {
   const pageTitle = PAGE_TITLES[activeTab] ?? 'Dashboard';
 
   // Detect popup callback SYNCHRONOUSLY so we never render full app (no Connect button in popup)
-  const isPopupCallback = (() => {
-    if (typeof window === 'undefined') return false;
+  const popupCallbackState = (() => {
+    if (typeof window === 'undefined') return null;
     const params = new URLSearchParams(window.location.search);
-    return !!(window.opener && params.get('social_connect') === 'success' && params.get('platform'));
+    const socialConnect = params.get('social_connect');
+    const platform = params.get('platform');
+    if (!window.opener || !socialConnect || !platform) return null;
+    if (socialConnect === 'success') return { type: 'success', platform };
+    if (socialConnect === 'error') {
+      const platformLabel = platform.charAt(0).toUpperCase() + platform.slice(1);
+      const msg = platformLabel === 'Linkedin'
+        ? "LinkedIn didn't connect. If the popup showed an error or blank page, it may be a temporary LinkedIn issue. Try again in a few minutes."
+        : `${platformLabel} connection failed. Try again later.`;
+      return { type: 'error', platform, message: msg };
+    }
+    return null;
   })();
+  const isPopupCallback = popupCallbackState?.type === 'success';
+  const isPopupError = popupCallbackState?.type === 'error';
 
   useEffect(() => {
-    if (isPopupCallback) {
-      const params = new URLSearchParams(window.location.search);
-      const platform = params.get('platform');
-      const origin = window.location.origin;
-      window.opener.postMessage({ type: 'SOCIAL_CONNECT_DONE', platform }, origin);
+    if (popupCallbackState?.type === 'success') {
+      try {
+        window.opener.postMessage({ type: 'SOCIAL_CONNECT_DONE', platform: popupCallbackState.platform }, window.location.origin);
+      } catch (_) {}
       window.close();
     }
-  }, [isPopupCallback]);
+    if (popupCallbackState?.type === 'error') {
+      setTimeout(() => window.close(), 4000);
+    }
+  }, [popupCallbackState?.type, popupCallbackState?.platform]);
 
-  // When OAuth callback redirects (same tab, not popup): show Video Publisher
+  // When OAuth callback redirects (same tab, not popup): show Video Publisher or error
+  const [mainWindowSocialError, setMainWindowSocialError] = useState(null);
   useEffect(() => {
-    if (isPopupCallback) return;
+    if (popupCallbackState) return;
     const params = new URLSearchParams(window.location.search);
-    if (params.get('social_connect') === 'success' && params.get('platform')) {
+    const socialConnect = params.get('social_connect');
+    const platform = params.get('platform');
+    if (socialConnect === 'success' && platform) {
       setActiveTab('video-publisher');
     }
-  }, [isPopupCallback]);
+    if (socialConnect === 'error' && platform) {
+      const platformLabel = platform.charAt(0).toUpperCase() + platform.slice(1);
+      const msg = platformLabel === 'Linkedin'
+        ? "LinkedIn didn't connect. If the popup showed an error or blank page, it may be a temporary LinkedIn issue. Try again in a few minutes."
+        : `${platformLabel} connection failed. Try again later.`;
+      setMainWindowSocialError(msg);
+    }
+  }, [popupCallbackState]);
 
   // Opener: listen for postMessage from popup, switch to Video Publisher and dispatch refresh
   useEffect(() => {
@@ -108,7 +133,7 @@ function App() {
     ? (user.firstName[0] + user.lastName[0]).toUpperCase()
     : (user?.email ? user.email.slice(0, 2).toUpperCase() : '??');
 
-  // Popup callback: show minimal "Closing..." while postMessage + close run
+  // Popup callback: show minimal view (no Connect button), then close
   if (isPopupCallback) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', fontFamily: 'system-ui', background: '#f8fafc' }}>
@@ -116,10 +141,19 @@ function App() {
       </div>
     );
   }
+  if (isPopupError) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', fontFamily: 'system-ui', background: '#f8fafc', padding: '24px' }}>
+        <div style={{ padding: '16px 20px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', maxWidth: '400px', fontSize: '14px', color: '#991b1b' }}>
+          {popupCallbackState?.message}
+        </div>
+        <p style={{ color: '#64748b', fontSize: '12px', marginTop: '16px' }}>Closing in a few seconds...</p>
+      </div>
+    );
+  }
 
   return (
     <div style={s.shell}>
-
       {/* ═══════════════ SIDEBAR ═══════════════ */}
       <aside style={{ ...s.sidebar, ...(sidebarOpen ? {} : s.sidebarCollapsed) }}>
 
@@ -168,6 +202,11 @@ function App() {
 
       {/* ═══════════════ MAIN ═══════════════ */}
       <div style={s.main}>
+        {mainWindowSocialError && (
+          <div style={{ padding: '12px 20px', background: '#fef2f2', borderBottom: '1px solid #fecaca', fontSize: '14px', color: '#991b1b' }}>
+            {mainWindowSocialError}
+          </div>
+        )}
 
         {/* Top Bar - Wintaibot logo left, search center, icons + user right */}
         <header style={s.topBar}>

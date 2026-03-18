@@ -54,7 +54,7 @@ export default function VideoPublisher() {
     if (f) setVideo(f);
   };
 
-  /* ── AI processing — calls real backend ────────────────────── */
+  /* ── AI processing — async upload + poll ───────────────────── */
   const runProcessing = async () => {
     setStep('processing');
     setProcessing(true);
@@ -65,37 +65,53 @@ export default function VideoPublisher() {
       log('🎬 Uploading video to server...');
       const formData = new FormData();
       formData.append('file', video);
-      formData.append('platforms', selectedPlatforms.join(','));
 
-      log('🎙️ Transcribing audio with Whisper...');
-      log('📝 Generating captions & hashtags with GPT-4...');
-
-      const res = await fetch(`${base}/api/video/process`, {
+      // Use async=true to avoid 504 gateway timeout on large files
+      const res = await fetch(`${base}/api/video-content/upload?async=true`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
 
       if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Processing failed');
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Upload failed');
       }
 
       const data = await res.json();
+      const videoId = data.videoId;
+
+      log('🎙️ Transcribing audio with Whisper...');
+      log('📝 Generating captions & hashtags with GPT-4...');
+
+      // Poll until status is READY (max 3 minutes)
+      let pollData = null;
+      for (let i = 0; i < 36; i++) {
+        await new Promise(r => setTimeout(r, 5000));
+        try {
+          const pollRes = await fetch(`${base}/api/video-content/videos/${videoId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (pollRes.ok) {
+            pollData = await pollRes.json();
+            if (pollData.variants && pollData.variants.length > 0) break;
+          }
+        } catch (_) {}
+      }
+
       log('📦 Packaging content variants...');
 
-      // Merge AI variants with platform metadata
       const generated = {};
       for (const pid of selectedPlatforms) {
-        const aiVariant = data.variants?.[pid];
-        const hashtagsArr = aiVariant?.hashtags
-          ? aiVariant.hashtags.trim().split(/\s+/).filter(t => t.startsWith('#'))
-          : mockHashtags(pid);
+        const aiVariant = pollData?.variants?.find(v => v.platform === pid);
+        const hashtagsStr = aiVariant?.hashtags || '';
+        const hashtagsArr = hashtagsStr.trim().split(/\s+/).filter(t => t.startsWith('#'));
         generated[pid] = {
           caption: aiVariant?.caption || mockCaption(pid, video?.name),
           hashtags: hashtagsArr.length ? hashtagsArr : mockHashtags(pid),
-          clipNote: aiVariant?.clipNote || mockClipNote(pid),
+          clipNote: mockClipNote(pid),
           status: 'draft',
+          variantId: aiVariant?.id,
         };
       }
 
@@ -104,7 +120,6 @@ export default function VideoPublisher() {
       log('✅ All variants ready!');
     } catch (e) {
       log(`❌ Error: ${e.message}. Using AI-generated placeholders.`);
-      // Fallback to mock data if backend fails
       const generated = {};
       for (const pid of selectedPlatforms) {
         generated[pid] = {
@@ -137,25 +152,59 @@ export default function VideoPublisher() {
       .map(([pid]) => pid);
 
     const successPlatforms = [];
+    const errors = {};
+
     for (const pid of approved) {
       try {
-        const formData = new FormData();
-        formData.append('file', video);
-        formData.append('caption', variants[pid].caption);
-        formData.append('hashtags', variants[pid].hashtags.join ? variants[pid].hashtags.join(' ') : variants[pid].hashtags);
+        const variant = variants[pid];
+        const hashtags = variant.hashtags?.join ? variant.hashtags.join(' ') : (variant.hashtags || '');
 
-        const res = await fetch(`${base}/api/video/publish/${pid}`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
-          body: formData,
-        });
-        if (res.ok) successPlatforms.push(pid);
+        // Use variantId if available (no file re-upload needed)
+        if (variant.variantId) {
+          const res = await fetch(`${base}/api/video-content/publish/${pid}/variant`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ variantId: variant.variantId, caption: variant.caption, hashtags }),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (res.ok) {
+            successPlatforms.push(pid);
+          } else if (data.requiresConnect) {
+            errors[pid] = `Connect your ${pid} account in Connected Accounts first`;
+          } else {
+            errors[pid] = data.error || 'Publish failed';
+          }
+        } else {
+          // Fallback: send file directly
+          const formData = new FormData();
+          formData.append('file', video);
+          formData.append('caption', variant.caption);
+          formData.append('hashtags', hashtags);
+          const res = await fetch(`${base}/api/video-content/publish/${pid}`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+            body: formData,
+          });
+          const data = await res.json().catch(() => ({}));
+          if (res.ok) {
+            successPlatforms.push(pid);
+          } else if (data.requiresConnect) {
+            errors[pid] = `Connect your ${pid} account in Connected Accounts first`;
+          } else {
+            errors[pid] = data.error || 'Publish failed';
+          }
+        }
       } catch (e) {
-        // Still show in published list even if API not yet connected
-        successPlatforms.push(pid);
+        errors[pid] = e.message;
       }
     }
-    setPublished(successPlatforms);
+
+    if (Object.keys(errors).length > 0) {
+      const errMsg = Object.entries(errors).map(([p, m]) => `${p}: ${m}`).join('\n');
+      alert(`Some platforms failed:\n\n${errMsg}`);
+    }
+
+    setPublished(successPlatforms.length > 0 ? successPlatforms : approved);
     setStep('analytics');
   };
 

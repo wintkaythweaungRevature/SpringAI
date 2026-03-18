@@ -34,7 +34,9 @@ export default function VideoPublisher() {
   const [connectedAccounts, setConnectedAccounts] = useState({});
   const [connectLoading, setConnectLoading] = useState(null);
   const [connectMessage, setConnectMessage] = useState('');
+  const [canSkipProcessing, setCanSkipProcessing] = useState(false);
   const fileRef = useRef();
+  const skippedRef = useRef(false);
 
   const api = (path) => `${base}/api/video-content${path}`;
   const socialApi = (path) => `${base}/api/social${path}`;
@@ -129,10 +131,31 @@ export default function VideoPublisher() {
     if (f) setVideo(f);
   };
 
+  const usePlaceholders = () => {
+    skippedRef.current = true;
+    const generated = {};
+    for (const pid of selectedPlatforms) {
+      generated[pid] = {
+        caption: mockCaption(pid, video?.name),
+        hashtags: mockHashtags(pid),
+        clipNote: mockClipNote(pid),
+        status: 'draft',
+      };
+    }
+    setVariants(generated);
+    setActiveVariant(selectedPlatforms[0]);
+    setProcessing(false);
+    setStep('review');
+    setProcessLog(prev => [...prev, '⏭️ Skipped — using template captions. Edit before publishing.']);
+  };
+
   /* ── AI processing — async upload + poll ───────────────────── */
   const runProcessing = async () => {
+    skippedRef.current = false;
+    setCanSkipProcessing(false);
     setStep('processing');
     setProcessing(true);
+    const skipTimer = setTimeout(() => setCanSkipProcessing(true), 15000);
     const logs = [];
     const log = (msg) => { logs.push(msg); setProcessLog([...logs]); };
 
@@ -141,7 +164,6 @@ export default function VideoPublisher() {
       const formData = new FormData();
       formData.append('file', video);
 
-      // Use async=true to avoid 504 gateway timeout on large files
       const res = await fetch(`${base}/api/video-content/upload?async=true`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
@@ -150,19 +172,21 @@ export default function VideoPublisher() {
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || 'Upload failed');
+        if (res.status === 504) throw new Error('Upload timed out. Try a smaller video or check your connection.');
+        if (res.status === 500) throw new Error(err.error || err.message || 'Server error. Try again or use Skip below.');
+        throw new Error(err.error || err.message || 'Upload failed');
       }
 
       const data = await res.json();
-      const videoId = data.videoId;
+      const videoId = data.videoId ?? data.id;
 
       log('🎙️ Transcribing audio with Whisper...');
       log('📝 Generating captions & hashtags with GPT-4...');
 
-      // Poll until status is READY or FAILED (max 3 minutes)
+      // Poll until variants ready (max 2 min, every 3 sec)
       let pollData = null;
-      for (let i = 0; i < 36; i++) {
-        await new Promise(r => setTimeout(r, 5000));
+      for (let i = 0; i < 40; i++) {
+        await new Promise(r => setTimeout(r, 3000));
         try {
           const pollRes = await fetch(`${base}/api/video-content/videos/${videoId}`, {
             headers: { Authorization: `Bearer ${token}` },
@@ -171,7 +195,7 @@ export default function VideoPublisher() {
             pollData = await pollRes.json();
             if (pollData.variants && pollData.variants.length > 0) break;
             if (pollData.status === 'FAILED') {
-              log('⚠️ Transcription failed (no audio or unsupported format). Using template captions — edit them before publishing.');
+              log('⚠️ Processing failed. Using template captions.');
               break;
             }
           }
@@ -194,11 +218,14 @@ export default function VideoPublisher() {
         };
       }
 
-      setVariants(generated);
-      setActiveVariant(selectedPlatforms[0]);
-      log('✅ All variants ready!');
+      if (!skippedRef.current) {
+        setVariants(generated);
+        setActiveVariant(selectedPlatforms[0]);
+        log('✅ All variants ready!');
+      }
     } catch (e) {
-      log(`❌ Error: ${e.message}. Using AI-generated placeholders.`);
+      if (skippedRef.current) return;
+      log(`❌ ${e.message} Using template captions — edit before publishing.`);
       const generated = {};
       for (const pid of selectedPlatforms) {
         generated[pid] = {
@@ -208,11 +235,16 @@ export default function VideoPublisher() {
           status: 'draft',
         };
       }
-      setVariants(generated);
-      setActiveVariant(selectedPlatforms[0]);
+      if (!skippedRef.current) {
+        setVariants(generated);
+        setActiveVariant(selectedPlatforms[0]);
+      }
     } finally {
-      setProcessing(false);
-      setStep('review');
+      clearTimeout(skipTimer);
+      if (!skippedRef.current) {
+        setProcessing(false);
+        setStep('review');
+      }
     }
   };
 
@@ -450,6 +482,15 @@ export default function VideoPublisher() {
           <div style={s.progressBar}>
             <div style={{ ...s.progressFill, width: `${Math.min((processLog.length / 7) * 100, 100)}%` }} />
           </div>
+          {processing && canSkipProcessing && (
+            <button
+              type="button"
+              onClick={usePlaceholders}
+              style={{ marginTop: '16px', padding: '10px 20px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#f8fafc', color: '#64748b', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
+            >
+              ⏭️ Skip — use template captions
+            </button>
+          )}
         </div>
       )}
 

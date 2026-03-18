@@ -213,16 +213,21 @@ export default function VideoPublisher() {
     return null;
   };
 
+  // One flow for all platforms (LinkedIn, YouTube, Instagram, etc.): call API with auth, open response.url
   const connectPlatform = async (platformId) => {
     setConnectLoading(platformId);
     setConnectMessage('');
     try {
+      // Call backend API with same auth as other API calls (Bearer token)
       const res = await fetch(socialApi('/connect/' + platformId), { headers: authHeaders() });
       if (!res.ok) {
         const body = await res.text();
         const err = (() => { try { return JSON.parse(body); } catch (_) { return {}; } })();
         const friendly = friendlyConnectError(res.status, body);
-        throw new Error(friendly || err.error || err.message || 'Could not start connect. Please log in.');
+        const msg = err.error || err.message || friendly || 'Could not start connect. Please log in.';
+        setConnectMessage(msg);
+        setTimeout(() => setConnectMessage(''), 5000);
+        return; // Do NOT open new tab on API failure
       }
       const data = await res.json();
       const url = data?.url || data?.authUrl;
@@ -231,7 +236,14 @@ export default function VideoPublisher() {
         setTimeout(() => setConnectMessage(''), 4000);
         return;
       }
-      // Open popup directly with provider URL (LinkedIn, etc.) - do NOT open to frontend first
+      // Never open frontend URL (wintaibot.com) - must be provider (LinkedIn, etc.) or backend callback
+      const frontendOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+      if (frontendOrigin && url.startsWith(frontendOrigin)) {
+        setConnectMessage('Invalid: backend returned frontend URL. Set REACT_APP_API_BASE to api.wintaibot.com.');
+        setTimeout(() => setConnectMessage(''), 5000);
+        return;
+      }
+      // Open popup directly with response.url - do NOT open to wintaibot.com page
       const popup = window.open(url, 'social-connect', 'width=600,height=700');
       if (!popup || popup.closed) {
         setConnectMessage('Popup blocked. Please allow popups for this site and try again.');
@@ -251,6 +263,7 @@ export default function VideoPublisher() {
         : (msg.includes('<') && msg.includes('>') ? 'Server error. Try again later.' : msg);
       setConnectMessage(display);
       setTimeout(() => setConnectMessage(''), 5000);
+      // Do NOT open new tab to wintaibot.com as fallback
     } finally {
       setConnectLoading(null);
     }

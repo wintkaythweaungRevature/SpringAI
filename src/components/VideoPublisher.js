@@ -155,7 +155,7 @@ export default function VideoPublisher() {
     setCanSkipProcessing(false);
     setStep('processing');
     setProcessing(true);
-    const skipTimer = setTimeout(() => setCanSkipProcessing(true), 15000);
+    const skipTimer = setTimeout(() => setCanSkipProcessing(true), 3000);
     const logs = [];
     const log = (msg) => { logs.push(msg); setProcessLog([...logs]); };
 

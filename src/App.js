@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import './App.css';
 import ImageGenerator from './components/ImageGenerator';
 import ChatComponent from './components/ChatComponent';
@@ -7,7 +7,6 @@ import SpendingAnalyzer from './components/Analyzer';
 import Transcription from './components/Transcription';
 import Content from './components/Content';
 import Resume from './components/Resume';
-import VideoPublisher from './components/VideoPublisher';
 import AccountSettings from './components/AccountSettings';
 import Login from './components/Login';
 import Signup from './components/Signup';
@@ -15,6 +14,8 @@ import { useAuth } from './context/AuthContext';
 import MemberGate from './components/MemberGate';
 import AskAIGate from './components/AskAIGate';
 import LandingSection from './components/LandingSection';
+import VideoPublisher from './components/VideoPublisher';
+import SocialConnect from './components/SocialConnect';
 
 const PAGE_TITLES = {
   null: 'Dashboard',
@@ -25,8 +26,9 @@ const PAGE_TITLES = {
   'transcription': 'EchoScribe',
   'Content': 'Reply Enchanter',
   'Resume': 'Resume Worlock',
-  'video-publisher': 'Video Publisher',
   'account': 'Account',
+  'video-publisher': 'Video Publisher',
+  'social-connect': 'Connected Accounts',
 };
 
 /* ─── NavItem ─────────────────────────────────────────────── */
@@ -59,101 +61,11 @@ function App() {
 
   const go = (tab) => setActiveTab(tab);
   const pageTitle = PAGE_TITLES[activeTab] ?? 'Dashboard';
-
-  // Detect popup callback SYNCHRONOUSLY so we never render full app (no Connect button in popup)
-  const popupCallbackState = (() => {
-    if (typeof window === 'undefined') return null;
-    const params = new URLSearchParams(window.location.search);
-    const socialConnect = params.get('social_connect');
-    const platform = params.get('platform');
-    if (!window.opener || !socialConnect || !platform) return null;
-    if (socialConnect === 'success') return { type: 'success', platform };
-    if (socialConnect === 'error') {
-      const platformLabel = platform.charAt(0).toUpperCase() + platform.slice(1);
-      const msg = platformLabel === 'Linkedin'
-        ? "LinkedIn didn't connect. If the popup showed an error or blank page, it may be a temporary LinkedIn issue. Try again in a few minutes."
-        : `${platformLabel} connection failed. Try again later.`;
-      return { type: 'error', platform, message: msg };
-    }
-    return null;
-  })();
-  const isPopupCallback = popupCallbackState?.type === 'success';
-  const isPopupError = popupCallbackState?.type === 'error';
-
-  useEffect(() => {
-    if (popupCallbackState?.type === 'success') {
-      try {
-        window.opener.postMessage({ type: 'SOCIAL_CONNECT_DONE', platform: popupCallbackState.platform }, window.location.origin);
-      } catch (_) {}
-      window.close();
-    }
-    if (popupCallbackState?.type === 'error') {
-      setTimeout(() => window.close(), 4000);
-    }
-  }, [popupCallbackState?.type, popupCallbackState?.platform]);
-
-  // When OAuth callback redirects (same tab, not popup): show Video Publisher or error
-  const [mainWindowSocialError, setMainWindowSocialError] = useState(null);
-  useEffect(() => {
-    if (popupCallbackState) return;
-    const params = new URLSearchParams(window.location.search);
-    const socialConnect = params.get('social_connect');
-    const platform = params.get('platform');
-    if (socialConnect === 'success' && platform) {
-      setActiveTab('video-publisher');
-    }
-    if (socialConnect === 'error' && platform) {
-      const platformLabel = platform.charAt(0).toUpperCase() + platform.slice(1);
-      const msg = platformLabel === 'Linkedin'
-        ? "LinkedIn didn't connect. If the popup showed an error or blank page, it may be a temporary LinkedIn issue. Try again in a few minutes."
-        : `${platformLabel} connection failed. Try again later.`;
-      setMainWindowSocialError(msg);
-    }
-  }, [popupCallbackState]);
-
-  // Opener: listen for postMessage from popup, switch to Video Publisher and dispatch refresh
-  useEffect(() => {
-    const allowedOrigin = window.location.origin;
-    const handler = (e) => {
-      if (e.origin !== allowedOrigin) return;
-      if (e.data?.type === 'SOCIAL_CONNECT_DONE' && e.data?.platform) {
-        setActiveTab('video-publisher');
-        setTimeout(() => {
-          window.dispatchEvent(new CustomEvent('social-connect-success', { detail: { platform: e.data.platform } }));
-        }, 0);
-      }
-    };
-    window.addEventListener('message', handler);
-    return () => window.removeEventListener('message', handler);
-  }, []);
-  const userDisplayName = user?.firstName || user?.lastName
-    ? [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim()
-    : (user?.email || '').split('@')[0] || '';
-  const userInitials = user?.firstName && user?.lastName
-    ? (user.firstName[0] + user.lastName[0]).toUpperCase()
-    : (user?.email ? user.email.slice(0, 2).toUpperCase() : '??');
-
-  // Popup callback: show minimal view (no Connect button), then close
-  if (isPopupCallback) {
-    return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', fontFamily: 'system-ui', background: '#f8fafc' }}>
-        <p style={{ color: '#64748b', fontSize: '14px' }}>Closing...</p>
-      </div>
-    );
-  }
-  if (isPopupError) {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', fontFamily: 'system-ui', background: '#f8fafc', padding: '24px' }}>
-        <div style={{ padding: '16px 20px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', maxWidth: '400px', fontSize: '14px', color: '#991b1b' }}>
-          {popupCallbackState?.message}
-        </div>
-        <p style={{ color: '#64748b', fontSize: '12px', marginTop: '16px' }}>Closing in a few seconds...</p>
-      </div>
-    );
-  }
+  const userInitials = user?.email ? user.email.slice(0, 2).toUpperCase() : '??';
 
   return (
     <div style={s.shell}>
+
       {/* ═══════════════ SIDEBAR ═══════════════ */}
       <aside style={{ ...s.sidebar, ...(sidebarOpen ? {} : s.sidebarCollapsed) }}>
 
@@ -178,6 +90,7 @@ function App() {
 
           <div style={s.groupLabel}>Social Media</div>
           <NavItem emoji="📲" label="Video Publisher" active={activeTab === 'video-publisher'} onClick={() => go('video-publisher')} hasArrow />
+          <NavItem emoji="🔗" label="Connected Accounts" active={activeTab === 'social-connect'} onClick={() => go('social-connect')} />
 
           <div style={s.groupLabel}>Writing Tools</div>
           <NavItem emoji="✉️" label="Reply Enchanter" active={activeTab === 'Content'} onClick={() => go('Content')} />
@@ -202,18 +115,10 @@ function App() {
 
       {/* ═══════════════ MAIN ═══════════════ */}
       <div style={s.main}>
-        {mainWindowSocialError && (
-          <div style={{ padding: '12px 20px', background: '#fef2f2', borderBottom: '1px solid #fecaca', fontSize: '14px', color: '#991b1b' }}>
-            {mainWindowSocialError}
-          </div>
-        )}
 
-        {/* Top Bar - Wintaibot logo left, search center, icons + user right */}
+        {/* Top Bar */}
         <header style={s.topBar}>
-          <div style={s.topLeft}>
-            <button style={s.menuBtn} onClick={() => setSidebarOpen(!sidebarOpen)} aria-label="Menu">☰</button>
-            <span style={s.topBarLogo}>Wintaibot</span>
-          </div>
+          <button style={s.menuBtn} onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>
 
           <div style={s.searchBox}>
             <span style={{ opacity: 0.4, fontSize: '14px' }}>🔍</span>
@@ -225,12 +130,12 @@ function App() {
               <span style={{ color: '#94a3b8', fontSize: '13px' }}>...</span>
             ) : user ? (
               <>
-                <button style={s.iconBtn} title="Messages">💬</button>
-                <button style={s.avatarBtn} onClick={() => go('account')} title={user.email}>
-                  <div style={s.avatar}>{userInitials}</div>
-                </button>
-                <span style={s.topEmail} title={user.email}>{userDisplayName || user.email}</span>
-                <button style={s.logoutBtn} onClick={logout}>Log out</button>
+                <span style={s.topEmail} title={user.email}>{user.email}</span>
+                {user?.membershipType === 'MEMBER' && (
+                  <span style={s.memberBadge}>✓ Member</span>
+                )}
+                <button onClick={logout} style={s.logoutBtn}>Logout</button>
+                <div style={s.avatar}>{userInitials}</div>
               </>
             ) : (
               <>
@@ -246,7 +151,7 @@ function App() {
           <h2 style={s.pageTitle}>{pageTitle}</h2>
           {user && (
             <div style={s.pageRight}>
-              <span style={s.pageEmail}>{userDisplayName || user.email}</span>
+              <span style={s.pageEmail}>{user.email}</span>
               {user?.membershipType === 'MEMBER' && (
                 <span style={s.pageMemberBadge}>✓ Member</span>
               )}
@@ -258,7 +163,7 @@ function App() {
         {/* Content */}
         <div style={s.content}>
           {!activeTab && (
-            <LandingSection onGetStarted={() => go('chat')} onOpenVideoPublisher={() => go('video-publisher')} />
+            <LandingSection onGetStarted={() => go('chat')} />
           )}
           {activeTab === 'image-generator'  && <MemberGate featureName="Image Generator"><ImageGenerator /></MemberGate>}
           {activeTab === 'chat'             && <AskAIGate  featureName="Ask AI"><ChatComponent /></AskAIGate>}
@@ -267,8 +172,9 @@ function App() {
           {activeTab === 'transcription'    && <MemberGate featureName="EchoScribe"><Transcription /></MemberGate>}
           {activeTab === 'Content'          && <MemberGate featureName="Reply Enchanter"><Content /></MemberGate>}
           {activeTab === 'Resume'           && <MemberGate featureName="Resume Worlock"><Resume /></MemberGate>}
-          {activeTab === 'video-publisher'  && <MemberGate featureName="Video Publisher"><VideoPublisher /></MemberGate>}
           {activeTab === 'account'          && <AskAIGate  featureName="Account"><AccountSettings /></AskAIGate>}
+          {activeTab === 'video-publisher'  && <MemberGate featureName="Video Publisher"><VideoPublisher /></MemberGate>}
+          {activeTab === 'social-connect'   && <MemberGate featureName="Connected Accounts"><SocialConnect /></MemberGate>}
         </div>
       </div>
 
@@ -378,7 +284,7 @@ const s = {
   /* Main */
   main: {
     flex: 1, display: 'flex', flexDirection: 'column',
-    overflow: 'hidden', background: '#f1f5f9',
+    overflow: 'hidden', background: '#f0f4f8',
   },
 
   /* Top Bar */
@@ -390,31 +296,10 @@ const s = {
     padding: '0 20px', gap: '14px',
     boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
   },
-  topLeft: {
-    display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0,
-  },
-  topBarLogo: {
-    color: '#1a2547', fontSize: '16px', fontWeight: '800',
-    letterSpacing: '-0.3px',
-  },
   menuBtn: {
-    background: 'none', border: 'none', color: '#64748b',
+    background: 'none', border: 'none', color: '#94a3b8',
     fontSize: '18px', cursor: 'pointer', padding: '4px 6px',
     borderRadius: '6px', flexShrink: 0, lineHeight: 1,
-  },
-  iconBtn: {
-    background: 'none', border: 'none', cursor: 'pointer',
-    fontSize: '18px', padding: '6px', borderRadius: '8px',
-    color: '#64748b', lineHeight: 1, position: 'relative',
-  },
-  bellWrap: { position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' },
-  redDot: {
-    position: 'absolute', top: '-2px', right: '-2px',
-    width: '8px', height: '8px', borderRadius: '50%',
-    background: '#ef4444', border: '1.5px solid #fff',
-  },
-  avatarBtn: {
-    background: 'none', border: 'none', cursor: 'pointer', padding: 0,
   },
   searchBox: {
     display: 'flex', alignItems: 'center', gap: '8px',

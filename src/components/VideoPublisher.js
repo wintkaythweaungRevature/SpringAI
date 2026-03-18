@@ -84,7 +84,7 @@ export default function VideoPublisher() {
       log('🎙️ Transcribing audio with Whisper...');
       log('📝 Generating captions & hashtags with GPT-4...');
 
-      // Poll until status is READY (max 3 minutes)
+      // Poll until status is READY or FAILED (max 3 minutes)
       let pollData = null;
       for (let i = 0; i < 36; i++) {
         await new Promise(r => setTimeout(r, 5000));
@@ -95,6 +95,10 @@ export default function VideoPublisher() {
           if (pollRes.ok) {
             pollData = await pollRes.json();
             if (pollData.variants && pollData.variants.length > 0) break;
+            if (pollData.status === 'FAILED') {
+              log('⚠️ Transcription failed (no audio or unsupported format). Using template captions — you can edit them before publishing.');
+              break;
+            }
           }
         } catch (_) {}
       }
@@ -172,7 +176,7 @@ export default function VideoPublisher() {
           } else if (data.requiresConnect) {
             errors[pid] = `Connect your ${pid} account in Connected Accounts first`;
           } else {
-            errors[pid] = data.error || 'Publish failed';
+            errors[pid] = formatPublishError(pid, data.error || 'Publish failed');
           }
         } else {
           // Fallback: send file directly
@@ -191,7 +195,7 @@ export default function VideoPublisher() {
           } else if (data.requiresConnect) {
             errors[pid] = `Connect your ${pid} account in Connected Accounts first`;
           } else {
-            errors[pid] = data.error || 'Publish failed';
+            errors[pid] = formatPublishError(pid, data.error || 'Publish failed');
           }
         }
       } catch (e) {
@@ -541,6 +545,24 @@ export default function VideoPublisher() {
       )}
     </div>
   );
+}
+
+/* ─── Error formatter ───────────────────────────────────────── */
+function formatPublishError(platform, rawError) {
+  const s = rawError || '';
+  // Facebook/Instagram OAuth token expired or invalid (code 190)
+  if (s.includes('"code":190') || s.includes('Invalid OAuth access token') || s.includes('Cannot parse access token')) {
+    return `${platform} token expired. Go to Connected Accounts and reconnect ${platform}.`;
+  }
+  // Token permissions insufficient
+  if (s.includes('"code":200') || s.includes('permissions')) {
+    return `${platform} lacks required permissions. Reconnect with all permissions in Connected Accounts.`;
+  }
+  // Rate limited
+  if (s.includes('"code":4') || s.includes('rate limit') || s.includes('too many')) {
+    return `${platform} rate limit hit. Try again in a few minutes.`;
+  }
+  return s.length > 120 ? s.substring(0, 120) + '…' : s;
 }
 
 /* ─── Mock data generators (replace with GPT API calls) ─────── */

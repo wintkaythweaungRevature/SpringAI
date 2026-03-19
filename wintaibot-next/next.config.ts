@@ -7,6 +7,9 @@ const apiTarget =
 
 const nextConfig: NextConfig = {
   turbopack: { root: process.cwd() },
+  // Mobile-first: optimize images, enable compression
+  images: { formats: ['image/avif', 'image/webp'] },
+  compress: true,
   async rewrites() {
     return [
       { source: "/api/:path*", destination: `${apiTarget}/api/:path*` },

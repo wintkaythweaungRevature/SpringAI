@@ -1,9 +1,16 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import Providers from '@/components/Providers';
 
 const SITE_URL = 'https://www.wintaibot.com';
 const OG_IMAGE = 'https://www.wintaibot.com/android-chrome-512x512.png';
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: '#1e3a8a',
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -59,8 +66,10 @@ export const metadata: Metadata = {
     icon: ['/favicon.ico', '/favicon-32x32.png', '/favicon-16x16.png'],
     apple: '/apple-touch-icon.png',
   },
-  other: {
-    'theme-color': '#1e3a8a',
+  formatDetection: {
+    telephone: false,
+    email: false,
+    address: false,
   },
 };
 
@@ -71,9 +80,11 @@ const structuredData = {
     name: 'Wintaibot',
     url: SITE_URL,
     applicationCategory: 'ProductivityApplication',
+    applicationSubCategory: 'AI Assistant',
     operatingSystem: 'Web',
     description:
       'Wintaibot is an AI assistant that analyzes PDFs, extracts document data, transcribes audio, generates images, writes email replies, and prepares users for job interviews.',
+    screenshot: OG_IMAGE,
     featureList: [
       'PDF data extraction and analysis',
       'AI document summarization',

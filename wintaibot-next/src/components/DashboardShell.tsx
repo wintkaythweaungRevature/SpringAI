@@ -181,7 +181,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         </div>
       </aside>
 
-      <div style={s.main}>
+      <main style={s.main}>
         <header style={s.topBar}>
           <button style={s.menuBtn} onClick={() => setSidebarOpen(!sidebarOpen)}>
             ☰
@@ -249,7 +249,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         </div>
 
         <div style={s.content}>{children}</div>
-      </div>
+      </main>
 
       {showAuthModal && !user && (
         <div

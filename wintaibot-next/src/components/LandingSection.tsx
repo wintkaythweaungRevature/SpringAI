@@ -212,69 +212,71 @@ export default function LandingSection() {
       <section className="ls-section ls-how" id="how-it-works" aria-labelledby="how-heading">
         <h2 id="how-heading">How It Works</h2>
         <p className="ls-section-sub">Start getting results in under 30 seconds.</p>
-        <div className="ls-steps">
+        <ol className="ls-steps" role="list">
           {steps.map((s) => (
-            <div className="ls-step" key={s.num}>
-              <div className="ls-step-num" aria-hidden="true">
-                {s.num}
-              </div>
-              <h3 className="ls-step-title">{s.title}</h3>
-              <p className="ls-step-desc">{s.desc}</p>
-            </div>
+            <li className="ls-step" key={s.num}>
+              <article>
+                <span className="ls-step-num" aria-hidden="true">
+                  {s.num}
+                </span>
+                <h3 className="ls-step-title">{s.title}</h3>
+                <p className="ls-step-desc">{s.desc}</p>
+              </article>
+            </li>
           ))}
-        </div>
+        </ol>
       </section>
 
       <section className="ls-section" id="use-cases" aria-labelledby="usecases-heading">
         <h2 id="usecases-heading">Who Uses Wintaibot?</h2>
-        <div className="ls-usecase-grid">
-          <div className="ls-usecase">
+        <div className="ls-usecase-grid" role="list">
+          <article className="ls-usecase">
             <h3>Job Seekers</h3>
             <p>
               Upload your resume to <strong>Resume Warlock</strong> and receive AI-tailored
               interview questions. Practice answers, identify gaps in your experience, and walk into
               every interview prepared and confident.
             </p>
-          </div>
-          <div className="ls-usecase">
+          </article>
+          <article className="ls-usecase">
             <h3>Business Professionals</h3>
             <p>
               Extract key data from invoices and reports with <strong>DocuWizard</strong>, draft
               polished email responses in seconds with <strong>Reply Enchanter</strong>, and
               transcribe client calls with <strong>EchoScribe</strong>.
             </p>
-          </div>
-          <div className="ls-usecase">
+          </article>
+          <article className="ls-usecase">
             <h3>Students &amp; Researchers</h3>
             <p>
               Transcribe lectures and podcasts with <strong>EchoScribe</strong>, then paste the
               text into <strong>Ask AI</strong> for instant summaries, study notes, and explanations
               of complex topics.
             </p>
-          </div>
-          <div className="ls-usecase">
+          </article>
+          <article className="ls-usecase">
             <h3>Content Creators &amp; Social Managers</h3>
             <p>
               Use <strong>Video Publisher</strong> to upload once and publish to YouTube, Instagram,
               TikTok, and more. Get AI captions and hashtags per platform, schedule each post when
               you want, and check viral trends and news to plan your next video.
             </p>
-          </div>
-          <div className="ls-usecase">
+          </article>
+          <article className="ls-usecase">
             <h3>Home Cooks</h3>
             <p>
               Open your fridge, list what you have, and let the <strong>Recipe Generator</strong>{' '}
               suggest delicious meals with full instructions. Reduce food waste and discover new
               cuisines every week.
             </p>
-          </div>
-          <div className="ls-usecase">
+          </article>
+          <article className="ls-usecase">
             <h3>Teams &amp; Small Businesses</h3>
             <p>
               Speed up document processing, automate repetitive email replies, and give every team
               member access to AI tools without expensive per-seat pricing.
             </p>
-          </div>
+          </article>
         </div>
       </section>
 
@@ -282,7 +284,7 @@ export default function LandingSection() {
         <h2 id="pricing-heading">Simple, Transparent Pricing</h2>
         <p className="ls-section-sub">Start free. Upgrade when you need more.</p>
         <div className="ls-plans">
-          <div className="ls-plan">
+          <article className="ls-plan">
             <div className="ls-plan-name">Free</div>
             <div className="ls-plan-price">
               $0 <span>/ forever</span>
@@ -299,9 +301,9 @@ export default function LandingSection() {
             <Link href="/chat" className="ls-btn-outline">
               Get Started Free
             </Link>
-          </div>
+          </article>
 
-          <div className="ls-plan ls-plan--featured">
+          <article className="ls-plan ls-plan--featured">
             <div className="ls-plan-popular">Most Popular</div>
             <div className="ls-plan-name">Member</div>
             <div className="ls-plan-price">
@@ -320,7 +322,7 @@ export default function LandingSection() {
             <Link href="/chat" className="ls-btn-primary">
               Start Free Trial
             </Link>
-          </div>
+          </article>
         </div>
       </section>
 

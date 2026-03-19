@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './App.css';
+import { useMediaQuery } from './hooks/useMediaQuery';
 import ImageGenerator from './components/ImageGenerator';
 import ChatComponent from './components/ChatComponent';
 import ReceipeGenerator from './components/ReceipeGenerator';
@@ -58,8 +59,17 @@ function App() {
   const [authMode, setAuthMode] = useState('login');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const { user, logout, loading } = useAuth();
+  const isMobile = useMediaQuery('(max-width: 768px)');
 
-  const go = (tab) => setActiveTab(tab);
+  useEffect(() => {
+    if (isMobile) setSidebarOpen(false);
+    else setSidebarOpen(true);
+  }, [isMobile]);
+
+  const go = (tab) => {
+    setActiveTab(tab);
+    if (isMobile) setSidebarOpen(false);
+  };
   const pageTitle = PAGE_TITLES[activeTab] ?? 'Dashboard';
   const userInitials = user?.email ? user.email.slice(0, 2).toUpperCase() : '??';
 
@@ -67,7 +77,14 @@ function App() {
     <div style={s.shell}>
 
       {/* ═══════════════ SIDEBAR ═══════════════ */}
-      <aside style={{ ...s.sidebar, ...(sidebarOpen ? {} : s.sidebarCollapsed) }}>
+      {isMobile && !sidebarOpen && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 40, display: 'block' }} onClick={() => setSidebarOpen(false)} aria-hidden="true" />
+      )}
+      <aside style={{
+        ...s.sidebar,
+        ...(sidebarOpen ? {} : s.sidebarCollapsed),
+        ...(isMobile ? { position: 'fixed', left: 0, top: 0, bottom: 0, zIndex: 50, boxShadow: sidebarOpen ? '4px 0 24px rgba(0,0,0,0.15)' : 'none' } : {}),
+      }}>
 
         {/* Logo */}
         <div style={s.logoArea}>
@@ -293,8 +310,9 @@ const s = {
     background: '#ffffff',
     borderBottom: '1px solid #e2e8f0',
     display: 'flex', alignItems: 'center',
-    padding: '0 20px', gap: '14px',
+    padding: '0 12px 0 16px', gap: '10px',
     boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+    flexWrap: 'wrap', minWidth: 0,
   },
   menuBtn: {
     background: 'none', border: 'none', color: '#94a3b8',
@@ -306,7 +324,7 @@ const s = {
     background: '#f8fafc',
     border: '1px solid #e2e8f0',
     borderRadius: '24px', padding: '8px 16px',
-    flex: 1, maxWidth: '360px',
+    flex: 1, maxWidth: '360px', minWidth: 0,
   },
   searchInput: {
     border: 'none', background: 'transparent',
@@ -356,10 +374,11 @@ const s = {
   /* Page Header */
   pageBar: {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    padding: '20px 28px 0', flexShrink: 0,
+    padding: '16px 0 0', flexShrink: 0,
+    flexWrap: 'wrap', gap: '8px',
   },
   pageTitle: {
-    margin: 0, fontSize: '22px', fontWeight: '800',
+    margin: 0, fontSize: 'clamp(18px, 4vw, 22px)', fontWeight: '800',
     color: '#0f172a', letterSpacing: '-0.4px',
   },
   pageRight: { display: 'flex', alignItems: 'center', gap: '10px' },
@@ -378,6 +397,7 @@ const s = {
   /* Content */
   content: {
     flex: 1, overflowY: 'auto', overflowX: 'hidden',
-    padding: '20px 28px 32px',
+    padding: '16px',
+    minWidth: 0,
   },
 };

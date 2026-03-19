@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useMediaQuery } from '../hooks/useMediaQuery';
 import PlatformIcon from './PlatformIcon';
 
 /* ─── Constants ─────────────────────────────────────────────── */
@@ -20,6 +21,7 @@ const STEPS = ['upload', 'processing', 'review', 'published', 'analytics'];
 export default function VideoPublisher() {
   const { apiBase, token } = useAuth();
   const base = apiBase || 'https://api.wintaibot.com';
+  const isMobile = useMediaQuery('(max-width: 768px)');
 
   const [step, setStep]                 = useState('upload');
   const [video, setVideo]               = useState(null);
@@ -338,7 +340,7 @@ export default function VideoPublisher() {
   return (
     <div style={s.page}>
       {/* ── Stepper ── */}
-      <div style={s.stepper}>
+      <div style={{ ...s.stepper, ...(isMobile ? { flexWrap: 'wrap', gap: '12px', padding: '12px 16px', justifyContent: 'center' } : {}) }}>
         {['Upload', 'Processing', 'Review & Schedule', 'Published', 'Analytics'].map((label, i) => {
           const sid = STEPS[i];
           const idx = STEPS.indexOf(step);
@@ -350,7 +352,7 @@ export default function VideoPublisher() {
                 <div style={{ ...s.stepDot, ...(done ? s.stepDone : active ? s.stepActive : {}) }}>
                   {done ? '✓' : i + 1}
                 </div>
-                <span style={{ ...s.stepLabel, ...(active ? { color: '#2563eb', fontWeight: 700 } : {}) }}>
+                <span style={{ ...s.stepLabel, ...(active ? { color: '#2563eb', fontWeight: 700 } : {}), ...(isMobile ? { fontSize: '10px' } : {}) }}>
                   {label}
                 </span>
               </div>
@@ -362,9 +364,9 @@ export default function VideoPublisher() {
 
       {/* ── STEP: UPLOAD ── */}
       {step === 'upload' && (
-        <div style={s.layout}>
+        <div style={{ ...s.layout, ...(isMobile ? { flexDirection: 'column', flexWrap: 'wrap' } : {}) }}>
           {/* Left */}
-          <div style={s.left}>
+          <div style={{ ...s.left, ...(isMobile ? { width: '100%', minWidth: 0 } : {}) }}>
             <div style={s.sectionTitle}>🎬 Upload Video</div>
             {contentIdea && (
               <div style={{ marginBottom: '16px', padding: '12px 16px', borderRadius: '10px', background: 'linear-gradient(135deg,#eff6ff,#dbeafe)', border: '1px solid #93c5fd', fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
@@ -409,7 +411,7 @@ export default function VideoPublisher() {
           <div style={s.right}>
             <div style={s.card}>
               <div style={s.sectionTitle}>📡 Select Platforms</div>
-              <div style={s.platformGrid}>
+              <div style={{ ...s.platformGrid, ...(isMobile ? { gridTemplateColumns: 'repeat(2, 1fr)' } : {}) }}>
                 {PLATFORMS.map(p => (
                   <button
                     key={p.id}
@@ -486,7 +488,7 @@ export default function VideoPublisher() {
 
       {/* ── STEP: PROCESSING ── */}
       {step === 'processing' && (
-        <div style={s.centerCard}>
+        <div style={{ ...s.centerCard, ...(isMobile ? { padding: '24px 16px', margin: '0 8px' } : {}) }}>
           <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚙️</div>
           <div style={s.processTitle}>AI is working on your video</div>
           <div style={s.processLog}>
@@ -514,9 +516,9 @@ export default function VideoPublisher() {
 
       {/* ── STEP: REVIEW & PUBLISH ── */}
       {step === 'review' && (
-        <div style={s.layout}>
+        <div style={{ ...s.layout, ...(isMobile ? { flexDirection: 'column', flexWrap: 'wrap' } : {}) }}>
           {/* Platform tabs on left */}
-          <div style={s.left}>
+          <div style={{ ...s.left, ...(isMobile ? { width: '100%', minWidth: 0 } : {}) }}>
             <div style={s.sectionTitle}>📦 Content Variants</div>
             {selectedPlatforms.map(pid => {
               const p = PLATFORMS.find(x => x.id === pid);
@@ -614,8 +616,8 @@ export default function VideoPublisher() {
 
       {/* ── STEP: ANALYTICS ── */}
       {step === 'analytics' && (
-        <div style={s.layout}>
-          <div style={s.left}>
+        <div style={{ ...s.layout, ...(isMobile ? { flexDirection: 'column', flexWrap: 'wrap' } : {}) }}>
+          <div style={{ ...s.left, ...(isMobile ? { width: '100%', minWidth: 0 } : {}) }}>
             <div style={s.card}>
               <div style={s.sectionTitle}>🚀 Published</div>
               {published.map(pid => {
@@ -652,7 +654,7 @@ export default function VideoPublisher() {
             </div>
 
             {/* Analytics cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: '12px', marginBottom: '16px' }}>
               {[
                 { label: 'Views',          value: '12.4K', icon: '👁️',  color: '#2563eb' },
                 { label: 'Likes',          value: '1.8K',  icon: '❤️',  color: '#ef4444' },
@@ -771,7 +773,7 @@ function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 /* ─── Styles ─────────────────────────────────────────────────── */
 const s = {
-  page:    { padding: '4px 0', fontFamily: "'Inter',-apple-system,sans-serif" },
+  page:    { padding: '4px 0', fontFamily: "'Inter',-apple-system,sans-serif", maxWidth: '100%', overflowX: 'hidden' },
   layout:  { display: 'flex', gap: '20px', alignItems: 'flex-start' },
   left:    { width: '300px', minWidth: '260px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '12px' },
   right:   { flex: 1, minWidth: 0 },
@@ -811,7 +813,7 @@ const s = {
   btnDisabled: { opacity: 0.45, cursor: 'not-allowed' },
 
   /* Processing */
-  centerCard:    { background: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '40px', textAlign: 'center', maxWidth: '560px', margin: '0 auto', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' },
+  centerCard:    { background: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '40px', textAlign: 'center', maxWidth: '560px', width: '100%', boxSizing: 'border-box', margin: '0 auto', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' },
   processTitle:  { fontSize: '18px', fontWeight: 700, color: '#1e293b', marginBottom: '20px' },
   processLog:    { textAlign: 'left', background: '#0f172a', borderRadius: '10px', padding: '16px', marginBottom: '16px', minHeight: '120px' },
   logLine:       { fontSize: '13px', fontFamily: 'monospace', padding: '3px 0', color: '#64748b' },

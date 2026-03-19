@@ -13,6 +13,7 @@
     "react-dom": "^19.0.0",
     "react-helmet": "^6.1.0",
     "react-icons": "^5.6.0",
+    "react-router-dom": "^7.13.1",
     "react-scripts": "5.0.1",
     "react-simple-typewriter": "^5.0.1",
     "react-typical": "^0.1.3",
@@ -22,6 +23,7 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "postbuild": "react-snap",
     "build:prod": "REACT_APP_API_BASE=https://api.wintaibot.com react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
@@ -33,6 +35,12 @@
       "react-app",
       "react-app/jest"
     ]
+  },
+  "reactSnap": {
+    "source": "build",
+    "minifyHtml": { "collapseWhitespace": false, "removeComments": false },
+    "puppeteerArgs": ["--no-sandbox", "--disable-setuid-sandbox"],
+    "include": ["/", "/features", "/pricing", "/use-cases", "/docs", "/privacy-policy", "/terms-of-service"]
   },
   "browserslist": {
     "production": [
@@ -48,6 +56,7 @@
   },
   "devDependencies": {
     "ajv": "^8.17.1",
-    "ajv-keywords": "^5.1.0"
+    "ajv-keywords": "^5.1.0",
+    "react-snap": "^1.23.0"
   }
 }

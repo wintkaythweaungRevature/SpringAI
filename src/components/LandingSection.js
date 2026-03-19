@@ -135,7 +135,7 @@ export default function LandingSection({ onGetStarted, onOpenVideoPublisher }) {
           <button className="ls-btn-primary" onClick={onGetStarted}>
             Try Free — No Credit Card
           </button>
-          <a className="ls-btn-ghost" href="#features">See All Features →</a>
+          <a className="ls-btn-ghost" href="/features">See All Features →</a>
         </div>
         <p className="ls-hero-note">
           Free tier includes <strong>Ask AI</strong> and <strong>Recipe Generator</strong>.
@@ -429,11 +429,11 @@ export default function LandingSection({ onGetStarted, onOpenVideoPublisher }) {
           <a href="mailto:contact@wintaibot.com">contact@wintaibot.com</a>
         </p>
         <nav className="ls-footer-nav" aria-label="Footer navigation">
-          <a href="#features">Features</a>
-          <a href="#pricing">Pricing</a>
-          <a href="#use-cases">Use Cases</a>
-          <a href="#about">About</a>
-          <a href="#faq">FAQ</a>
+          <a href="/features">Features</a>
+          <a href="/pricing">Pricing</a>
+          <a href="/use-cases">Use Cases</a>
+          <a href="/#about">About</a>
+          <a href="/#faq">FAQ</a>
           <a href="https://github.com/wintkaythweaungRevature" target="_blank" rel="noopener noreferrer">GitHub</a>
         </nav>
       </footer>

@@ -1,6 +1,8 @@
+'use client';
+
 import React, { useState, useRef, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { useMediaQuery } from '../hooks/useMediaQuery';
+import { useAuth } from '@/context/AuthContext';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 import PlatformIcon from './PlatformIcon';
 
 /* ─── Constants ─────────────────────────────────────────────── */
@@ -24,26 +26,26 @@ export default function VideoPublisher() {
   const isMobile = useMediaQuery('(max-width: 768px)');
 
   const [step, setStep]                 = useState('upload');
-  const [video, setVideo]               = useState(null);
-  const [selectedPlatforms, setSelected] = useState(['youtube', 'instagram', 'tiktok', 'linkedin']);
+  const [video, setVideo]               = useState<File | null>(null);
+  const [selectedPlatforms, setSelected] = useState<string[]>(['youtube', 'instagram', 'tiktok', 'linkedin']);
   const [dragOver, setDragOver]         = useState(false);
   const [processing, setProcessing]     = useState(false);
-  const [processLog, setProcessLog]     = useState([]);
-  const [variants, setVariants]         = useState({});
-  const [published, setPublished]       = useState([]);
-  const [activeVariant, setActiveVariant] = useState(null);
-  const [scheduledTimes, setScheduledTimes] = useState({}); // { [platformId]: ISO datetime or null }
-  const [connectedAccounts, setConnectedAccounts] = useState({});
-  const [connectLoading, setConnectLoading] = useState(null);
+  const [processLog, setProcessLog]     = useState<string[]>([]);
+  const [variants, setVariants]         = useState<Record<string, { caption: string; hashtags: string | string[]; clipNote: string; status: string; variantId?: string }>>({});
+  const [published, setPublished]       = useState<string[]>([]);
+  const [activeVariant, setActiveVariant] = useState<string | null>(null);
+  const [scheduledTimes, setScheduledTimes] = useState<Record<string, string | null>>({});
+  const [connectedAccounts, setConnectedAccounts] = useState<Record<string, boolean>>({});
+  const [connectLoading, setConnectLoading] = useState<string | null>(null);
   const [connectMessage, setConnectMessage] = useState('');
   const [canSkipProcessing, setCanSkipProcessing] = useState(false);
-  const [contentIdea, setContentIdea] = useState(null);
-  const fileRef = useRef();
+  const [contentIdea, setContentIdea] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
   const skippedRef = useRef(false);
 
   const api = (path) => `${base}/api/video-content${path}`;
   const socialApi = (path) => `${base}/api/social${path}`;
-  const authHeaders = () => (token ? { Authorization: `Bearer ${token}` } : {});
+  const authHeaders = (): Record<string, string> => (token ? { Authorization: `Bearer ${token}` } : {});
 
   useEffect(() => {
     if (!token) return;
@@ -106,7 +108,7 @@ export default function VideoPublisher() {
         }
       }, 500);
     } catch (e) {
-      setConnectMessage(e.message || 'Connect failed');
+      setConnectMessage((e as Error).message || 'Connect failed');
       setTimeout(() => setConnectMessage(''), 5000);
     } finally {
       setConnectLoading(null);
@@ -164,13 +166,14 @@ export default function VideoPublisher() {
 
   /* ── AI processing — async upload + poll ───────────────────── */
   const runProcessing = async () => {
+    if (!video) return;
     skippedRef.current = false;
     setCanSkipProcessing(false);
     setStep('processing');
     setProcessing(true);
     const skipTimer = setTimeout(() => setCanSkipProcessing(true), 3000);
-    const logs = [];
-    const log = (msg) => { logs.push(msg); setProcessLog([...logs]); };
+    const logs: string[] = [];
+    const log = (msg: string) => { logs.push(msg); setProcessLog([...logs]); };
 
     try {
       log('🎬 Uploading video to server...');
@@ -198,7 +201,8 @@ export default function VideoPublisher() {
       log('📝 Generating captions & hashtags with GPT-4...');
 
       // Poll until variants ready (max 2 min, every 3 sec)
-      let pollData = null;
+      type PollResult = { variants?: { platform: string; caption?: string; hashtags?: string; id?: string }[]; status?: string };
+      let pollData: PollResult | null = null;
       for (let i = 0; i < 40; i++) {
         await new Promise(r => setTimeout(r, 3000));
         try {
@@ -206,9 +210,9 @@ export default function VideoPublisher() {
             headers: { Authorization: `Bearer ${token}` },
           });
           if (pollRes.ok) {
-            pollData = await pollRes.json();
-            if (pollData.variants && pollData.variants.length > 0) break;
-            if (pollData.status === 'FAILED') {
+            pollData = await pollRes.json() as PollResult;
+            if (pollData?.variants && pollData.variants.length > 0) break;
+            if (pollData?.status === 'FAILED') {
               log('⚠️ Processing failed. Using template captions.');
               break;
             }
@@ -239,7 +243,7 @@ export default function VideoPublisher() {
       }
     } catch (e) {
       if (skippedRef.current) return;
-      log(`❌ ${e.message} Using template captions — edit before publishing.`);
+      log(`❌ ${(e as Error).message} Using template captions — edit before publishing.`);
       const generated = {};
       for (const pid of selectedPlatforms) {
         generated[pid] = {
@@ -276,8 +280,8 @@ export default function VideoPublisher() {
 
   const scheduleAndPublishAll = async () => {
     const toPublish = selectedPlatforms.filter(pid => variants[pid]);
-    const successPlatforms = [];
-    const errors = {};
+    const successPlatforms: string[] = [];
+    const errors: Record<string, string> = {};
 
     for (const pid of toPublish) {
       const variant = variants[pid];
@@ -294,7 +298,7 @@ export default function VideoPublisher() {
         }
       } else {
         try {
-          const hashtags = variant.hashtags?.join ? variant.hashtags.join(' ') : (variant.hashtags || '');
+          const hashtags = Array.isArray(variant.hashtags) ? variant.hashtags.join(' ') : (variant.hashtags || '');
 
           if (variant.variantId) {
             const res = await fetch(`${base}/api/video-content/publish/${pid}/variant`, {
@@ -307,6 +311,10 @@ export default function VideoPublisher() {
             else if (data.requiresConnect) errors[pid] = `Connect your ${pid} account first`;
             else errors[pid] = formatPublishError(pid, data.error || 'Publish failed');
           } else {
+            if (!video) {
+              errors[pid] = 'Video unavailable';
+              continue;
+            }
             const formData = new FormData();
             formData.append('file', video);
             formData.append('caption', variant.caption);
@@ -322,7 +330,7 @@ export default function VideoPublisher() {
             else errors[pid] = formatPublishError(pid, data.error || 'Publish failed');
           }
         } catch (e) {
-          errors[pid] = e.message;
+          errors[pid] = (e as Error).message;
         }
       }
     }
@@ -379,7 +387,7 @@ export default function VideoPublisher() {
               onDragOver={e => { e.preventDefault(); setDragOver(true); }}
               onDragLeave={() => setDragOver(false)}
               onDrop={handleDrop}
-              onClick={() => fileRef.current.click()}
+              onClick={() => fileRef.current?.click()}
             >
               <input ref={fileRef} type="file" accept="video/*" style={{ display: 'none' }} onChange={handleFile} />
               {video ? (
@@ -464,6 +472,7 @@ export default function VideoPublisher() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {['youtube', 'instagram', 'tiktok', 'linkedin', 'facebook', 'x'].map(pid => {
                   const p = PLATFORMS.find(x => x.id === pid);
+                  if (!p) return null;
                   const connected = connectedAccounts[pid];
                   return (
                     <div key={pid} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', border: `1.5px solid ${connected ? p.color : '#e2e8f0'}`, background: '#f8fafc' }}>
@@ -522,6 +531,7 @@ export default function VideoPublisher() {
             <div style={s.sectionTitle}>📦 Content Variants</div>
             {selectedPlatforms.map(pid => {
               const p = PLATFORMS.find(x => x.id === pid);
+              if (!p) return null;
               const v = variants[pid];
               const hasSchedule = scheduledTimes[pid] && String(scheduledTimes[pid]).trim() !== '';
               return (
@@ -551,7 +561,9 @@ export default function VideoPublisher() {
             {activeVariant && variants[activeVariant] && (() => {
               const pid = activeVariant;
               const p = PLATFORMS.find(x => x.id === pid);
+              if (!p) return null;
               const v = variants[pid];
+              const hashtagsArr = Array.isArray(v.hashtags) ? v.hashtags : (typeof v.hashtags === 'string' ? v.hashtags.split(/\s+/) : []);
               return (
                 <div style={s.card}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
@@ -574,7 +586,7 @@ export default function VideoPublisher() {
 
                   <div style={s.fieldLabel}>Hashtags</div>
                   <div style={s.hashtagBox}>
-                    {v.hashtags.map(h => (
+                    {hashtagsArr.map(h => (
                       <span key={h} style={{ ...s.hashtagChip, borderColor: p.color, color: p.color }}>{h}</span>
                     ))}
                   </div>
@@ -622,6 +634,7 @@ export default function VideoPublisher() {
               <div style={s.sectionTitle}>🚀 Published</div>
               {published.map(pid => {
                 const p = PLATFORMS.find(x => x.id === pid);
+                if (!p) return null;
                 return (
                   <div key={pid} style={s.publishedRow}>
                     <PlatformIcon platform={p} size={24} />
@@ -676,6 +689,7 @@ export default function VideoPublisher() {
               <div style={s.sectionTitle}>📡 Platform Breakdown</div>
               {published.map(pid => {
                 const p = PLATFORMS.find(x => x.id === pid);
+                if (!p) return null;
                 const views = Math.floor(Math.random() * 8000) + 500;
                 const eng   = (Math.random() * 10 + 2).toFixed(1);
                 return (
@@ -772,7 +786,8 @@ function mockClipNote(platform) {
 function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 /* ─── Styles ─────────────────────────────────────────────────── */
-const s = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const s: Record<string, any> = {
   page:    { padding: '4px 0', fontFamily: "'Inter',-apple-system,sans-serif", maxWidth: '100%', overflowX: 'hidden' },
   layout:  { display: 'flex', gap: '20px', alignItems: 'flex-start' },
   left:    { width: '300px', minWidth: '260px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '12px' },

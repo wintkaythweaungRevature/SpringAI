@@ -134,7 +134,7 @@ export default function VideoPublisher() {
     if (f) setVideo(f);
   };
 
-  const useIdeaForNextVideo = (idea) => {
+  const applyIdeaForNextVideo = (idea) => {
     setStep('upload');
     setVideo(null);
     setVariants({});
@@ -699,7 +699,7 @@ export default function VideoPublisher() {
               ].map((idea, i) => (
                 <div key={i} style={s.ideaRow}>
                   <span style={{ fontSize: '13px' }}>{idea}</span>
-                  <button type="button" style={s.useIdeaBtn} onClick={() => useIdeaForNextVideo(idea)}>Use →</button>
+                  <button type="button" style={s.useIdeaBtn} onClick={() => applyIdeaForNextVideo(idea)}>Use →</button>
                 </div>
               ))}
             </div>

@@ -1,35 +1,33 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 import { AuthProvider } from './context/AuthContext';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsOfService from './components/TermsOfService';
+import SEOPublicLayout from './pages/SEOPublicLayout';
 
 const rootElement = document.getElementById('root');
 
-function getPath() {
-  if (typeof window === 'undefined') return '';
-  return (window.location.pathname || '/').replace(/\/+$/, '') || '/';
-}
-
 function Root() {
-  const [path, setPath] = useState(getPath);
-
-  useEffect(() => {
-    setPath(getPath());
-    const onPopState = () => setPath(getPath());
-    window.addEventListener('popstate', onPopState);
-    return () => window.removeEventListener('popstate', onPopState);
-  }, []);
-
-  if (path === '/privacy-policy') return <PrivacyPolicy />;
-  if (path === '/terms-of-service') return <TermsOfService />;
   return (
-    <AuthProvider>
-      <App />
-    </AuthProvider>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/terms-of-service" element={<TermsOfService />} />
+        <Route path="/features" element={<SEOPublicLayout />} />
+        <Route path="/pricing" element={<SEOPublicLayout />} />
+        <Route path="/use-cases" element={<SEOPublicLayout />} />
+        <Route path="/docs" element={<SEOPublicLayout />} />
+        <Route path="/*" element={
+          <AuthProvider>
+            <App />
+          </AuthProvider>
+        } />
+      </Routes>
+    </BrowserRouter>
   );
 }
 

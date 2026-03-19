@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import PlatformIcon from './PlatformIcon';
@@ -40,8 +41,10 @@ export default function VideoPublisher() {
   const [connectMessage, setConnectMessage] = useState('');
   const [canSkipProcessing, setCanSkipProcessing] = useState(false);
   const [contentIdea, setContentIdea] = useState<string | null>(null);
+  const [publishError, setPublishError] = useState<{ message: string; platforms: string[]; requiresReconnect: boolean } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const skippedRef = useRef(false);
+  const router = useRouter();
 
   const api = (path) => `${base}/api/video-content${path}`;
   const socialApi = (path) => `${base}/api/social${path}`;
@@ -308,7 +311,7 @@ export default function VideoPublisher() {
             });
             const data = await res.json().catch(() => ({}));
             if (res.ok) successPlatforms.push(pid);
-            else if (data.requiresConnect) errors[pid] = `Connect your ${pid} account first`;
+            else if (data.requiresConnect) errors[pid] = formatPublishError(pid, data.error || `Connect your ${pid} account first`);
             else errors[pid] = formatPublishError(pid, data.error || 'Publish failed');
           } else {
             if (!video) {
@@ -326,7 +329,7 @@ export default function VideoPublisher() {
             });
             const data = await res.json().catch(() => ({}));
             if (res.ok) successPlatforms.push(pid);
-            else if (data.requiresConnect) errors[pid] = `Connect your ${pid} account first`;
+            else if (data.requiresConnect) errors[pid] = formatPublishError(pid, data.error || `Connect your ${pid} account first`);
             else errors[pid] = formatPublishError(pid, data.error || 'Publish failed');
           }
         } catch (e) {
@@ -337,7 +340,10 @@ export default function VideoPublisher() {
 
     if (Object.keys(errors).length > 0) {
       const errMsg = Object.entries(errors).map(([p, m]) => `${p}: ${m}`).join('\n');
-      alert(`Some platforms failed:\n\n${errMsg}`);
+      const requiresReconnect = Object.values(errors).some(m =>
+        /token expired|reconnect|requiresConnect|permissions/i.test(String(m))
+      );
+      setPublishError({ message: errMsg, platforms: Object.keys(errors), requiresReconnect });
     }
 
     setPublished(successPlatforms.length > 0 ? successPlatforms : toPublish);
@@ -347,6 +353,38 @@ export default function VideoPublisher() {
   /* ── render sections ── */
   return (
     <div style={s.page}>
+      {/* ── Publish error modal ── */}
+      {publishError && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px',
+        }}>
+          <div style={{
+            background: '#fff', borderRadius: '12px', padding: '24px', maxWidth: '420px', width: '100%', boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+          }}>
+            <div style={{ fontSize: '20px', marginBottom: '12px' }}>⚠️ Some platforms failed</div>
+            <pre style={{ fontSize: '13px', color: '#475569', whiteSpace: 'pre-wrap', margin: '0 0 20px', fontFamily: 'inherit' }}>
+              {publishError.message}
+            </pre>
+            {publishError.requiresReconnect && (
+              <button
+                type="button"
+                onClick={() => { setPublishError(null); router.push('/social-connect'); }}
+                style={{ ...s.btnPrimary, width: '100%', marginBottom: '10px' }}
+              >
+                Go to Connected Accounts →
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setPublishError(null)}
+              style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '2px solid #e2e8f0', background: 'transparent', color: '#475569', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ── Stepper ── */}
       <div style={{ ...s.stepper, ...(isMobile ? { flexWrap: 'wrap', gap: '12px', padding: '12px 16px', justifyContent: 'center' } : {}) }}>
         {['Upload', 'Processing', 'Review & Schedule', 'Published', 'Analytics'].map((label, i) => {
@@ -546,12 +584,90 @@ export default function VideoPublisher() {
               );
             })}
 
+            {/* Schedule per platform — SEO & advertising */}
+            <div style={{ ...s.card, marginTop: '16px', padding: '14px' }}>
+              <div style={{ ...s.sectionTitle, marginBottom: '10px', fontSize: '14px' }}>
+                📅 Schedule per platform (SEO & advertising)
+              </div>
+              <p style={{ fontSize: '11px', color: '#64748b', marginBottom: '12px' }}>
+                Set when to post on each social account. Leave &quot;Publish now&quot; for immediate posting.
+              </p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
+                {[
+                  { label: 'Best for SEO (9 AM)', hour: 9 },
+                  { label: 'Peak engagement (7 PM)', hour: 19 },
+                  { label: 'Lunch hour (12 PM)', hour: 12 },
+                ].map(({ label, hour }) => {
+                  const d = new Date();
+                  d.setDate(d.getDate() + 1);
+                  d.setHours(hour, 0, 0, 0);
+                  const pad = (n: number) => String(n).padStart(2, '0');
+                  const iso = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+                  return (
+                    <button
+                      key={label}
+                      type="button"
+                      onClick={() => {
+                        const next: Record<string, string> = {};
+                        selectedPlatforms.forEach(pid => { next[pid] = iso; });
+                        setScheduledTimes(prev => ({ ...prev, ...next }));
+                      }}
+                      style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '11px', fontWeight: 600, color: '#475569', cursor: 'pointer' }}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {selectedPlatforms.map(pid => {
+                  const p = PLATFORMS.find(x => x.id === pid);
+                  if (!p) return null;
+                  const hasSchedule = scheduledTimes[pid] && String(scheduledTimes[pid]).trim() !== '';
+                  const defaultVal = (() => {
+                    const d = new Date();
+                    const pad = (n: number) => String(n).padStart(2, '0');
+                    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+                  })();
+                  return (
+                    <div key={pid} style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <PlatformIcon platform={p} size={20} />
+                      <span style={{ fontSize: '12px', fontWeight: 600, minWidth: '70px' }}>{p.label}</span>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', cursor: 'pointer' }}>
+                        <input
+                          type="checkbox"
+                          checked={!hasSchedule}
+                          onChange={e => {
+                            if (e.target.checked) {
+                              setScheduledTimes(prev => ({ ...prev, [pid]: null }));
+                            } else {
+                              const d = new Date();
+                              d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+                              setScheduledTimes(prev => ({ ...prev, [pid]: d.toISOString().slice(0, 16) }));
+                            }
+                          }}
+                        />
+                        Now
+                      </label>
+                      <input
+                        type="datetime-local"
+                        value={scheduledTimes[pid] || defaultVal}
+                        onChange={e => setScheduledTimes(prev => ({ ...prev, [pid]: e.target.value || null }))}
+                        disabled={!hasSchedule}
+                        style={{ flex: 1, minWidth: '140px', padding: '6px 8px', borderRadius: '6px', border: '1.5px solid #e2e8f0', fontSize: '12px', opacity: hasSchedule ? 1 : 0.6 }}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
             <div style={{ marginTop: '16px' }}>
               <button style={s.btnPrimary} onClick={scheduleAndPublishAll}>
                 🚀 Schedule & Publish
               </button>
               <p style={{ fontSize: '11px', color: '#64748b', marginTop: '8px', marginBottom: 0 }}>
-                Set date & time per platform below, or leave empty to publish now.
+                Platforms with a date set will be scheduled; others publish now.
               </p>
             </div>
           </div>
@@ -591,34 +707,9 @@ export default function VideoPublisher() {
                     ))}
                   </div>
 
-                  <div style={{ ...s.fieldLabel, marginTop: '16px' }}>📅 When to post on {p.label}</div>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', fontSize: '13px', cursor: 'pointer' }}>
-                    <input
-                      type="checkbox"
-                      checked={!scheduledTimes[pid] || String(scheduledTimes[pid]).trim() === ''}
-                      onChange={e => {
-                        if (e.target.checked) {
-                          setScheduledTimes(prev => ({ ...prev, [pid]: null }));
-                        } else {
-                          const d = new Date();
-                          d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-                          setScheduledTimes(prev => ({ ...prev, [pid]: d.toISOString().slice(0, 16) }));
-                        }
-                      }}
-                    />
-                    <span>Publish now</span>
-                  </label>
-                  <label style={{ display: 'block', fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>Or pick date & time:</label>
-                  <input
-                    type="datetime-local"
-                    value={scheduledTimes[pid] || (() => {
-                      const d = new Date();
-                      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-                      return d.toISOString().slice(0, 16);
-                    })()}
-                    onChange={e => setScheduledTimes(prev => ({ ...prev, [pid]: e.target.value || null }))}
-                    style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1.5px solid #e2e8f0', fontSize: '13px', boxSizing: 'border-box' }}
-                  />
+                  <p style={{ fontSize: '12px', color: '#64748b', marginTop: '12px' }}>
+                    Schedule for {p.label} is set in the panel on the left.
+                  </p>
                 </div>
               );
             })()}

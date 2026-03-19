@@ -60,7 +60,13 @@ public class VideoContentController {
             // Stub: accept and return success. Real impl would post to YouTube/Instagram/etc.
             return ResponseEntity.ok(Map.of("status", "ok", "platform", platform));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Publish failed"));
+            String msg = e.getMessage() != null ? e.getMessage() : "Publish failed";
+            boolean tokenError = msg != null && (msg.toLowerCase().contains("token") && msg.toLowerCase().contains("expired")
+                    || msg.contains("Invalid OAuth") || msg.contains("requiresConnect"));
+            if (tokenError) {
+                return ResponseEntity.status(401).body(Map.of("error", msg, "requiresConnect", true));
+            }
+            return ResponseEntity.status(500).body(Map.of("error", msg));
         }
     }
 
@@ -76,7 +82,13 @@ public class VideoContentController {
             // Stub: accept variantId, caption, hashtags and return success
             return ResponseEntity.ok(Map.of("status", "ok", "platform", platform));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Publish failed"));
+            String msg = e.getMessage() != null ? e.getMessage() : "Publish failed";
+            boolean tokenError = msg != null && (msg.toLowerCase().contains("token") && msg.toLowerCase().contains("expired")
+                    || msg.contains("Invalid OAuth") || msg.contains("requiresConnect"));
+            if (tokenError) {
+                return ResponseEntity.status(401).body(Map.of("error", msg, "requiresConnect", true));
+            }
+            return ResponseEntity.status(500).body(Map.of("error", msg));
         }
     }
 

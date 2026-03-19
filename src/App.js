@@ -60,15 +60,17 @@ function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const { user, logout, loading } = useAuth();
   const isMobile = useMediaQuery('(max-width: 768px)');
+  const isTablet = useMediaQuery('(max-width: 1024px)');
 
   useEffect(() => {
     if (isMobile) setSidebarOpen(false);
+    else if (isTablet) setSidebarOpen(false);
     else setSidebarOpen(true);
-  }, [isMobile]);
+  }, [isMobile, isTablet]);
 
   const go = (tab) => {
     setActiveTab(tab);
-    if (isMobile) setSidebarOpen(false);
+    if (isMobile || isTablet) setSidebarOpen(false);
   };
   const pageTitle = PAGE_TITLES[activeTab] ?? 'Dashboard';
   const userInitials = user?.email ? user.email.slice(0, 2).toUpperCase() : '??';
@@ -77,13 +79,24 @@ function App() {
     <div style={s.shell}>
 
       {/* ═══════════════ SIDEBAR ═══════════════ */}
-      {isMobile && !sidebarOpen && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 40, display: 'block' }} onClick={() => setSidebarOpen(false)} aria-hidden="true" />
+      {((isMobile || isTablet) && sidebarOpen) && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 40 }} onClick={() => setSidebarOpen(false)} aria-hidden="true" />
       )}
       <aside style={{
         ...s.sidebar,
         ...(sidebarOpen ? {} : s.sidebarCollapsed),
-        ...(isMobile ? { position: 'fixed', left: 0, top: 0, bottom: 0, zIndex: 50, boxShadow: sidebarOpen ? '4px 0 24px rgba(0,0,0,0.15)' : 'none' } : {}),
+        ...((isMobile || isTablet) ? {
+          position: 'fixed',
+          left: 0,
+          top: 0,
+          bottom: 0,
+          zIndex: 50,
+          width: sidebarOpen ? '280px' : '0',
+          minWidth: sidebarOpen ? '280px' : '0',
+          overflow: 'hidden',
+          transition: 'width 0.25s ease, min-width 0.25s ease',
+          boxShadow: sidebarOpen ? '4px 0 24px rgba(0,0,0,0.15)' : 'none',
+        } : {}),
       }}>
 
         {/* Logo */}
@@ -246,11 +259,11 @@ const s = {
 
   /* Sidebar */
   sidebar: {
-    width: '224px', minWidth: '224px', height: '100vh',
+    width: '224px', minWidth: '224px', maxWidth: '280px', height: '100vh',
     background: '#1a2547',
     borderRight: '1px solid rgba(0,0,0,0.12)',
     display: 'flex', flexDirection: 'column',
-    transition: 'width 0.2s, min-width 0.2s',
+    transition: 'width 0.25s ease, min-width 0.25s ease',
     flexShrink: 0, overflow: 'hidden',
   },
   sidebarCollapsed: { width: '60px', minWidth: '60px' },
@@ -302,6 +315,7 @@ const s = {
   main: {
     flex: 1, display: 'flex', flexDirection: 'column',
     overflow: 'hidden', background: '#f0f4f8',
+    minWidth: 0,
   },
 
   /* Top Bar */

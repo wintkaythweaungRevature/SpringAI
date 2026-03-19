@@ -336,7 +336,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
       setPublishError({ message: errMsg, platforms: Object.keys(errors), requiresReconnect });
     }
 
-    setPublished(successPlatforms.length > 0 ? successPlatforms : toPublish);
+    setPublished(successPlatforms);
     setStep('analytics');
   };
 

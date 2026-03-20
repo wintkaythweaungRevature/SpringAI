@@ -60,14 +60,27 @@ public class VideoContentController {
             // Stub: accept and return success. Real impl would post to YouTube/Instagram/etc.
             return ResponseEntity.ok(Map.of("status", "ok", "platform", platform));
         } catch (Exception e) {
-            String msg = e.getMessage() != null ? e.getMessage() : "Publish failed";
-            boolean tokenError = msg != null && (msg.toLowerCase().contains("token") && msg.toLowerCase().contains("expired")
-                    || msg.contains("Invalid OAuth") || msg.contains("requiresConnect"));
-            if (tokenError) {
-                return ResponseEntity.status(401).body(Map.of("error", msg, "requiresConnect", true));
-            }
-            return ResponseEntity.status(500).body(Map.of("error", msg));
+            return errorResponse(e);
         }
+    }
+
+    /** Returns 400/401 for client errors (token, pages), 500 for server errors. */
+    private ResponseEntity<?> errorResponse(Exception e) {
+        String msg = e.getMessage() != null ? e.getMessage() : "Publish failed";
+        String lower = msg.toLowerCase();
+        boolean tokenError = (lower.contains("token") && lower.contains("expired"))
+                || msg.contains("Invalid OAuth") || msg.contains("requiresConnect");
+        boolean clientError = tokenError
+                || lower.contains("no facebook pages")
+                || lower.contains("no pages found")
+                || lower.contains("page not found");
+        if (tokenError) {
+            return ResponseEntity.status(401).body(Map.of("error", msg, "requiresConnect", true));
+        }
+        if (clientError) {
+            return ResponseEntity.status(400).body(Map.of("error", msg, "requiresConnect", true));
+        }
+        return ResponseEntity.status(500).body(Map.of("error", msg));
     }
 
     @PostMapping("/publish/{platform}/variant")
@@ -82,13 +95,7 @@ public class VideoContentController {
             // Stub: accept variantId, caption, hashtags and return success
             return ResponseEntity.ok(Map.of("status", "ok", "platform", platform));
         } catch (Exception e) {
-            String msg = e.getMessage() != null ? e.getMessage() : "Publish failed";
-            boolean tokenError = msg != null && (msg.toLowerCase().contains("token") && msg.toLowerCase().contains("expired")
-                    || msg.contains("Invalid OAuth") || msg.contains("requiresConnect"));
-            if (tokenError) {
-                return ResponseEntity.status(401).body(Map.of("error", msg, "requiresConnect", true));
-            }
-            return ResponseEntity.status(500).body(Map.of("error", msg));
+            return errorResponse(e);
         }
     }
 

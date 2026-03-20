@@ -331,7 +331,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
     if (Object.keys(errors).length > 0) {
       const errMsg = Object.entries(errors).map(([p, m]) => `${p}: ${m}`).join('\n');
       const requiresReconnect = Object.values(errors).some(m =>
-        /token expired|reconnect|requiresConnect|permissions/i.test(String(m))
+        /token expired|reconnect|requiresConnect|permissions|no facebook pages|no pages found/i.test(String(m))
       );
       setPublishError({ message: errMsg, platforms: Object.keys(errors), requiresReconnect });
     }
@@ -800,17 +800,22 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
 
 /* ─── Error formatter ───────────────────────────────────────── */
 function formatPublishError(platform, rawError) {
-  const s = rawError || '';
-  if (s.includes('"code":190') || s.includes('Invalid OAuth access token') || s.includes('Cannot parse access token')) {
-    return `${platform} token expired — go to Connected Accounts and reconnect.`;
+  const s = String(rawError || '').toLowerCase();
+  const name = platform.charAt(0).toUpperCase() + platform.slice(1);
+  if (s.includes('"code":190') || s.includes('invalid oauth') || s.includes('cannot parse access token') || (s.includes('token') && s.includes('expired'))) {
+    return `${name} token expired — go to Connected Accounts and reconnect.`;
   }
   if (s.includes('"code":200') || s.includes('permissions')) {
-    return `${platform} lacks required permissions. Reconnect in Connected Accounts.`;
+    return `${name} lacks required permissions. Reconnect in Connected Accounts.`;
+  }
+  if (s.includes('no facebook pages') || s.includes('no pages found')) {
+    return `${name}: No Facebook Page found. Create a Page at facebook.com/pages or link one in Connected Accounts.`;
   }
   if (s.includes('rate limit') || s.includes('too many')) {
-    return `${platform} rate limit hit. Try again in a few minutes.`;
+    return `${name} rate limit hit. Try again in a few minutes.`;
   }
-  return s.length > 120 ? s.substring(0, 120) + '…' : s;
+  const orig = String(rawError || '');
+  return orig.length > 120 ? orig.substring(0, 120) + '…' : orig;
 }
 
 /* ─── Mock data generators (replace with GPT API calls) ─────── */

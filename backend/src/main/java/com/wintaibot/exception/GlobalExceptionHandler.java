@@ -43,13 +43,39 @@ public class GlobalExceptionHandler {
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body(Map.of("error", msg));
         }
+        // Publish/social errors: token expired, no Facebook pages, etc.
+        ResponseEntity<?> publishErr = mapPublishError(msg);
+        if (publishErr != null) return publishErr;
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("error", msg != null ? msg : "Internal server error"));
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<?> handleGeneric(Exception e) {
+        ResponseEntity<?> publishErr = mapPublishError(e.getMessage());
+        if (publishErr != null) return publishErr;
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("error", "Internal server error"));
+    }
+
+    /** Returns 400/401 for publish/social errors, null otherwise. */
+    private ResponseEntity<?> mapPublishError(String msg) {
+        if (msg == null) return null;
+        String lower = msg.toLowerCase();
+        boolean tokenError = (lower.contains("token") && lower.contains("expired"))
+                || msg.contains("Invalid OAuth") || msg.contains("requiresConnect");
+        boolean clientError = tokenError
+                || lower.contains("no facebook pages")
+                || lower.contains("no pages found")
+                || lower.contains("page not found");
+        if (tokenError) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", msg, "requiresConnect", true));
+        }
+        if (clientError) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", msg, "requiresConnect", true));
+        }
+        return null;
     }
 }

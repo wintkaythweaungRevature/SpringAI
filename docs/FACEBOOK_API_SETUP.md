@@ -75,6 +75,9 @@ Add to your backend `.env` or `backend.env` (on EC2):
 # Prod:   APP_API_BASE_URL=https://api.wintaibot.com
 APP_API_BASE_URL=https://api.wintaibot.com
 
+# Frontend URL - where users land after OAuth (MUST be production in prod, not localhost).
+APP_FRONTEND_URL=https://wintaibot.com
+
 # Facebook App (from Meta Developer Console)
 FACEBOOK_APP_ID=your_app_id
 FACEBOOK_APP_SECRET=your_app_secret

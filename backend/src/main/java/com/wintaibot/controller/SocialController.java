@@ -26,6 +26,8 @@ public class SocialController {
     @Value("${app.frontend-url:https://wintaibot.com}")
     private String appBaseUrl;
 
+    private static final String PROD_FRONTEND = "https://wintaibot.com";
+
     @Value("${app.api-base-url:https://api.wintaibot.com}")
     private String appApiBaseUrl;
 
@@ -81,6 +83,21 @@ public class SocialController {
             return scheme + "://" + host.split(",")[0].trim();
         }
         return "https://api.wintaibot.com";
+    }
+
+    /** Frontend URL for post-OAuth redirect. Never use localhost when request came from production. */
+    private String getFrontendRedirectUrl(HttpServletRequest request) {
+        String url = (appBaseUrl != null && !appBaseUrl.isBlank()) ? appBaseUrl.replaceAll("/$", "") : PROD_FRONTEND;
+        if (url.contains("localhost") || url.contains("127.0.0.1")) {
+            String host = request.getHeader("Host");
+            if (host != null && !host.contains("localhost") && !host.startsWith("127.0.0.1")) {
+                return PROD_FRONTEND; // Production request but localhost config – use production
+            }
+        }
+        if (!url.startsWith("http://") && !url.startsWith("https://")) {
+            url = "https://" + url;
+        }
+        return url;
     }
 
     @GetMapping("/status")
@@ -186,14 +203,14 @@ public class SocialController {
         }
 
         if (error != null) {
-            String redirectUrl = appBaseUrl + "?social_connect=error&platform=" + pid + "&error=" + error;
+            String redirectUrl = getFrontendRedirectUrl(request) + "?social_connect=error&platform=" + pid + "&error=" + error;
             return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(redirectUrl)).build();
         }
 
         // Facebook & Instagram: exchange code for token
         if (("facebook".equals(pid) || "instagram".equals(pid)) && code != null && !code.isBlank()) {
             if (facebookAppId == null || facebookAppSecret == null || facebookAppId.isBlank() || facebookAppSecret.isBlank()) {
-                String redirectUrl = appBaseUrl + "?social_connect=error&platform=" + pid + "&error=Facebook+not+configured";
+                String redirectUrl = getFrontendRedirectUrl(request) + "?social_connect=error&platform=" + pid + "&error=Facebook+not+configured";
                 return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(redirectUrl)).build();
             }
             Long userId = null;
@@ -201,7 +218,7 @@ public class SocialController {
                 userId = STATE_TO_USER.remove(state);
             }
             if (userId == null) {
-                String redirectUrl = appBaseUrl + "?social_connect=error&platform=" + pid + "&error=Invalid+state";
+                String redirectUrl = getFrontendRedirectUrl(request) + "?social_connect=error&platform=" + pid + "&error=Invalid+state";
                 return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(redirectUrl)).build();
             }
             String callbackUrl = buildApiBaseUrl(request) + "/api/social/callback/" + pid;
@@ -214,7 +231,7 @@ public class SocialController {
                 Map<?, ?> tokenRes = restTemplate.getForObject(tokenUrl, Map.class);
                 if (tokenRes == null || !tokenRes.containsKey("access_token")) {
                     String err = tokenRes != null && tokenRes.containsKey("error") ? String.valueOf(tokenRes.get("error")) : "No token";
-                    String redirectUrl = appBaseUrl + "?social_connect=error&platform=" + pid + "&error=" + URLEncoder.encode(String.valueOf(err), StandardCharsets.UTF_8);
+                    String redirectUrl = getFrontendRedirectUrl(request) + "?social_connect=error&platform=" + pid + "&error=" + URLEncoder.encode(String.valueOf(err), StandardCharsets.UTF_8);
                     return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(redirectUrl)).build();
                 }
                 String accessToken = (String) tokenRes.get("access_token");
@@ -247,23 +264,24 @@ public class SocialController {
                 CONNECTED.get(userId).add("instagram");
             } catch (Exception e) {
                 String errMsg = e.getMessage() != null ? e.getMessage() : "Token exchange failed";
-                String redirectUrl = appBaseUrl + "?social_connect=error&platform=" + pid + "&error=" + URLEncoder.encode(errMsg, StandardCharsets.UTF_8);
+                String redirectUrl = getFrontendRedirectUrl(request) + "?social_connect=error&platform=" + pid + "&error=" + URLEncoder.encode(errMsg, StandardCharsets.UTF_8);
                 return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(redirectUrl)).build();
             }
         }
 
-        String redirectUrl = appBaseUrl + "?social_connect=success&platform=" + pid;
+        String redirectUrl = getFrontendRedirectUrl(request) + "?social_connect=success&platform=" + pid;
         return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(redirectUrl)).build();
     }
 
     @GetMapping("/oauth-placeholder")
     public ResponseEntity<?> oauthPlaceholder(
             @RequestParam(required = false) String platform,
-            @RequestParam(required = false) String status) {
+            @RequestParam(required = false) String status,
+            HttpServletRequest request) {
         // Redirect to frontend with ?social_connect=success&platform=... so the app can refresh connections
         String pid = platform != null ? normalizePlatform(platform) : null;
         if (pid != null && "connected".equalsIgnoreCase(status)) {
-            String redirectUrl = appBaseUrl + "?social_connect=success&platform=" + pid;
+            String redirectUrl = getFrontendRedirectUrl(request) + "?social_connect=success&platform=" + pid;
             HttpHeaders headers = new HttpHeaders();
             headers.setLocation(URI.create(redirectUrl));
             return new ResponseEntity<>(headers, HttpStatus.FOUND);

@@ -276,6 +276,10 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
   };
 
   const scheduleAndPublishAll = async () => {
+    if (!token) {
+      setPublishError({ message: 'Your session expired. Log out and log in again.', platforms: [], requiresReconnect: false, requiresReLogin: true });
+      return;
+    }
     const toPublish = selectedPlatforms.filter(pid => variants[pid]);
     const successPlatforms = [];
     const errors = {};
@@ -300,7 +304,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
           if (variant.variantId) {
             const res = await fetch(`${base}/api/video-content/publish/${pid}/variant`, {
               method: 'POST',
-              headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+              headers: { ...authHeaders(), 'Content-Type': 'application/json' },
               body: JSON.stringify({ variantId: variant.variantId, caption: variant.caption, hashtags }),
             });
             const data = await res.json().catch(() => ({}));
@@ -316,7 +320,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
             formData.append('hashtags', hashtags);
             const res = await fetch(`${base}/api/video-content/publish/${pid}`, {
               method: 'POST',
-              headers: { Authorization: `Bearer ${token}` },
+              headers: authHeaders(),
               body: formData,
             });
             const data = await res.json().catch(() => ({}));

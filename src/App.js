@@ -64,6 +64,9 @@ function App() {
   const isMobile = useMediaQuery('(max-width: 768px)');
   const isTablet = useMediaQuery('(max-width: 1024px)');
 
+  const go = (tab) => setActiveTab(tab);
+  const pageTitle = PAGE_TITLES[activeTab ?? 'null'] ?? 'Dashboard';
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('social_connect') === 'success' && params.get('platform')) {

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
+import { useMediaQuery } from './hooks/useMediaQuery';
 import ImageGenerator from './components/ImageGenerator';
 import ChatComponent from './components/ChatComponent';
 import ReceipeGenerator from './components/ReceipeGenerator';
@@ -7,7 +8,6 @@ import SpendingAnalyzer from './components/Analyzer';
 import Transcription from './components/Transcription';
 import Content from './components/Content';
 import Resume from './components/Resume';
-import VideoPublisher from './components/VideoPublisher';
 import AccountSettings from './components/AccountSettings';
 import Login from './components/Login';
 import Signup from './components/Signup';
@@ -17,6 +17,8 @@ import { useAuth } from './context/AuthContext';
 import MemberGate from './components/MemberGate';
 import AskAIGate from './components/AskAIGate';
 import LandingSection from './components/LandingSection';
+import VideoPublisher from './components/VideoPublisher';
+import SocialConnect from './components/SocialConnect';
 
 const PAGE_TITLES = {
   null: 'Dashboard',
@@ -27,8 +29,9 @@ const PAGE_TITLES = {
   'transcription': 'EchoScribe',
   'Content': 'Reply Enchanter',
   'Resume': 'Resume Worlock',
-  'video-publisher': 'Video Publisher',
   'account': 'Account',
+  'video-publisher': 'Video Publisher',
+  'social-connect': 'Connected Accounts',
 };
 
 /* ─── NavItem ─────────────────────────────────────────────── */
@@ -60,11 +63,9 @@ function App() {
   const [resetToken, setResetToken] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const { user, logout, loading } = useAuth();
+  const isMobile = useMediaQuery('(max-width: 768px)');
+  const isTablet = useMediaQuery('(max-width: 1024px)');
 
-  const go = (tab) => setActiveTab(tab);
-  const pageTitle = PAGE_TITLES[activeTab] ?? 'Dashboard';
-
-  // When OAuth callback redirects with ?social_connect=success&platform=instagram, show Video Publisher
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('social_connect') === 'success' && params.get('platform')) {
@@ -90,7 +91,25 @@ function App() {
     <div style={s.shell}>
 
       {/* ═══════════════ SIDEBAR ═══════════════ */}
-      <aside style={{ ...s.sidebar, ...(sidebarOpen ? {} : s.sidebarCollapsed) }}>
+      {((isMobile || isTablet) && sidebarOpen) && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 40 }} onClick={() => setSidebarOpen(false)} aria-hidden="true" />
+      )}
+      <aside style={{
+        ...s.sidebar,
+        ...(sidebarOpen ? {} : s.sidebarCollapsed),
+        ...((isMobile || isTablet) ? {
+          position: 'fixed',
+          left: 0,
+          top: 0,
+          bottom: 0,
+          zIndex: 50,
+          width: sidebarOpen ? '280px' : '0',
+          minWidth: sidebarOpen ? '280px' : '0',
+          overflow: 'hidden',
+          transition: 'width 0.25s ease, min-width 0.25s ease',
+          boxShadow: sidebarOpen ? '4px 0 24px rgba(0,0,0,0.15)' : 'none',
+        } : {}),
+      }}>
 
         {/* Logo */}
         <div style={s.logoArea}>
@@ -113,6 +132,7 @@ function App() {
 
           <div style={s.groupLabel}>Social Media</div>
           <NavItem emoji="📲" label="Video Publisher" active={activeTab === 'video-publisher'} onClick={() => go('video-publisher')} hasArrow />
+          <NavItem emoji="🔗" label="Connected Accounts" active={activeTab === 'social-connect'} onClick={() => go('social-connect')} />
 
           <div style={s.groupLabel}>Writing Tools</div>
           <NavItem emoji="✉️" label="Reply Enchanter" active={activeTab === 'Content'} onClick={() => go('Content')} />
@@ -138,12 +158,9 @@ function App() {
       {/* ═══════════════ MAIN ═══════════════ */}
       <div style={s.main}>
 
-        {/* Top Bar - Wintaibot logo left, search center, icons + user right */}
+        {/* Top Bar */}
         <header style={s.topBar}>
-          <div style={s.topLeft}>
-            <button style={s.menuBtn} onClick={() => setSidebarOpen(!sidebarOpen)} aria-label="Menu">☰</button>
-            <span style={s.topBarLogo}>Wintaibot</span>
-          </div>
+          <button style={s.menuBtn} onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>
 
           <div style={s.searchBox}>
             <span style={{ opacity: 0.4, fontSize: '14px' }}>🔍</span>
@@ -155,12 +172,12 @@ function App() {
               <span style={{ color: '#94a3b8', fontSize: '13px' }}>...</span>
             ) : user ? (
               <>
-                <button style={s.iconBtn} title="Messages">💬</button>
-                <button style={s.avatarBtn} onClick={() => go('account')} title={user.email}>
-                  <div style={s.avatar}>{userInitials}</div>
-                </button>
-                <span style={s.topEmail} title={user.email}>{userDisplayName || user.email}</span>
-                <button style={s.logoutBtn} onClick={logout}>Log out</button>
+                <span style={s.topEmail} title={user.email}>{user.email}</span>
+                {user?.membershipType === 'MEMBER' && (
+                  <span style={s.memberBadge}>✓ Member</span>
+                )}
+                <button onClick={logout} style={s.logoutBtn}>Logout</button>
+                <div style={s.avatar}>{userInitials}</div>
               </>
             ) : (
               <>
@@ -176,7 +193,7 @@ function App() {
           <h2 style={s.pageTitle}>{pageTitle}</h2>
           {user && (
             <div style={s.pageRight}>
-              <span style={s.pageEmail}>{userDisplayName || user.email}</span>
+              <span style={s.pageEmail}>{user.email}</span>
               {user?.membershipType === 'MEMBER' && (
                 <span style={s.pageMemberBadge}>✓ Member</span>
               )}
@@ -188,7 +205,7 @@ function App() {
         {/* Content */}
         <div style={s.content}>
           {!activeTab && (
-            <LandingSection onGetStarted={() => go('chat')} onOpenVideoPublisher={() => go('video-publisher')} />
+            <LandingSection onGetStarted={() => go('chat')} />
           )}
           {activeTab === 'image-generator'  && <MemberGate featureName="Image Generator"><ImageGenerator /></MemberGate>}
           {activeTab === 'chat'             && <AskAIGate  featureName="Ask AI"><ChatComponent /></AskAIGate>}
@@ -197,8 +214,9 @@ function App() {
           {activeTab === 'transcription'    && <MemberGate featureName="EchoScribe"><Transcription /></MemberGate>}
           {activeTab === 'Content'          && <MemberGate featureName="Reply Enchanter"><Content /></MemberGate>}
           {activeTab === 'Resume'           && <MemberGate featureName="Resume Worlock"><Resume /></MemberGate>}
-          {activeTab === 'video-publisher'  && <MemberGate featureName="Video Publisher"><VideoPublisher /></MemberGate>}
           {activeTab === 'account'          && <AskAIGate  featureName="Account"><AccountSettings /></AskAIGate>}
+          {activeTab === 'video-publisher'  && <MemberGate featureName="Video Publisher"><VideoPublisher onNavigateToSocialConnect={() => go('social-connect')} /></MemberGate>}
+          {activeTab === 'social-connect'   && <MemberGate featureName="Connected Accounts"><SocialConnect /></MemberGate>}
         </div>
       </div>
 
@@ -265,11 +283,11 @@ const s = {
 
   /* Sidebar */
   sidebar: {
-    width: '224px', minWidth: '224px', height: '100vh',
+    width: '224px', minWidth: '224px', maxWidth: '280px', height: '100vh',
     background: '#1a2547',
     borderRight: '1px solid rgba(0,0,0,0.12)',
     display: 'flex', flexDirection: 'column',
-    transition: 'width 0.2s, min-width 0.2s',
+    transition: 'width 0.25s ease, min-width 0.25s ease',
     flexShrink: 0, overflow: 'hidden',
   },
   sidebarCollapsed: { width: '60px', minWidth: '60px' },
@@ -320,7 +338,8 @@ const s = {
   /* Main */
   main: {
     flex: 1, display: 'flex', flexDirection: 'column',
-    overflow: 'hidden', background: '#f1f5f9',
+    overflow: 'hidden', background: '#f0f4f8',
+    minWidth: 0,
   },
 
   /* Top Bar */
@@ -329,41 +348,21 @@ const s = {
     background: '#ffffff',
     borderBottom: '1px solid #e2e8f0',
     display: 'flex', alignItems: 'center',
-    padding: '0 20px', gap: '14px',
+    padding: '0 12px 0 16px', gap: '10px',
     boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-  },
-  topLeft: {
-    display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0,
-  },
-  topBarLogo: {
-    color: '#1a2547', fontSize: '16px', fontWeight: '800',
-    letterSpacing: '-0.3px',
+    flexWrap: 'wrap', minWidth: 0,
   },
   menuBtn: {
-    background: 'none', border: 'none', color: '#64748b',
+    background: 'none', border: 'none', color: '#94a3b8',
     fontSize: '18px', cursor: 'pointer', padding: '4px 6px',
     borderRadius: '6px', flexShrink: 0, lineHeight: 1,
-  },
-  iconBtn: {
-    background: 'none', border: 'none', cursor: 'pointer',
-    fontSize: '18px', padding: '6px', borderRadius: '8px',
-    color: '#64748b', lineHeight: 1, position: 'relative',
-  },
-  bellWrap: { position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' },
-  redDot: {
-    position: 'absolute', top: '-2px', right: '-2px',
-    width: '8px', height: '8px', borderRadius: '50%',
-    background: '#ef4444', border: '1.5px solid #fff',
-  },
-  avatarBtn: {
-    background: 'none', border: 'none', cursor: 'pointer', padding: 0,
   },
   searchBox: {
     display: 'flex', alignItems: 'center', gap: '8px',
     background: '#f8fafc',
     border: '1px solid #e2e8f0',
     borderRadius: '24px', padding: '8px 16px',
-    flex: 1, maxWidth: '360px',
+    flex: 1, maxWidth: '360px', minWidth: 0,
   },
   searchInput: {
     border: 'none', background: 'transparent',
@@ -413,10 +412,11 @@ const s = {
   /* Page Header */
   pageBar: {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    padding: '20px 28px 0', flexShrink: 0,
+    padding: '16px 0 0', flexShrink: 0,
+    flexWrap: 'wrap', gap: '8px',
   },
   pageTitle: {
-    margin: 0, fontSize: '22px', fontWeight: '800',
+    margin: 0, fontSize: 'clamp(18px, 4vw, 22px)', fontWeight: '800',
     color: '#0f172a', letterSpacing: '-0.4px',
   },
   pageRight: { display: 'flex', alignItems: 'center', gap: '10px' },
@@ -435,6 +435,7 @@ const s = {
   /* Content */
   content: {
     flex: 1, overflowY: 'auto', overflowX: 'hidden',
-    padding: '20px 28px 32px',
+    padding: '16px',
+    minWidth: 0,
   },
 };

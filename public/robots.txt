@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://wintaibot.com/sitemap.xml
+Sitemap: https://www.wintaibot.com/sitemap.xml

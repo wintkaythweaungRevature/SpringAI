@@ -46,7 +46,13 @@ app.cancel-url=https://your-frontend-domain.com
 3. Events: `checkout.session.completed`, `customer.subscription.deleted`
 4. Copy signing secret to `stripe.webhook-secret`
 
-### 4. Run
+### 4. Facebook & Instagram (Video Publisher)
+
+For publishing to Facebook Pages and Instagram Reels, see **[docs/FACEBOOK_API_SETUP.md](../docs/FACEBOOK_API_SETUP.md)**.
+
+Required env vars: `FACEBOOK_APP_ID`, `FACEBOOK_APP_SECRET`, `FACEBOOK_ACCESS_TOKEN`, `INSTAGRAM_BUSINESS_ACCOUNT_ID`.
+
+### 5. Run
 
 ```bash
 cd backend

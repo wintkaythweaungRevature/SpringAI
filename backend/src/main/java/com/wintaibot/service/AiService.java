@@ -15,11 +15,42 @@ import java.util.*;
 @Service
 public class AiService {
 
-    @Value("${openai.api-key}")
+    @Value("${openai.api-key:}")
     private String openAiApiKey;
 
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    public String askAi(String prompt) throws Exception {
+        if (prompt == null || prompt.isBlank()) {
+            return "Please enter a question.";
+        }
+        if (openAiApiKey == null || openAiApiKey.isBlank()) {
+            throw new RuntimeException("OpenAI API key not configured. Set OPENAI_API_KEY.");
+        }
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(openAiApiKey);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("model", "gpt-4o");
+        body.put("messages", List.of(
+                Map.of("role", "system", "content", "You are a helpful AI assistant. Be concise and helpful."),
+                Map.of("role", "user", "content", prompt)
+        ));
+
+        HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
+        ResponseEntity<Map> response = restTemplate.postForEntity(
+                "https://api.openai.com/v1/chat/completions", request, Map.class);
+
+        if (!response.getStatusCode().is2xxSuccessful()) {
+            throw new RuntimeException("OpenAI API error: " + response.getStatusCode());
+        }
+
+        List<Map<String, Object>> choices = (List<Map<String, Object>>) response.getBody().get("choices");
+        Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
+        return (String) message.get("content");
+    }
 
     public Map<String, Object> prepareInterview(MultipartFile file, String jd) throws Exception {
         String resumeText = extractPdfText(file);

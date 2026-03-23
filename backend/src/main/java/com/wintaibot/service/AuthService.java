@@ -4,7 +4,6 @@ import com.wintaibot.dto.LoginRequest;
 import com.wintaibot.dto.LoginResponse;
 import com.wintaibot.dto.MeResponse;
 import com.wintaibot.dto.RegisterRequest;
-import com.wintaibot.dto.RegisterResult;
 import com.wintaibot.entity.User;
 import com.wintaibot.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,7 +11,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
-import java.time.Instant;
 import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
@@ -37,17 +35,9 @@ public class AuthService {
     }
 
     public LoginResponse login(LoginRequest req) {
-        String identifier = (req.getIdentifier() != null) ? req.getIdentifier().trim().toLowerCase() : "";
-        Optional<User> userOpt;
-        if (identifier.contains("@")) {
-            userOpt = userRepository.findByEmailIgnoreCase(identifier);
-        } else {
-            userOpt = userRepository.findByUsernameIgnoreCase(identifier);
-            if (userOpt.isEmpty()) {
-                userOpt = userRepository.findByEmailIgnoreCase(identifier);
-            }
-        }
-        User user = userOpt.orElseThrow(() -> new RuntimeException("Invalid email/username or password"));
+        String email = (req.getEmail() != null) ? req.getEmail().trim().toLowerCase() : "";
+        Optional<User> userOpt = userRepository.findByEmailIgnoreCase(email);
+        User user = userOpt.orElseThrow(() -> new RuntimeException("Invalid email or password"));
 
         if (user.isDeactivated()) {
             throw new RuntimeException("Account has been deactivated");
@@ -76,7 +66,7 @@ public class AuthService {
         );
     }
 
-    public RegisterResult register(RegisterRequest req) {
+    public LoginResponse register(RegisterRequest req) {
         if (userRepository.existsByEmail(req.getEmail())) {
             throw new RuntimeException("Email already registered");
         }
@@ -91,21 +81,6 @@ public class AuthService {
         user.setEmailVerified(false);
         user.setEmailVerificationToken(generateToken());
 
-        // Username: use provided if valid and unique, else auto-generate from email
-        String username = (req.getUsername() != null && !req.getUsername().isBlank())
-                ? req.getUsername().trim().toLowerCase().replaceAll("[^a-z0-9_]", "")
-                : "";
-        if (username.isEmpty()) {
-            String base = req.getEmail().split("@")[0].toLowerCase().replaceAll("[^a-z0-9_]", "");
-            username = base.isEmpty() ? "user" : base;
-        }
-        int suffix = 1;
-        String finalUsername = username;
-        while (userRepository.existsByUsername(username)) {
-            username = finalUsername + suffix++;
-        }
-        user.setUsername(username);
-
         userRepository.save(user);
 
         if (emailService != null) {
@@ -116,14 +91,14 @@ public class AuthService {
             }
         }
 
-        // AuthResponse: token=null when verification required
-        return new RegisterResult(
-                null,
+        String token = jwtService.generateToken(user.getId(), user.getEmail());
+        return new LoginResponse(
+                token,
                 user.getEmail(),
                 user.getMembershipType().name(),
                 user.getId(),
-                false,
-                "Registration successful. Please check your email to verify your account.");
+                user.isEmailVerified()
+        );
     }
 
     public void verifyEmail(String token) {
@@ -133,21 +108,6 @@ public class AuthService {
         user.setEmailVerified(true);
         user.setEmailVerificationToken(null);
         userRepository.save(user);
-    }
-
-    public void resendVerificationEmail(String email) {
-        String emailNorm = (email != null) ? email.trim().toLowerCase() : "";
-        Optional<User> userOpt = userRepository.findByEmailIgnoreCase(emailNorm);
-        if (userOpt.isEmpty()) return; // Don't reveal—always return success
-        User user = userOpt.get();
-        if (user.isEmailVerified()) return; // Already verified—don't reveal
-        user.setEmailVerificationToken(generateToken());
-        userRepository.save(user);
-        if (emailService != null) {
-            try {
-                emailService.sendVerificationEmail(user.getEmail(), user.getEmailVerificationToken());
-            } catch (Exception ignored) {}
-        }
     }
 
     public Optional<MeResponse> getMe(Long userId) {
@@ -195,40 +155,6 @@ public class AuthService {
                 user.getId(),
                 user.isEmailVerified()
         );
-    }
-
-    public void forgotPassword(String email) {
-        Optional<User> userOpt = userRepository.findByEmailIgnoreCase(email.trim().toLowerCase());
-        if (userOpt.isEmpty()) return; // Don't reveal whether email exists
-        User user = userOpt.get();
-        String token = generateToken();
-        user.setPasswordResetToken(token);
-        user.setPasswordResetTokenExpiry(Instant.now().plusSeconds(3600)); // 1 hour
-        userRepository.save(user);
-        if (emailService != null) {
-            try { emailService.sendPasswordResetEmail(user.getEmail(), token); } catch (Exception ignored) {}
-        }
-    }
-
-    public void resetPassword(String token, String newPassword) {
-        User user = userRepository.findByPasswordResetToken(token)
-                .orElseThrow(() -> new RuntimeException("Invalid or expired reset token"));
-        if (user.getPasswordResetTokenExpiry() == null || Instant.now().isAfter(user.getPasswordResetTokenExpiry())) {
-            throw new RuntimeException("Reset token has expired");
-        }
-        user.setPasswordHash(passwordEncoder.encode(newPassword));
-        user.setPasswordResetToken(null);
-        user.setPasswordResetTokenExpiry(null);
-        userRepository.save(user);
-    }
-
-    public void forgotUsername(String email) {
-        Optional<User> userOpt = userRepository.findByEmailIgnoreCase(email.trim().toLowerCase());
-        if (userOpt.isEmpty()) return; // Don't reveal whether email exists
-        User user = userOpt.get();
-        if (emailService != null && user.getUsername() != null) {
-            try { emailService.sendUsernameReminderEmail(user.getEmail(), user.getUsername()); } catch (Exception ignored) {}
-        }
     }
 
     /** Admin: get all users. */

@@ -7,15 +7,17 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Social platform connect/status/disconnect endpoints for Video Publisher.
- * OAuth integration is stubbed; implement real OAuth flow for production.
+ * Facebook/Instagram: real OAuth flow. Other platforms: stubbed.
  */
 @RestController
 @RequestMapping("/api/social")
@@ -24,14 +26,32 @@ public class SocialController {
     @Value("${app.base-url:http://localhost:3000}")
     private String appBaseUrl;
 
+    @Value("${app.api-base-url:}")
+    private String appApiBaseUrl;
+
     @Value("${linkedin.client-id:}")
     private String linkedinClientId;
 
     @Value("${linkedin.scope:openid profile email w_member_social}")
     private String linkedinScope;
 
-    // In-memory stub: userId -> Set of connected platform IDs. Replace with DB in production.
-    private static final Map<Long, Set<String>> CONNECTED = new HashMap<>();
+    @Value("${facebook.app-id:}")
+    private String facebookAppId;
+
+    @Value("${facebook.app-secret:}")
+    private String facebookAppSecret;
+
+    @Value("${facebook.verify-token:}")
+    private String facebookVerifyToken;
+
+    private final RestTemplate restTemplate = new RestTemplate();
+
+    // In-memory: userId -> Set of connected platform IDs
+    private static final Map<Long, Set<String>> CONNECTED = new ConcurrentHashMap<>();
+    // In-memory: userId -> platform -> access token (for publishing)
+    private static final Map<Long, Map<String, String>> TOKENS = new ConcurrentHashMap<>();
+    // state (from OAuth) -> userId, expires after 10 min
+    private static final Map<String, Long> STATE_TO_USER = new ConcurrentHashMap<>();
 
     @GetMapping("/status")
     public ResponseEntity<Map<String, Object>> status(Authentication auth) {
@@ -56,12 +76,35 @@ public class SocialController {
             return ResponseEntity.badRequest().body(Map.of("error", "Unknown platform: " + platform));
         }
         Long userId = (Long) auth.getPrincipal();
-        CONNECTED.computeIfAbsent(userId, k -> new HashSet<>()).add(pid);
-
-        String baseUrl = request.getRequestURL().toString().replace(request.getRequestURI(), "");
+        String baseUrl = (appApiBaseUrl != null && !appApiBaseUrl.isBlank())
+                ? appApiBaseUrl.replaceAll("/$", "")
+                : request.getRequestURL().toString().replace(request.getRequestURI(), "");
         String callbackUrl = baseUrl + "/api/social/callback/" + pid;
 
-        // LinkedIn: build real OAuth URL with client_id
+        // Facebook & Instagram: real OAuth URL
+        if ("facebook".equals(pid) || "instagram".equals(pid)) {
+            if (facebookAppId == null || facebookAppId.isBlank()) {
+                return ResponseEntity.status(500).body(Map.of(
+                    "error", "Facebook OAuth not configured. Set facebook.app-id and facebook.app-secret."
+                ));
+            }
+            try {
+                String state = "fb_" + UUID.randomUUID().toString();
+                STATE_TO_USER.put(state, userId);
+                String scope = "pages_show_list,pages_manage_posts,publish_video,instagram_basic,instagram_content_publish";
+                String authUrl = "https://www.facebook.com/v21.0/dialog/oauth"
+                    + "?client_id=" + URLEncoder.encode(facebookAppId, StandardCharsets.UTF_8)
+                    + "&redirect_uri=" + URLEncoder.encode(callbackUrl, StandardCharsets.UTF_8)
+                    + "&state=" + URLEncoder.encode(state, StandardCharsets.UTF_8)
+                    + "&scope=" + URLEncoder.encode(scope, StandardCharsets.UTF_8)
+                    + "&response_type=code";
+                return ResponseEntity.ok(Map.of("url", authUrl));
+            } catch (Exception e) {
+                return ResponseEntity.status(500).body(Map.of("error", "Failed to build Facebook OAuth URL: " + e.getMessage()));
+            }
+        }
+
+        // LinkedIn: build real OAuth URL
         if ("linkedin".equals(pid)) {
             if (linkedinClientId == null || linkedinClientId.isBlank()) {
                 return ResponseEntity.status(500).body(Map.of(
@@ -82,34 +125,109 @@ public class SocialController {
             }
         }
 
-        // Other platforms: return callback URL (stub; configure real OAuth per platform)
+        // Other platforms: stub
+        CONNECTED.computeIfAbsent(userId, k -> new HashSet<>()).add(pid);
         return ResponseEntity.ok(Map.of("url", callbackUrl));
     }
 
     /**
-     * OAuth callback: TikTok, Instagram, etc. redirect here after user approves.
-     * URL pattern: /api/social/callback/{platform} (e.g. /api/social/callback/tiktok, /api/social/callback/instagram)
+     * OAuth callback: Facebook, LinkedIn, etc. redirect here after user approves.
      */
     @GetMapping("/callback/{platform}")
     public ResponseEntity<?> callback(
             @PathVariable String platform,
             @RequestParam(required = false) String code,
             @RequestParam(required = false) String state,
-            @RequestParam(required = false) String error) {
+            @RequestParam(required = false) String error,
+            @RequestParam(name = "hub.mode", required = false) String hubMode,
+            @RequestParam(name = "hub.verify_token", required = false) String hubVerifyToken,
+            @RequestParam(name = "hub.challenge", required = false) String hubChallenge,
+            HttpServletRequest request) {
         String pid = normalizePlatform(platform);
         if (pid == null) {
             return ResponseEntity.badRequest().body(Map.of("error", "Unknown platform: " + platform));
         }
+
+        // Meta webhook verification (GET with hub.mode=subscribe)
+        if ("subscribe".equals(hubMode) && hubChallenge != null) {
+            if (facebookVerifyToken != null && !facebookVerifyToken.isBlank()
+                    && facebookVerifyToken.equals(hubVerifyToken)) {
+                return ResponseEntity.ok(hubChallenge);
+            }
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
         if (error != null) {
-            // OAuth error (user denied, etc.) - redirect to app with error
             String redirectUrl = appBaseUrl + "?social_connect=error&platform=" + pid + "&error=" + error;
             return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(redirectUrl)).build();
         }
-        // TODO: Exchange code for token, store per user (state can carry userId/session), then redirect
+
+        // Facebook & Instagram: exchange code for token
+        if (("facebook".equals(pid) || "instagram".equals(pid)) && code != null && !code.isBlank()) {
+            if (facebookAppId == null || facebookAppSecret == null || facebookAppId.isBlank() || facebookAppSecret.isBlank()) {
+                String redirectUrl = appBaseUrl + "?social_connect=error&platform=" + pid + "&error=Facebook+not+configured";
+                return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(redirectUrl)).build();
+            }
+            Long userId = null;
+            if (state != null && state.startsWith("fb_")) {
+                userId = STATE_TO_USER.remove(state);
+            }
+            if (userId == null) {
+                String redirectUrl = appBaseUrl + "?social_connect=error&platform=" + pid + "&error=Invalid+state";
+                return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(redirectUrl)).build();
+            }
+            String callbackUrl = (appApiBaseUrl != null && !appApiBaseUrl.isBlank())
+                    ? (appApiBaseUrl.replaceAll("/$", "") + "/api/social/callback/" + pid)
+                    : request.getRequestURL().toString();
+            try {
+                String tokenUrl = "https://graph.facebook.com/v21.0/oauth/access_token"
+                    + "?client_id=" + URLEncoder.encode(facebookAppId, StandardCharsets.UTF_8)
+                    + "&redirect_uri=" + URLEncoder.encode(callbackUrl, StandardCharsets.UTF_8)
+                    + "&client_secret=" + URLEncoder.encode(facebookAppSecret, StandardCharsets.UTF_8)
+                    + "&code=" + URLEncoder.encode(code, StandardCharsets.UTF_8);
+                Map<?, ?> tokenRes = restTemplate.getForObject(tokenUrl, Map.class);
+                if (tokenRes == null || !tokenRes.containsKey("access_token")) {
+                    String err = tokenRes != null && tokenRes.containsKey("error") ? String.valueOf(tokenRes.get("error")) : "No token";
+                    String redirectUrl = appBaseUrl + "?social_connect=error&platform=" + pid + "&error=" + URLEncoder.encode(String.valueOf(err), StandardCharsets.UTF_8);
+                    return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(redirectUrl)).build();
+                }
+                String accessToken = (String) tokenRes.get("access_token");
+                // Exchange for long-lived token
+                String longLivedUrl = "https://graph.facebook.com/v21.0/oauth/access_token"
+                    + "?grant_type=fb_exchange_token"
+                    + "&client_id=" + URLEncoder.encode(facebookAppId, StandardCharsets.UTF_8)
+                    + "&client_secret=" + URLEncoder.encode(facebookAppSecret, StandardCharsets.UTF_8)
+                    + "&fb_exchange_token=" + URLEncoder.encode(accessToken, StandardCharsets.UTF_8);
+                Map<?, ?> longLivedRes = restTemplate.getForObject(longLivedUrl, Map.class);
+                if (longLivedRes != null && longLivedRes.containsKey("access_token")) {
+                    accessToken = (String) longLivedRes.get("access_token");
+                }
+                // Get Page token for publishing (same token works for Facebook Page + Instagram)
+                String accountsUrl = "https://graph.facebook.com/v21.0/me/accounts?fields=id,name,access_token,instagram_business_account&access_token=" + URLEncoder.encode(accessToken, StandardCharsets.UTF_8);
+                Map<?, ?> accountsRes = restTemplate.getForObject(accountsUrl, Map.class);
+                String pageToken = accessToken;
+                if (accountsRes != null && accountsRes.containsKey("data")) {
+                    List<?> data = (List<?>) accountsRes.get("data");
+                    if (data != null && !data.isEmpty()) {
+                        Map<?, ?> firstPage = (Map<?, ?>) data.get(0);
+                        if (firstPage != null && firstPage.containsKey("access_token")) {
+                            pageToken = (String) firstPage.get("access_token");
+                        }
+                    }
+                }
+                TOKENS.computeIfAbsent(userId, k -> new ConcurrentHashMap<>()).put("facebook", pageToken);
+                TOKENS.get(userId).put("instagram", pageToken);
+                CONNECTED.computeIfAbsent(userId, k -> new HashSet<>()).add("facebook");
+                CONNECTED.get(userId).add("instagram");
+            } catch (Exception e) {
+                String errMsg = e.getMessage() != null ? e.getMessage() : "Token exchange failed";
+                String redirectUrl = appBaseUrl + "?social_connect=error&platform=" + pid + "&error=" + URLEncoder.encode(errMsg, StandardCharsets.UTF_8);
+                return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(redirectUrl)).build();
+            }
+        }
+
         String redirectUrl = appBaseUrl + "?social_connect=success&platform=" + pid;
-        HttpHeaders headers = new HttpHeaders();
-        headers.setLocation(URI.create(redirectUrl));
-        return new ResponseEntity<>(headers, HttpStatus.FOUND);
+        return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(redirectUrl)).build();
     }
 
     @GetMapping("/oauth-placeholder")

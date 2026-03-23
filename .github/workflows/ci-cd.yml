@@ -78,15 +78,16 @@ jobs:
           username: root
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
+            set -e
             docker pull ${{ secrets.DOCKER_USERNAME }}/spring-ai-react:latest
             docker pull ${{ secrets.DOCKER_USERNAME }}/spring-ai-backend:latest
-
-            docker stop spring-ai-react 2>/dev/null; docker rm spring-ai-react 2>/dev/null
-            docker run -d -p 80:80 --name spring-ai-react --restart always \
-              ${{ secrets.DOCKER_USERNAME }}/spring-ai-react:latest
-
-            docker stop spring-ai-backend 2>/dev/null; docker rm spring-ai-backend 2>/dev/null
-            docker run -d -p 8080:8080 --name spring-ai-backend --restart always \
-              -v /root/certs:/app/certs \
-              --env-file /root/backend.env \
-              ${{ secrets.DOCKER_USERNAME }}/spring-ai-backend:latest
+            docker stop spring-ai-react 2>/dev/null || true
+            docker rm spring-ai-react 2>/dev/null || true
+            docker run -d -p 80:80 --name spring-ai-react --restart always ${{ secrets.DOCKER_USERNAME }}/spring-ai-react:latest
+            docker stop spring-ai-backend 2>/dev/null || true
+            docker rm spring-ai-backend 2>/dev/null || true
+            if [ -f /root/backend.env ]; then
+              docker run -d -p 8080:8080 --name spring-ai-backend --restart always -v /root/certs:/app/certs --env-file /root/backend.env ${{ secrets.DOCKER_USERNAME }}/spring-ai-backend:latest
+            else
+              docker run -d -p 8080:8080 --name spring-ai-backend --restart always ${{ secrets.DOCKER_USERNAME }}/spring-ai-backend:latest
+            fi

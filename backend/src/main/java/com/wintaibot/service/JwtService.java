@@ -47,8 +47,21 @@ public class JwtService {
                 .getPayload();
     }
 
+    /**
+     * Extracts userId from token. Supports both formats:
+     * - sub=userId (Wintaibot native)
+     * - sub=email + userId claim (e.g. SpringAIDemo / other issuers)
+     */
     public Long getUserIdFromToken(String token) {
-        return Long.parseLong(parseToken(token).getSubject());
+        Claims claims = parseToken(token);
+        Object userIdObj = claims.get("userId");
+        if (userIdObj != null) {
+            if (userIdObj instanceof Number) {
+                return ((Number) userIdObj).longValue();
+            }
+            return Long.parseLong(String.valueOf(userIdObj));
+        }
+        return Long.parseLong(claims.getSubject());
     }
 
     public boolean isValid(String token) {

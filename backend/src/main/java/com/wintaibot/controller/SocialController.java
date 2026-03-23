@@ -1,11 +1,15 @@
 package com.wintaibot.controller;
 
+import com.wintaibot.entity.SocialToken;
+import com.wintaibot.repository.SocialTokenRepository;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
@@ -47,13 +51,12 @@ public class SocialController {
     @Value("${facebook.access-token:}")
     private String facebookAccessToken;
 
+    @Autowired
+    private SocialTokenRepository socialTokenRepository;
+
     private final RestTemplate restTemplate = new RestTemplate();
 
-    // In-memory: userId -> Set of connected platform IDs
-    private static final Map<Long, Set<String>> CONNECTED = new ConcurrentHashMap<>();
-    // In-memory: userId -> platform -> access token (for publishing)
-    private static final Map<Long, Map<String, String>> TOKENS = new ConcurrentHashMap<>();
-    // state (from OAuth) -> userId, expires after 10 min
+    // state (from OAuth) -> userId, short-lived so in-memory is fine
     private static final Map<String, Long> STATE_TO_USER = new ConcurrentHashMap<>();
 
     @GetMapping("/status")
@@ -62,10 +65,12 @@ public class SocialController {
             return ResponseEntity.status(401).build();
         }
         Long userId = (Long) auth.getPrincipal();
-        Set<String> platforms = CONNECTED.getOrDefault(userId, Collections.emptySet());
-        return ResponseEntity.ok(Map.of("connected", new ArrayList<>(platforms)));
+        List<String> platforms = socialTokenRepository.findByUserId(userId)
+                .stream().map(SocialToken::getPlatform).toList();
+        return ResponseEntity.ok(Map.of("connected", platforms));
     }
 
+    @Transactional
     @GetMapping("/connect/{platform}")
     public ResponseEntity<Map<String, String>> connect(
             @PathVariable String platform,
@@ -126,14 +131,15 @@ public class SocialController {
             }
         }
 
-        // Other platforms: stub
-        CONNECTED.computeIfAbsent(userId, k -> new HashSet<>()).add(pid);
+        // Other platforms: stub — mark as connected with empty token
+        saveToken(userId, pid, "stub");
         return ResponseEntity.ok(Map.of("url", callbackUrl));
     }
 
     /**
      * OAuth callback: Facebook, LinkedIn, etc. redirect here after user approves.
      */
+    @Transactional
     @GetMapping("/callback/{platform}")
     public ResponseEntity<?> callback(
             @PathVariable String platform,
@@ -214,10 +220,8 @@ public class SocialController {
                         }
                     }
                 }
-                TOKENS.computeIfAbsent(userId, k -> new ConcurrentHashMap<>()).put("facebook", pageToken);
-                TOKENS.get(userId).put("instagram", pageToken);
-                CONNECTED.computeIfAbsent(userId, k -> new HashSet<>()).add("facebook");
-                CONNECTED.get(userId).add("instagram");
+                saveToken(userId, "facebook", pageToken);
+                saveToken(userId, "instagram", pageToken);
             } catch (Exception e) {
                 String errMsg = e.getMessage() != null ? e.getMessage() : "Token exchange failed";
                 String redirectUrl = appBaseUrl + "?social_connect=error&platform=" + pid + "&error=" + URLEncoder.encode(errMsg, StandardCharsets.UTF_8);
@@ -255,6 +259,7 @@ public class SocialController {
         return ResponseEntity.ok(html);
     }
 
+    @Transactional
     @DeleteMapping("/disconnect/{platform}")
     public ResponseEntity<?> disconnect(
             @PathVariable String platform,
@@ -264,24 +269,31 @@ public class SocialController {
         }
         String pid = normalizePlatform(platform);
         Long userId = (Long) auth.getPrincipal();
-        Set<String> set = CONNECTED.get(userId);
-        if (set != null) {
-            set.remove(pid);
-        }
+        socialTokenRepository.deleteByUserIdAndPlatform(userId, pid);
         return ResponseEntity.ok().build();
     }
 
     /**
      * Returns the access token for publishing to the given platform.
-     * For Facebook/Instagram: checks user's stored token first, then FACEBOOK_ACCESS_TOKEN env fallback.
+     * For Facebook/Instagram: checks DB first, then FACEBOOK_ACCESS_TOKEN env fallback.
      */
     public String getPublishToken(Long userId, String platform) {
-        Map<String, String> userTokens = TOKENS.get(userId);
-        String token = userTokens != null ? userTokens.get(platform) : null;
-        if ((token == null || token.isBlank()) && ("facebook".equals(platform) || "instagram".equals(platform))) {
+        String token = socialTokenRepository.findByUserIdAndPlatform(userId, platform)
+                .map(SocialToken::getAccessToken)
+                .filter(t -> !t.isBlank() && !"stub".equals(t))
+                .orElse(null);
+        if (token == null && ("facebook".equals(platform) || "instagram".equals(platform))) {
             token = (facebookAccessToken != null && !facebookAccessToken.isBlank()) ? facebookAccessToken : null;
         }
         return token;
+    }
+
+    private void saveToken(Long userId, String platform, String accessToken) {
+        SocialToken st = socialTokenRepository.findByUserIdAndPlatform(userId, platform)
+                .orElseGet(() -> new SocialToken(userId, platform, accessToken));
+        st.setAccessToken(accessToken);
+        st.setConnectedAt(java.time.Instant.now());
+        socialTokenRepository.save(st);
     }
 
     /** Ensures OAuth callback URL is absolute (RFC 3986). Fallback to production when empty. */

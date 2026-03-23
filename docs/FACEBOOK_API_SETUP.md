@@ -21,23 +21,13 @@ This guide explains how to set up the **Meta (Facebook) Graph API** for publishi
 
 ---
 
-## 3. Configure Facebook Login (required for Connect to work)
+## 3. Configure Facebook Login
 
-1. Go to [developers.facebook.com](https://developers.facebook.com) → your app → **Facebook Login** → **Settings**.
-2. Under **Valid OAuth Redirect URIs**, add these **exact** URLs (one per line):
-   ```
-   https://api.wintaibot.com/api/social/callback/facebook
-   https://api.wintaibot.com/api/social/callback/instagram
-   http://localhost:8080/api/social/callback/facebook
-   http://localhost:8080/api/social/callback/instagram
-   ```
-3. Under **Client OAuth Settings**, enable:
-   - **Client OAuth Login**: ON
-   - **Web OAuth Login**: ON
-4. Under **Settings** → **Basic**, add to **App Domains**:
-   - `wintaibot.com`
-   - `api.wintaibot.com`
-5. **Save Changes**.
+1. Go to **Facebook Login** → **Settings**.
+2. Add **Valid OAuth Redirect URIs**:
+   - Local: `http://localhost:8080/api/social/callback/facebook`
+   - Production: `https://api.wintaibot.com/api/social/callback/facebook`
+3. Enable **Client OAuth Login** and **Web OAuth Login**.
 
 ---
 
@@ -70,14 +60,6 @@ In **App Review** → **Permissions and Features**, request:
 Add to your backend `.env` or `backend.env` (on EC2):
 
 ```bash
-# Backend API base URL - full absolute URL for OAuth callback (RFC 3986).
-# Local:  APP_API_BASE_URL=http://localhost:8080
-# Prod:   APP_API_BASE_URL=https://api.wintaibot.com
-APP_API_BASE_URL=https://api.wintaibot.com
-
-# Frontend URL - where users land after OAuth (MUST be production in prod, not localhost).
-APP_FRONTEND_URL=https://wintaibot.com
-
 # Facebook App (from Meta Developer Console)
 FACEBOOK_APP_ID=your_app_id
 FACEBOOK_APP_SECRET=your_app_secret
@@ -146,7 +128,6 @@ Set `FACEBOOK_VERIFY_TOKEN` in backend.env to **exactly** match the verify token
 
 | Error | Fix |
 |-------|-----|
-| **URL Blocked** / **redirect URI not whitelisted** | Add `https://api.wintaibot.com/api/social/callback/facebook` and `https://api.wintaibot.com/api/social/callback/instagram` to **Valid OAuth Redirect URIs** in Facebook Login → Settings. Enable Client OAuth Login and Web OAuth Login. Add `api.wintaibot.com` to App Domains. |
 | **Token expired** | Reconnect in Connected Accounts; get a new long-lived token. |
 | **No Facebook pages found** | User must create a Facebook Page at [facebook.com/pages](https://www.facebook.com/pages) and connect it. |
 | **Instagram requires Business account** | Convert Instagram to Business/Creator and link to a Facebook Page. |

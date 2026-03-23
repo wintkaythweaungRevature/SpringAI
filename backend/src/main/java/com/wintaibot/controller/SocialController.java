@@ -79,9 +79,7 @@ public class SocialController {
             return ResponseEntity.badRequest().body(Map.of("error", "Unknown platform: " + platform));
         }
         Long userId = (Long) auth.getPrincipal();
-        String baseUrl = (appApiBaseUrl != null && !appApiBaseUrl.isBlank())
-                ? appApiBaseUrl.replaceAll("/$", "")
-                : request.getRequestURL().toString().replace(request.getRequestURI(), "");
+        String baseUrl = buildAbsoluteApiBaseUrl(request);
         String callbackUrl = baseUrl + "/api/social/callback/" + pid;
 
         // Facebook & Instagram: real OAuth URL
@@ -179,9 +177,7 @@ public class SocialController {
                 String redirectUrl = appBaseUrl + "?social_connect=error&platform=" + pid + "&error=Invalid+state";
                 return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(redirectUrl)).build();
             }
-            String callbackUrl = (appApiBaseUrl != null && !appApiBaseUrl.isBlank())
-                    ? (appApiBaseUrl.replaceAll("/$", "") + "/api/social/callback/" + pid)
-                    : request.getRequestURL().toString();
+            String callbackUrl = buildAbsoluteApiBaseUrl(request) + "/api/social/callback/" + pid;
             try {
                 String tokenUrl = "https://graph.facebook.com/v21.0/oauth/access_token"
                     + "?client_id=" + URLEncoder.encode(facebookAppId, StandardCharsets.UTF_8)
@@ -286,6 +282,20 @@ public class SocialController {
             token = (facebookAccessToken != null && !facebookAccessToken.isBlank()) ? facebookAccessToken : null;
         }
         return token;
+    }
+
+    /** Ensures OAuth callback URL is absolute (RFC 3986). Fallback to production when empty. */
+    private String buildAbsoluteApiBaseUrl(HttpServletRequest request) {
+        String base = (appApiBaseUrl != null && !appApiBaseUrl.isBlank())
+                ? appApiBaseUrl.replaceAll("/$", "")
+                : request.getRequestURL().toString().replace(request.getRequestURI(), "");
+        if (base == null || base.isBlank()) {
+            return "https://api.wintaibot.com";
+        }
+        if (!base.startsWith("http://") && !base.startsWith("https://")) {
+            base = "https://" + base;
+        }
+        return base;
     }
 
     private static String normalizePlatform(String platform) {

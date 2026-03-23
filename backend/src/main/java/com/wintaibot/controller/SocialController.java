@@ -44,6 +44,9 @@ public class SocialController {
     @Value("${facebook.verify-token:}")
     private String facebookVerifyToken;
 
+    @Value("${facebook.access-token:}")
+    private String facebookAccessToken;
+
     private final RestTemplate restTemplate = new RestTemplate();
 
     // In-memory: userId -> Set of connected platform IDs
@@ -270,6 +273,19 @@ public class SocialController {
             set.remove(pid);
         }
         return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Returns the access token for publishing to the given platform.
+     * For Facebook/Instagram: checks user's stored token first, then FACEBOOK_ACCESS_TOKEN env fallback.
+     */
+    public String getPublishToken(Long userId, String platform) {
+        Map<String, String> userTokens = TOKENS.get(userId);
+        String token = userTokens != null ? userTokens.get(platform) : null;
+        if ((token == null || token.isBlank()) && ("facebook".equals(platform) || "instagram".equals(platform))) {
+            token = (facebookAccessToken != null && !facebookAccessToken.isBlank()) ? facebookAccessToken : null;
+        }
+        return token;
     }
 
     private static String normalizePlatform(String platform) {

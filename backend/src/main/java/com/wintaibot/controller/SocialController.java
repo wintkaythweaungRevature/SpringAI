@@ -26,7 +26,7 @@ public class SocialController {
     @Value("${app.frontend-url:https://wintaibot.com}")
     private String appBaseUrl;
 
-    @Value("${app.api-base-url:}")
+    @Value("${app.api-base-url:https://api.wintaibot.com}")
     private String appApiBaseUrl;
 
     @Value("${linkedin.client-id:}")
@@ -56,6 +56,33 @@ public class SocialController {
     // state (from OAuth) -> userId, expires after 10 min
     private static final Map<String, Long> STATE_TO_USER = new ConcurrentHashMap<>();
 
+    /**
+     * Builds absolute API base URL for OAuth callback. Uses APP_API_BASE_URL when set.
+     * For localhost requests, builds from the request so local dev works without config.
+     */
+    private String buildApiBaseUrl(HttpServletRequest request) {
+        String configured = (appApiBaseUrl != null && !appApiBaseUrl.isBlank())
+                ? appApiBaseUrl.replaceAll("/$", "")
+                : null;
+        if (configured != null && (configured.startsWith("http://") || configured.startsWith("https://"))) {
+            return configured;
+        }
+        if (configured != null && !configured.startsWith("http")) {
+            return (configured.contains("localhost") || configured.startsWith("127.0.0.1"))
+                    ? "http://" + configured
+                    : "https://" + configured;
+        }
+        String host = request.getHeader("Host");
+        if (host != null && (host.contains("localhost") || host.startsWith("127.0.0.1"))) {
+            String scheme = "http";
+            if ("https".equalsIgnoreCase(request.getHeader("X-Forwarded-Proto"))) {
+                scheme = "https";
+            }
+            return scheme + "://" + host.split(",")[0].trim();
+        }
+        return "https://api.wintaibot.com";
+    }
+
     @GetMapping("/status")
     public ResponseEntity<Map<String, Object>> status(Authentication auth) {
         if (auth == null || !(auth.getPrincipal() instanceof Long)) {
@@ -79,9 +106,7 @@ public class SocialController {
             return ResponseEntity.badRequest().body(Map.of("error", "Unknown platform: " + platform));
         }
         Long userId = (Long) auth.getPrincipal();
-        String baseUrl = (appApiBaseUrl != null && !appApiBaseUrl.isBlank())
-                ? appApiBaseUrl.replaceAll("/$", "")
-                : request.getRequestURL().toString().replace(request.getRequestURI(), "");
+        String baseUrl = buildApiBaseUrl(request);
         String callbackUrl = baseUrl + "/api/social/callback/" + pid;
 
         // Facebook & Instagram: real OAuth URL
@@ -179,9 +204,7 @@ public class SocialController {
                 String redirectUrl = appBaseUrl + "?social_connect=error&platform=" + pid + "&error=Invalid+state";
                 return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(redirectUrl)).build();
             }
-            String callbackUrl = (appApiBaseUrl != null && !appApiBaseUrl.isBlank())
-                    ? (appApiBaseUrl.replaceAll("/$", "") + "/api/social/callback/" + pid)
-                    : request.getRequestURL().toString();
+            String callbackUrl = buildApiBaseUrl(request) + "/api/social/callback/" + pid;
             try {
                 String tokenUrl = "https://graph.facebook.com/v21.0/oauth/access_token"
                     + "?client_id=" + URLEncoder.encode(facebookAppId, StandardCharsets.UTF_8)

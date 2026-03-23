@@ -1,6 +1,8 @@
 package com.wintaibot.security;
 
 import com.wintaibot.service.JwtService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -39,13 +41,15 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             try {
                 if (jwtService.isValid(token)) {
                     Long userId = jwtService.getUserIdFromToken(token);
-                    UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-                            userId, null, Collections.emptyList());
-                    auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(auth);
+                    if (userId != null) {
+                        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
+                                userId, null, Collections.emptyList());
+                        auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                        SecurityContextHolder.getContext().setAuthentication(auth);
+                    }
                 }
             } catch (Exception e) {
-                // Invalid/expired/malformed token: continue without auth instead of failing the request
+                log.debug("JWT validation failed, continuing unauthenticated: {}", e.getMessage());
             }
         }
         filterChain.doFilter(request, response);

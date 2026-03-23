@@ -19,7 +19,7 @@ public class AiController {
         this.aiService = aiService;
     }
 
-    @GetMapping(value = "/ask-ai", produces = MediaType.TEXT_PLAIN_VALUE)
+    @GetMapping(value = "/ask-ai", produces = {MediaType.TEXT_PLAIN_VALUE, MediaType.ALL_VALUE})
     public ResponseEntity<String> askAi(
             @RequestParam String prompt,
             Authentication auth) {

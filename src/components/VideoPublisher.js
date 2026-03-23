@@ -284,6 +284,26 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
     const successPlatforms = [];
     const errors = {};
 
+    for (const pid of approved) {
+      try {
+        const variant = variants[pid];
+        const hashtags = variant.hashtags?.join ? variant.hashtags.join(' ') : (variant.hashtags || '');
+
+        // Use variantId if available (no file re-upload needed)
+        if (variant.variantId) {
+          const res = await fetch(`${base}/api/video-content/publish/${pid}/variant`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ variantId: variant.variantId, caption: variant.caption, hashtags }),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (res.ok) {
+            successPlatforms.push(pid);
+          } else if (data.requiresConnect) {
+            errors[pid] = `Connect your ${pid} account in Connected Accounts first`;
+          } else {
+            errors[pid] = formatPublishError(pid, data.error || 'Publish failed');
+          }
     for (const pid of toPublish) {
       const variant = variants[pid];
       const scheduledAt = scheduledTimes[pid];
@@ -314,6 +334,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
             } else if (data.requiresConnect) errors[pid] = formatPublishError(pid, data.error || `Connect your ${pid} account first`);
             else errors[pid] = formatPublishError(pid, data.error || 'Publish failed');
           } else {
+            errors[pid] = formatPublishError(pid, data.error || 'Publish failed');
             const formData = new FormData();
             formData.append('file', video);
             formData.append('caption', variant.caption);
@@ -821,6 +842,20 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
 
 /* ─── Error formatter ───────────────────────────────────────── */
 function formatPublishError(platform, rawError) {
+  const s = rawError || '';
+  // Facebook/Instagram OAuth token expired or invalid (code 190)
+  if (s.includes('"code":190') || s.includes('Invalid OAuth access token') || s.includes('Cannot parse access token')) {
+    return `${platform} token expired. Go to Connected Accounts and reconnect ${platform}.`;
+  }
+  // Token permissions insufficient
+  if (s.includes('"code":200') || s.includes('permissions')) {
+    return `${platform} lacks required permissions. Reconnect with all permissions in Connected Accounts.`;
+  }
+  // Rate limited
+  if (s.includes('"code":4') || s.includes('rate limit') || s.includes('too many')) {
+    return `${platform} rate limit hit. Try again in a few minutes.`;
+  }
+  return s.length > 120 ? s.substring(0, 120) + '…' : s;
   const s = String(rawError || '').toLowerCase();
   const name = platform.charAt(0).toUpperCase() + platform.slice(1);
   if (s.includes('"code":190') || s.includes('invalid oauth') || s.includes('cannot parse access token') || (s.includes('token') && s.includes('expired'))) {

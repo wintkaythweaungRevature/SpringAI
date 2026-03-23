@@ -1,9 +1,11 @@
 package com.wintaibot.controller;
 
+import com.wintaibot.dto.ForgotPasswordRequest;
 import com.wintaibot.dto.LoginRequest;
 import com.wintaibot.dto.LoginResponse;
 import com.wintaibot.dto.MeResponse;
 import com.wintaibot.dto.RegisterRequest;
+import com.wintaibot.dto.ResetPasswordRequest;
 import com.wintaibot.service.AuthService;
 import com.wintaibot.service.JwtService;
 import jakarta.validation.Valid;
@@ -72,6 +74,24 @@ public class AuthController {
         String password = body != null ? body.get("password") : null;
         authService.deactivate(userId, password);
         return ResponseEntity.ok().body(java.util.Map.of("message", "Account deactivated successfully"));
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest req) {
+        authService.forgotPassword(req.getEmail());
+        return ResponseEntity.ok(java.util.Map.of("message", "If that email is registered, a password reset link has been sent."));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest req) {
+        authService.resetPassword(req.getToken(), req.getNewPassword());
+        return ResponseEntity.ok(java.util.Map.of("message", "Password reset successfully. You can now log in."));
+    }
+
+    @PostMapping("/forgot-username")
+    public ResponseEntity<?> forgotUsername(@Valid @RequestBody ForgotPasswordRequest req) {
+        authService.forgotUsername(req.getEmail());
+        return ResponseEntity.ok(java.util.Map.of("message", "If that email is registered, your username has been sent to it."));
     }
 
     @PostMapping("/reactivate")

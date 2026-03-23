@@ -19,7 +19,7 @@ const STEPS = ['upload', 'processing', 'review', 'published', 'analytics'];
 
 /* ─── Component ─────────────────────────────────────────────── */
 export default function VideoPublisher({ onNavigateToSocialConnect }) {
-  const { apiBase, token } = useAuth();
+  const { apiBase, token, logout } = useAuth();
   const base = apiBase || 'https://api.wintaibot.com';
   const isMobile = useMediaQuery('(max-width: 768px)');
 
@@ -38,7 +38,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
   const [connectMessage, setConnectMessage] = useState('');
   const [canSkipProcessing, setCanSkipProcessing] = useState(false);
   const [contentIdea, setContentIdea] = useState(null);
-  const [publishError, setPublishError] = useState(null); // { message, platforms, requiresReconnect }
+  const [publishError, setPublishError] = useState(null); // { message, platforms, requiresReconnect, requiresReLogin }
   const fileRef = useRef();
   const skippedRef = useRef(false);
 
@@ -305,7 +305,9 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
             });
             const data = await res.json().catch(() => ({}));
             if (res.ok) successPlatforms.push(pid);
-            else if (data.requiresConnect) errors[pid] = formatPublishError(pid, data.error || `Connect your ${pid} account first`);
+            else if (res.status === 401 && (data.error === 'Unauthorized' || !data.error)) {
+              errors._sessionExpired = true;
+            } else if (data.requiresConnect) errors[pid] = formatPublishError(pid, data.error || `Connect your ${pid} account first`);
             else errors[pid] = formatPublishError(pid, data.error || 'Publish failed');
           } else {
             const formData = new FormData();
@@ -319,7 +321,9 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
             });
             const data = await res.json().catch(() => ({}));
             if (res.ok) successPlatforms.push(pid);
-            else if (data.requiresConnect) errors[pid] = formatPublishError(pid, data.error || `Connect your ${pid} account first`);
+            else if (res.status === 401 && (data.error === 'Unauthorized' || !data.error)) {
+              errors._sessionExpired = true;
+            } else if (data.requiresConnect) errors[pid] = formatPublishError(pid, data.error || `Connect your ${pid} account first`);
             else errors[pid] = formatPublishError(pid, data.error || 'Publish failed');
           }
         } catch (e) {
@@ -329,11 +333,15 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
     }
 
     if (Object.keys(errors).length > 0) {
-      const errMsg = Object.entries(errors).map(([p, m]) => `${p}: ${m}`).join('\n');
-      const requiresReconnect = Object.values(errors).some(m =>
+      const sessionExpired = !!errors._sessionExpired;
+      const normalErrors = Object.fromEntries(Object.entries(errors).filter(([k]) => k !== '_sessionExpired'));
+      const errMsg = sessionExpired
+        ? 'Your session expired. Log out and log in again, then try publishing.'
+        : Object.entries(normalErrors).map(([p, m]) => `${p}: ${m}`).join('\n');
+      const requiresReconnect = !sessionExpired && Object.values(normalErrors).some(m =>
         /token expired|reconnect|requiresConnect|permissions|no facebook pages|no pages found/i.test(String(m))
       );
-      setPublishError({ message: errMsg, platforms: Object.keys(errors), requiresReconnect });
+      setPublishError({ message: errMsg, platforms: Object.keys(normalErrors), requiresReconnect, requiresReLogin: sessionExpired });
     }
 
     setPublished(successPlatforms);
@@ -355,7 +363,16 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
             <pre style={{ fontSize: '13px', color: '#475569', whiteSpace: 'pre-wrap', margin: '0 0 20px', fontFamily: 'inherit' }}>
               {publishError.message}
             </pre>
-            {publishError.requiresReconnect && onNavigateToSocialConnect && (
+            {publishError.requiresReLogin && logout && (
+              <button
+                type="button"
+                onClick={() => { setPublishError(null); logout(); window.location.href = '/'; }}
+                style={{ ...s.btnPrimary, width: '100%', marginBottom: '10px' }}
+              >
+                Log out & Sign in again →
+              </button>
+            )}
+            {publishError.requiresReconnect && !publishError.requiresReLogin && onNavigateToSocialConnect && (
               <button
                 type="button"
                 onClick={() => { setPublishError(null); onNavigateToSocialConnect(); }}

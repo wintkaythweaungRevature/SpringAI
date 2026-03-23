@@ -127,6 +127,7 @@ if (igToken == null || igToken.isBlank()) {
 |---|------|--------|
 | 1 | JwtService.getUserIdFromToken | Use `userId` claim first, fallback to `sub` |
 | 2 | JwtAuthFilter | Set `Long userId` as principal |
-| 3 | Env vars | FACEBOOK_APP_SECRET, APP_BASE_URL, APP_API_BASE_URL correct |
-| 4 | Controllers | Use `auth.getPrincipal() instanceof Long` and cast to Long |
-| 5 | Publish endpoint | Read token from TOKENS or DB for userId, return 401 + requiresConnect if missing |
+| 3 | JWT_SECRET | **Must match** the secret used by the service that issues tokens (e.g. login). If different, 401 on every request. |
+| 4 | Env vars | FACEBOOK_APP_SECRET, APP_BASE_URL, APP_API_BASE_URL correct |
+| 5 | Controllers | Use `auth.getPrincipal() instanceof Long` and cast to Long |
+| 6 | Publish endpoint | Read token from TOKENS or DB for userId, return 401 + requiresConnect if missing |

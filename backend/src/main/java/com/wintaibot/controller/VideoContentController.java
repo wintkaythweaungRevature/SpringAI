@@ -17,11 +17,6 @@ import java.util.*;
 public class VideoContentController {
 
     private static final java.util.concurrent.atomic.AtomicLong ID_GEN = new java.util.concurrent.atomic.AtomicLong(1);
-    private final SocialController socialController;
-
-    public VideoContentController(SocialController socialController) {
-        this.socialController = socialController;
-    }
 
     @PostMapping("/upload")
     public ResponseEntity<Map<String, Object>> upload(
@@ -61,18 +56,8 @@ public class VideoContentController {
         if (auth == null || !(auth.getPrincipal() instanceof Long)) {
             return ResponseEntity.status(401).build();
         }
-        Long userId = (Long) auth.getPrincipal();
-        String pid = platform != null ? platform.toLowerCase() : "";
-        // Facebook/Instagram: require token (user token or FACEBOOK_ACCESS_TOKEN fallback)
-        if ("facebook".equals(pid) || "instagram".equals(pid)) {
-            String token = socialController.getPublishToken(userId, pid);
-            if (token == null || token.isBlank()) {
-                return ResponseEntity.status(401)
-                    .body(Map.of("error", "Instagram token expired — go to Connected Accounts and reconnect", "requiresConnect", true));
-            }
-        }
         try {
-            // Stub: accept and return success. Real impl would post to YouTube/Instagram/etc.
+            // Stub: accept and return success. Real impl would use token from SocialController.getPublishToken() and post to Instagram.
             return ResponseEntity.ok(Map.of("status", "ok", "platform", platform));
         } catch (Exception e) {
             return errorResponse(e);
@@ -105,15 +90,6 @@ public class VideoContentController {
             Authentication auth) {
         if (auth == null || !(auth.getPrincipal() instanceof Long)) {
             return ResponseEntity.status(401).build();
-        }
-        Long userId = (Long) auth.getPrincipal();
-        String pid = platform != null ? platform.toLowerCase() : "";
-        if ("facebook".equals(pid) || "instagram".equals(pid)) {
-            String token = socialController.getPublishToken(userId, pid);
-            if (token == null || token.isBlank()) {
-                return ResponseEntity.status(401)
-                    .body(Map.of("error", "Instagram token expired — go to Connected Accounts and reconnect", "requiresConnect", true));
-            }
         }
         try {
             return ResponseEntity.ok(Map.of("status", "ok", "platform", platform));

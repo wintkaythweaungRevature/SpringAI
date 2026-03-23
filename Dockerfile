@@ -10,8 +10,8 @@ RUN npm install --legacy-peer-deps
 
 COPY . .
 
-# Build app - CI=false ထည့်တာက ပိုသေချာပါတယ်
-RUN CI=false npm run build
+# Build app - use react-scripts directly to skip postbuild (react-snap needs Chrome/Puppeteer, not in Alpine)
+RUN CI=false npx react-scripts build
 
 # Stage 2: Serve with Nginx
 FROM nginx:alpine

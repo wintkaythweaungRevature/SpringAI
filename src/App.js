@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './App.css';
+import { useMediaQuery } from './hooks/useMediaQuery';
 import ImageGenerator from './components/ImageGenerator';
 import ChatComponent from './components/ChatComponent';
 import ReceipeGenerator from './components/ReceipeGenerator';
@@ -10,6 +11,7 @@ import Resume from './components/Resume';
 import AccountSettings from './components/AccountSettings';
 import Login from './components/Login';
 import Signup from './components/Signup';
+import ForgotPassword from './components/ForgotPassword';
 import { useAuth } from './context/AuthContext';
 import MemberGate from './components/MemberGate';
 import AskAIGate from './components/AskAIGate';
@@ -55,19 +57,53 @@ function NavItem({ emoji, label, active, onClick, hasArrow }) {
 function App() {
   const [activeTab, setActiveTab] = useState(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  // authMode: 'login' | 'signup' | 'forgot-password' | 'forgot-username'
   const [authMode, setAuthMode] = useState('login');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const { user, logout, loading } = useAuth();
+  const isMobile = useMediaQuery('(max-width: 768px)');
+  const isTablet = useMediaQuery('(max-width: 1024px)');
 
   const go = (tab) => setActiveTab(tab);
-  const pageTitle = PAGE_TITLES[activeTab] ?? 'Dashboard';
-  const userInitials = user?.email ? user.email.slice(0, 2).toUpperCase() : '??';
+  const pageTitle = PAGE_TITLES[activeTab ?? 'null'] ?? 'Dashboard';
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('social_connect') === 'success' && params.get('platform')) {
+      setActiveTab('video-publisher');
+    }
+    // Reset flow uses /reset-password?token= (handled by Root)
+  }, []);
+  const userDisplayName = user?.firstName || user?.lastName
+    ? [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim()
+    : (user?.email || '').split('@')[0] || '';
+  const userInitials = user?.firstName && user?.lastName
+    ? (user.firstName[0] + user.lastName[0]).toUpperCase()
+    : (user?.email ? user.email.slice(0, 2).toUpperCase() : '??');
 
   return (
     <div style={s.shell}>
 
       {/* ═══════════════ SIDEBAR ═══════════════ */}
-      <aside style={{ ...s.sidebar, ...(sidebarOpen ? {} : s.sidebarCollapsed) }}>
+      {((isMobile || isTablet) && sidebarOpen) && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 40 }} onClick={() => setSidebarOpen(false)} aria-hidden="true" />
+      )}
+      <aside style={{
+        ...s.sidebar,
+        ...(sidebarOpen ? {} : s.sidebarCollapsed),
+        ...((isMobile || isTablet) ? {
+          position: 'fixed',
+          left: 0,
+          top: 0,
+          bottom: 0,
+          zIndex: 50,
+          width: sidebarOpen ? '280px' : '0',
+          minWidth: sidebarOpen ? '280px' : '0',
+          overflow: 'hidden',
+          transition: 'width 0.25s ease, min-width 0.25s ease',
+          boxShadow: sidebarOpen ? '4px 0 24px rgba(0,0,0,0.15)' : 'none',
+        } : {}),
+      }}>
 
         {/* Logo */}
         <div style={s.logoArea}>
@@ -173,7 +209,7 @@ function App() {
           {activeTab === 'Content'          && <MemberGate featureName="Reply Enchanter"><Content /></MemberGate>}
           {activeTab === 'Resume'           && <MemberGate featureName="Resume Worlock"><Resume /></MemberGate>}
           {activeTab === 'account'          && <AskAIGate  featureName="Account"><AccountSettings /></AskAIGate>}
-          {activeTab === 'video-publisher'  && <MemberGate featureName="Video Publisher"><VideoPublisher /></MemberGate>}
+          {activeTab === 'video-publisher'  && <MemberGate featureName="Video Publisher"><VideoPublisher onNavigateToSocialConnect={() => go('social-connect')} /></MemberGate>}
           {activeTab === 'social-connect'   && <MemberGate featureName="Connected Accounts"><SocialConnect /></MemberGate>}
         </div>
       </div>
@@ -183,10 +219,19 @@ function App() {
         <div className="auth-modal-overlay" onClick={() => setShowAuthModal(false)}>
           <div className="auth-modal" onClick={(e) => e.stopPropagation()} style={{ position: 'relative' }}>
             <button onClick={() => setShowAuthModal(false)} className="auth-modal-close" aria-label="Close">✕</button>
-            {authMode === 'login'
-              ? <Login  onSuccess={() => setShowAuthModal(false)} onSwitchToSignup={() => setAuthMode('signup')} />
-              : <Signup onSuccess={() => setShowAuthModal(false)} onSwitchToLogin={() => setAuthMode('login')} />
-            }
+            {authMode === 'login' && (
+              <Login
+                onSuccess={() => setShowAuthModal(false)}
+                onSwitchToSignup={() => setAuthMode('signup')}
+                onForgotPassword={(mode) => setAuthMode(mode === 'username' ? 'forgot-username' : 'forgot-password')}
+              />
+            )}
+            {authMode === 'signup' && (
+              <Signup onSuccess={() => setShowAuthModal(false)} onSwitchToLogin={() => setAuthMode('login')} />
+            )}
+            {(authMode === 'forgot-password' || authMode === 'forgot-username') && (
+              <ForgotPassword mode={authMode === 'forgot-username' ? 'username' : 'password'} onBack={() => setAuthMode('login')} />
+            )}
           </div>
         </div>
       )}
@@ -229,11 +274,11 @@ const s = {
 
   /* Sidebar */
   sidebar: {
-    width: '224px', minWidth: '224px', height: '100vh',
+    width: '224px', minWidth: '224px', maxWidth: '280px', height: '100vh',
     background: '#1a2547',
     borderRight: '1px solid rgba(0,0,0,0.12)',
     display: 'flex', flexDirection: 'column',
-    transition: 'width 0.2s, min-width 0.2s',
+    transition: 'width 0.25s ease, min-width 0.25s ease',
     flexShrink: 0, overflow: 'hidden',
   },
   sidebarCollapsed: { width: '60px', minWidth: '60px' },
@@ -285,6 +330,7 @@ const s = {
   main: {
     flex: 1, display: 'flex', flexDirection: 'column',
     overflow: 'hidden', background: '#f0f4f8',
+    minWidth: 0,
   },
 
   /* Top Bar */
@@ -293,8 +339,9 @@ const s = {
     background: '#ffffff',
     borderBottom: '1px solid #e2e8f0',
     display: 'flex', alignItems: 'center',
-    padding: '0 20px', gap: '14px',
+    padding: '0 12px 0 16px', gap: '10px',
     boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+    flexWrap: 'wrap', minWidth: 0,
   },
   menuBtn: {
     background: 'none', border: 'none', color: '#94a3b8',
@@ -306,7 +353,7 @@ const s = {
     background: '#f8fafc',
     border: '1px solid #e2e8f0',
     borderRadius: '24px', padding: '8px 16px',
-    flex: 1, maxWidth: '360px',
+    flex: 1, maxWidth: '360px', minWidth: 0,
   },
   searchInput: {
     border: 'none', background: 'transparent',
@@ -356,10 +403,11 @@ const s = {
   /* Page Header */
   pageBar: {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    padding: '20px 28px 0', flexShrink: 0,
+    padding: '16px 0 0', flexShrink: 0,
+    flexWrap: 'wrap', gap: '8px',
   },
   pageTitle: {
-    margin: 0, fontSize: '22px', fontWeight: '800',
+    margin: 0, fontSize: 'clamp(18px, 4vw, 22px)', fontWeight: '800',
     color: '#0f172a', letterSpacing: '-0.4px',
   },
   pageRight: { display: 'flex', alignItems: 'center', gap: '10px' },
@@ -378,6 +426,7 @@ const s = {
   /* Content */
   content: {
     flex: 1, overflowY: 'auto', overflowX: 'hidden',
-    padding: '20px 28px 32px',
+    padding: '16px',
+    minWidth: 0,
   },
 };

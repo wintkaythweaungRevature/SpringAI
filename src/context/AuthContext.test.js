@@ -241,7 +241,7 @@ describe('AuthContext', () => {
     );
 
     await act(async () => {
-      await authValue.signup('new@example.com', 'pass123', 'New User');
+      await authValue.signup('new@example.com', 'pass123', 'New', 'User');
     });
 
     expect(localStorage.getItem('authToken')).toBe('signup-token');
@@ -261,7 +261,7 @@ describe('AuthContext', () => {
 
     await expect(
       act(async () => {
-        await authValue.signup('dup@example.com', 'pass', '');
+        await authValue.signup('dup@example.com', 'pass', '', '');
       })
     ).rejects.toThrow('Email already registered');
   });

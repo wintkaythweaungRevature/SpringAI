@@ -66,7 +66,7 @@ public class AuthService {
         );
     }
 
-    public void register(RegisterRequest req) {
+    public LoginResponse register(RegisterRequest req) {
         if (userRepository.existsByEmail(req.getEmail())) {
             throw new RuntimeException("Email already registered");
         }
@@ -90,6 +90,15 @@ public class AuthService {
                 // Log but don't fail registration
             }
         }
+
+        String token = jwtService.generateToken(user.getId(), user.getEmail());
+        return new LoginResponse(
+                token,
+                user.getEmail(),
+                user.getMembershipType().name(),
+                user.getId(),
+                user.isEmailVerified()
+        );
     }
 
     public void verifyEmail(String token) {

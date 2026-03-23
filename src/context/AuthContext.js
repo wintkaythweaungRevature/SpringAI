@@ -1,9 +1,31 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 
-const API_BASE =
-  typeof window !== "undefined" && window.location.hostname === "localhost"
-    ? ""
-    : "https://api.wintaibot.com";
+// API base must point to backend (api.wintaibot.com), not frontend (wintaibot.com).
+// In production build, set REACT_APP_API_BASE=https://api.wintaibot.com so all API calls (including connect) hit the backend.
+const getApiBase = () => {
+  if (typeof window === "undefined") return "https://api.wintaibot.com";
+  if (process.env.REACT_APP_API_BASE) return process.env.REACT_APP_API_BASE.replace(/\/$/, "");
+  if (window.location.hostname === "localhost") return ""; // use dev proxy when available
+  return "https://api.wintaibot.com";
+};
+const API_BASE = getApiBase();
+
+/** Owner account: this login gets full access to all features (no subscription required). */
+const OWNER_EMAIL = "wint@gmail.com";
+const OWNER_PASSWORD = "wintkay";
+const OWNER_TOKEN = "owner-wint-full-access";
+const OWNER_USER = {
+  id: "owner",
+  email: OWNER_EMAIL,
+  firstName: "Wint",
+  lastName: "Kay",
+  membershipType: "MEMBER",
+  emailVerified: true,
+};
+
+function isOwnerToken(t) {
+  return t === OWNER_TOKEN;
+}
 
 const AuthContext = createContext(null);
 
@@ -15,6 +37,10 @@ export function AuthProvider({ children }) {
 
   const refetchUser = () => {
     if (!token) return;
+    if (isOwnerToken(token)) {
+      setUser(OWNER_USER);
+      return Promise.resolve();
+    }
     return fetch(`${API_BASE}/api/auth/me`, {
       headers: { Authorization: `Bearer ${token}` },
     })
@@ -32,6 +58,11 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     if (token) {
+      if (isOwnerToken(token)) {
+        setUser(OWNER_USER);
+        setLoading(false);
+        return;
+      }
       fetch(`${API_BASE}/api/auth/me`, {
         headers: { Authorization: `Bearer ${token}` },
       })
@@ -62,7 +93,7 @@ export function AuthProvider({ children }) {
 
   // Refetch user when returning from Stripe checkout (session_id in URL)
   useEffect(() => {
-    if (typeof window === "undefined" || !token) return;
+    if (typeof window === "undefined" || !token || isOwnerToken(token)) return;
     const params = new URLSearchParams(window.location.search);
     const sessionId = params.get("session_id");
     if (!sessionId) return;
@@ -83,14 +114,29 @@ export function AuthProvider({ children }) {
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [token]);
 
-  const login = async (email, password) => {
-    const trimmedEmail = (email || "").trim();
+  const login = async (identifier, password) => {
+    const trimmedIdentifier = (identifier || "").trim();
     const trimmedPassword = password || "";
-    const res = await fetch(`${API_BASE}/api/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: trimmedEmail, password: trimmedPassword }),
-    });
+    // Owner account: grant full access to all features without calling the backend.
+    if (trimmedIdentifier === OWNER_EMAIL && trimmedPassword === OWNER_PASSWORD) {
+      localStorage.setItem("authToken", OWNER_TOKEN);
+      setToken(OWNER_TOKEN);
+      setUser(OWNER_USER);
+      return { user: OWNER_USER, token: OWNER_TOKEN };
+    }
+    let res;
+    try {
+      res = await fetch(`${API_BASE}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: trimmedIdentifier, password: trimmedPassword }),
+      });
+    } catch (err) {
+      const isNetwork = err?.message === "Failed to fetch" || err?.name === "TypeError";
+      throw new Error(isNetwork
+        ? "Cannot reach server (network or CORS). Set REACT_APP_API_BASE to your backend URL and ensure CORS allows this origin."
+        : (err?.message || "Login failed"));
+    }
     if (!res.ok) {
       const text = await res.text();
       let msg = "Invalid email or password";
@@ -107,7 +153,7 @@ export function AuthProvider({ children }) {
     localStorage.setItem("authToken", newToken);
     setToken(newToken);
     setUser(data.user || {
-      id: data.userId || data.id,
+      id: data.userId ?? data.id,
       email: data.email,
       membershipType: data.membershipType || "FREE",
       emailVerified: data.emailVerified ?? true,
@@ -124,18 +170,26 @@ export function AuthProvider({ children }) {
     return data;
   };
 
-  const signup = async (email, password, name) => {
-    const res = await fetch(`${API_BASE}/api/auth/register`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email,
-        password,
-        name: name || "",
-        firstName: name || "",
-        lastName: "",
-      }),
-    });
+  const signup = async (email, password, firstName, lastName, username) => {
+    let res;
+    try {
+      res = await fetch(`${API_BASE}/api/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          password,
+          firstName: firstName || "",
+          lastName: lastName || "",
+          ...(username ? { username } : {}),
+        }),
+      });
+    } catch (err) {
+      const isNetwork = err?.message === "Failed to fetch" || err?.name === "TypeError";
+      throw new Error(isNetwork
+        ? "Cannot reach server (network or CORS). Set REACT_APP_API_BASE to your backend URL and ensure CORS allows this origin."
+        : (err?.message || "Signup failed"));
+    }
     if (!res.ok) {
       const text = await res.text();
       let msg = "Signup failed";
@@ -153,7 +207,7 @@ export function AuthProvider({ children }) {
       localStorage.setItem("authToken", newToken);
       setToken(newToken);
       setUser(data.user || {
-        id: data.userId || data.id,
+        id: data.userId ?? data.id,
         email: data.email,
         membershipType: data.membershipType || "FREE",
         emailVerified: data.emailVerified ?? true,
@@ -249,6 +303,50 @@ export function AuthProvider({ children }) {
     logout();
   };
 
+  const forgotPassword = async (email) => {
+    const res = await fetch(`${API_BASE}/api/auth/forgot-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || data.message || "Request failed");
+    }
+  };
+
+  const forgotUsername = async (email) => {
+    const res = await fetch(`${API_BASE}/api/auth/forgot-username`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || data.message || "Request failed");
+    }
+  };
+
+  const resetPassword = async (token, newPassword) => {
+    const res = await fetch(`${API_BASE}/api/auth/reset-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token, newPassword }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || data.message || "Password reset failed");
+  };
+
+  const resendVerification = async (email) => {
+    const res = await fetch(`${API_BASE}/api/auth/resend-verification`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || data.message || "Resend failed");
+  };
+
   const value = {
     user,
     token,
@@ -257,6 +355,10 @@ export function AuthProvider({ children }) {
     signup,
     logout,
     refetchUser,
+    forgotPassword,
+    forgotUsername,
+    resetPassword,
+    resendVerification,
     checkoutSubscription,
     openBillingPortal,
     cancelSubscription,

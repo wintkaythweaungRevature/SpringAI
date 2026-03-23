@@ -1,43 +1,124 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useMediaQuery } from '../hooks/useMediaQuery';
+import PlatformIcon from './PlatformIcon';
 
 /* ─── Constants ─────────────────────────────────────────────── */
 const PLATFORMS = [
-  { id: 'youtube',   label: 'YouTube',   emoji: '▶️',  color: '#FF0000', maxLen: 5000 },
-  { id: 'instagram', label: 'Instagram', emoji: '📸',  color: '#E1306C', maxLen: 2200 },
-  { id: 'tiktok',    label: 'TikTok',    emoji: '🎵',  color: '#010101', maxLen: 2200 },
-  { id: 'linkedin',  label: 'LinkedIn',  emoji: '💼',  color: '#0077B5', maxLen: 3000 },
-  { id: 'facebook',  label: 'Facebook',  emoji: '👍',  color: '#1877F2', maxLen: 63206 },
-  { id: 'x',         label: 'X (Twitter)', emoji: '🐦', color: '#000000', maxLen: 280 },
-  { id: 'threads',   label: 'Threads',   emoji: '🧵',  color: '#101010', maxLen: 500 },
-  { id: 'pinterest', label: 'Pinterest', emoji: '📌',  color: '#E60023', maxLen: 500 },
+  { id: 'youtube',   label: 'YouTube',   emoji: '▶️',  color: '#FF0000', maxLen: 5000, logo: 'youtube' },
+  { id: 'instagram', label: 'Instagram', emoji: '📸',  color: '#E1306C', maxLen: 2200, logo: 'instagram' },
+  { id: 'tiktok',    label: 'TikTok',    emoji: '🎵',  color: '#010101', maxLen: 2200, logo: 'tiktok' },
+  { id: 'linkedin',  label: 'LinkedIn',   emoji: '💼',  color: '#0A66C2', maxLen: 3000, logo: 'linkedin' },
+  { id: 'facebook',  label: 'Facebook',   emoji: '👍',  color: '#1877F2', maxLen: 63206, logo: 'facebook' },
+  { id: 'x',         label: 'X (Twitter)', emoji: '🐦', color: '#000000', maxLen: 280, logo: 'x' },
+  { id: 'threads',   label: 'Threads',   emoji: '🧵',  color: '#101010', maxLen: 500, logo: 'threads' },
+  { id: 'pinterest', label: 'Pinterest', emoji: '📌',  color: '#E60023', maxLen: 500, logo: 'pinterest' },
 ];
 
-const ROLES = [
-  { id: 'creator', label: 'Creator',  desc: 'Write & submit posts', emoji: '✏️' },
-  { id: 'manager', label: 'Manager',  desc: 'Review & approve',      emoji: '✅' },
-  { id: 'buffer',  label: 'Buffer',   desc: 'Schedule & publish',    emoji: '🚀' },
-];
-
-const STEPS = ['upload', 'processing', 'review', 'approval', 'published', 'analytics'];
+const STEPS = ['upload', 'processing', 'review', 'published', 'analytics'];
 
 /* ─── Component ─────────────────────────────────────────────── */
-export default function VideoPublisher() {
-  const { apiBase, token } = useAuth();
+export default function VideoPublisher({ onNavigateToSocialConnect }) {
+  const { apiBase, token, logout } = useAuth();
   const base = apiBase || 'https://api.wintaibot.com';
+  const isMobile = useMediaQuery('(max-width: 768px)');
 
   const [step, setStep]                 = useState('upload');
   const [video, setVideo]               = useState(null);
   const [selectedPlatforms, setSelected] = useState(['youtube', 'instagram', 'tiktok', 'linkedin']);
-  const [role, setRole]                 = useState('creator');
   const [dragOver, setDragOver]         = useState(false);
   const [processing, setProcessing]     = useState(false);
   const [processLog, setProcessLog]     = useState([]);
   const [variants, setVariants]         = useState({});
-  const [approvals, setApprovals]       = useState({});
   const [published, setPublished]       = useState([]);
   const [activeVariant, setActiveVariant] = useState(null);
+  const [scheduledTimes, setScheduledTimes] = useState({}); // { [platformId]: ISO datetime or null }
+  const [connectedAccounts, setConnectedAccounts] = useState({});
+  const [connectLoading, setConnectLoading] = useState(null);
+  const [connectMessage, setConnectMessage] = useState('');
+  const [canSkipProcessing, setCanSkipProcessing] = useState(false);
+  const [contentIdea, setContentIdea] = useState(null);
+  const [publishError, setPublishError] = useState(null); // { message, platforms, requiresReconnect, requiresReLogin }
   const fileRef = useRef();
+  const skippedRef = useRef(false);
+
+  const api = (path) => `${base}/api/video-content${path}`;
+  const socialApi = (path) => `${base}/api/social${path}`;
+  const authHeaders = () => (token ? { Authorization: `Bearer ${token}` } : {});
+
+  useEffect(() => {
+    if (!token) return;
+    fetch(socialApi('/status'), { headers: authHeaders() })
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        const list = data?.connected;
+        if (Array.isArray(list)) {
+          const map = {};
+          list.forEach(p => { map[p] = true; });
+          setConnectedAccounts(map);
+        }
+      })
+      .catch(() => {});
+  }, [base, token]);
+
+  const refreshConnections = () => {
+    if (!token) return;
+    fetch(socialApi('/status'), { headers: authHeaders() })
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        const list = data?.connected;
+        if (Array.isArray(list)) {
+          const map = {};
+          list.forEach(p => { map[p] = true; });
+          setConnectedAccounts(map);
+        }
+      })
+      .catch(() => {});
+  };
+
+  const connectPlatform = async (platformId) => {
+    setConnectLoading(platformId);
+    setConnectMessage('');
+    try {
+      const res = await fetch(socialApi(`/connect/${platformId}`), { headers: authHeaders() });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        setConnectMessage(err.error || 'Could not start connect');
+        setTimeout(() => setConnectMessage(''), 5000);
+        return;
+      }
+      const data = await res.json();
+      const url = data?.url || data?.authUrl;
+      if (!url) {
+        setConnectMessage('Could not get connect URL');
+        setTimeout(() => setConnectMessage(''), 4000);
+        return;
+      }
+      const popup = window.open(url, 'social-connect', 'width=600,height=700');
+      if (!popup || popup.closed) {
+        setConnectMessage('Popup blocked. Allow popups and try again.');
+        setTimeout(() => setConnectMessage(''), 5000);
+        return;
+      }
+      const interval = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(interval);
+          refreshConnections();
+        }
+      }, 500);
+    } catch (e) {
+      setConnectMessage(e.message || 'Connect failed');
+      setTimeout(() => setConnectMessage(''), 5000);
+    } finally {
+      setConnectLoading(null);
+    }
+  };
+
+  const disconnectPlatform = (platformId) => {
+    fetch(socialApi(`/disconnect/${platformId}`), { method: 'DELETE', headers: authHeaders() })
+      .then(res => { if (res.ok) refreshConnections(); })
+      .catch(() => {});
+  };
 
   /* ── helpers ── */
   const togglePlatform = (id) =>
@@ -54,10 +135,41 @@ export default function VideoPublisher() {
     if (f) setVideo(f);
   };
 
+  const applyIdeaForNextVideo = (idea) => {
+    setStep('upload');
+    setVideo(null);
+    setVariants({});
+    setPublished([]);
+    setScheduledTimes({});
+    setProcessLog([]);
+    setContentIdea(idea);
+  };
+
+  const usePlaceholders = () => {
+    skippedRef.current = true;
+    const generated = {};
+    for (const pid of selectedPlatforms) {
+      generated[pid] = {
+        caption: mockCaption(pid, video?.name),
+        hashtags: mockHashtags(pid),
+        clipNote: mockClipNote(pid),
+        status: 'draft',
+      };
+    }
+    setVariants(generated);
+    setActiveVariant(selectedPlatforms[0]);
+    setProcessing(false);
+    setStep('review');
+    setProcessLog(prev => [...prev, '⏭️ Skipped — using template captions. Edit before publishing.']);
+  };
+
   /* ── AI processing — async upload + poll ───────────────────── */
   const runProcessing = async () => {
+    skippedRef.current = false;
+    setCanSkipProcessing(false);
     setStep('processing');
     setProcessing(true);
+    const skipTimer = setTimeout(() => setCanSkipProcessing(true), 3000);
     const logs = [];
     const log = (msg) => { logs.push(msg); setProcessLog([...logs]); };
 
@@ -65,8 +177,8 @@ export default function VideoPublisher() {
       log('🎬 Uploading video to server...');
       const formData = new FormData();
       formData.append('file', video);
+      if (contentIdea) formData.append('prompt', contentIdea);
 
-      // Use async=true to avoid 504 gateway timeout on large files
       const res = await fetch(`${base}/api/video-content/upload?async=true`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
@@ -75,19 +187,21 @@ export default function VideoPublisher() {
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || 'Upload failed');
+        if (res.status === 504) throw new Error('Upload timed out. Try a smaller video or check your connection.');
+        if (res.status === 500) throw new Error(err.error || err.message || 'Server error. Try again or use Skip below.');
+        throw new Error(err.error || err.message || 'Upload failed');
       }
 
       const data = await res.json();
-      const videoId = data.videoId;
+      const videoId = data.videoId ?? data.id;
 
       log('🎙️ Transcribing audio with Whisper...');
       log('📝 Generating captions & hashtags with GPT-4...');
 
-      // Poll until status is READY or FAILED (max 3 minutes)
+      // Poll until variants ready (max 2 min, every 3 sec)
       let pollData = null;
-      for (let i = 0; i < 36; i++) {
-        await new Promise(r => setTimeout(r, 5000));
+      for (let i = 0; i < 40; i++) {
+        await new Promise(r => setTimeout(r, 3000));
         try {
           const pollRes = await fetch(`${base}/api/video-content/videos/${videoId}`, {
             headers: { Authorization: `Bearer ${token}` },
@@ -96,7 +210,7 @@ export default function VideoPublisher() {
             pollData = await pollRes.json();
             if (pollData.variants && pollData.variants.length > 0) break;
             if (pollData.status === 'FAILED') {
-              log('⚠️ Transcription failed (no audio or unsupported format). Using template captions — you can edit them before publishing.');
+              log('⚠️ Processing failed. Using template captions.');
               break;
             }
           }
@@ -119,11 +233,14 @@ export default function VideoPublisher() {
         };
       }
 
-      setVariants(generated);
-      setActiveVariant(selectedPlatforms[0]);
-      log('✅ All variants ready!');
+      if (!skippedRef.current) {
+        setVariants(generated);
+        setActiveVariant(selectedPlatforms[0]);
+        log('✅ All variants ready!');
+      }
     } catch (e) {
-      log(`❌ Error: ${e.message}. Using AI-generated placeholders.`);
+      if (skippedRef.current) return;
+      log(`❌ ${e.message} Using template captions — edit before publishing.`);
       const generated = {};
       for (const pid of selectedPlatforms) {
         generated[pid] = {
@@ -133,28 +250,37 @@ export default function VideoPublisher() {
           status: 'draft',
         };
       }
-      setVariants(generated);
-      setActiveVariant(selectedPlatforms[0]);
+      if (!skippedRef.current) {
+        setVariants(generated);
+        setActiveVariant(selectedPlatforms[0]);
+      }
     } finally {
-      setProcessing(false);
-      setStep('review');
+      clearTimeout(skipTimer);
+      if (!skippedRef.current) {
+        setProcessing(false);
+        setStep('review');
+      }
     }
   };
 
-  /* ── approval actions ── */
-  const approveVariant = (pid) => {
-    setVariants(v => ({ ...v, [pid]: { ...v[pid], status: 'approved' } }));
-    setApprovals(a => ({ ...a, [pid]: true }));
-  };
-  const rejectVariant = (pid) => {
-    setVariants(v => ({ ...v, [pid]: { ...v[pid], status: 'rejected' } }));
+  const scheduleVariant = async (variantId, platform, scheduledAt) => {
+    if (!variantId) return false;
+    try {
+      const res = await fetch(api(`/variants/${variantId}/schedule`), {
+        method: 'POST',
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ platform, scheduledAt }),
+      });
+      return res.ok;
+    } catch (e) { return false; }
   };
 
-  const publishAll = async () => {
-    const approved = Object.entries(variants)
-      .filter(([, v]) => v.status === 'approved')
-      .map(([pid]) => pid);
-
+  const scheduleAndPublishAll = async () => {
+    if (!token) {
+      setPublishError({ message: 'Your session expired. Log out and log in again.', platforms: [], requiresReconnect: false, requiresReLogin: true });
+      return;
+    }
+    const toPublish = selectedPlatforms.filter(pid => variants[pid]);
     const successPlatforms = [];
     const errors = {};
 
@@ -178,46 +304,122 @@ export default function VideoPublisher() {
           } else {
             errors[pid] = formatPublishError(pid, data.error || 'Publish failed');
           }
+    for (const pid of toPublish) {
+      const variant = variants[pid];
+      const scheduledAt = scheduledTimes[pid];
+      const hasSchedule = scheduledAt && String(scheduledAt).trim() !== '';
+
+      if (hasSchedule) {
+        if (variant?.variantId) {
+          const ok = await scheduleVariant(variant.variantId, pid, scheduledAt);
+          if (ok) successPlatforms.push(pid);
+          else errors[pid] = 'Schedule failed';
         } else {
-          // Fallback: send file directly
-          const formData = new FormData();
-          formData.append('file', video);
-          formData.append('caption', variant.caption);
-          formData.append('hashtags', hashtags);
-          const res = await fetch(`${base}/api/video-content/publish/${pid}`, {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${token}` },
-            body: formData,
-          });
-          const data = await res.json().catch(() => ({}));
-          if (res.ok) {
-            successPlatforms.push(pid);
-          } else if (data.requiresConnect) {
-            errors[pid] = `Connect your ${pid} account in Connected Accounts first`;
+          errors[pid] = 'Cannot schedule without variant. Publish now or re-upload.';
+        }
+      } else {
+        try {
+          const hashtags = variant.hashtags?.join ? variant.hashtags.join(' ') : (variant.hashtags || '');
+
+          if (variant.variantId) {
+            const res = await fetch(`${base}/api/video-content/publish/${pid}/variant`, {
+              method: 'POST',
+              headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+              body: JSON.stringify({ variantId: variant.variantId, caption: variant.caption, hashtags }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (res.ok) successPlatforms.push(pid);
+            else if (res.status === 401 && (data.error === 'Unauthorized' || !data.error)) {
+              errors._sessionExpired = true;
+            } else if (data.requiresConnect) errors[pid] = formatPublishError(pid, data.error || `Connect your ${pid} account first`);
+            else errors[pid] = formatPublishError(pid, data.error || 'Publish failed');
           } else {
             errors[pid] = formatPublishError(pid, data.error || 'Publish failed');
+            const formData = new FormData();
+            formData.append('file', video);
+            formData.append('caption', variant.caption);
+            formData.append('hashtags', hashtags);
+            const res = await fetch(`${base}/api/video-content/publish/${pid}`, {
+              method: 'POST',
+              headers: authHeaders(),
+              body: formData,
+            });
+            const data = await res.json().catch(() => ({}));
+            if (res.ok) successPlatforms.push(pid);
+            else if (res.status === 401 && (data.error === 'Unauthorized' || !data.error)) {
+              errors._sessionExpired = true;
+            } else if (data.requiresConnect) errors[pid] = formatPublishError(pid, data.error || `Connect your ${pid} account first`);
+            else errors[pid] = formatPublishError(pid, data.error || 'Publish failed');
           }
+        } catch (e) {
+          errors[pid] = e.message;
         }
-      } catch (e) {
-        errors[pid] = e.message;
       }
     }
 
     if (Object.keys(errors).length > 0) {
-      const errMsg = Object.entries(errors).map(([p, m]) => `${p}: ${m}`).join('\n');
-      alert(`Some platforms failed:\n\n${errMsg}`);
+      const sessionExpired = !!errors._sessionExpired;
+      const normalErrors = Object.fromEntries(Object.entries(errors).filter(([k]) => k !== '_sessionExpired'));
+      const errMsg = sessionExpired
+        ? 'Your session expired. Log out and log in again, then try publishing.'
+        : Object.entries(normalErrors).map(([p, m]) => `${p}: ${m}`).join('\n');
+      const requiresReconnect = !sessionExpired && Object.values(normalErrors).some(m =>
+        /token expired|reconnect|requiresConnect|permissions|no facebook pages|no pages found/i.test(String(m))
+      );
+      setPublishError({ message: errMsg, platforms: Object.keys(normalErrors), requiresReconnect, requiresReLogin: sessionExpired });
     }
 
-    setPublished(successPlatforms.length > 0 ? successPlatforms : approved);
+    setPublished(successPlatforms);
     setStep('analytics');
   };
 
   /* ── render sections ── */
   return (
     <div style={s.page}>
+      {/* ── Publish error modal ── */}
+      {publishError && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px',
+        }}>
+          <div style={{
+            background: '#fff', borderRadius: '12px', padding: '24px', maxWidth: '420px', width: '100%', boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+          }}>
+            <div style={{ fontSize: '20px', marginBottom: '12px' }}>⚠️ Some platforms failed</div>
+            <pre style={{ fontSize: '13px', color: '#475569', whiteSpace: 'pre-wrap', margin: '0 0 20px', fontFamily: 'inherit' }}>
+              {publishError.message}
+            </pre>
+            {publishError.requiresReLogin && logout && (
+              <button
+                type="button"
+                onClick={() => { setPublishError(null); logout(); window.location.href = '/'; }}
+                style={{ ...s.btnPrimary, width: '100%', marginBottom: '10px' }}
+              >
+                Log out & Sign in again →
+              </button>
+            )}
+            {publishError.requiresReconnect && !publishError.requiresReLogin && onNavigateToSocialConnect && (
+              <button
+                type="button"
+                onClick={() => { setPublishError(null); onNavigateToSocialConnect(); }}
+                style={{ ...s.btnPrimary, width: '100%', marginBottom: '10px' }}
+              >
+                Go to Connected Accounts →
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setPublishError(null)}
+              style={{ ...s.btnOutline, width: '100%' }}
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ── Stepper ── */}
-      <div style={s.stepper}>
-        {['Upload', 'Processing', 'Review', 'Approval', 'Published', 'Analytics'].map((label, i) => {
+      <div style={{ ...s.stepper, ...(isMobile ? { flexWrap: 'wrap', gap: '12px', padding: '12px 16px', justifyContent: 'center' } : {}) }}>
+        {['Upload', 'Processing', 'Review & Schedule', 'Published', 'Analytics'].map((label, i) => {
           const sid = STEPS[i];
           const idx = STEPS.indexOf(step);
           const done = i < idx;
@@ -228,11 +430,11 @@ export default function VideoPublisher() {
                 <div style={{ ...s.stepDot, ...(done ? s.stepDone : active ? s.stepActive : {}) }}>
                   {done ? '✓' : i + 1}
                 </div>
-                <span style={{ ...s.stepLabel, ...(active ? { color: '#2563eb', fontWeight: 700 } : {}) }}>
+                <span style={{ ...s.stepLabel, ...(active ? { color: '#2563eb', fontWeight: 700 } : {}), ...(isMobile ? { fontSize: '10px' } : {}) }}>
                   {label}
                 </span>
               </div>
-              {i < 5 && <div style={{ ...s.stepLine, ...(done ? s.stepLineDone : {}) }} />}
+              {i < 4 && <div style={{ ...s.stepLine, ...(done ? s.stepLineDone : {}) }} />}
             </React.Fragment>
           );
         })}
@@ -240,10 +442,16 @@ export default function VideoPublisher() {
 
       {/* ── STEP: UPLOAD ── */}
       {step === 'upload' && (
-        <div style={s.layout}>
+        <div style={{ ...s.layout, ...(isMobile ? { flexDirection: 'column', flexWrap: 'wrap' } : {}) }}>
           {/* Left */}
-          <div style={s.left}>
+          <div style={{ ...s.left, ...(isMobile ? { width: '100%', minWidth: 0 } : {}) }}>
             <div style={s.sectionTitle}>🎬 Upload Video</div>
+            {contentIdea && (
+              <div style={{ marginBottom: '16px', padding: '12px 16px', borderRadius: '10px', background: 'linear-gradient(135deg,#eff6ff,#dbeafe)', border: '1px solid #93c5fd', fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                <span><strong>💡 Next idea:</strong> {contentIdea}</span>
+                <button type="button" onClick={() => setContentIdea(null)} style={{ padding: '4px 10px', borderRadius: '6px', border: '1px solid #93c5fd', background: '#fff', fontSize: '12px', cursor: 'pointer', color: '#64748b' }}>Clear</button>
+              </div>
+            )}
             <div
               style={{ ...s.dropZone, ...(dragOver ? s.dropOver : {}) }}
               onDragOver={e => { e.preventDefault(); setDragOver(true); }}
@@ -268,18 +476,6 @@ export default function VideoPublisher() {
               )}
             </div>
 
-            <div style={s.sectionTitle}>🎯 Your Role</div>
-            {ROLES.map(r => (
-              <button key={r.id} style={{ ...s.roleBtn, ...(role === r.id ? s.roleBtnActive : {}) }}
-                onClick={() => setRole(r.id)}>
-                <span style={{ fontSize: '18px' }}>{r.emoji}</span>
-                <div style={{ textAlign: 'left' }}>
-                  <div style={{ fontWeight: 700, fontSize: '13px' }}>{r.label}</div>
-                  <div style={{ fontSize: '11px', opacity: 0.65 }}>{r.desc}</div>
-                </div>
-              </button>
-            ))}
-
             <button
               style={{ ...s.btnPrimary, ...((!video || selectedPlatforms.length === 0) ? s.btnDisabled : {}) }}
               onClick={runProcessing}
@@ -293,14 +489,14 @@ export default function VideoPublisher() {
           <div style={s.right}>
             <div style={s.card}>
               <div style={s.sectionTitle}>📡 Select Platforms</div>
-              <div style={s.platformGrid}>
+              <div style={{ ...s.platformGrid, ...(isMobile ? { gridTemplateColumns: 'repeat(2, 1fr)' } : {}) }}>
                 {PLATFORMS.map(p => (
                   <button
                     key={p.id}
                     style={{ ...s.platformBtn, ...(selectedPlatforms.includes(p.id) ? { ...s.platformBtnActive, borderColor: p.color } : {}) }}
                     onClick={() => togglePlatform(p.id)}
                   >
-                    <span style={{ fontSize: '22px' }}>{p.emoji}</span>
+                    <PlatformIcon platform={p} size={28} />
                     <span style={{ fontSize: '12px', fontWeight: 600 }}>{p.label}</span>
                     {selectedPlatforms.includes(p.id) && (
                       <span style={{ ...s.platformCheck, background: p.color }}>✓</span>
@@ -332,13 +528,45 @@ export default function VideoPublisher() {
                 </div>
               ))}
             </div>
+
+            <div style={s.card}>
+              <div style={s.sectionTitle}>🔗 Connect your accounts</div>
+              {connectMessage && (
+                <div style={{ fontSize: '12px', color: connectMessage.includes('failed') ? '#b91c1c' : '#15803d', marginBottom: '10px', fontWeight: 500 }}>
+                  {connectMessage}
+                </div>
+              )}
+              <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '12px' }}>
+                Link platforms to publish directly from here.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {['youtube', 'instagram', 'tiktok', 'linkedin', 'facebook', 'x'].map(pid => {
+                  const p = PLATFORMS.find(x => x.id === pid);
+                  const connected = connectedAccounts[pid];
+                  return (
+                    <div key={pid} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', border: `1.5px solid ${connected ? p.color : '#e2e8f0'}`, background: '#f8fafc' }}>
+                      <PlatformIcon platform={p} size={24} />
+                      <span style={{ flex: 1, fontSize: '13px', fontWeight: 600 }}>{p.label}</span>
+                      <button
+                        type="button"
+                        style={{ padding: '6px 14px', borderRadius: '8px', border: `1.5px solid ${p.color}`, fontSize: '12px', fontWeight: 700, cursor: 'pointer', background: connected ? p.color : 'transparent', color: connected ? '#fff' : p.color }}
+                        onClick={() => connected ? disconnectPlatform(pid) : connectPlatform(pid)}
+                        disabled={connectLoading === pid}
+                      >
+                        {connected ? '✓ Connected' : connectLoading === pid ? 'Connecting…' : 'Connect'}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
       )}
 
       {/* ── STEP: PROCESSING ── */}
       {step === 'processing' && (
-        <div style={s.centerCard}>
+        <div style={{ ...s.centerCard, ...(isMobile ? { padding: '24px 16px', margin: '0 8px' } : {}) }}>
           <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚙️</div>
           <div style={s.processTitle}>AI is working on your video</div>
           <div style={s.processLog}>
@@ -352,46 +580,124 @@ export default function VideoPublisher() {
           <div style={s.progressBar}>
             <div style={{ ...s.progressFill, width: `${Math.min((processLog.length / 7) * 100, 100)}%` }} />
           </div>
+          {processing && canSkipProcessing && (
+            <button
+              type="button"
+              onClick={usePlaceholders}
+              style={{ marginTop: '16px', padding: '10px 20px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#f8fafc', color: '#64748b', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
+            >
+              ⏭️ Skip — use template captions
+            </button>
+          )}
         </div>
       )}
 
-      {/* ── STEP: REVIEW / APPROVAL ── */}
-      {(step === 'review' || step === 'approval') && (
-        <div style={s.layout}>
+      {/* ── STEP: REVIEW & PUBLISH ── */}
+      {step === 'review' && (
+        <div style={{ ...s.layout, ...(isMobile ? { flexDirection: 'column', flexWrap: 'wrap' } : {}) }}>
           {/* Platform tabs on left */}
-          <div style={s.left}>
+          <div style={{ ...s.left, ...(isMobile ? { width: '100%', minWidth: 0 } : {}) }}>
             <div style={s.sectionTitle}>📦 Content Variants</div>
             {selectedPlatforms.map(pid => {
               const p = PLATFORMS.find(x => x.id === pid);
               const v = variants[pid];
+              const hasSchedule = scheduledTimes[pid] && String(scheduledTimes[pid]).trim() !== '';
               return (
                 <button key={pid}
-                  style={{ ...s.variantTab, ...(activeVariant === pid ? s.variantTabActive : {}), ...(v?.status === 'approved' ? s.variantApproved : v?.status === 'rejected' ? s.variantRejected : {}) }}
+                  style={{ ...s.variantTab, ...(activeVariant === pid ? s.variantTabActive : {}) }}
                   onClick={() => setActiveVariant(pid)}
                 >
-                  <span style={{ fontSize: '18px' }}>{p.emoji}</span>
+                  <PlatformIcon platform={p} size={22} />
                   <span style={{ flex: 1, textAlign: 'left', fontSize: '13px', fontWeight: 600 }}>{p.label}</span>
-                  <span style={{ fontSize: '11px' }}>
-                    {v?.status === 'approved' ? '✅' : v?.status === 'rejected' ? '❌' : '📝'}
-                  </span>
+                  <span style={{ fontSize: '11px' }}>{hasSchedule ? '📅' : '⏱️'}</span>
                 </button>
               );
             })}
 
-            <div style={{ marginTop: '16px' }}>
-              <div style={s.approvalSummary}>
-                <span>Approved: {Object.values(variants).filter(v => v.status === 'approved').length}</span>
-                <span>/{selectedPlatforms.length} platforms</span>
+            {/* Schedule per platform — SEO & advertising */}
+            <div style={{ ...s.card, marginTop: '16px', padding: '14px' }}>
+              <div style={{ ...s.sectionTitle, marginBottom: '10px', fontSize: '14px' }}>
+                📅 Schedule per platform (SEO & advertising)
               </div>
-              {role !== 'creator' && (
-                <button
-                  style={{ ...s.btnPrimary, ...(Object.values(variants).every(v => v.status !== 'approved') ? s.btnDisabled : {}) }}
-                  onClick={publishAll}
-                  disabled={Object.values(variants).every(v => v.status !== 'approved')}
-                >
-                  🚀 Publish Approved Posts
-                </button>
-              )}
+              <p style={{ fontSize: '11px', color: '#64748b', marginBottom: '12px' }}>
+                Set when to post on each social account. Leave &quot;Publish now&quot; for immediate posting.
+              </p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
+                {[
+                  { label: 'Best for SEO (9 AM)', hour: 9 },
+                  { label: 'Peak engagement (7 PM)', hour: 19 },
+                  { label: 'Lunch hour (12 PM)', hour: 12 },
+                ].map(({ label, hour }) => {
+                  const d = new Date();
+                  d.setDate(d.getDate() + 1);
+                  d.setHours(hour, 0, 0, 0);
+                  const pad = (n) => String(n).padStart(2, '0');
+                  const iso = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+                  return (
+                    <button
+                      key={label}
+                      type="button"
+                      onClick={() => {
+                        const next = {};
+                        selectedPlatforms.forEach(pid => { next[pid] = iso; });
+                        setScheduledTimes(prev => ({ ...prev, ...next }));
+                      }}
+                      style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '11px', fontWeight: 600, color: '#475569', cursor: 'pointer' }}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {selectedPlatforms.map(pid => {
+                  const p = PLATFORMS.find(x => x.id === pid);
+                  const hasSchedule = scheduledTimes[pid] && String(scheduledTimes[pid]).trim() !== '';
+                  const defaultVal = (() => {
+                    const d = new Date();
+                    const pad = (n) => String(n).padStart(2, '0');
+                    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+                  })();
+                  return (
+                    <div key={pid} style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <PlatformIcon platform={p} size={20} />
+                      <span style={{ fontSize: '12px', fontWeight: 600, minWidth: '70px' }}>{p.label}</span>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', cursor: 'pointer' }}>
+                        <input
+                          type="checkbox"
+                          checked={!hasSchedule}
+                          onChange={e => {
+                            if (e.target.checked) {
+                              setScheduledTimes(prev => ({ ...prev, [pid]: null }));
+                            } else {
+                              const d = new Date();
+                              d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+                              setScheduledTimes(prev => ({ ...prev, [pid]: d.toISOString().slice(0, 16) }));
+                            }
+                          }}
+                        />
+                        Now
+                      </label>
+                      <input
+                        type="datetime-local"
+                        value={scheduledTimes[pid] || defaultVal}
+                        onChange={e => setScheduledTimes(prev => ({ ...prev, [pid]: e.target.value || null }))}
+                        disabled={!hasSchedule}
+                        style={{ flex: 1, minWidth: '140px', padding: '6px 8px', borderRadius: '6px', border: '1.5px solid #e2e8f0', fontSize: '12px', opacity: hasSchedule ? 1 : 0.6 }}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div style={{ marginTop: '16px' }}>
+              <button style={s.btnPrimary} onClick={scheduleAndPublishAll}>
+                🚀 Schedule & Publish
+              </button>
+              <p style={{ fontSize: '11px', color: '#64748b', marginTop: '8px', marginBottom: 0 }}>
+                Platforms with a date set will be scheduled; others publish now.
+              </p>
             </div>
           </div>
 
@@ -404,15 +710,10 @@ export default function VideoPublisher() {
               return (
                 <div style={s.card}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-                    <span style={{ fontSize: '28px' }}>{p.emoji}</span>
+                    <PlatformIcon platform={p} size={32} />
                     <div>
                       <div style={{ fontWeight: 700, fontSize: '16px' }}>{p.label}</div>
                       <div style={{ fontSize: '12px', color: '#64748b' }}>{v.clipNote}</div>
-                    </div>
-                    <div style={{ marginLeft: 'auto' }}>
-                      <span style={{ ...s.statusBadge, background: v.status === 'approved' ? '#22c55e' : v.status === 'rejected' ? '#ef4444' : '#f59e0b' }}>
-                        {v.status}
-                      </span>
                     </div>
                   </div>
 
@@ -433,17 +734,9 @@ export default function VideoPublisher() {
                     ))}
                   </div>
 
-                  {role !== 'creator' && (
-                    <div style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
-                      <button style={s.approveBtn} onClick={() => approveVariant(pid)}>✅ Approve</button>
-                      <button style={s.rejectBtn} onClick={() => rejectVariant(pid)}>❌ Reject</button>
-                    </div>
-                  )}
-                  {role === 'creator' && (
-                    <div style={s.creatorNote}>
-                      ℹ️ As Creator you can edit content. A Manager must approve before publishing.
-                    </div>
-                  )}
+                  <p style={{ fontSize: '12px', color: '#64748b', marginTop: '12px' }}>
+                    Schedule for {p.label} is set in the panel on the left.
+                  </p>
                 </div>
               );
             })()}
@@ -453,22 +746,22 @@ export default function VideoPublisher() {
 
       {/* ── STEP: ANALYTICS ── */}
       {step === 'analytics' && (
-        <div style={s.layout}>
-          <div style={s.left}>
+        <div style={{ ...s.layout, ...(isMobile ? { flexDirection: 'column', flexWrap: 'wrap' } : {}) }}>
+          <div style={{ ...s.left, ...(isMobile ? { width: '100%', minWidth: 0 } : {}) }}>
             <div style={s.card}>
               <div style={s.sectionTitle}>🚀 Published</div>
               {published.map(pid => {
                 const p = PLATFORMS.find(x => x.id === pid);
                 return (
                   <div key={pid} style={s.publishedRow}>
-                    <span style={{ fontSize: '20px' }}>{p.emoji}</span>
+                    <PlatformIcon platform={p} size={24} />
                     <span style={{ fontSize: '13px', fontWeight: 600 }}>{p.label}</span>
                     <span style={{ marginLeft: 'auto', fontSize: '11px', color: '#22c55e', fontWeight: 700 }}>✓ Live</span>
                   </div>
                 );
               })}
               <button style={{ ...s.btnPrimary, marginTop: '16px', fontSize: '13px' }}
-                onClick={() => { setStep('upload'); setVideo(null); setVariants({}); setPublished([]); setProcessLog([]); }}>
+                onClick={() => { setStep('upload'); setVideo(null); setVariants({}); setPublished([]); setScheduledTimes({}); setProcessLog([]); setContentIdea(null); }}>
                 + New Video
               </button>
             </div>
@@ -491,7 +784,7 @@ export default function VideoPublisher() {
             </div>
 
             {/* Analytics cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: '12px', marginBottom: '16px' }}>
               {[
                 { label: 'Views',          value: '12.4K', icon: '👁️',  color: '#2563eb' },
                 { label: 'Likes',          value: '1.8K',  icon: '❤️',  color: '#ef4444' },
@@ -517,7 +810,7 @@ export default function VideoPublisher() {
                 const eng   = (Math.random() * 10 + 2).toFixed(1);
                 return (
                   <div key={pid} style={s.platformRow}>
-                    <span style={{ fontSize: '18px', width: '24px' }}>{p.emoji}</span>
+                    <PlatformIcon platform={p} size={24} />
                     <span style={{ fontSize: '13px', fontWeight: 600, flex: 1 }}>{p.label}</span>
                     <span style={{ fontSize: '12px', color: '#64748b' }}>{views.toLocaleString()} views</span>
                     <span style={{ fontSize: '12px', fontWeight: 700, color: '#22c55e', marginLeft: '12px' }}>{eng}% eng</span>
@@ -536,7 +829,7 @@ export default function VideoPublisher() {
               ].map((idea, i) => (
                 <div key={i} style={s.ideaRow}>
                   <span style={{ fontSize: '13px' }}>{idea}</span>
-                  <button style={s.useIdeaBtn}>Use →</button>
+                  <button type="button" style={s.useIdeaBtn} onClick={() => applyIdeaForNextVideo(idea)}>Use →</button>
                 </div>
               ))}
             </div>
@@ -563,6 +856,22 @@ function formatPublishError(platform, rawError) {
     return `${platform} rate limit hit. Try again in a few minutes.`;
   }
   return s.length > 120 ? s.substring(0, 120) + '…' : s;
+  const s = String(rawError || '').toLowerCase();
+  const name = platform.charAt(0).toUpperCase() + platform.slice(1);
+  if (s.includes('"code":190') || s.includes('invalid oauth') || s.includes('cannot parse access token') || (s.includes('token') && s.includes('expired'))) {
+    return `${name} token expired — go to Connected Accounts and reconnect.`;
+  }
+  if (s.includes('"code":200') || s.includes('permissions')) {
+    return `${name} lacks required permissions. Reconnect in Connected Accounts.`;
+  }
+  if (s.includes('no facebook pages') || s.includes('no pages found')) {
+    return `${name}: No Facebook Page found. Create a Page at facebook.com/pages or link one in Connected Accounts.`;
+  }
+  if (s.includes('rate limit') || s.includes('too many')) {
+    return `${name} rate limit hit. Try again in a few minutes.`;
+  }
+  const orig = String(rawError || '');
+  return orig.length > 120 ? orig.substring(0, 120) + '…' : orig;
 }
 
 /* ─── Mock data generators (replace with GPT API calls) ─────── */
@@ -613,7 +922,7 @@ function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 /* ─── Styles ─────────────────────────────────────────────────── */
 const s = {
-  page:    { padding: '4px 0', fontFamily: "'Inter',-apple-system,sans-serif" },
+  page:    { padding: '4px 0', fontFamily: "'Inter',-apple-system,sans-serif", maxWidth: '100%', overflowX: 'hidden' },
   layout:  { display: 'flex', gap: '20px', alignItems: 'flex-start' },
   left:    { width: '300px', minWidth: '260px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '12px' },
   right:   { flex: 1, minWidth: 0 },
@@ -638,10 +947,6 @@ const s = {
   fileSize:     { fontSize: '11px', color: '#64748b', marginTop: '2px' },
   changeFile:   { fontSize: '11px', color: '#2563eb', marginTop: '6px' },
 
-  /* Role buttons */
-  roleBtn:       { display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1.5px solid #e2e8f0', background: '#fff', cursor: 'pointer', marginBottom: '6px', transition: 'all 0.15s' },
-  roleBtnActive: { borderColor: '#2563eb', background: '#eff6ff' },
-
   /* Platform grid */
   platformGrid:     { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginBottom: '10px' },
   platformBtn:      { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', padding: '10px 4px', borderRadius: '10px', border: '1.5px solid #e2e8f0', background: '#f8fafc', cursor: 'pointer', position: 'relative', transition: 'all 0.15s' },
@@ -654,10 +959,11 @@ const s = {
 
   /* Buttons */
   btnPrimary:  { width: '100%', padding: '12px', borderRadius: '10px', border: 'none', background: 'linear-gradient(135deg,#2563eb,#7c3aed)', color: '#fff', fontSize: '14px', fontWeight: 700, cursor: 'pointer', marginTop: '4px' },
+  btnOutline:  { padding: '12px', borderRadius: '10px', border: '2px solid #e2e8f0', background: 'transparent', color: '#475569', fontSize: '14px', fontWeight: 700, cursor: 'pointer' },
   btnDisabled: { opacity: 0.45, cursor: 'not-allowed' },
 
   /* Processing */
-  centerCard:    { background: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '40px', textAlign: 'center', maxWidth: '560px', margin: '0 auto', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' },
+  centerCard:    { background: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '40px', textAlign: 'center', maxWidth: '560px', width: '100%', boxSizing: 'border-box', margin: '0 auto', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' },
   processTitle:  { fontSize: '18px', fontWeight: 700, color: '#1e293b', marginBottom: '20px' },
   processLog:    { textAlign: 'left', background: '#0f172a', borderRadius: '10px', padding: '16px', marginBottom: '16px', minHeight: '120px' },
   logLine:       { fontSize: '13px', fontFamily: 'monospace', padding: '3px 0', color: '#64748b' },
@@ -669,19 +975,12 @@ const s = {
   /* Variant tabs */
   variantTab:         { display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1.5px solid #e2e8f0', background: '#fff', cursor: 'pointer', marginBottom: '6px', transition: 'all 0.15s' },
   variantTabActive:   { borderColor: '#2563eb', background: '#eff6ff' },
-  variantApproved:    { borderColor: '#22c55e' },
-  variantRejected:    { borderColor: '#ef4444', opacity: 0.6 },
-  approvalSummary:    { display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#64748b', background: '#f8fafc', borderRadius: '8px', padding: '8px 12px', marginBottom: '10px' },
 
   /* Variant editor */
   fieldLabel:   { fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '6px', marginTop: '12px' },
   textarea:     { width: '100%', minHeight: '120px', padding: '10px', borderRadius: '8px', border: '1.5px solid #e2e8f0', fontSize: '13px', fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box', outline: 'none', color: '#1e293b' },
   hashtagBox:   { display: 'flex', flexWrap: 'wrap', gap: '6px', padding: '8px 0' },
   hashtagChip:  { padding: '4px 10px', borderRadius: '20px', border: '1.5px solid', fontSize: '12px', fontWeight: 600, background: '#f8fafc' },
-  statusBadge:  { padding: '3px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 700, color: '#fff', textTransform: 'uppercase' },
-  approveBtn:   { flex: 1, padding: '10px', borderRadius: '8px', border: 'none', background: '#22c55e', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '13px' },
-  rejectBtn:    { flex: 1, padding: '10px', borderRadius: '8px', border: 'none', background: '#ef4444', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '13px' },
-  creatorNote:  { marginTop: '12px', padding: '10px', background: '#fef9c3', borderRadius: '8px', fontSize: '12px', color: '#92400e' },
 
   /* Analytics */
   metricCard:    { background: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px', textAlign: 'center', boxShadow: '0 1px 4px rgba(0,0,0,0.05)' },

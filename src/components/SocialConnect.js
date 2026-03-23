@@ -1,15 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
+import PlatformIcon from './PlatformIcon';
 
 const PLATFORMS = [
-  { id: 'youtube',   label: 'YouTube',    emoji: '▶️',  color: '#FF0000', desc: 'Upload videos & Shorts' },
-  { id: 'instagram', label: 'Instagram',  emoji: '📸',  color: '#E1306C', desc: 'Reels & Posts' },
-  { id: 'tiktok',    label: 'TikTok',     emoji: '🎵',  color: '#010101', desc: 'Short-form videos' },
-  { id: 'linkedin',  label: 'LinkedIn',   emoji: '💼',  color: '#0077B5', desc: 'Professional videos' },
-  { id: 'facebook',  label: 'Facebook',   emoji: '👍',  color: '#1877F2', desc: 'Page videos & Reels' },
-  { id: 'x',         label: 'X (Twitter)',emoji: '🐦',  color: '#000000', desc: 'Video tweets' },
-  { id: 'threads',   label: 'Threads',    emoji: '🧵',  color: '#101010', desc: 'Text + video posts' },
-  { id: 'pinterest', label: 'Pinterest',  emoji: '📌',  color: '#E60023', desc: 'Video pins' },
+  { id: 'youtube',   label: 'YouTube',    emoji: '▶️',  color: '#FF0000', desc: 'Upload videos & Shorts', logo: 'youtube' },
+  { id: 'instagram', label: 'Instagram',  emoji: '📸',  color: '#E1306C', desc: 'Reels & Posts', logo: 'instagram' },
+  { id: 'tiktok',    label: 'TikTok',     emoji: '🎵',  color: '#010101', desc: 'Short-form videos', logo: 'tiktok' },
+  { id: 'linkedin',  label: 'LinkedIn',   emoji: '💼',  color: '#0A66C2', desc: 'Professional videos', logo: 'linkedin' },
+  { id: 'facebook',  label: 'Facebook',   emoji: '👍',  color: '#1877F2', desc: 'Page videos & Reels', logo: 'facebook' },
+  { id: 'x',         label: 'X (Twitter)',emoji: '🐦',  color: '#000000', desc: 'Video tweets', logo: 'x' },
+  { id: 'threads',   label: 'Threads',    emoji: '🧵',  color: '#101010', desc: 'Text + video posts', logo: 'threads' },
+  { id: 'pinterest', label: 'Pinterest',  emoji: '📌',  color: '#E60023', desc: 'Video pins', logo: 'pinterest' },
 ];
 
 export default function SocialConnect() {
@@ -154,7 +155,7 @@ export default function SocialConnect() {
                 {/* Platform header */}
                 <div style={s.cardHeader}>
                   <div style={{ ...s.platformIcon, background: p.color + '15' }}>
-                    <span style={{ fontSize: '24px' }}>{p.emoji}</span>
+                    <PlatformIcon platform={p} size={28} />
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={s.platformName}>{p.label}</div>

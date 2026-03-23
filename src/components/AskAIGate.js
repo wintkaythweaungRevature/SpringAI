@@ -2,13 +2,14 @@ import React, { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import Login from "./Login";
 import Signup from "./Signup";
+import VerifyEmailBlock from "./VerifyEmailBlock";
 
 /**
  * Gate for Ask AI (free feature): requires login + verified email.
  * No subscription required.
  */
 export default function AskAIGate({ children, featureName = "Ask AI" }) {
-  const { user, loading, emailVerified, logout, authAvailable } = useAuth();
+  const { user, loading, emailVerified, logout, resendVerification, authAvailable } = useAuth();
   const [showLogin, setShowLogin] = useState(true);
 
   if (authAvailable === false) return children;
@@ -40,26 +41,12 @@ export default function AskAIGate({ children, featureName = "Ask AI" }) {
 
   if (!emailVerified) {
     return (
-      <div style={{ padding: "40px", textAlign: "center" }}>
-        <h3>Please verify your email</h3>
-        <p style={{ color: "#666", marginTop: "8px" }}>
-          We sent a verification link to {user.email}. Click the link in that email to verify your account and use {featureName}.
-        </p>
-        <button
-          onClick={logout}
-          style={{
-            marginTop: "16px",
-            padding: "8px 16px",
-            backgroundColor: "#6c757d",
-            color: "#fff",
-            border: "none",
-            borderRadius: "6px",
-            cursor: "pointer",
-          }}
-        >
-          Log out
-        </button>
-      </div>
+      <VerifyEmailBlock
+        email={user.email}
+        featureName={featureName}
+        onResend={resendVerification}
+        onLogout={logout}
+      />
     );
   }
 

@@ -18,7 +18,7 @@ function RecipeGenerator() {
       const selectedCuisine = cuisine === "Any" ? "any" : cuisine;
       const prompt = `Give me a ${selectedCuisine} recipe using these ingredients: ${ingredients}. Dietary restrictions: ${dietary || "none"}. Please provide a Title, Ingredients list, and Step-by-step instructions.`;
       const url = `${apiBase || "https://api.wintaibot.com"}/api/ai/ask-ai?prompt=${encodeURIComponent(prompt)}`;
-      const headers = {};
+      const headers = { Accept: "text/plain" };
       if (token) headers.Authorization = `Bearer ${token}`;
       const response = await fetch(url, { headers });
       if (!response.ok) throw new Error("Server error");

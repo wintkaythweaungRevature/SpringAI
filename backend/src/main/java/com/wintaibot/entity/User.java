@@ -14,7 +14,7 @@ public class User {
     @Column(nullable = false, unique = true)
     private String email;
 
-    @Column(nullable = false)
+    @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
     @Column(name = "first_name")
@@ -48,6 +48,15 @@ public class User {
 
     @Column(name = "deactivated", nullable = false)
     private boolean deactivated = false;
+
+    @Column(unique = true)
+    private String username;
+
+    @Column(name = "password_reset_token")
+    private String passwordResetToken;
+
+    @Column(name = "password_reset_token_expiry")
+    private Instant passwordResetTokenExpiry;
 
     public enum MembershipType {
         FREE,
@@ -97,4 +106,13 @@ public class User {
 
     public boolean isDeactivated() { return deactivated; }
     public void setDeactivated(boolean deactivated) { this.deactivated = deactivated; }
+
+    public String getUsername() { return username; }
+    public void setUsername(String username) { this.username = username; }
+
+    public String getPasswordResetToken() { return passwordResetToken; }
+    public void setPasswordResetToken(String token) { this.passwordResetToken = token; }
+
+    public Instant getPasswordResetTokenExpiry() { return passwordResetTokenExpiry; }
+    public void setPasswordResetTokenExpiry(Instant expiry) { this.passwordResetTokenExpiry = expiry; }
 }

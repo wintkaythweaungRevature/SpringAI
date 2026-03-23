@@ -11,6 +11,8 @@ import Resume from './components/Resume';
 import AccountSettings from './components/AccountSettings';
 import Login from './components/Login';
 import Signup from './components/Signup';
+import ForgotPassword from './components/ForgotPassword';
+import ResetPassword from './components/ResetPassword';
 import { useAuth } from './context/AuthContext';
 import MemberGate from './components/MemberGate';
 import AskAIGate from './components/AskAIGate';
@@ -56,24 +58,34 @@ function NavItem({ emoji, label, active, onClick, hasArrow }) {
 function App() {
   const [activeTab, setActiveTab] = useState(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  // authMode: 'login' | 'signup' | 'forgot-password' | 'forgot-username' | 'reset-password'
   const [authMode, setAuthMode] = useState('login');
+  const [resetToken, setResetToken] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const { user, logout, loading } = useAuth();
   const isMobile = useMediaQuery('(max-width: 768px)');
   const isTablet = useMediaQuery('(max-width: 1024px)');
 
   useEffect(() => {
-    if (isMobile) setSidebarOpen(false);
-    else if (isTablet) setSidebarOpen(false);
-    else setSidebarOpen(true);
-  }, [isMobile, isTablet]);
-
-  const go = (tab) => {
-    setActiveTab(tab);
-    if (isMobile || isTablet) setSidebarOpen(false);
-  };
-  const pageTitle = PAGE_TITLES[activeTab] ?? 'Dashboard';
-  const userInitials = user?.email ? user.email.slice(0, 2).toUpperCase() : '??';
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('social_connect') === 'success' && params.get('platform')) {
+      setActiveTab('video-publisher');
+    }
+    // Handle password reset link: ?reset_token=xxx
+    const token = params.get('reset_token');
+    if (token) {
+      setResetToken(token);
+      setAuthMode('reset-password');
+      setShowAuthModal(true);
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
+  const userDisplayName = user?.firstName || user?.lastName
+    ? [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim()
+    : (user?.email || '').split('@')[0] || '';
+  const userInitials = user?.firstName && user?.lastName
+    ? (user.firstName[0] + user.lastName[0]).toUpperCase()
+    : (user?.email ? user.email.slice(0, 2).toUpperCase() : '??');
 
   return (
     <div style={s.shell}>
@@ -213,10 +225,22 @@ function App() {
         <div className="auth-modal-overlay" onClick={() => setShowAuthModal(false)}>
           <div className="auth-modal" onClick={(e) => e.stopPropagation()} style={{ position: 'relative' }}>
             <button onClick={() => setShowAuthModal(false)} className="auth-modal-close" aria-label="Close">✕</button>
-            {authMode === 'login'
-              ? <Login  onSuccess={() => setShowAuthModal(false)} onSwitchToSignup={() => setAuthMode('signup')} />
-              : <Signup onSuccess={() => setShowAuthModal(false)} onSwitchToLogin={() => setAuthMode('login')} />
-            }
+            {authMode === 'login' && (
+              <Login
+                onSuccess={() => setShowAuthModal(false)}
+                onSwitchToSignup={() => setAuthMode('signup')}
+                onForgotPassword={(mode) => setAuthMode(mode === 'username' ? 'forgot-username' : 'forgot-password')}
+              />
+            )}
+            {authMode === 'signup' && (
+              <Signup onSuccess={() => setShowAuthModal(false)} onSwitchToLogin={() => setAuthMode('login')} />
+            )}
+            {(authMode === 'forgot-password' || authMode === 'forgot-username') && (
+              <ForgotPassword mode={authMode === 'forgot-username' ? 'username' : 'password'} onBack={() => setAuthMode('login')} />
+            )}
+            {authMode === 'reset-password' && (
+              <ResetPassword token={resetToken} onDone={() => { setAuthMode('login'); }} />
+            )}
           </div>
         </div>
       )}

@@ -11,6 +11,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
+import java.time.Instant;
 import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
@@ -35,9 +36,17 @@ public class AuthService {
     }
 
     public LoginResponse login(LoginRequest req) {
-        String email = (req.getEmail() != null) ? req.getEmail().trim().toLowerCase() : "";
-        Optional<User> userOpt = userRepository.findByEmailIgnoreCase(email);
-        User user = userOpt.orElseThrow(() -> new RuntimeException("Invalid email or password"));
+        String identifier = (req.getIdentifier() != null) ? req.getIdentifier().trim().toLowerCase() : "";
+        Optional<User> userOpt;
+        if (identifier.contains("@")) {
+            userOpt = userRepository.findByEmailIgnoreCase(identifier);
+        } else {
+            userOpt = userRepository.findByUsernameIgnoreCase(identifier);
+            if (userOpt.isEmpty()) {
+                userOpt = userRepository.findByEmailIgnoreCase(identifier);
+            }
+        }
+        User user = userOpt.orElseThrow(() -> new RuntimeException("Invalid email/username or password"));
 
         if (user.isDeactivated()) {
             throw new RuntimeException("Account has been deactivated");
@@ -80,6 +89,16 @@ public class AuthService {
         user.setMembershipType(User.MembershipType.FREE);
         user.setEmailVerified(false);
         user.setEmailVerificationToken(generateToken());
+
+        // Auto-generate unique username from email prefix
+        String base = req.getEmail().split("@")[0].toLowerCase().replaceAll("[^a-z0-9_]", "");
+        if (base.isEmpty()) base = "user";
+        String username = base;
+        int suffix = 1;
+        while (userRepository.existsByUsername(username)) {
+            username = base + suffix++;
+        }
+        user.setUsername(username);
 
         userRepository.save(user);
 
@@ -146,6 +165,40 @@ public class AuthService {
                 user.getId(),
                 user.isEmailVerified()
         );
+    }
+
+    public void forgotPassword(String email) {
+        Optional<User> userOpt = userRepository.findByEmailIgnoreCase(email.trim().toLowerCase());
+        if (userOpt.isEmpty()) return; // Don't reveal whether email exists
+        User user = userOpt.get();
+        String token = generateToken();
+        user.setPasswordResetToken(token);
+        user.setPasswordResetTokenExpiry(Instant.now().plusSeconds(3600)); // 1 hour
+        userRepository.save(user);
+        if (emailService != null) {
+            try { emailService.sendPasswordResetEmail(user.getEmail(), token); } catch (Exception ignored) {}
+        }
+    }
+
+    public void resetPassword(String token, String newPassword) {
+        User user = userRepository.findByPasswordResetToken(token)
+                .orElseThrow(() -> new RuntimeException("Invalid or expired reset token"));
+        if (user.getPasswordResetTokenExpiry() == null || Instant.now().isAfter(user.getPasswordResetTokenExpiry())) {
+            throw new RuntimeException("Reset token has expired");
+        }
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        user.setPasswordResetToken(null);
+        user.setPasswordResetTokenExpiry(null);
+        userRepository.save(user);
+    }
+
+    public void forgotUsername(String email) {
+        Optional<User> userOpt = userRepository.findByEmailIgnoreCase(email.trim().toLowerCase());
+        if (userOpt.isEmpty()) return; // Don't reveal whether email exists
+        User user = userOpt.get();
+        if (emailService != null && user.getUsername() != null) {
+            try { emailService.sendUsernameReminderEmail(user.getEmail(), user.getUsername()); } catch (Exception ignored) {}
+        }
     }
 
     /** Admin: get all users. */

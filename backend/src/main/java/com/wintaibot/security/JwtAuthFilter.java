@@ -35,12 +35,18 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             // Allow token in query string for GET (e.g. Connect popup: /api/video-content/connect/youtube?token=...)
             token = request.getParameter("token");
         }
-        if (StringUtils.hasText(token) && jwtService.isValid(token)) {
-            Long userId = jwtService.getUserIdFromToken(token);
-            UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-                    userId, null, Collections.emptyList());
-            auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-            SecurityContextHolder.getContext().setAuthentication(auth);
+        if (StringUtils.hasText(token)) {
+            try {
+                if (jwtService.isValid(token)) {
+                    Long userId = jwtService.getUserIdFromToken(token);
+                    UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
+                            userId, null, Collections.emptyList());
+                    auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(auth);
+                }
+            } catch (Exception e) {
+                // Invalid/expired/malformed token: continue without auth instead of failing the request
+            }
         }
         filterChain.doFilter(request, response);
     }

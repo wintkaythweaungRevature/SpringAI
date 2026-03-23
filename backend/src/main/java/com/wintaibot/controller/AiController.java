@@ -1,6 +1,8 @@
 package com.wintaibot.controller;
 
 import com.wintaibot.service.AiService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -13,6 +15,7 @@ import java.util.Map;
 @RequestMapping("/api/ai")
 public class AiController {
 
+    private static final Logger log = LoggerFactory.getLogger(AiController.class);
     private final AiService aiService;
 
     public AiController(AiService aiService) {
@@ -26,6 +29,11 @@ public class AiController {
         try {
             return ResponseEntity.ok(aiService.askAi(prompt));
         } catch (Exception e) {
+            log.warn("ask-ai failed: {}", e.getMessage());
+            String msg = e.getMessage();
+            if (msg != null && msg.contains("OPENAI_API_KEY")) {
+                return ResponseEntity.status(503).body("Ask AI is not configured. Set OPENAI_API_KEY in backend.env.");
+            }
             return ResponseEntity.internalServerError()
                     .body("Sorry, I couldn't process that. Please try again.");
         }

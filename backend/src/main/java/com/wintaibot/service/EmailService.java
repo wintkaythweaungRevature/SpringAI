@@ -13,7 +13,7 @@ public class EmailService {
     @Value("${app.frontend-url:https://wintaibot.com}")
     private String frontendUrl;
 
-    @Value("${app.base-url:https://api.wintaibot.com}")
+    @Value("${app.api-base-url:https://api.wintaibot.com}")
     private String apiBaseUrl;
 
     @Value("${mail.from:noreply@wintaibot.com}")
@@ -40,7 +40,7 @@ public class EmailService {
     }
 
     public void sendPasswordResetEmail(String toEmail, String token) {
-        String resetUrl = frontendUrl + "?reset_token=" + token;
+        String resetUrl = frontendUrl + "/reset-password?token=" + token;
         SimpleMailMessage msg = new SimpleMailMessage();
         msg.setFrom(fromEmail);
         msg.setTo(toEmail);

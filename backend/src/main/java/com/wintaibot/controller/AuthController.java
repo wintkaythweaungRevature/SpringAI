@@ -39,14 +39,41 @@ public class AuthController {
         if (req.getPassword() == null || req.getPassword().length() < 6) {
             return ResponseEntity.badRequest().body(java.util.Map.of("error", "Password is required and must be at least 6 characters"));
         }
-        authService.register(req);
-        return ResponseEntity.ok().body(java.util.Map.of("message", "Registration successful. Please check your email to verify your account."));
+        com.wintaibot.dto.RegisterResult result = authService.register(req);
+        // AuthResponse shape: token=null when verification required, emailVerified=false
+        var body = new java.util.HashMap<String, Object>();
+        body.put("token", result.token());
+        body.put("email", result.email());
+        body.put("membershipType", result.membershipType());
+        body.put("userId", result.userId());
+        body.put("emailVerified", result.emailVerified());
+        body.put("message", result.message());
+        return ResponseEntity.ok().body(body);
     }
 
     @GetMapping("/verify-email")
     public ResponseEntity<?> verifyEmail(@RequestParam String token) {
-        authService.verifyEmail(token);
-        return ResponseEntity.ok().body(java.util.Map.of("message", "Email verified successfully. You can now log in."));
+        try {
+            authService.verifyEmail(token);
+            return ResponseEntity.ok().body(java.util.Map.of(
+                    "verified", true,
+                    "message", "Email confirmed. You can sign in."));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(java.util.Map.of(
+                    "verified", false,
+                    "error", e.getMessage() != null ? e.getMessage() : "Invalid or expired verification token"));
+        }
+    }
+
+    @PostMapping("/resend-verification")
+    public ResponseEntity<?> resendVerification(@RequestBody java.util.Map<String, String> body) {
+        String email = body != null ? body.get("email") : null;
+        if (email == null || email.isBlank()) {
+            return ResponseEntity.badRequest().body(java.util.Map.of("error", "Email is required"));
+        }
+        authService.resendVerificationEmail(email);
+        // Always generic for privacy (don't reveal if account exists or is already verified)
+        return ResponseEntity.ok().body(java.util.Map.of("message", "If the account exists, a verification email has been sent."));
     }
 
     @GetMapping("/me")
@@ -79,7 +106,7 @@ public class AuthController {
     @PostMapping("/forgot-password")
     public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest req) {
         authService.forgotPassword(req.getEmail());
-        return ResponseEntity.ok(java.util.Map.of("message", "If that email is registered, a password reset link has been sent."));
+        return ResponseEntity.ok(java.util.Map.of("message", "If an account exists, a password reset link has been sent."));
     }
 
     @PostMapping("/reset-password")

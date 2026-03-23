@@ -4,6 +4,7 @@ import com.wintaibot.dto.LoginRequest;
 import com.wintaibot.dto.LoginResponse;
 import com.wintaibot.dto.MeResponse;
 import com.wintaibot.dto.RegisterRequest;
+import com.wintaibot.dto.RegisterResult;
 import com.wintaibot.entity.User;
 import com.wintaibot.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -75,7 +76,7 @@ public class AuthService {
         );
     }
 
-    public void register(RegisterRequest req) {
+    public RegisterResult register(RegisterRequest req) {
         if (userRepository.existsByEmail(req.getEmail())) {
             throw new RuntimeException("Email already registered");
         }
@@ -90,13 +91,18 @@ public class AuthService {
         user.setEmailVerified(false);
         user.setEmailVerificationToken(generateToken());
 
-        // Auto-generate unique username from email prefix
-        String base = req.getEmail().split("@")[0].toLowerCase().replaceAll("[^a-z0-9_]", "");
-        if (base.isEmpty()) base = "user";
-        String username = base;
+        // Username: use provided if valid and unique, else auto-generate from email
+        String username = (req.getUsername() != null && !req.getUsername().isBlank())
+                ? req.getUsername().trim().toLowerCase().replaceAll("[^a-z0-9_]", "")
+                : "";
+        if (username.isEmpty()) {
+            String base = req.getEmail().split("@")[0].toLowerCase().replaceAll("[^a-z0-9_]", "");
+            username = base.isEmpty() ? "user" : base;
+        }
         int suffix = 1;
+        String finalUsername = username;
         while (userRepository.existsByUsername(username)) {
-            username = base + suffix++;
+            username = finalUsername + suffix++;
         }
         user.setUsername(username);
 
@@ -109,6 +115,15 @@ public class AuthService {
                 // Log but don't fail registration
             }
         }
+
+        // AuthResponse: token=null when verification required
+        return new RegisterResult(
+                null,
+                user.getEmail(),
+                user.getMembershipType().name(),
+                user.getId(),
+                false,
+                "Registration successful. Please check your email to verify your account.");
     }
 
     public void verifyEmail(String token) {
@@ -118,6 +133,21 @@ public class AuthService {
         user.setEmailVerified(true);
         user.setEmailVerificationToken(null);
         userRepository.save(user);
+    }
+
+    public void resendVerificationEmail(String email) {
+        String emailNorm = (email != null) ? email.trim().toLowerCase() : "";
+        Optional<User> userOpt = userRepository.findByEmailIgnoreCase(emailNorm);
+        if (userOpt.isEmpty()) return; // Don't reveal—always return success
+        User user = userOpt.get();
+        if (user.isEmailVerified()) return; // Already verified—don't reveal
+        user.setEmailVerificationToken(generateToken());
+        userRepository.save(user);
+        if (emailService != null) {
+            try {
+                emailService.sendVerificationEmail(user.getEmail(), user.getEmailVerificationToken());
+            } catch (Exception ignored) {}
+        }
     }
 
     public Optional<MeResponse> getMe(Long userId) {

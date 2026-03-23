@@ -23,7 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @RequestMapping("/api/social")
 public class SocialController {
 
-    @Value("${app.base-url:http://localhost:3000}")
+    @Value("${app.frontend-url:https://wintaibot.com}")
     private String appBaseUrl;
 
     @Value("${app.api-base-url:}")

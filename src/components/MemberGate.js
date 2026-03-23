@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import Login from "./Login";
 import Signup from "./Signup";
+import VerifyEmailBlock from "./VerifyEmailBlock";
 
 const MEMBER_MESSAGE =
   "This feature requires a member subscription ($5.99/month). Please upgrade to continue.";
@@ -10,7 +11,7 @@ const MEMBER_MESSAGE =
  * Gate for member-only features: requires login + verified email + MEMBER subscription.
  */
 export default function MemberGate({ children, featureName = "this feature" }) {
-  const { user, loading, isSubscribed, emailVerified, checkoutSubscription, logout, authAvailable } = useAuth();
+  const { user, loading, isSubscribed, emailVerified, checkoutSubscription, logout, resendVerification, authAvailable } = useAuth();
   const [showLogin, setShowLogin] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
 
@@ -43,26 +44,12 @@ export default function MemberGate({ children, featureName = "this feature" }) {
 
   if (!emailVerified) {
     return (
-      <div style={{ padding: "40px", textAlign: "center" }}>
-        <h3>Please verify your email</h3>
-        <p style={{ color: "#666", marginTop: "8px" }}>
-          We sent a verification link to {user.email}. Verify your email first, then you can upgrade to access {featureName}.
-        </p>
-        <button
-          onClick={logout}
-          style={{
-            marginTop: "16px",
-            padding: "8px 16px",
-            backgroundColor: "#6c757d",
-            color: "#fff",
-            border: "none",
-            borderRadius: "6px",
-            cursor: "pointer",
-          }}
-        >
-          Log out
-        </button>
-      </div>
+      <VerifyEmailBlock
+        email={user.email}
+        featureName={featureName}
+        onResend={resendVerification}
+        onLogout={logout}
+      />
     );
   }
 

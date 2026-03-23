@@ -12,7 +12,6 @@ import AccountSettings from './components/AccountSettings';
 import Login from './components/Login';
 import Signup from './components/Signup';
 import ForgotPassword from './components/ForgotPassword';
-import ResetPassword from './components/ResetPassword';
 import { useAuth } from './context/AuthContext';
 import MemberGate from './components/MemberGate';
 import AskAIGate from './components/AskAIGate';
@@ -58,9 +57,8 @@ function NavItem({ emoji, label, active, onClick, hasArrow }) {
 function App() {
   const [activeTab, setActiveTab] = useState(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
-  // authMode: 'login' | 'signup' | 'forgot-password' | 'forgot-username' | 'reset-password'
+  // authMode: 'login' | 'signup' | 'forgot-password' | 'forgot-username'
   const [authMode, setAuthMode] = useState('login');
-  const [resetToken, setResetToken] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const { user, logout, loading } = useAuth();
   const isMobile = useMediaQuery('(max-width: 768px)');
@@ -71,14 +69,7 @@ function App() {
     if (params.get('social_connect') === 'success' && params.get('platform')) {
       setActiveTab('video-publisher');
     }
-    // Handle password reset link: ?reset_token=xxx
-    const token = params.get('reset_token');
-    if (token) {
-      setResetToken(token);
-      setAuthMode('reset-password');
-      setShowAuthModal(true);
-      window.history.replaceState({}, '', window.location.pathname);
-    }
+    // Reset flow uses /reset-password?token= (handled by Root)
   }, []);
   const userDisplayName = user?.firstName || user?.lastName
     ? [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim()
@@ -237,9 +228,6 @@ function App() {
             )}
             {(authMode === 'forgot-password' || authMode === 'forgot-username') && (
               <ForgotPassword mode={authMode === 'forgot-username' ? 'username' : 'password'} onBack={() => setAuthMode('login')} />
-            )}
-            {authMode === 'reset-password' && (
-              <ResetPassword token={resetToken} onDone={() => { setAuthMode('login'); }} />
             )}
           </div>
         </div>

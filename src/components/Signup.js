@@ -3,26 +3,50 @@ import { useAuth } from "../context/AuthContext";
 import "./Auth.css";
 
 export default function Signup({ onSuccess, onSwitchToLogin }) {
-  const { signup } = useAuth();
-  const [name, setName] = useState("");
+  const { signup, resendVerification } = useAuth();
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [showVerifyEmail, setShowVerifyEmail] = useState(false);
+  const [verifyEmail, setVerifyEmail] = useState("");
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendSent, setResendSent] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
     try {
-      await signup(email, password, name);
-      setSuccess(true);
-      onSuccess?.();
+      const data = await signup(email, password, firstName, lastName);
+      if (!data.token && data.emailVerified === false) {
+        setVerifyEmail(data.email || email);
+        setShowVerifyEmail(true);
+      } else {
+        setSuccess(true);
+        onSuccess?.();
+      }
     } catch (err) {
       setError(err.message || "Signup failed");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    setResendLoading(true);
+    setError("");
+    try {
+      await resendVerification(verifyEmail || email);
+      setResendSent(true);
+      setTimeout(() => setResendSent(false), 5000);
+    } catch (err) {
+      setError(err.message || "Resend failed");
+    } finally {
+      setResendLoading(false);
     }
   };
 
@@ -40,7 +64,19 @@ export default function Signup({ onSuccess, onSwitchToLogin }) {
         <h2 className="auth-form-title">Create an account</h2>
         <p className="auth-form-sub">Free to start — no credit card required</p>
 
-        {success ? (
+        {showVerifyEmail ? (
+          <div className="auth-success-box">
+            <strong>Check your email</strong>
+            <p>We sent a verification link to <strong>{verifyEmail || email}</strong>. Click the link to verify your account.</p>
+            {error && <div className="auth-error" style={{ marginBottom: 12 }}>{error}</div>}
+            <button type="button" onClick={handleResend} disabled={resendLoading} className="auth-btn auth-btn-primary" style={{ marginBottom: 10 }}>
+              {resendLoading ? "Sending..." : resendSent ? "Sent! Check your inbox" : "Resend verification email"}
+            </button>
+            <button type="button" onClick={onSwitchToLogin} className="auth-btn auth-btn-outline" style={{ display: "block", width: "100%" }}>
+              Go to Sign In
+            </button>
+          </div>
+        ) : success ? (
           <div className="auth-success-box">
             <strong>Account created!</strong>
             <p>You can now sign in and start using Ask AI and other free features.</p>
@@ -52,12 +88,22 @@ export default function Signup({ onSuccess, onSwitchToLogin }) {
           <>
             <form onSubmit={handleSubmit} className="auth-form">
               <div className="auth-field">
-                <label className="auth-label">Name</label>
+                <label className="auth-label">First name</label>
                 <input
                   type="text"
-                  placeholder="Your name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Jane"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className="auth-input"
+                />
+              </div>
+              <div className="auth-field">
+                <label className="auth-label">Last name</label>
+                <input
+                  type="text"
+                  placeholder="Doe"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
                   className="auth-input"
                 />
               </div>

@@ -131,6 +131,16 @@
   cursor: not-allowed;
 }
 
+.auth-btn-outline {
+  background: transparent;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+}
+
+.auth-btn-outline:hover {
+  background: #f8fafc;
+}
+
 .auth-footer {
   margin-top: 20px;
   text-align: center;

@@ -37,8 +37,8 @@ public class AuthController {
         if (req.getPassword() == null || req.getPassword().length() < 6) {
             return ResponseEntity.badRequest().body(java.util.Map.of("error", "Password is required and must be at least 6 characters"));
         }
-        authService.register(req);
-        return ResponseEntity.ok().body(java.util.Map.of("message", "Registration successful. Please check your email to verify your account."));
+        LoginResponse res = authService.register(req);
+        return ResponseEntity.ok(res);
     }
 
     @GetMapping("/verify-email")

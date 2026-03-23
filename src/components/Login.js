@@ -2,9 +2,9 @@ import React, { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import "./Auth.css";
 
-export default function Login({ onSuccess, onSwitchToSignup }) {
+export default function Login({ onSuccess, onSwitchToSignup, onForgotPassword }) {
   const { login, reactivateAccount } = useAuth();
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -16,7 +16,7 @@ export default function Login({ onSuccess, onSwitchToSignup }) {
     setShowReactivate(false);
     setLoading(true);
     try {
-      await login(email, password);
+      await login(identifier, password);
       onSuccess?.();
     } catch (err) {
       const msg = err.message || "Login failed";
@@ -31,7 +31,7 @@ export default function Login({ onSuccess, onSwitchToSignup }) {
     setError("");
     setLoading(true);
     try {
-      await reactivateAccount(email, password);
+      await reactivateAccount(identifier, password);
       onSuccess?.();
     } catch (err) {
       setError(err.message || "Reactivation failed");
@@ -54,18 +54,28 @@ export default function Login({ onSuccess, onSwitchToSignup }) {
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="auth-field">
-            <label className="auth-label">Email</label>
+            <label className="auth-label">Email or Username</label>
             <input
-              type="email"
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              type="text"
+              placeholder="Email or username"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
               className="auth-input"
               required
+              autoComplete="username"
             />
           </div>
           <div className="auth-field">
-            <label className="auth-label">Password</label>
+            <div className="auth-label-row">
+              <label className="auth-label">Password</label>
+              <button
+                type="button"
+                onClick={() => onForgotPassword?.("password")}
+                className="auth-forgot-link"
+              >
+                Forgot password?
+              </button>
+            </div>
             <input
               type="password"
               placeholder="Enter your password"
@@ -73,8 +83,17 @@ export default function Login({ onSuccess, onSwitchToSignup }) {
               onChange={(e) => setPassword(e.target.value)}
               className="auth-input"
               required
+              autoComplete="current-password"
             />
           </div>
+
+          <button
+            type="button"
+            onClick={() => onForgotPassword?.("username")}
+            className="auth-forgot-username-link"
+          >
+            Forgot your username?
+          </button>
 
           {error && (
             <div className="auth-error">

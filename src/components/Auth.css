@@ -131,6 +131,16 @@
   cursor: not-allowed;
 }
 
+.auth-btn-outline {
+  background: transparent;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+}
+
+.auth-btn-outline:hover {
+  background: #f8fafc;
+}
+
 .auth-footer {
   margin-top: 20px;
   text-align: center;
@@ -151,6 +161,56 @@
 
 .auth-switch-btn:hover {
   text-decoration: underline;
+}
+
+/* Label row with forgot link */
+.auth-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.auth-forgot-link {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
+.auth-forgot-link:hover {
+  text-decoration: underline;
+}
+
+.auth-forgot-username-link {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+  margin-top: -6px;
+}
+
+.auth-forgot-username-link:hover {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+/* Success box SVG alignment */
+.auth-success-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 16px;
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  color: #166534;
 }
 
 /* Reactivate banner */

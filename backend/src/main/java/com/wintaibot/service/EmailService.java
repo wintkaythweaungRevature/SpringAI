@@ -10,10 +10,13 @@ public class EmailService {
 
     private final JavaMailSender mailSender;
 
-    @Value("${app.base-url:http://localhost:3000}")
-    private String baseUrl;
+    @Value("${app.frontend-url:https://wintaibot.com}")
+    private String frontendUrl;
 
-    @Value("${spring.mail.username:noreply@example.com}")
+    @Value("${app.api-base-url:https://api.wintaibot.com}")
+    private String apiBaseUrl;
+
+    @Value("${mail.from:noreply@wintaibot.com}")
     private String fromEmail;
 
     public EmailService(JavaMailSender mailSender) {
@@ -21,12 +24,48 @@ public class EmailService {
     }
 
     public void sendVerificationEmail(String toEmail, String token) {
-        String verifyUrl = baseUrl + "/api/auth/verify-email?token=" + token;
+        String verifyUrl = apiBaseUrl + "/api/auth/verify-email?token=" + token;
         SimpleMailMessage msg = new SimpleMailMessage();
         msg.setFrom(fromEmail);
         msg.setTo(toEmail);
-        msg.setSubject("Verify your email - Wint AI Bot");
-        msg.setText("Please verify your email by clicking this link:\n\n" + verifyUrl + "\n\nThis link will expire in 24 hours.");
+        msg.setSubject("Verify your email - Wintaibot");
+        msg.setText(
+            "Welcome to Wintaibot!\n\n" +
+            "Please verify your email address by clicking the link below:\n\n" +
+            verifyUrl + "\n\n" +
+            "This link expires in 24 hours.\n\n" +
+            "If you didn't create an account, you can ignore this email."
+        );
+        mailSender.send(msg);
+    }
+
+    public void sendPasswordResetEmail(String toEmail, String token) {
+        String resetUrl = frontendUrl + "/reset-password?token=" + token;
+        SimpleMailMessage msg = new SimpleMailMessage();
+        msg.setFrom(fromEmail);
+        msg.setTo(toEmail);
+        msg.setSubject("Reset your password - Wintaibot");
+        msg.setText(
+            "You requested a password reset for your Wintaibot account.\n\n" +
+            "Click the link below to reset your password:\n\n" +
+            resetUrl + "\n\n" +
+            "This link expires in 1 hour.\n\n" +
+            "If you didn't request this, you can safely ignore this email."
+        );
+        mailSender.send(msg);
+    }
+
+    public void sendUsernameReminderEmail(String toEmail, String username) {
+        SimpleMailMessage msg = new SimpleMailMessage();
+        msg.setFrom(fromEmail);
+        msg.setTo(toEmail);
+        msg.setSubject("Your Wintaibot username");
+        msg.setText(
+            "You requested your Wintaibot username.\n\n" +
+            "Your username is: " + username + "\n\n" +
+            "You can log in at " + frontendUrl + " using your username or email address.\n\n" +
+            "If you didn't request this, you can safely ignore this email."
+        );
         mailSender.send(msg);
     }
 }

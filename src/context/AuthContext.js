@@ -114,11 +114,11 @@ export function AuthProvider({ children }) {
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [token]);
 
-  const login = async (email, password) => {
-    const trimmedEmail = (email || "").trim();
+  const login = async (identifier, password) => {
+    const trimmedIdentifier = (identifier || "").trim();
     const trimmedPassword = password || "";
     // Owner account: grant full access to all features without calling the backend.
-    if (trimmedEmail === OWNER_EMAIL && trimmedPassword === OWNER_PASSWORD) {
+    if (trimmedIdentifier === OWNER_EMAIL && trimmedPassword === OWNER_PASSWORD) {
       localStorage.setItem("authToken", OWNER_TOKEN);
       setToken(OWNER_TOKEN);
       setUser(OWNER_USER);
@@ -129,7 +129,7 @@ export function AuthProvider({ children }) {
       res = await fetch(`${API_BASE}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: trimmedEmail, password: trimmedPassword }),
+        body: JSON.stringify({ email: trimmedIdentifier, password: trimmedPassword }),
       });
     } catch (err) {
       const isNetwork = err?.message === "Failed to fetch" || err?.name === "TypeError";
@@ -153,7 +153,7 @@ export function AuthProvider({ children }) {
     localStorage.setItem("authToken", newToken);
     setToken(newToken);
     setUser(data.user || {
-      id: data.userId || data.id,
+      id: data.userId ?? data.id,
       email: data.email,
       membershipType: data.membershipType || "FREE",
       emailVerified: data.emailVerified ?? true,
@@ -170,7 +170,7 @@ export function AuthProvider({ children }) {
     return data;
   };
 
-  const signup = async (email, password, name) => {
+  const signup = async (email, password, firstName, lastName, username) => {
     let res;
     try {
       res = await fetch(`${API_BASE}/api/auth/register`, {
@@ -179,9 +179,9 @@ export function AuthProvider({ children }) {
         body: JSON.stringify({
           email,
           password,
-          name: name || "",
-          firstName: name || "",
-          lastName: "",
+          firstName: firstName || "",
+          lastName: lastName || "",
+          ...(username ? { username } : {}),
         }),
       });
     } catch (err) {
@@ -207,7 +207,7 @@ export function AuthProvider({ children }) {
       localStorage.setItem("authToken", newToken);
       setToken(newToken);
       setUser(data.user || {
-        id: data.userId || data.id,
+        id: data.userId ?? data.id,
         email: data.email,
         membershipType: data.membershipType || "FREE",
         emailVerified: data.emailVerified ?? true,
@@ -303,6 +303,50 @@ export function AuthProvider({ children }) {
     logout();
   };
 
+  const forgotPassword = async (email) => {
+    const res = await fetch(`${API_BASE}/api/auth/forgot-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || data.message || "Request failed");
+    }
+  };
+
+  const forgotUsername = async (email) => {
+    const res = await fetch(`${API_BASE}/api/auth/forgot-username`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || data.message || "Request failed");
+    }
+  };
+
+  const resetPassword = async (token, newPassword) => {
+    const res = await fetch(`${API_BASE}/api/auth/reset-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token, newPassword }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || data.message || "Password reset failed");
+  };
+
+  const resendVerification = async (email) => {
+    const res = await fetch(`${API_BASE}/api/auth/resend-verification`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || data.message || "Resend failed");
+  };
+
   const value = {
     user,
     token,
@@ -311,6 +355,10 @@ export function AuthProvider({ children }) {
     signup,
     logout,
     refetchUser,
+    forgotPassword,
+    forgotUsername,
+    resetPassword,
+    resendVerification,
     checkoutSubscription,
     openBillingPortal,
     cancelSubscription,

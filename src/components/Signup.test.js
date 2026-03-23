@@ -6,6 +6,7 @@ const mockSignup = jest.fn();
 jest.mock('../context/AuthContext', () => ({
   useAuth: () => ({
     signup: mockSignup,
+    resendVerification: jest.fn(),
   }),
 }));
 
@@ -14,97 +15,118 @@ describe('Signup', () => {
     jest.clearAllMocks();
   });
 
-  test('renders Member Registration heading', () => {
+  test('renders Create an account heading', () => {
     render(<Signup />);
-    expect(screen.getByText('Member Registration')).toBeInTheDocument();
+    expect(screen.getByText('Create an account')).toBeInTheDocument();
   });
 
-  test('renders name, email, and password inputs', () => {
+  test('renders first name, last name, email, and password inputs', () => {
     render(<Signup />);
-    expect(screen.getByPlaceholderText('Name')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Email')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText(/password/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Jane')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Doe')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('you@example.com')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/at least 6 characters/i)).toBeInTheDocument();
   });
 
-  test('renders Sign Up button', () => {
+  test('renders Create Account button', () => {
     render(<Signup />);
-    expect(screen.getByRole('button', { name: /^sign up$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^create account$/i })).toBeInTheDocument();
   });
 
-  test('renders Log in link', () => {
+  test('renders Sign in link', () => {
     render(<Signup />);
-    expect(screen.getByRole('button', { name: /log in/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
   });
 
-  test('calls signup with email, password, and name on submit', async () => {
-    mockSignup.mockResolvedValueOnce({});
+  test('calls signup with email, password, firstName, lastName on submit', async () => {
+    mockSignup.mockResolvedValueOnce({ token: 'x', emailVerified: true });
     render(<Signup />);
 
-    fireEvent.change(screen.getByPlaceholderText('Name'), {
-      target: { value: 'Test User' },
+    fireEvent.change(screen.getByPlaceholderText('Jane'), {
+      target: { value: 'Jane' },
     });
-    fireEvent.change(screen.getByPlaceholderText('Email'), {
+    fireEvent.change(screen.getByPlaceholderText('Doe'), {
+      target: { value: 'Doe' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('you@example.com'), {
       target: { value: 'user@example.com' },
     });
-    fireEvent.change(screen.getByPlaceholderText(/password/i), {
+    fireEvent.change(screen.getByPlaceholderText(/at least 6 characters/i), {
       target: { value: 'pass123' },
     });
-    fireEvent.click(screen.getByRole('button', { name: /^sign up$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^create account$/i }));
 
     await waitFor(() =>
-      expect(mockSignup).toHaveBeenCalledWith('user@example.com', 'pass123', 'Test User')
+      expect(mockSignup).toHaveBeenCalledWith('user@example.com', 'pass123', 'Jane', 'Doe')
     );
   });
 
-  test('shows success message after successful signup', async () => {
-    mockSignup.mockResolvedValueOnce({});
+  test('shows Account created after successful signup with token', async () => {
+    mockSignup.mockResolvedValueOnce({ token: 'x', emailVerified: true });
     render(<Signup />);
 
-    fireEvent.change(screen.getByPlaceholderText('Email'), {
+    fireEvent.change(screen.getByPlaceholderText('you@example.com'), {
       target: { value: 'user@example.com' },
     });
-    fireEvent.change(screen.getByPlaceholderText(/password/i), {
+    fireEvent.change(screen.getByPlaceholderText(/at least 6 characters/i), {
       target: { value: 'pass123' },
     });
-    fireEvent.click(screen.getByRole('button', { name: /^sign up$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^create account$/i }));
 
     await waitFor(() =>
-      expect(screen.getByText(/registration successful/i)).toBeInTheDocument()
+      expect(screen.getByText(/account created/i)).toBeInTheDocument()
     );
   });
 
-  test('shows Go to Login button after successful signup', async () => {
-    mockSignup.mockResolvedValueOnce({});
+  test('shows Go to Sign In button after successful signup', async () => {
+    mockSignup.mockResolvedValueOnce({ token: 'x', emailVerified: true });
     render(<Signup />);
 
-    fireEvent.change(screen.getByPlaceholderText('Email'), {
+    fireEvent.change(screen.getByPlaceholderText('you@example.com'), {
       target: { value: 'user@example.com' },
     });
-    fireEvent.change(screen.getByPlaceholderText(/password/i), {
+    fireEvent.change(screen.getByPlaceholderText(/at least 6 characters/i), {
       target: { value: 'pass123' },
     });
-    fireEvent.click(screen.getByRole('button', { name: /^sign up$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^create account$/i }));
 
     await waitFor(() =>
-      expect(screen.getByRole('button', { name: /go to login/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /go to sign in/i })).toBeInTheDocument()
+    );
+  });
+
+  test('shows verify email screen when token is null and emailVerified is false', async () => {
+    mockSignup.mockResolvedValueOnce({ token: null, emailVerified: false, email: 'user@example.com' });
+    render(<Signup />);
+
+    fireEvent.change(screen.getByPlaceholderText('you@example.com'), {
+      target: { value: 'user@example.com' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(/at least 6 characters/i), {
+      target: { value: 'pass123' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /^create account$/i }));
+
+    await waitFor(() =>
+      expect(screen.getByText(/check your email/i)).toBeInTheDocument()
     );
   });
 
   test('calls onSwitchToLogin from success screen', async () => {
-    mockSignup.mockResolvedValueOnce({});
+    mockSignup.mockResolvedValueOnce({ token: 'x', emailVerified: true });
     const onSwitchToLogin = jest.fn();
     render(<Signup onSwitchToLogin={onSwitchToLogin} />);
 
-    fireEvent.change(screen.getByPlaceholderText('Email'), {
+    fireEvent.change(screen.getByPlaceholderText('you@example.com'), {
       target: { value: 'user@example.com' },
     });
-    fireEvent.change(screen.getByPlaceholderText(/password/i), {
+    fireEvent.change(screen.getByPlaceholderText(/at least 6 characters/i), {
       target: { value: 'pass123' },
     });
-    fireEvent.click(screen.getByRole('button', { name: /^sign up$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^create account$/i }));
 
-    await waitFor(() => screen.getByRole('button', { name: /go to login/i }));
-    fireEvent.click(screen.getByRole('button', { name: /go to login/i }));
+    await waitFor(() => screen.getByRole('button', { name: /go to sign in/i }));
+    fireEvent.click(screen.getByRole('button', { name: /go to sign in/i }));
     expect(onSwitchToLogin).toHaveBeenCalled();
   });
 
@@ -112,23 +134,23 @@ describe('Signup', () => {
     mockSignup.mockRejectedValueOnce(new Error('Email already registered'));
     render(<Signup />);
 
-    fireEvent.change(screen.getByPlaceholderText('Email'), {
+    fireEvent.change(screen.getByPlaceholderText('you@example.com'), {
       target: { value: 'dup@example.com' },
     });
-    fireEvent.change(screen.getByPlaceholderText(/password/i), {
+    fireEvent.change(screen.getByPlaceholderText(/at least 6 characters/i), {
       target: { value: 'pass123' },
     });
-    fireEvent.click(screen.getByRole('button', { name: /^sign up$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^create account$/i }));
 
     await waitFor(() =>
       expect(screen.getByText('Email already registered')).toBeInTheDocument()
     );
   });
 
-  test('calls onSwitchToLogin when Log in link is clicked', () => {
+  test('calls onSwitchToLogin when Sign in link is clicked', () => {
     const onSwitchToLogin = jest.fn();
     render(<Signup onSwitchToLogin={onSwitchToLogin} />);
-    fireEvent.click(screen.getByRole('button', { name: /log in/i }));
+    fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
     expect(onSwitchToLogin).toHaveBeenCalled();
   });
 
@@ -136,13 +158,13 @@ describe('Signup', () => {
     mockSignup.mockImplementationOnce(() => new Promise(() => {}));
     render(<Signup />);
 
-    fireEvent.change(screen.getByPlaceholderText('Email'), {
+    fireEvent.change(screen.getByPlaceholderText('you@example.com'), {
       target: { value: 'user@example.com' },
     });
-    fireEvent.change(screen.getByPlaceholderText(/password/i), {
+    fireEvent.change(screen.getByPlaceholderText(/at least 6 characters/i), {
       target: { value: 'pass123' },
     });
-    fireEvent.click(screen.getByRole('button', { name: /^sign up$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^create account$/i }));
 
     expect(await screen.findByRole('button', { name: /creating account/i })).toBeDisabled();
   });
@@ -151,15 +173,15 @@ describe('Signup', () => {
     mockSignup.mockRejectedValueOnce(new Error('Server error'));
     render(<Signup />);
 
-    fireEvent.change(screen.getByPlaceholderText('Email'), {
+    fireEvent.change(screen.getByPlaceholderText('you@example.com'), {
       target: { value: 'user@example.com' },
     });
-    fireEvent.change(screen.getByPlaceholderText(/password/i), {
+    fireEvent.change(screen.getByPlaceholderText(/at least 6 characters/i), {
       target: { value: 'pass123' },
     });
-    fireEvent.click(screen.getByRole('button', { name: /^sign up$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^create account$/i }));
 
     await waitFor(() => screen.getByText('Server error'));
-    expect(screen.queryByText(/registration successful/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/account created/i)).not.toBeInTheDocument();
   });
 });

@@ -691,9 +691,14 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
             </div>
 
             <div style={{ marginTop: '16px' }}>
-              <button style={s.btnPrimary} onClick={scheduleAndPublishAll}>
+              {/* <button style={s.btnPrimary} onClick={scheduleAndPublishAll}>
                 🚀 Schedule & Publish
-              </button>
+              </button> */}
+                  <button type="button" style={s.btnPrimary} onClick={scheduleAndPublishAll}>
+
+                   🚀 Schedule & Publish
+                  </button>
+              
               <p style={{ fontSize: '11px', color: '#64748b', marginTop: '8px', marginBottom: 0 }}>
                 Platforms with a date set will be scheduled; others publish now.
               </p>

@@ -42,6 +42,9 @@ public class VideoContentController {
         }
         Map<String, Object> body = new HashMap<>();
         body.put("id", id);
+        body.put("status", "COMPLETED");
+        body.put("transcript", "");
+        body.put("srt", "");
         body.put("variants", Collections.emptyList());
         return ResponseEntity.ok(body);
     }

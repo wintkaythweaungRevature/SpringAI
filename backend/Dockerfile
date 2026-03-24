@@ -8,6 +8,7 @@ RUN mvn clean package -DskipTests
 
 # Stage 2: Runtime
 FROM eclipse-temurin:17-jdk-alpine
+RUN apk add --no-cache ffmpeg
 WORKDIR /app
 
 ARG STRIPE_SECRET_KEY

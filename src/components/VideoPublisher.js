@@ -284,58 +284,6 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
     const successPlatforms = [];
     const errors = {};
 
-    for (const pid of toPublish) {
-      const variant = variants[pid];
-      const scheduledAt = scheduledTimes[pid];
-      const hasSchedule = scheduledAt && String(scheduledAt).trim() !== '';
-
-      if (hasSchedule) {
-        if (variant?.variantId) {
-          const ok = await scheduleVariant(variant.variantId, pid, scheduledAt);
-          if (ok) successPlatforms.push(pid);
-          else errors[pid] = 'Schedule failed';
-        } else {
-          errors[pid] = 'Cannot schedule without variant. Publish now or re-upload.';
-        }
-      } else {
-        try {
-          const hashtags = variant.hashtags?.join ? variant.hashtags.join(' ') : (variant.hashtags || '');
-
-          if (variant.variantId) {
-            const res = await fetch(`${base}/api/video-content/publish/${pid}/variant`, {
-              method: 'POST',
-              headers: { ...authHeaders(), 'Content-Type': 'application/json' },
-              body: JSON.stringify({ variantId: variant.variantId, caption: variant.caption, hashtags }),
-            });
-            const data = await res.json().catch(() => ({}));
-            if (res.ok) successPlatforms.push(pid);
-            else if (res.status === 401 && (data.error === 'Unauthorized' || !data.error)) {
-              errors._sessionExpired = true;
-            } else if (data.requiresConnect) errors[pid] = formatPublishError(pid, data.error || `Connect your ${pid} account first`);
-            else errors[pid] = formatPublishError(pid, data.error || 'Publish failed');
-          } else {
-            const formData = new FormData();
-            formData.append('file', video);
-            formData.append('caption', variant.caption);
-            formData.append('hashtags', hashtags);
-            const res = await fetch(`${base}/api/video-content/publish/${pid}`, {
-              method: 'POST',
-              headers: authHeaders(),
-              body: formData,
-            });
-            const data = await res.json().catch(() => ({}));
-            if (res.ok) successPlatforms.push(pid);
-            else if (res.status === 401 && (data.error === 'Unauthorized' || !data.error)) {
-              errors._sessionExpired = true;
-            } else if (data.requiresConnect) errors[pid] = formatPublishError(pid, data.error || `Connect your ${pid} account first`);
-            else errors[pid] = formatPublishError(pid, data.error || 'Publish failed');
-          }
-        } catch (e) {
-          errors[pid] = e.message;
-        }
-      }
-    }
-
     if (Object.keys(errors).length > 0) {
       const sessionExpired = !!errors._sessionExpired;
       const normalErrors = Object.fromEntries(Object.entries(errors).filter(([k]) => k !== '_sessionExpired'));
@@ -671,7 +619,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
             </div>
 
             <div style={{ marginTop: '16px' }}>
-              <button style={s.btnPrimary} onClick={scheduleAndPublishAll}>
+              <button type="button" style={s.btnPrimary} onClick={scheduleAndPublishAll}>
                 🚀 Schedule & Publish
               </button>
               <p style={{ fontSize: '11px', color: '#64748b', marginTop: '8px', marginBottom: 0 }}>

@@ -334,7 +334,6 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
             } else if (data.requiresConnect) errors[pid] = formatPublishError(pid, data.error || `Connect your ${pid} account first`);
             else errors[pid] = formatPublishError(pid, data.error || 'Publish failed');
           } else {
-            errors[pid] = formatPublishError(pid, data.error || 'Publish failed');
             const formData = new FormData();
             formData.append('file', video);
             formData.append('caption', variant.caption);

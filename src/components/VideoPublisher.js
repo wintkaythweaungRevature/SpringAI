@@ -284,6 +284,59 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
     const successPlatforms = [];
     const errors = {};
 
+    for (const pid of toPublish) {
+      const variant = variants[pid];
+      const scheduledAt = scheduledTimes[pid];
+      const hasSchedule = scheduledAt && String(scheduledAt).trim() !== '';
+      const hashtags = variant.hashtags?.join ? variant.hashtags.join(' ') : (variant.hashtags || '');
+
+      try {
+        if (hasSchedule) {
+          // ── Schedule for later ──
+          if (variant.variantId) {
+            const ok = await scheduleVariant(variant.variantId, pid, scheduledAt);
+            if (ok) successPlatforms.push(pid);
+            else errors[pid] = 'Schedule failed';
+          } else {
+            errors[pid] = 'Cannot schedule without variant. Publish now or re-upload.';
+          }
+        } else {
+          // ── Publish immediately ──
+          let res;
+          if (variant.variantId) {
+            res = await fetch(api(`/publish/${pid}/variant`), {
+              method: 'POST',
+              headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+              body: JSON.stringify({ variantId: variant.variantId, caption: variant.caption, hashtags }),
+            });
+          } else {
+            const fd = new FormData();
+            fd.append('file', video);
+            fd.append('caption', variant.caption || '');
+            fd.append('hashtags', hashtags);
+            res = await fetch(api(`/publish/${pid}`), {
+              method: 'POST',
+              headers: authHeaders(),
+              body: fd,
+            });
+          }
+          const data = await res.json().catch(() => ({}));
+          if (res.ok) {
+            successPlatforms.push(pid);
+          } else if (res.status === 401 && !data.error) {
+            errors._sessionExpired = true;
+            errors[pid] = 'Session expired';
+          } else if (data.requiresConnect) {
+            errors[pid] = `Connect your ${pid} account in Connected Accounts first`;
+          } else {
+            errors[pid] = formatPublishError(pid, data.error || 'Publish failed');
+          }
+        }
+      } catch (e) {
+        errors[pid] = `Network error: ${e.message}`;
+      }
+    }
+
     if (Object.keys(errors).length > 0) {
       const sessionExpired = !!errors._sessionExpired;
       const normalErrors = Object.fromEntries(Object.entries(errors).filter(([k]) => k !== '_sessionExpired'));

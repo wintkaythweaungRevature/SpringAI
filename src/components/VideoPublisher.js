@@ -15,7 +15,7 @@ const PLATFORMS = [
   { id: 'pinterest', label: 'Pinterest', emoji: '📌',  color: '#E60023', maxLen: 500, logo: 'pinterest' },
 ];
 
-const STEPS = ['upload', 'processing', 'review', 'published', 'analytics'];
+const STEPS = ['upload', 'processing', 'review', 'publishing', 'analytics'];
 
 /* ─── Component ─────────────────────────────────────────────── */
 export default function VideoPublisher({ onNavigateToSocialConnect }) {
@@ -39,8 +39,11 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
   const [canSkipProcessing, setCanSkipProcessing] = useState(false);
   const [contentIdea, setContentIdea] = useState(null);
   const [publishError, setPublishError] = useState(null); // { message, platforms, requiresReconnect, requiresReLogin }
+  // { [pid]: { state: 'queued'|'publishing'|'done'|'failed', error: null|string } }
+  const [publishingStatus, setPublishingStatus] = useState({});
   const fileRef = useRef();
   const skippedRef = useRef(false);
+  const publishErrorsRef = useRef({});
 
   const api = (path) => `${base}/api/video-content${path}`;
   const socialApi = (path) => `${base}/api/social${path}`;
@@ -263,6 +266,32 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
     }
   };
 
+  /**
+   * Poll GET /variants/{id}/publish-status every 5s until PUBLISHED or APPROVED (failed).
+   * Returns 'PUBLISHED', 'FAILED', or 'TIMEOUT'.
+   */
+  const pollPublishStatus = async (variantId, pid) => {
+    for (let i = 0; i < 40; i++) { // 40 × 5s = 3 min 20s max
+      await new Promise(r => setTimeout(r, 5000));
+      try {
+        const res = await fetch(api(`/variants/${variantId}/publish-status`), {
+          headers: authHeaders(),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.status === 'PUBLISHED') return 'PUBLISHED';
+          if (data.status === 'APPROVED') {
+            // Backend reset it = publish failed
+            publishErrorsRef.current[variantId] = data.error || 'Publish failed';
+            return 'FAILED';
+          }
+          // Still PUBLISHING — keep polling
+        }
+      } catch (_) { /* network blip — keep polling */ }
+    }
+    return 'TIMEOUT';
+  };
+
   const scheduleVariant = async (variantId, platform, scheduledAt) => {
     if (!variantId) return false;
     try {
@@ -281,8 +310,15 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
       return;
     }
     const toPublish = selectedPlatforms.filter(pid => variants[pid]);
+    publishErrorsRef.current = {};
+
+    // Init per-platform status and go to publishing step immediately
+    const initStatus = {};
+    toPublish.forEach(pid => { initStatus[pid] = { state: 'queued', error: null }; });
+    setPublishingStatus(initStatus);
+    setStep('publishing');
+
     const successPlatforms = [];
-    const errors = {};
 
     for (const pid of toPublish) {
       const variant = variants[pid];
@@ -290,72 +326,92 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
       const hasSchedule = scheduledAt && String(scheduledAt).trim() !== '';
       const hashtags = variant.hashtags?.join ? variant.hashtags.join(' ') : (variant.hashtags || '');
 
+      setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'publishing', error: null } }));
+
       try {
         if (hasSchedule) {
-          // ── Schedule for later ──
+          // ── Schedule for later (stays sync — fast) ──
           if (variant.variantId) {
             const ok = await scheduleVariant(variant.variantId, pid, scheduledAt);
-            if (ok) successPlatforms.push(pid);
-            else errors[pid] = 'Schedule failed';
+            if (ok) {
+              successPlatforms.push(pid);
+              setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'done', error: null } }));
+            } else {
+              setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'failed', error: 'Schedule failed' } }));
+            }
           } else {
-            errors[pid] = 'Cannot schedule without variant. Publish now or re-upload.';
+            setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'failed', error: 'Cannot schedule without variant. Re-upload.' } }));
+          }
+        } else if (variant.variantId) {
+          // ── Async publish via variant (202 + poll) ──
+          const res = await fetch(api(`/publish/${pid}/variant`), {
+            method: 'POST',
+            headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+            body: JSON.stringify({ variantId: variant.variantId, caption: variant.caption, hashtags }),
+          });
+          const data = await res.json().catch(() => ({}));
+
+          if (res.status === 202 || res.ok) {
+            // Backend accepted — now poll for result
+            const result = await pollPublishStatus(variant.variantId, pid);
+            if (result === 'PUBLISHED') {
+              successPlatforms.push(pid);
+              setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'done', error: null } }));
+            } else {
+              const err = publishErrorsRef.current[variant.variantId] || (result === 'TIMEOUT' ? 'Timed out waiting for Meta' : 'Publish failed');
+              setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'failed', error: err } }));
+            }
+          } else if (res.status === 409 && data.status === 'PUBLISHED') {
+            successPlatforms.push(pid);
+            setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'done', error: null } }));
+          } else if (res.status === 409 && data.status === 'PUBLISHING') {
+            // Already in-flight from a previous click — poll it
+            const result = await pollPublishStatus(variant.variantId, pid);
+            if (result === 'PUBLISHED') {
+              successPlatforms.push(pid);
+              setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'done', error: null } }));
+            } else {
+              const err = publishErrorsRef.current[variant.variantId] || 'Still publishing — check back later';
+              setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'failed', error: err } }));
+            }
+          } else if (res.status === 401) {
+            setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'failed', error: 'Session expired — log out and in again' } }));
+          } else if (data.requiresConnect) {
+            setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'failed', error: `Connect your ${pid} account in Connected Accounts` } }));
+          } else {
+            setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'failed', error: data.error || 'Publish failed' } }));
           }
         } else {
-          // ── Publish immediately ──
-          let res;
-          if (variant.variantId) {
-            res = await fetch(api(`/publish/${pid}/variant`), {
-              method: 'POST',
-              headers: { ...authHeaders(), 'Content-Type': 'application/json' },
-              body: JSON.stringify({ variantId: variant.variantId, caption: variant.caption, hashtags }),
-            });
-          } else {
-            const fd = new FormData();
-            fd.append('file', video);
-            fd.append('caption', variant.caption || '');
-            fd.append('hashtags', hashtags);
-            res = await fetch(api(`/publish/${pid}`), {
-              method: 'POST',
-              headers: authHeaders(),
-              body: fd,
-            });
-          }
+          // ── Fallback: no variantId — upload file directly (sync, fast platforms) ──
+          const fd = new FormData();
+          fd.append('file', video);
+          fd.append('caption', variant.caption || '');
+          fd.append('hashtags', hashtags);
+          const res = await fetch(api(`/publish/${pid}`), {
+            method: 'POST',
+            headers: authHeaders(),
+            body: fd,
+          });
           const data = await res.json().catch(() => ({}));
           if (res.ok) {
             successPlatforms.push(pid);
-          } else if (res.status === 401 && !data.error) {
-            errors._sessionExpired = true;
-            errors[pid] = 'Session expired';
-          } else if (data.requiresConnect) {
-            errors[pid] = `Connect your ${pid} account in Connected Accounts first`;
+            setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'done', error: null } }));
           } else {
-            errors[pid] = formatPublishError(pid, data.error || 'Publish failed');
+            setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'failed', error: data.error || 'Publish failed' } }));
           }
         }
       } catch (e) {
-        errors[pid] = `Network error: ${e.message}`;
+        setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'failed', error: `Network error: ${e.message}` } }));
       }
     }
 
-    if (Object.keys(errors).length > 0) {
-      const sessionExpired = !!errors._sessionExpired;
-      const normalErrors = Object.fromEntries(Object.entries(errors).filter(([k]) => k !== '_sessionExpired'));
-      const errMsg = sessionExpired
-        ? 'Your session expired. Log out and log in again, then try publishing.'
-        : Object.entries(normalErrors).map(([p, m]) => `${p}: ${m}`).join('\n');
-      const requiresReconnect = !sessionExpired && Object.values(normalErrors).some(m =>
-        /token expired|reconnect|requiresConnect|permissions|no facebook pages|no pages found/i.test(String(m))
-      );
-      setPublishError({ message: errMsg, platforms: Object.keys(normalErrors), requiresReconnect, requiresReLogin: sessionExpired });
-    }
-
     setPublished(successPlatforms);
-    setStep('analytics');
   };
 
   /* ── render sections ── */
   return (
     <div style={s.page}>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       {/* ── Publish error modal ── */}
       {publishError && (
         <div style={{
@@ -399,7 +455,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
 
       {/* ── Stepper ── */}
       <div style={{ ...s.stepper, ...(isMobile ? { flexWrap: 'wrap', gap: '12px', padding: '12px 16px', justifyContent: 'center' } : {}) }}>
-        {['Upload', 'Processing', 'Review & Schedule', 'Published', 'Analytics'].map((label, i) => {
+        {['Upload', 'Processing', 'Review & Schedule', 'Publishing', 'Analytics'].map((label, i) => {
           const sid = STEPS[i];
           const idx = STEPS.indexOf(step);
           const done = i < idx;
@@ -723,6 +779,77 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
           </div>
         </div>
       )}
+
+      {/* ── STEP: PUBLISHING ── */}
+      {step === 'publishing' && (() => {
+        const allDone = selectedPlatforms.filter(pid => variants[pid])
+          .every(pid => publishingStatus[pid]?.state === 'done' || publishingStatus[pid]?.state === 'failed');
+        const anyFailed = Object.values(publishingStatus).some(s => s?.state === 'failed');
+        return (
+          <div style={{ ...s.centerCard, maxWidth: '540px' }}>
+            <div style={{ fontSize: '40px', marginBottom: '12px' }}>🚀</div>
+            <div style={{ fontSize: '18px', fontWeight: 700, marginBottom: '6px', color: '#1e293b' }}>
+              {allDone ? 'Publishing complete!' : 'Publishing your content...'}
+            </div>
+            <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '24px' }}>
+              {allDone
+                ? `${published.length} of ${Object.keys(publishingStatus).length} platforms succeeded`
+                : 'Do not close this tab. Instagram can take up to 3 minutes.'}
+            </div>
+
+            {/* Per-platform rows */}
+            <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
+              {selectedPlatforms.filter(pid => variants[pid]).map(pid => {
+                const p = PLATFORMS.find(x => x.id === pid);
+                const ps = publishingStatus[pid];
+                const state = ps?.state || 'queued';
+                const stateIcon = state === 'done' ? '✅' : state === 'failed' ? '❌' : state === 'publishing' ? '⏳' : '⌛';
+                const stateColor = state === 'done' ? '#16a34a' : state === 'failed' ? '#dc2626' : '#64748b';
+                const stateLabel = state === 'done'
+                  ? 'Published'
+                  : state === 'failed'
+                  ? (ps?.error || 'Failed')
+                  : state === 'publishing'
+                  ? (pid === 'instagram' ? 'Meta is processing video…' : 'Publishing…')
+                  : 'Queued';
+                return (
+                  <div key={pid} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderRadius: '10px', border: `1.5px solid ${state === 'done' ? '#bbf7d0' : state === 'failed' ? '#fecaca' : '#e2e8f0'}`, background: state === 'done' ? '#f0fdf4' : state === 'failed' ? '#fef2f2' : '#f8fafc' }}>
+                    <PlatformIcon platform={p} size={24} />
+                    <span style={{ fontWeight: 600, fontSize: '13px', flex: 1 }}>{p.label}</span>
+                    <span style={{ fontSize: '12px', color: stateColor, fontWeight: 500, textAlign: 'right', maxWidth: '200px' }}>
+                      {stateIcon} {stateLabel}
+                    </span>
+                    {state === 'publishing' && (
+                      <div style={{ width: '16px', height: '16px', border: '2px solid #e2e8f0', borderTopColor: '#2563eb', borderRadius: '50%', animation: 'spin 0.8s linear infinite', flexShrink: 0 }} />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {allDone && (
+              <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
+                <button
+                  type="button"
+                  style={{ ...s.btnPrimary, flex: 1 }}
+                  onClick={() => setStep('analytics')}
+                >
+                  📊 View Analytics →
+                </button>
+                {anyFailed && (
+                  <button
+                    type="button"
+                    style={{ ...s.btnOutline, flex: 1 }}
+                    onClick={() => setStep('review')}
+                  >
+                    🔄 Retry Failed
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* ── STEP: ANALYTICS ── */}
       {step === 'analytics' && (

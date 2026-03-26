@@ -36,25 +36,8 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/spring-ai-react:latest
 
-      # ── Backend ───────────────────────────────────────────────
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-
-      - name: Build Backend JAR
-        run: mvn clean package -DskipTests
-        working-directory: backend
-
-      - name: Build and Push Backend Image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./backend
-          push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/spring-ai-backend:latest
-
       # ── Deploy to EC2 ─────────────────────────────────────────
+      # Backend image is built and pushed by the WintSpringAIBackEnd repo's workflow.
       # Required secrets: EC2_HOST (public IP or DNS), EC2_SSH_KEY (private key).
       # If you see "dial tcp ***:22: i/o timeout": open port 22 in EC2 Security Group
       # (Inbound rules → SSH from 0.0.0.0/0 or https://api.github.com/meta for GitHub IPs).
@@ -86,8 +69,6 @@ jobs:
             docker run -d -p 80:80 --name spring-ai-react --restart always ${{ secrets.DOCKER_USERNAME }}/spring-ai-react:latest
             docker stop spring-ai-backend 2>/dev/null || true
             docker rm spring-ai-backend 2>/dev/null || true
-            if [ -f /root/backend.env ]; then
-              docker run -d -p 8080:8080 --name spring-ai-backend --restart always -v /root/certs:/app/certs --env-file /root/backend.env ${{ secrets.DOCKER_USERNAME }}/spring-ai-backend:latest
-            else
-              docker run -d -p 8080:8080 --name spring-ai-backend --restart always ${{ secrets.DOCKER_USERNAME }}/spring-ai-backend:latest
-            fi
+            ENV_FILE=""
+            if [ -f /root/.env ]; then ENV_FILE="--env-file /root/.env"; fi
+            docker run -d -p 8080:8080 --name spring-ai-backend --restart always $ENV_FILE ${{ secrets.DOCKER_USERNAME }}/spring-ai-backend:latest

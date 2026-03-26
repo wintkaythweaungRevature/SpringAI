@@ -11,6 +11,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
@@ -194,6 +196,56 @@ public class AuthService {
         user.setMembershipType(User.MembershipType.FREE);
         user.setStripeSubscriptionId(null);
         userRepository.save(user);
+    }
+
+    public void forgotPassword(String email) {
+        userRepository.findByEmailIgnoreCase(email.trim().toLowerCase()).ifPresent(user -> {
+            String token = generateToken();
+            user.setPasswordResetToken(token);
+            user.setPasswordResetTokenExpiry(Instant.now().plus(1, ChronoUnit.HOURS));
+            userRepository.save(user);
+            if (emailService != null) {
+                try { emailService.sendPasswordResetEmail(user.getEmail(), token); } catch (Exception ignored) {}
+            }
+        });
+        // Always return success (don't reveal whether email exists)
+    }
+
+    public void resetPassword(String token, String newPassword) {
+        User user = userRepository.findByPasswordResetToken(token)
+                .orElseThrow(() -> new RuntimeException("Invalid or expired reset link."));
+        if (user.getPasswordResetTokenExpiry() == null || Instant.now().isAfter(user.getPasswordResetTokenExpiry())) {
+            throw new RuntimeException("Reset link has expired. Please request a new one.");
+        }
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        user.setPasswordResetToken(null);
+        user.setPasswordResetTokenExpiry(null);
+        userRepository.save(user);
+    }
+
+    public void forgotUsername(String email) {
+        userRepository.findByEmailIgnoreCase(email.trim().toLowerCase()).ifPresent(user -> {
+            String username = user.getUsername();
+            if (username == null || username.isBlank()) {
+                username = user.getEmail(); // fallback to email if no username set
+            }
+            if (emailService != null) {
+                try { emailService.sendUsernameReminderEmail(user.getEmail(), username); } catch (Exception ignored) {}
+            }
+        });
+    }
+
+    public void resendVerificationEmail(String email) {
+        userRepository.findByEmailIgnoreCase(email.trim().toLowerCase()).ifPresent(user -> {
+            if (!user.isEmailVerified()) {
+                String token = generateToken();
+                user.setEmailVerificationToken(token);
+                userRepository.save(user);
+                if (emailService != null) {
+                    try { emailService.sendVerificationEmail(user.getEmail(), token); } catch (Exception ignored) {}
+                }
+            }
+        });
     }
 
     private String generateToken() {

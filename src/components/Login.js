@@ -66,16 +66,7 @@ export default function Login({ onSuccess, onSwitchToSignup, onForgotPassword })
             />
           </div>
           <div className="auth-field">
-            <div className="auth-label-row">
-              <label className="auth-label">Password</label>
-              <button
-                type="button"
-                onClick={() => onForgotPassword?.("password")}
-                className="auth-forgot-link"
-              >
-                Forgot password?
-              </button>
-            </div>
+            <label className="auth-label">Password</label>
             <input
               type="password"
               placeholder="Enter your password"
@@ -87,13 +78,22 @@ export default function Login({ onSuccess, onSwitchToSignup, onForgotPassword })
             />
           </div>
 
-          <button
-            type="button"
-            onClick={() => onForgotPassword?.("username")}
-            className="auth-forgot-username-link"
-          >
-            Forgot your username?
-          </button>
+          <div className="auth-forgot-row">
+            <button
+              type="button"
+              onClick={() => onForgotPassword?.("username")}
+              className="auth-forgot-link"
+            >
+              Forgot username?
+            </button>
+            <button
+              type="button"
+              onClick={() => onForgotPassword?.("password")}
+              className="auth-forgot-link"
+            >
+              Forgot password?
+            </button>
+          </div>
 
           {error && (
             <div className="auth-error">

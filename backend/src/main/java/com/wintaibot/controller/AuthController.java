@@ -1,9 +1,6 @@
 package com.wintaibot.controller;
 
-import com.wintaibot.dto.LoginRequest;
-import com.wintaibot.dto.LoginResponse;
-import com.wintaibot.dto.MeResponse;
-import com.wintaibot.dto.RegisterRequest;
+import com.wintaibot.dto.*;
 import com.wintaibot.service.AuthService;
 import com.wintaibot.service.JwtService;
 import jakarta.validation.Valid;
@@ -84,5 +81,29 @@ public class AuthController {
         }
         LoginResponse res = authService.reactivate(req.getEmail(), req.getPassword());
         return ResponseEntity.ok(res);
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest req) {
+        authService.forgotPassword(req.getEmail());
+        return ResponseEntity.ok(java.util.Map.of("message", "If that email is registered, a reset link has been sent."));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest req) {
+        authService.resetPassword(req.getToken(), req.getNewPassword());
+        return ResponseEntity.ok(java.util.Map.of("message", "Password reset successfully."));
+    }
+
+    @PostMapping("/forgot-username")
+    public ResponseEntity<?> forgotUsername(@Valid @RequestBody ForgotPasswordRequest req) {
+        authService.forgotUsername(req.getEmail());
+        return ResponseEntity.ok(java.util.Map.of("message", "If that email is registered, your username has been sent."));
+    }
+
+    @PostMapping("/resend-verification")
+    public ResponseEntity<?> resendVerification(@Valid @RequestBody ForgotPasswordRequest req) {
+        authService.resendVerificationEmail(req.getEmail());
+        return ResponseEntity.ok(java.util.Map.of("message", "If that email is registered, a verification link has been sent."));
     }
 }

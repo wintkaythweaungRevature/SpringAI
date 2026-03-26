@@ -17,6 +17,24 @@ const PLATFORMS = [
 
 const STEPS = ['upload', 'processing', 'review', 'publishing', 'analytics'];
 
+const MAX_FILE_SIZE_BYTES = 2 * 1024 * 1024 * 1024; // 2GB
+const ACCEPTED_FORMATS = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm', 'video/mov'];
+const ACCEPTED_EXTENSIONS = ['.mp4', '.mov', '.avi', '.webm'];
+
+function validateVideo(file) {
+  if (!file) return null;
+  const ext = '.' + file.name.split('.').pop().toLowerCase();
+  const isValidType = file.type.startsWith('video/') && (ACCEPTED_FORMATS.includes(file.type) || ACCEPTED_EXTENSIONS.includes(ext));
+  if (!isValidType) {
+    return `❌ "${file.name}" is not supported. Please use MP4, MOV, AVI, or WebM.`;
+  }
+  if (file.size > MAX_FILE_SIZE_BYTES) {
+    const sizeMB = (file.size / 1024 / 1024).toFixed(0);
+    return `❌ File is too large (${sizeMB} MB). Maximum allowed size is 2GB (2,048 MB).`;
+  }
+  return null; // valid
+}
+
 /* ─── Component ─────────────────────────────────────────────── */
 export default function VideoPublisher({ onNavigateToSocialConnect }) {
   const { apiBase, token, logout } = useAuth();
@@ -39,6 +57,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
   const [canSkipProcessing, setCanSkipProcessing] = useState(false);
   const [contentIdea, setContentIdea] = useState(null);
   const [publishError, setPublishError] = useState(null); // { message, platforms, requiresReconnect, requiresReLogin }
+  const [fileError, setFileError] = useState(null);
   // { [pid]: { state: 'queued'|'publishing'|'done'|'failed', error: null|string } }
   const [publishingStatus, setPublishingStatus] = useState({});
   const fileRef = useRef();
@@ -130,12 +149,18 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
   const handleDrop = (e) => {
     e.preventDefault(); setDragOver(false);
     const f = e.dataTransfer.files[0];
-    if (f && f.type.startsWith('video/')) setVideo(f);
+    if (!f) return;
+    const err = validateVideo(f);
+    if (err) { setFileError(err); setVideo(null); }
+    else { setFileError(null); setVideo(f); }
   };
 
   const handleFile = (e) => {
     const f = e.target.files[0];
-    if (f) setVideo(f);
+    if (!f) return;
+    const err = validateVideo(f);
+    if (err) { setFileError(err); setVideo(null); }
+    else { setFileError(null); setVideo(f); }
   };
 
   const applyIdeaForNextVideo = (idea) => {
@@ -495,7 +520,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
               onDrop={handleDrop}
               onClick={() => fileRef.current.click()}
             >
-              <input ref={fileRef} type="file" accept="video/*" style={{ display: 'none' }} onChange={handleFile} />
+              <input ref={fileRef} type="file" accept="video/mp4,video/quicktime,video/x-msvideo,video/webm,.mp4,.mov,.avi,.webm" style={{ display: 'none' }} onChange={handleFile} />
               {video ? (
                 <>
                   <div style={{ fontSize: '36px' }}>🎥</div>
@@ -507,11 +532,29 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
                 <>
                   <div style={{ fontSize: '40px' }}>📹</div>
                   <div style={s.dropTitle}>Drop your video here</div>
-                  <div style={s.dropSub}>MP4, MOV, AVI · Max 500MB</div>
+                  <div style={s.dropSub}>MP4, MOV, AVI, WebM · Max 2GB</div>
                 </>
               )}
             </div>
 
+            {/* File error + requirements panel */}
+            {fileError && (
+              <div style={{ marginTop: '12px', padding: '14px 16px', borderRadius: '10px', background: '#fef2f2', border: '1px solid #fca5a5', color: '#991b1b', fontSize: '13px' }}>
+                <div style={{ fontWeight: 700, marginBottom: '10px' }}>{fileError}</div>
+                <div style={{ fontWeight: 600, marginBottom: '6px', color: '#7f1d1d' }}>✅ Accepted video requirements:</div>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', color: '#7f1d1d' }}>
+                  <tbody>
+                    <tr><td style={{ padding: '3px 8px 3px 0', fontWeight: 600 }}>Format</td><td>MP4, MOV, AVI, WebM</td></tr>
+                    <tr><td style={{ padding: '3px 8px 3px 0', fontWeight: 600 }}>Max size</td><td>2 GB (2,048 MB)</td></tr>
+                    <tr><td style={{ padding: '3px 8px 3px 0', fontWeight: 600 }}>Codec</td><td>H.264 or H.265 (most cameras use this)</td></tr>
+                    <tr><td style={{ padding: '3px 8px 3px 0', fontWeight: 600 }}>Resolution</td><td>Up to 4K (3840×2160)</td></tr>
+                    <tr><td style={{ padding: '3px 8px 3px 0', fontWeight: 600 }}>Duration</td><td>3 seconds – 60 minutes</td></tr>
+                    <tr><td style={{ padding: '3px 8px 3px 0', fontWeight: 600 }}>Audio</td><td>AAC recommended (optional)</td></tr>
+                  </tbody>
+                </table>
+                <div style={{ marginTop: '8px', fontSize: '11px', color: '#b91c1c' }}>💡 Tip: If your file is too large, compress it with <strong>HandBrake</strong> (free) before uploading.</div>
+              </div>
+            )}
             <button
               style={{ ...s.btnPrimary, ...((!video || selectedPlatforms.length === 0) ? s.btnDisabled : {}) }}
               onClick={runProcessing}

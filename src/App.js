@@ -89,10 +89,10 @@ function App() {
     <div style={s.shell}>
 
       {/* ═══════════════ SIDEBAR ═══════════════ */}
-      {((isMobile || isTablet) && sidebarOpen) && (
+      {user && ((isMobile || isTablet) && sidebarOpen) && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 40 }} onClick={() => setSidebarOpen(false)} aria-hidden="true" />
       )}
-      <aside style={{
+      {user && <aside style={{
         ...s.sidebar,
         ...(sidebarOpen ? {} : s.sidebarCollapsed),
         ...((isMobile || isTablet) ? {
@@ -153,14 +153,14 @@ function App() {
             {sidebarOpen && <><span style={{ flex: 1 }}>Explore Tools</span><span style={{ opacity: 0.5, fontSize: '13px' }}>›</span></>}
           </button>
         </div>
-      </aside>
+      </aside>}
 
       {/* ═══════════════ MAIN ═══════════════ */}
       <div style={s.main}>
 
         {/* Top Bar */}
         <header style={s.topBar}>
-          <button style={s.menuBtn} onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>
+          {user && <button style={s.menuBtn} onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>}
 
           <div style={s.searchBox}>
             <span style={{ opacity: 0.4, fontSize: '14px' }}>🔍</span>

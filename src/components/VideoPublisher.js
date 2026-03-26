@@ -5,14 +5,14 @@ import PlatformIcon from './PlatformIcon';
 
 /* ─── Constants ─────────────────────────────────────────────── */
 const PLATFORMS = [
-  { id: 'youtube',   label: 'YouTube',   emoji: '▶️',  color: '#FF0000', maxLen: 5000, logo: 'youtube' },
-  { id: 'instagram', label: 'Instagram', emoji: '📸',  color: '#E1306C', maxLen: 2200, logo: 'instagram' },
-  { id: 'tiktok',    label: 'TikTok',    emoji: '🎵',  color: '#010101', maxLen: 2200, logo: 'tiktok' },
-  { id: 'linkedin',  label: 'LinkedIn',   emoji: '💼',  color: '#0A66C2', maxLen: 3000, logo: 'linkedin' },
-  { id: 'facebook',  label: 'Facebook',   emoji: '👍',  color: '#1877F2', maxLen: 63206, logo: 'facebook' },
-  { id: 'x',         label: 'X (Twitter)', emoji: '🐦', color: '#000000', maxLen: 280, logo: 'x' },
-  { id: 'threads',   label: 'Threads',   emoji: '🧵',  color: '#101010', maxLen: 500, logo: 'threads' },
-  { id: 'pinterest', label: 'Pinterest', emoji: '📌',  color: '#E60023', maxLen: 500, logo: 'pinterest' },
+  { id: 'youtube',   label: 'YouTube',    emoji: '▶️',  color: '#FF0000', maxLen: 5000,  logo: 'youtube',   supports: ['video'] },
+  { id: 'instagram', label: 'Instagram',  emoji: '📸',  color: '#E1306C', maxLen: 2200,  logo: 'instagram', supports: ['video', 'image'] },
+  { id: 'tiktok',    label: 'TikTok',     emoji: '🎵',  color: '#010101', maxLen: 2200,  logo: 'tiktok',    supports: ['video'] },
+  { id: 'linkedin',  label: 'LinkedIn',   emoji: '💼',  color: '#0A66C2', maxLen: 3000,  logo: 'linkedin',  supports: ['video', 'image', 'text'] },
+  { id: 'facebook',  label: 'Facebook',   emoji: '👍',  color: '#1877F2', maxLen: 63206, logo: 'facebook',  supports: ['video', 'image', 'text'] },
+  { id: 'x',         label: 'X (Twitter)',emoji: '🐦',  color: '#000000', maxLen: 280,   logo: 'x',         supports: ['video', 'image', 'text'] },
+  { id: 'threads',   label: 'Threads',    emoji: '🧵',  color: '#101010', maxLen: 500,   logo: 'threads',   supports: ['video', 'image', 'text'] },
+  { id: 'pinterest', label: 'Pinterest',  emoji: '📌',  color: '#E60023', maxLen: 500,   logo: 'pinterest', supports: ['image'] },
 ];
 
 const STEPS = ['upload', 'processing', 'review', 'publishing', 'analytics'];
@@ -20,6 +20,16 @@ const STEPS = ['upload', 'processing', 'review', 'publishing', 'analytics'];
 const MAX_FILE_SIZE_BYTES = 2 * 1024 * 1024 * 1024; // 2GB
 const ACCEPTED_FORMATS = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm', 'video/mov'];
 const ACCEPTED_EXTENSIONS = ['.mp4', '.mov', '.avi', '.webm'];
+
+const MAX_IMAGE_SIZE_BYTES = 20 * 1024 * 1024; // 20MB
+const ACCEPTED_IMAGE_FORMATS = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+const ACCEPTED_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+
+const POST_TYPES = [
+  { id: 'video', label: 'Video',  icon: '📹' },
+  { id: 'image', label: 'Image',  icon: '🖼️' },
+  { id: 'text',  label: 'Text',   icon: '✍️' },
+];
 
 function validateVideo(file) {
   if (!file) return null;
@@ -32,7 +42,19 @@ function validateVideo(file) {
     const sizeMB = (file.size / 1024 / 1024).toFixed(0);
     return `❌ File is too large (${sizeMB} MB). Maximum allowed size is 2GB (2,048 MB).`;
   }
-  return null; // valid
+  return null;
+}
+
+function validateImage(file) {
+  if (!file) return null;
+  const ext = '.' + file.name.split('.').pop().toLowerCase();
+  const isValid = ACCEPTED_IMAGE_FORMATS.includes(file.type) || ACCEPTED_IMAGE_EXTENSIONS.includes(ext);
+  if (!isValid) return `❌ "${file.name}" is not supported. Please use JPG, PNG, GIF, or WebP.`;
+  if (file.size > MAX_IMAGE_SIZE_BYTES) {
+    const sizeMB = (file.size / 1024 / 1024).toFixed(1);
+    return `❌ Image is too large (${sizeMB} MB). Maximum allowed size is 20 MB.`;
+  }
+  return null;
 }
 
 /* ─── Component ─────────────────────────────────────────────── */
@@ -60,7 +82,11 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
   const [fileError, setFileError] = useState(null);
   // { [pid]: { state: 'queued'|'publishing'|'done'|'failed', error: null|string } }
   const [publishingStatus, setPublishingStatus] = useState({});
-  const fileRef = useRef();
+  const [postType, setPostType]       = useState('video'); // 'video' | 'image' | 'text'
+  const [imageFile, setImageFile]     = useState(null);
+  const [textCaption, setTextCaption] = useState('');
+  const fileRef    = useRef();
+  const imageRef   = useRef();
   const skippedRef = useRef(false);
   const publishErrorsRef = useRef({});
 
@@ -146,13 +172,35 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
   const togglePlatform = (id) =>
     setSelected(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id]);
 
+  const switchPostType = (type) => {
+    setPostType(type);
+    setVideo(null);
+    setImageFile(null);
+    setTextCaption('');
+    setFileError(null);
+    setVariants({});
+    setPublished([]);
+    setStep('upload');
+    // Keep only platforms that support the new type
+    setSelected(prev => prev.filter(id => {
+      const p = PLATFORMS.find(x => x.id === id);
+      return p && p.supports.includes(type);
+    }));
+  };
+
   const handleDrop = (e) => {
     e.preventDefault(); setDragOver(false);
     const f = e.dataTransfer.files[0];
     if (!f) return;
-    const err = validateVideo(f);
-    if (err) { setFileError(err); setVideo(null); }
-    else { setFileError(null); setVideo(f); }
+    if (postType === 'image') {
+      const err = validateImage(f);
+      if (err) { setFileError(err); setImageFile(null); }
+      else { setFileError(null); setImageFile(f); }
+    } else {
+      const err = validateVideo(f);
+      if (err) { setFileError(err); setVideo(null); }
+      else { setFileError(null); setVideo(f); }
+    }
   };
 
   const handleFile = (e) => {
@@ -161,6 +209,14 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
     const err = validateVideo(f);
     if (err) { setFileError(err); setVideo(null); }
     else { setFileError(null); setVideo(f); }
+  };
+
+  const handleImageFile = (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    const err = validateImage(f);
+    if (err) { setFileError(err); setImageFile(null); }
+    else { setFileError(null); setImageFile(f); }
   };
 
   const applyIdeaForNextVideo = (idea) => {
@@ -191,8 +247,30 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
     setProcessLog(prev => [...prev, '⏭️ Skipped — using template captions. Edit before publishing.']);
   };
 
+  /* ── Image / Text quick path — skip video pipeline ────────── */
+  const runImageOrTextProcessing = () => {
+    const generated = {};
+    const sourceName = postType === 'image' ? (imageFile?.name || 'image') : 'post';
+    for (const pid of selectedPlatforms) {
+      generated[pid] = {
+        caption: textCaption.trim() || mockCaption(pid, sourceName),
+        hashtags: mockHashtags(pid),
+        clipNote: '',
+        status: 'draft',
+        variantId: null,
+      };
+    }
+    setVariants(generated);
+    setActiveVariant(selectedPlatforms[0]);
+    setStep('review');
+  };
+
   /* ── AI processing — async upload + poll ───────────────────── */
   const runProcessing = async () => {
+    if (postType === 'image' || postType === 'text') {
+      runImageOrTextProcessing();
+      return;
+    }
     skippedRef.current = false;
     setCanSkipProcessing(false);
     setStep('processing');
@@ -406,6 +484,24 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
           } else {
             setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'failed', error: data.error || 'Publish failed' } }));
           }
+        } else if (postType === 'image' || postType === 'text') {
+          // ── Image / Text publish via /api/social/post/{platform} ──
+          const fd = new FormData();
+          if (postType === 'image' && imageFile) fd.append('file', imageFile);
+          fd.append('caption', variant.caption || '');
+          fd.append('hashtags', hashtags);
+          const res = await fetch(`${base}/api/social/post/${pid}`, {
+            method: 'POST',
+            headers: authHeaders(),
+            body: fd,
+          });
+          const data = await res.json().catch(() => ({}));
+          if (res.ok) {
+            successPlatforms.push(pid);
+            setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'done', error: null } }));
+          } else {
+            setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'failed', error: data.error || 'Publish failed' } }));
+          }
         } else {
           // ── Fallback: no variantId — upload file directly (sync, fast platforms) ──
           const fd = new FormData();
@@ -506,61 +602,169 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
         <div style={{ ...s.layout, ...(isMobile ? { flexDirection: 'column', flexWrap: 'wrap' } : {}) }}>
           {/* Left */}
           <div style={{ ...s.left, ...(isMobile ? { width: '100%', minWidth: 0 } : {}) }}>
-            <div style={s.sectionTitle}>🎬 Upload Video</div>
+
+            {/* ── Post type selector ── */}
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
+              {POST_TYPES.map(pt => (
+                <button
+                  key={pt.id}
+                  type="button"
+                  onClick={() => switchPostType(pt.id)}
+                  style={{
+                    flex: 1, padding: '10px 8px', borderRadius: '10px', border: `2px solid ${postType === pt.id ? '#6366f1' : '#e2e8f0'}`,
+                    background: postType === pt.id ? '#eef2ff' : '#fff',
+                    color: postType === pt.id ? '#4f46e5' : '#64748b',
+                    fontWeight: postType === pt.id ? 700 : 500,
+                    fontSize: '13px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  <span style={{ fontSize: '20px' }}>{pt.icon}</span>
+                  {pt.label}
+                </button>
+              ))}
+            </div>
+
+            <div style={s.sectionTitle}>
+              {postType === 'video' ? '🎬 Upload Video' : postType === 'image' ? '🖼️ Upload Image' : '✍️ Write Your Post'}
+            </div>
+
             {contentIdea && (
               <div style={{ marginBottom: '16px', padding: '12px 16px', borderRadius: '10px', background: 'linear-gradient(135deg,#eff6ff,#dbeafe)', border: '1px solid #93c5fd', fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
                 <span><strong>💡 Next idea:</strong> {contentIdea}</span>
                 <button type="button" onClick={() => setContentIdea(null)} style={{ padding: '4px 10px', borderRadius: '6px', border: '1px solid #93c5fd', background: '#fff', fontSize: '12px', cursor: 'pointer', color: '#64748b' }}>Clear</button>
               </div>
             )}
-            <div
-              style={{ ...s.dropZone, ...(dragOver ? s.dropOver : {}) }}
-              onDragOver={e => { e.preventDefault(); setDragOver(true); }}
-              onDragLeave={() => setDragOver(false)}
-              onDrop={handleDrop}
-              onClick={() => fileRef.current.click()}
-            >
-              <input ref={fileRef} type="file" accept="video/mp4,video/quicktime,video/x-msvideo,video/webm,.mp4,.mov,.avi,.webm" style={{ display: 'none' }} onChange={handleFile} />
-              {video ? (
-                <>
-                  <div style={{ fontSize: '36px' }}>🎥</div>
-                  <div style={s.fileName}>{video.name}</div>
-                  <div style={s.fileSize}>{(video.size / 1024 / 1024).toFixed(1)} MB</div>
-                  <div style={s.changeFile}>Click to change</div>
-                </>
-              ) : (
-                <>
-                  <div style={{ fontSize: '40px' }}>📹</div>
-                  <div style={s.dropTitle}>Drop your video here</div>
-                  <div style={s.dropSub}>MP4, MOV, AVI, WebM · Max 2GB</div>
-                </>
-              )}
-            </div>
+
+            {/* ── Video drop zone ── */}
+            {postType === 'video' && (
+              <div
+                style={{ ...s.dropZone, ...(dragOver ? s.dropOver : {}) }}
+                onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={handleDrop}
+                onClick={() => fileRef.current.click()}
+              >
+                <input ref={fileRef} type="file" accept="video/mp4,video/quicktime,video/x-msvideo,video/webm,.mp4,.mov,.avi,.webm" style={{ display: 'none' }} onChange={handleFile} />
+                {video ? (
+                  <>
+                    <div style={{ fontSize: '36px' }}>🎥</div>
+                    <div style={s.fileName}>{video.name}</div>
+                    <div style={s.fileSize}>{(video.size / 1024 / 1024).toFixed(1)} MB</div>
+                    <div style={s.changeFile}>Click to change</div>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ fontSize: '40px' }}>📹</div>
+                    <div style={s.dropTitle}>Drop your video here</div>
+                    <div style={s.dropSub}>MP4, MOV, AVI, WebM · Max 2GB</div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* ── Image drop zone ── */}
+            {postType === 'image' && (
+              <div
+                style={{ ...s.dropZone, ...(dragOver ? s.dropOver : {}) }}
+                onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={handleDrop}
+                onClick={() => imageRef.current.click()}
+              >
+                <input ref={imageRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp,.jpg,.jpeg,.png,.gif,.webp" style={{ display: 'none' }} onChange={handleImageFile} />
+                {imageFile ? (
+                  <>
+                    <img src={URL.createObjectURL(imageFile)} alt="preview" style={{ maxHeight: '140px', maxWidth: '100%', borderRadius: '8px', objectFit: 'cover' }} />
+                    <div style={s.fileName}>{imageFile.name}</div>
+                    <div style={s.fileSize}>{(imageFile.size / 1024 / 1024).toFixed(1)} MB</div>
+                    <div style={s.changeFile}>Click to change</div>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ fontSize: '40px' }}>🖼️</div>
+                    <div style={s.dropTitle}>Drop your image here</div>
+                    <div style={s.dropSub}>JPG, PNG, GIF, WebP · Max 20MB</div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* ── Text area ── */}
+            {postType === 'text' && (
+              <div style={{ marginBottom: '16px' }}>
+                <textarea
+                  value={textCaption}
+                  onChange={e => setTextCaption(e.target.value)}
+                  placeholder="Write your post here... AI will adapt it for each platform you selected."
+                  rows={6}
+                  style={{
+                    width: '100%', boxSizing: 'border-box', padding: '14px 16px', borderRadius: '10px',
+                    border: '1.5px solid #e2e8f0', fontSize: '14px', fontFamily: 'inherit',
+                    resize: 'vertical', outline: 'none', lineHeight: 1.6,
+                    transition: 'border-color 0.15s',
+                  }}
+                  onFocus={e => { e.target.style.borderColor = '#6366f1'; }}
+                  onBlur={e => { e.target.style.borderColor = '#e2e8f0'; }}
+                />
+                <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '6px', textAlign: 'right' }}>
+                  {textCaption.length} characters
+                </div>
+              </div>
+            )}
 
             {/* File error + requirements panel */}
             {fileError && (
               <div style={{ marginTop: '12px', padding: '14px 16px', borderRadius: '10px', background: '#fef2f2', border: '1px solid #fca5a5', color: '#991b1b', fontSize: '13px' }}>
                 <div style={{ fontWeight: 700, marginBottom: '10px' }}>{fileError}</div>
-                <div style={{ fontWeight: 600, marginBottom: '6px', color: '#7f1d1d' }}>✅ Accepted video requirements:</div>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', color: '#7f1d1d' }}>
-                  <tbody>
-                    <tr><td style={{ padding: '3px 8px 3px 0', fontWeight: 600 }}>Format</td><td>MP4, MOV, AVI, WebM</td></tr>
-                    <tr><td style={{ padding: '3px 8px 3px 0', fontWeight: 600 }}>Max size</td><td>2 GB (2,048 MB)</td></tr>
-                    <tr><td style={{ padding: '3px 8px 3px 0', fontWeight: 600 }}>Codec</td><td>H.264 or H.265 (most cameras use this)</td></tr>
-                    <tr><td style={{ padding: '3px 8px 3px 0', fontWeight: 600 }}>Resolution</td><td>Up to 4K (3840×2160)</td></tr>
-                    <tr><td style={{ padding: '3px 8px 3px 0', fontWeight: 600 }}>Duration</td><td>3 seconds – 60 minutes</td></tr>
-                    <tr><td style={{ padding: '3px 8px 3px 0', fontWeight: 600 }}>Audio</td><td>AAC recommended (optional)</td></tr>
-                  </tbody>
-                </table>
-                <div style={{ marginTop: '8px', fontSize: '11px', color: '#b91c1c' }}>💡 Tip: If your file is too large, compress it with <strong>HandBrake</strong> (free) before uploading.</div>
+                {postType === 'video' && (
+                  <>
+                    <div style={{ fontWeight: 600, marginBottom: '6px', color: '#7f1d1d' }}>✅ Accepted video requirements:</div>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', color: '#7f1d1d' }}>
+                      <tbody>
+                        <tr><td style={{ padding: '3px 8px 3px 0', fontWeight: 600 }}>Format</td><td>MP4, MOV, AVI, WebM</td></tr>
+                        <tr><td style={{ padding: '3px 8px 3px 0', fontWeight: 600 }}>Max size</td><td>2 GB (2,048 MB)</td></tr>
+                        <tr><td style={{ padding: '3px 8px 3px 0', fontWeight: 600 }}>Codec</td><td>H.264 or H.265</td></tr>
+                        <tr><td style={{ padding: '3px 8px 3px 0', fontWeight: 600 }}>Resolution</td><td>Up to 4K (3840×2160)</td></tr>
+                        <tr><td style={{ padding: '3px 8px 3px 0', fontWeight: 600 }}>Duration</td><td>3 seconds – 60 minutes</td></tr>
+                        <tr><td style={{ padding: '3px 8px 3px 0', fontWeight: 600 }}>Audio</td><td>AAC recommended (optional)</td></tr>
+                      </tbody>
+                    </table>
+                    <div style={{ marginTop: '8px', fontSize: '11px', color: '#b91c1c' }}>💡 Tip: Compress large files with <strong>HandBrake</strong> (free).</div>
+                  </>
+                )}
+                {postType === 'image' && (
+                  <>
+                    <div style={{ fontWeight: 600, marginBottom: '6px', color: '#7f1d1d' }}>✅ Accepted image requirements:</div>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', color: '#7f1d1d' }}>
+                      <tbody>
+                        <tr><td style={{ padding: '3px 8px 3px 0', fontWeight: 600 }}>Format</td><td>JPG, PNG, GIF, WebP</td></tr>
+                        <tr><td style={{ padding: '3px 8px 3px 0', fontWeight: 600 }}>Max size</td><td>20 MB</td></tr>
+                        <tr><td style={{ padding: '3px 8px 3px 0', fontWeight: 600 }}>Resolution</td><td>Recommended at least 1080×1080px</td></tr>
+                        <tr><td style={{ padding: '3px 8px 3px 0', fontWeight: 600 }}>Aspect ratio</td><td>1:1 square, 4:5, or 16:9</td></tr>
+                      </tbody>
+                    </table>
+                  </>
+                )}
               </div>
             )}
+
             <button
-              style={{ ...s.btnPrimary, ...((!video || selectedPlatforms.length === 0) ? s.btnDisabled : {}) }}
+              style={{
+                ...s.btnPrimary,
+                ...((postType === 'video' && (!video || selectedPlatforms.length === 0)) ||
+                    (postType === 'image' && (!imageFile || selectedPlatforms.length === 0)) ||
+                    (postType === 'text'  && (!textCaption.trim() || selectedPlatforms.length === 0))
+                  ? s.btnDisabled : {}),
+              }}
               onClick={runProcessing}
-              disabled={!video || selectedPlatforms.length === 0}
+              disabled={
+                (postType === 'video' && (!video || selectedPlatforms.length === 0)) ||
+                (postType === 'image' && (!imageFile || selectedPlatforms.length === 0)) ||
+                (postType === 'text'  && (!textCaption.trim() || selectedPlatforms.length === 0))
+              }
             >
-              🚀 Generate Content
+              {postType === 'video' ? '🚀 Generate Content' : postType === 'image' ? '🖼️ Next: Review & Publish' : '✍️ Next: Review & Publish'}
             </button>
           </div>
 
@@ -569,35 +773,54 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
             <div style={s.card}>
               <div style={s.sectionTitle}>📡 Select Platforms</div>
               <div style={{ ...s.platformGrid, ...(isMobile ? { gridTemplateColumns: 'repeat(2, 1fr)' } : {}) }}>
-                {PLATFORMS.map(p => (
+                {PLATFORMS.map(p => {
+                  const supported = p.supports.includes(postType);
+                  return (
                   <button
                     key={p.id}
-                    style={{ ...s.platformBtn, ...(selectedPlatforms.includes(p.id) ? { ...s.platformBtnActive, borderColor: p.color } : {}) }}
-                    onClick={() => togglePlatform(p.id)}
+                    title={!supported ? `${p.label} does not support ${postType} posts` : ''}
+                    style={{
+                      ...s.platformBtn,
+                      ...(selectedPlatforms.includes(p.id) && supported ? { ...s.platformBtnActive, borderColor: p.color } : {}),
+                      ...((!supported) ? { opacity: 0.35, cursor: 'not-allowed', filter: 'grayscale(1)' } : {}),
+                    }}
+                    onClick={() => supported && togglePlatform(p.id)}
+                    disabled={!supported}
                   >
                     <PlatformIcon platform={p} size={28} />
                     <span style={{ fontSize: '12px', fontWeight: 600 }}>{p.label}</span>
-                    {selectedPlatforms.includes(p.id) && (
+                    {!supported && <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 400 }}>Not available</span>}
+                    {selectedPlatforms.includes(p.id) && supported && (
                       <span style={{ ...s.platformCheck, background: p.color }}>✓</span>
                     )}
                   </button>
-                ))}
+                  );
+                })}
               </div>
               <div style={s.platformCount}>
                 {selectedPlatforms.length} platform{selectedPlatforms.length !== 1 ? 's' : ''} selected ·{' '}
-                AI will generate {selectedPlatforms.length} unique content variants
+                {postType === 'video' ? `AI will generate ${selectedPlatforms.length} unique content variants` : 'Ready to publish'}
               </div>
             </div>
 
             <div style={s.card}>
-              <div style={s.sectionTitle}>⚡ What AI Will Do</div>
-              {[
+              <div style={s.sectionTitle}>⚡ What Happens Next</div>
+              {(postType === 'video' ? [
                 ['🎙️', 'Transcribe audio', 'via Whisper'],
                 ['✍️', 'Write platform-specific captions', 'tone-matched per platform'],
                 ['#️⃣', 'Generate hashtags', 'trending + relevant'],
                 ['✂️', 'Create clip variants', 'optimized per platform format'],
                 ['🖼️', 'Generate thumbnail ideas', 'high click-through'],
-              ].map(([icon, title, sub]) => (
+              ] : postType === 'image' ? [
+                ['🖼️', 'Preview your image', 'confirm before publish'],
+                ['✍️', 'Edit caption per platform', 'customise tone & length'],
+                ['#️⃣', 'Add hashtags', 'per platform'],
+                ['📤', 'Publish to selected platforms', 'Instagram, Facebook & more'],
+              ] : [
+                ['✍️', 'Review your text post', 'edit per platform'],
+                ['#️⃣', 'Add hashtags', 'per platform'],
+                ['📤', 'Publish to selected platforms', 'Facebook, X, LinkedIn & more'],
+              ]).map(([icon, title, sub]) => (
                 <div key={title} style={s.aiFeatureRow}>
                   <span style={{ fontSize: '20px' }}>{icon}</span>
                   <div>

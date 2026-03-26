@@ -18,6 +18,8 @@ import AskAIGate from './components/AskAIGate';
 import LandingSection from './components/LandingSection';
 import VideoPublisher from './components/VideoPublisher';
 import SocialConnect from './components/SocialConnect';
+import AnalyticsDashboard from './components/AnalyticsDashboard';
+import MessagesInbox from './components/MessagesInbox';
 
 const PAGE_TITLES = {
   null: 'Dashboard',
@@ -31,6 +33,8 @@ const PAGE_TITLES = {
   'account': 'Account',
   'video-publisher': 'Video Publisher',
   'social-connect': 'Connected Accounts',
+  'analytics': 'Analytics',
+  'messages':  'Messages & Comments',
 };
 
 /* ─── NavItem ─────────────────────────────────────────────── */
@@ -125,8 +129,10 @@ function App() {
           <NavItem emoji="🎙️" label="EchoScribe"  active={activeTab === 'transcription'} onClick={() => go('transcription')} />
 
           <div style={s.groupLabel}>Social Media</div>
-          <NavItem emoji="📲" label="Video Publisher" active={activeTab === 'video-publisher'} onClick={() => go('video-publisher')} hasArrow />
-          <NavItem emoji="🔗" label="Connected Accounts" active={activeTab === 'social-connect'} onClick={() => go('social-connect')} />
+          <NavItem emoji="📲" label="Video Publisher"    active={activeTab === 'video-publisher'} onClick={() => go('video-publisher')} hasArrow />
+          <NavItem emoji="📊" label="Analytics"            active={activeTab === 'analytics'}       onClick={() => go('analytics')} />
+          <NavItem emoji="💬" label="Messages"            active={activeTab === 'messages'}         onClick={() => go('messages')} />
+          <NavItem emoji="🔗" label="Connected Accounts"  active={activeTab === 'social-connect'}  onClick={() => go('social-connect')} />
 
           <div style={s.groupLabel}>Writing Tools</div>
           <NavItem emoji="✉️" label="Reply Enchanter" active={activeTab === 'Content'} onClick={() => go('Content')} />
@@ -210,6 +216,8 @@ function App() {
           {activeTab === 'Resume'           && <MemberGate featureName="Resume Worlock"><Resume /></MemberGate>}
           {activeTab === 'account'          && <AskAIGate  featureName="Account"><AccountSettings /></AskAIGate>}
           {activeTab === 'video-publisher'  && <MemberGate featureName="Video Publisher"><VideoPublisher onNavigateToSocialConnect={() => go('social-connect')} /></MemberGate>}
+          {activeTab === 'analytics'        && <MemberGate featureName="Analytics"><AnalyticsDashboard /></MemberGate>}
+          {activeTab === 'messages'         && <MemberGate featureName="Messages"><MessagesInbox /></MemberGate>}
           {activeTab === 'social-connect'   && <MemberGate featureName="Connected Accounts"><SocialConnect /></MemberGate>}
         </div>
       </div>

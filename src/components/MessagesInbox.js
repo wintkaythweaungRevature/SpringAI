@@ -1,21 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
+import PlatformIcon from './PlatformIcon';
 
 const PLATFORM_META = {
-  instagram: { label: 'Instagram', emoji: '📸', color: '#E1306C', bg: '#fce4ec', logo: 'instagram' },
-  facebook:  { label: 'Facebook',  emoji: '👍', color: '#1877F2', bg: '#e3f2fd', logo: 'facebook'  },
+  instagram: { id: 'instagram', label: 'Instagram', emoji: '📸', color: '#E1306C', bg: '#fce4ec', logo: 'instagram' },
+  facebook:  { id: 'facebook',  label: 'Facebook',  emoji: '👍', color: '#1877F2', bg: '#e3f2fd', logo: 'facebook'  },
 };
-
-function BrandIcon({ slug, color, size = 16 }) {
-  return (
-    <img
-      src={`https://cdn.simpleicons.org/${slug}/${color.replace('#', '')}`}
-      alt={slug}
-      style={{ width: size, height: size, display: 'block' }}
-      onError={e => { e.currentTarget.style.display = 'none'; }}
-    />
-  );
-}
 
 const SOURCE_LABELS = {
   instagram_dm:       { label: 'Instagram DM',      icon: '💬' },
@@ -93,7 +83,7 @@ function ConversationItem({ item, selected, onClick }) {
           width: '18px', height: '18px', display: 'flex', alignItems: 'center',
           justifyContent: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
         }}>
-          <BrandIcon slug={p.logo} color={p.color} size={12} />
+          <PlatformIcon platform={p} size={12} />
         </span>
       </div>
 
@@ -155,7 +145,7 @@ function CommentItem({ item }) {
             width: '16px', height: '16px', display: 'flex', alignItems: 'center',
             justifyContent: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
           }}>
-            <BrandIcon slug={p.logo} color={p.color} size={11} />
+            <PlatformIcon platform={p} size={11} />
           </span>
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -278,8 +268,8 @@ export default function MessagesInbox() {
             { icon: '📨', label: 'Total Messages', value: conversations.length, color: '#2563eb', bg: '#eff6ff' },
             { icon: '🔴', label: 'Unread',          value: totalUnread,          color: '#dc2626', bg: '#fef2f2' },
             { icon: '💭', label: 'Comments',         value: comments.length,      color: '#d97706', bg: '#fffbeb' },
-            { icon: <BrandIcon slug="instagram" color="#E1306C" size={22} />, label: 'Instagram', value: igConvs.length + igComments.length, color: '#E1306C', bg: '#fce4ec' },
-            { icon: <BrandIcon slug="facebook"  color="#1877F2" size={22} />, label: 'Facebook',  value: fbConvs.length + fbComments.length, color: '#1877F2', bg: '#e3f2fd' },
+            { icon: <PlatformIcon platform={PLATFORM_META.instagram} size={22} />, label: 'Instagram', value: igConvs.length + igComments.length, color: '#E1306C', bg: '#fce4ec' },
+            { icon: <PlatformIcon platform={PLATFORM_META.facebook}  size={22} />, label: 'Facebook',  value: fbConvs.length + fbComments.length, color: '#1877F2', bg: '#e3f2fd' },
           ].map(c => (
             <div key={c.label} style={{ background: c.bg, borderRadius: '12px', padding: '14px 18px', minWidth: '110px', flex: 1 }}>
               <div style={{ fontSize: '20px', marginBottom: '4px' }}>{c.icon}</div>
@@ -295,8 +285,8 @@ export default function MessagesInbox() {
         <TabBtn label="All messages"       active={tab === 'all'}       badge={totalUnread}               onClick={() => setTab('all')} />
         <TabBtn label="💬 Messages"        active={tab === 'messages'}  badge={conversations.filter(c=>Number(c.unread)>0).length} onClick={() => setTab('messages')} />
         <TabBtn label="💭 Comments"        active={tab === 'comments'}  badge={0}                          onClick={() => setTab('comments')} />
-        <TabBtn label={<span style={{display:'flex',alignItems:'center',gap:'5px'}}><BrandIcon slug="instagram" color={tab==='instagram'?'ffffff':'E1306C'} size={13}/>Instagram</span>} active={tab === 'instagram'} badge={igConvs.filter(c=>Number(c.unread)>0).length} onClick={() => setTab('instagram')} />
-        <TabBtn label={<span style={{display:'flex',alignItems:'center',gap:'5px'}}><BrandIcon slug="facebook"  color={tab==='facebook' ?'ffffff':'1877F2'} size={13}/>Facebook</span>}  active={tab === 'facebook'}  badge={fbConvs.filter(c=>Number(c.unread)>0).length} onClick={() => setTab('facebook')} />
+        <TabBtn label={<span style={{display:'flex',alignItems:'center',gap:'5px'}}><PlatformIcon platform={{...PLATFORM_META.instagram, color: tab==='instagram'?'#ffffff':'#E1306C'}} size={13}/>Instagram</span>} active={tab === 'instagram'} badge={igConvs.filter(c=>Number(c.unread)>0).length} onClick={() => setTab('instagram')} />
+        <TabBtn label={<span style={{display:'flex',alignItems:'center',gap:'5px'}}><PlatformIcon platform={{...PLATFORM_META.facebook,  color: tab==='facebook' ?'#ffffff':'#1877F2'}} size={13}/>Facebook</span>}  active={tab === 'facebook'}  badge={fbConvs.filter(c=>Number(c.unread)>0).length} onClick={() => setTab('facebook')} />
       </div>
 
       {loading && !data && (

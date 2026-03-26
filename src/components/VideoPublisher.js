@@ -85,6 +85,10 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
   const [postType, setPostType]       = useState('video'); // 'video' | 'image' | 'text'
   const [imageFile, setImageFile]     = useState(null);
   const [textCaption, setTextCaption] = useState('');
+  const [dashStats, setDashStats]     = useState(null);
+  const [dashHistory, setDashHistory] = useState([]);
+  const [dashLoading, setDashLoading] = useState(false);
+  const [retryingId, setRetryingId]   = useState(null);
   const fileRef    = useRef();
   const imageRef   = useRef();
   const skippedRef = useRef(false);
@@ -108,6 +112,31 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
       })
       .catch(() => {});
   }, [base, token]);
+
+  const loadDashboard = () => {
+    if (!token) return;
+    setDashLoading(true);
+    Promise.all([
+      fetch(`${base}/api/social/post/stats`,   { headers: authHeaders() }).then(r => r.ok ? r.json() : null),
+      fetch(`${base}/api/social/post/history?limit=10`, { headers: authHeaders() }).then(r => r.ok ? r.json() : []),
+    ]).then(([stats, history]) => {
+      if (stats)   setDashStats(stats);
+      if (history) setDashHistory(history);
+    }).catch(() => {}).finally(() => setDashLoading(false));
+  };
+
+  useEffect(() => { loadDashboard(); }, [base, token]); // eslint-disable-line
+
+  const handleRetry = async (id) => {
+    setRetryingId(id);
+    try {
+      const res = await fetch(`${base}/api/social/post/retry/${id}`, {
+        method: 'POST', headers: authHeaders(),
+      });
+      if (res.ok) loadDashboard();
+    } catch (_) {}
+    finally { setRetryingId(null); }
+  };
 
   const refreshConnections = () => {
     if (!token) return;
@@ -527,6 +556,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
     }
 
     setPublished(successPlatforms);
+    if (successPlatforms.length > 0) loadDashboard();
   };
 
   /* ── render sections ── */
@@ -766,6 +796,102 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
             >
               {postType === 'video' ? '🚀 Generate Content' : postType === 'image' ? '🖼️ Next: Review & Publish' : '✍️ Next: Review & Publish'}
             </button>
+
+            {/* ── Dashboard ── */}
+            <div style={{ marginTop: '28px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                <div style={{ fontWeight: 700, fontSize: '15px', color: '#1e293b' }}>📊 Your Dashboard</div>
+                <button type="button" onClick={loadDashboard} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: '#6366f1', fontWeight: 600 }}>
+                  {dashLoading ? '⟳ Loading...' : '↻ Refresh'}
+                </button>
+              </div>
+
+              {/* Stat cards */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '10px', marginBottom: '18px' }}>
+                {[
+                  { label: 'Published',  value: dashStats?.totalPublished ?? '—', color: '#16a34a', bg: '#f0fdf4', icon: '✅' },
+                  { label: 'This Week',  value: dashStats?.thisWeek       ?? '—', color: '#2563eb', bg: '#eff6ff', icon: '📅' },
+                  { label: 'Failed',     value: dashStats?.totalFailed    ?? '—', color: '#dc2626', bg: '#fef2f2', icon: '❌' },
+                ].map(c => (
+                  <div key={c.label} style={{ background: c.bg, borderRadius: '12px', padding: '14px 10px', textAlign: 'center', border: `1px solid ${c.bg}` }}>
+                    <div style={{ fontSize: '20px' }}>{c.icon}</div>
+                    <div style={{ fontSize: '22px', fontWeight: 800, color: c.color, lineHeight: 1.2 }}>{c.value}</div>
+                    <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>{c.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* By platform mini-bars */}
+              {dashStats?.byPlatform && Object.keys(dashStats.byPlatform).length > 0 && (
+                <div style={{ background: '#f8fafc', borderRadius: '12px', padding: '14px', marginBottom: '18px', border: '1px solid #e2e8f0' }}>
+                  <div style={{ fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '10px' }}>POSTS BY PLATFORM</div>
+                  {Object.entries(dashStats.byPlatform).sort((a,b) => b[1]-a[1]).map(([pid, count]) => {
+                    const p = PLATFORMS.find(x => x.id === pid);
+                    const max = Math.max(...Object.values(dashStats.byPlatform));
+                    return (
+                      <div key={pid} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '7px' }}>
+                        <span style={{ fontSize: '14px', width: '20px' }}>{p?.emoji || '📤'}</span>
+                        <span style={{ fontSize: '12px', width: '70px', color: '#374151', fontWeight: 500 }}>{p?.label || pid}</span>
+                        <div style={{ flex: 1, background: '#e2e8f0', borderRadius: '4px', height: '6px', overflow: 'hidden' }}>
+                          <div style={{ width: `${(count / max) * 100}%`, height: '100%', background: p?.color || '#6366f1', borderRadius: '4px', transition: 'width 0.4s' }} />
+                        </div>
+                        <span style={{ fontSize: '12px', fontWeight: 700, color: '#374151', width: '20px', textAlign: 'right' }}>{count}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Recent posts */}
+              <div style={{ fontWeight: 700, fontSize: '13px', color: '#475569', marginBottom: '10px' }}>RECENT POSTS</div>
+              {dashHistory.length === 0 && !dashLoading && (
+                <div style={{ textAlign: 'center', padding: '20px', color: '#94a3b8', fontSize: '13px', background: '#f8fafc', borderRadius: '12px', border: '1px dashed #e2e8f0' }}>
+                  No posts yet. Publish your first post above! 🚀
+                </div>
+              )}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {dashHistory.map(post => {
+                  const p = PLATFORMS.find(x => x.id === post.platform);
+                  const statusColor = post.status === 'SUCCESS' ? '#16a34a' : post.status === 'FAILED' ? '#dc2626' : '#d97706';
+                  const statusBg    = post.status === 'SUCCESS' ? '#f0fdf4'  : post.status === 'FAILED' ? '#fef2f2'  : '#fffbeb';
+                  const date = new Date(post.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                  return (
+                    <div key={post.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '11px 13px', borderRadius: '10px', background: '#fff', border: '1px solid #e2e8f0' }}>
+                      <span style={{ fontSize: '18px', flexShrink: 0, marginTop: '2px' }}>{p?.emoji || '📤'}</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: '12px', fontWeight: 600, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {post.caption || '(no caption)'}
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
+                          {p?.label || post.platform} · {post.mediaType} · {date}
+                        </div>
+                        {post.status === 'FAILED' && post.errorMessage && (
+                          <div style={{ fontSize: '11px', color: '#dc2626', marginTop: '3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            ⚠️ {post.errorMessage}
+                          </div>
+                        )}
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '5px', flexShrink: 0 }}>
+                        <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 7px', borderRadius: '20px', background: statusBg, color: statusColor }}>
+                          {post.status}
+                        </span>
+                        {post.status === 'FAILED' && (
+                          <button
+                            type="button"
+                            onClick={() => handleRetry(post.id)}
+                            disabled={retryingId === post.id}
+                            style={{ fontSize: '10px', padding: '3px 8px', borderRadius: '6px', border: '1px solid #dc2626', background: retryingId === post.id ? '#fee2e2' : '#fff', color: '#dc2626', cursor: 'pointer', fontWeight: 600 }}
+                          >
+                            {retryingId === post.id ? '...' : '↺ Retry'}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
           </div>
 
           {/* Right */}

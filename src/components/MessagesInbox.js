@@ -5,13 +5,15 @@ import PlatformIcon from './PlatformIcon';
 const PLATFORM_META = {
   instagram: { id: 'instagram', label: 'Instagram', emoji: '📸', color: '#E1306C', bg: '#fce4ec', logo: 'instagram' },
   facebook:  { id: 'facebook',  label: 'Facebook',  emoji: '👍', color: '#1877F2', bg: '#e3f2fd', logo: 'facebook'  },
+  youtube:   { id: 'youtube',   label: 'YouTube',   emoji: '▶️', color: '#FF0000', bg: '#fff0f0', logo: 'youtube'   },
 };
 
 const SOURCE_LABELS = {
-  instagram_dm:       { label: 'Instagram DM',      icon: '💬' },
-  instagram_comment:  { label: 'Instagram Comment', icon: '💭' },
-  facebook_messenger: { label: 'Facebook Messenger',icon: '📨' },
-  facebook_comment:   { label: 'Facebook Comment',  icon: '💬' },
+  instagram_dm:       { label: 'Instagram DM',       icon: '💬' },
+  instagram_comment:  { label: 'Instagram Comment',  icon: '💭' },
+  facebook_messenger: { label: 'Facebook Messenger', icon: '📨' },
+  facebook_comment:   { label: 'Facebook Comment',   icon: '💬' },
+  youtube_comment:    { label: 'YouTube Comment',    icon: '▶️' },
 };
 
 function timeAgo(iso) {
@@ -208,21 +210,28 @@ export default function MessagesInbox() {
   const comments      = data?.comments      ?? [];
   const totalUnread   = Number(data?.totalUnread ?? 0);
 
-  const igConvs = conversations.filter(c => c.platform === 'instagram');
-  const fbConvs = conversations.filter(c => c.platform === 'facebook');
+  const igConvs    = conversations.filter(c => c.platform === 'instagram');
+  const fbConvs    = conversations.filter(c => c.platform === 'facebook');
+  const ytConvs    = conversations.filter(c => c.platform === 'youtube');
   const igComments = comments.filter(c => c.platform === 'instagram');
   const fbComments = comments.filter(c => c.platform === 'facebook');
+  const ytComments = comments.filter(c => c.platform === 'youtube');
 
   const displayConvs = tab === 'all'       ? conversations
                      : tab === 'messages'  ? conversations
                      : tab === 'instagram' ? igConvs
                      : tab === 'facebook'  ? fbConvs
+                     : tab === 'youtube'   ? ytConvs
                      : [];
 
-  const displayComments = tab === 'all'       ? comments
-                        : tab === 'comments'  ? comments
-                        : tab === 'instagram' ? igComments
-                        : tab === 'facebook'  ? fbComments
+  const displayComments = tab === 'all'            ? comments
+                        : tab === 'comments'       ? comments
+                        : tab === 'ig_comments'    ? igComments
+                        : tab === 'fb_comments'    ? fbComments
+                        : tab === 'yt_comments'    ? ytComments
+                        : tab === 'instagram'      ? igComments
+                        : tab === 'facebook'       ? fbComments
+                        : tab === 'youtube'        ? ytComments
                         : [];
 
   const selectedItem = selected
@@ -244,7 +253,7 @@ export default function MessagesInbox() {
             )}
           </h2>
           <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#64748b' }}>
-            Instagram DMs · Facebook Messenger · Comments from all platforms
+            Instagram DMs · Facebook Messenger · YouTube Comments
           </p>
         </div>
         <button
@@ -265,11 +274,12 @@ export default function MessagesInbox() {
       {data && (
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '20px' }}>
           {[
-            { icon: '📨', label: 'Total Messages', value: conversations.length, color: '#2563eb', bg: '#eff6ff' },
-            { icon: '🔴', label: 'Unread',          value: totalUnread,          color: '#dc2626', bg: '#fef2f2' },
-            { icon: '💭', label: 'Comments',         value: comments.length,      color: '#d97706', bg: '#fffbeb' },
-            { icon: <PlatformIcon platform={PLATFORM_META.instagram} size={22} />, label: 'Instagram', value: igConvs.length + igComments.length, color: '#E1306C', bg: '#fce4ec' },
-            { icon: <PlatformIcon platform={PLATFORM_META.facebook}  size={22} />, label: 'Facebook',  value: fbConvs.length + fbComments.length, color: '#1877F2', bg: '#e3f2fd' },
+            { icon: '📨', label: 'Total Messages', value: conversations.length,                            color: '#2563eb', bg: '#eff6ff' },
+            { icon: '🔴', label: 'Unread',          value: totalUnread,                                    color: '#dc2626', bg: '#fef2f2' },
+            { icon: '💭', label: 'Comments',         value: comments.length,                               color: '#d97706', bg: '#fffbeb' },
+            { icon: <PlatformIcon platform={PLATFORM_META.instagram} size={22} />, label: 'Instagram', value: igConvs.length + igComments.length,  color: '#E1306C', bg: '#fce4ec' },
+            { icon: <PlatformIcon platform={PLATFORM_META.facebook}  size={22} />, label: 'Facebook',  value: fbConvs.length + fbComments.length,  color: '#1877F2', bg: '#e3f2fd' },
+            { icon: <PlatformIcon platform={PLATFORM_META.youtube}   size={22} />, label: 'YouTube',   value: ytConvs.length  + ytComments.length,  color: '#FF0000', bg: '#fff0f0' },
           ].map(c => (
             <div key={c.label} style={{ background: c.bg, borderRadius: '12px', padding: '14px 18px', minWidth: '110px', flex: 1 }}>
               <div style={{ fontSize: '20px', marginBottom: '4px' }}>{c.icon}</div>
@@ -281,12 +291,19 @@ export default function MessagesInbox() {
       )}
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px', marginBottom: '16px' }}>
-        <TabBtn label="All messages"       active={tab === 'all'}       badge={totalUnread}               onClick={() => setTab('all')} />
-        <TabBtn label="💬 Messages"        active={tab === 'messages'}  badge={conversations.filter(c=>Number(c.unread)>0).length} onClick={() => setTab('messages')} />
-        <TabBtn label="💭 Comments"        active={tab === 'comments'}  badge={0}                          onClick={() => setTab('comments')} />
+      <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px', marginBottom: '8px', flexWrap: 'wrap' }}>
+        <TabBtn label="All messages" active={tab === 'all'}      badge={totalUnread} onClick={() => setTab('all')} />
+        <TabBtn label="💬 Messages"  active={tab === 'messages'} badge={conversations.filter(c=>Number(c.unread)>0).length} onClick={() => setTab('messages')} />
         <TabBtn label={<span style={{display:'flex',alignItems:'center',gap:'5px'}}><PlatformIcon platform={{...PLATFORM_META.instagram, color: tab==='instagram'?'#ffffff':'#E1306C'}} size={13}/>Instagram</span>} active={tab === 'instagram'} badge={igConvs.filter(c=>Number(c.unread)>0).length} onClick={() => setTab('instagram')} />
-        <TabBtn label={<span style={{display:'flex',alignItems:'center',gap:'5px'}}><PlatformIcon platform={{...PLATFORM_META.facebook,  color: tab==='facebook' ?'#ffffff':'#1877F2'}} size={13}/>Facebook</span>}  active={tab === 'facebook'}  badge={fbConvs.filter(c=>Number(c.unread)>0).length} onClick={() => setTab('facebook')} />
+        <TabBtn label={<span style={{display:'flex',alignItems:'center',gap:'5px'}}><PlatformIcon platform={{...PLATFORM_META.facebook,  color: tab==='facebook' ?'#ffffff':'#1877F2'}} size={13}/>Facebook</span>}  active={tab === 'facebook'}  badge={fbConvs.filter(c=>Number(c.unread)>0).length}  onClick={() => setTab('facebook')} />
+        <TabBtn label={<span style={{display:'flex',alignItems:'center',gap:'5px'}}><PlatformIcon platform={{...PLATFORM_META.youtube,   color: tab==='youtube'  ?'#ffffff':'#FF0000'}} size={13}/>YouTube</span>}   active={tab === 'youtube'}   badge={0}                                                onClick={() => setTab('youtube')} />
+      </div>
+      {/* Comments sub-tabs */}
+      <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px', marginBottom: '16px' }}>
+        <TabBtn label="💭 All Comments"  active={tab === 'comments'}     badge={comments.length}     onClick={() => setTab('comments')} />
+        <TabBtn label={<span style={{display:'flex',alignItems:'center',gap:'5px'}}><PlatformIcon platform={{...PLATFORM_META.instagram, color: tab==='ig_comments'?'#ffffff':'#E1306C'}} size={12}/>Instagram Comments</span>} active={tab === 'ig_comments'} badge={igComments.length} onClick={() => setTab('ig_comments')} />
+        <TabBtn label={<span style={{display:'flex',alignItems:'center',gap:'5px'}}><PlatformIcon platform={{...PLATFORM_META.facebook,  color: tab==='fb_comments'?'#ffffff':'#1877F2'}} size={12}/>Facebook Comments</span>}  active={tab === 'fb_comments'} badge={fbComments.length} onClick={() => setTab('fb_comments')} />
+        <TabBtn label={<span style={{display:'flex',alignItems:'center',gap:'5px'}}><PlatformIcon platform={{...PLATFORM_META.youtube,   color: tab==='yt_comments'?'#ffffff':'#FF0000'}} size={12}/>YouTube Comments</span>}   active={tab === 'yt_comments'} badge={ytComments.length} onClick={() => setTab('yt_comments')} />
       </div>
 
       {loading && !data && (

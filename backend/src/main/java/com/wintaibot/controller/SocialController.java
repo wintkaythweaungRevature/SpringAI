@@ -5,9 +5,13 @@ import com.wintaibot.repository.SocialTokenRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -35,6 +39,9 @@ public class SocialController {
 
     @Value("${linkedin.client-id:}")
     private String linkedinClientId;
+
+    @Value("${linkedin.client-secret:}")
+    private String linkedinClientSecret;
 
     @Value("${linkedin.scope:openid profile email w_member_social}")
     private String linkedinScope;
@@ -137,7 +144,7 @@ public class SocialController {
             }
         }
 
-        // LinkedIn: build real OAuth URL
+        // LinkedIn: build real OAuth URL (state maps user for callback)
         if ("linkedin".equals(pid)) {
             if (linkedinClientId == null || linkedinClientId.isBlank()) {
                 return ResponseEntity.status(500).body(Map.of(
@@ -145,7 +152,8 @@ public class SocialController {
                 ));
             }
             try {
-                String state = UUID.randomUUID().toString();
+                String state = "li_" + UUID.randomUUID();
+                STATE_TO_USER.put(state, userId);
                 String authUrl = "https://www.linkedin.com/oauth/v2/authorization"
                     + "?response_type=code"
                     + "&client_id=" + URLEncoder.encode(linkedinClientId, StandardCharsets.UTF_8)
@@ -251,6 +259,52 @@ public class SocialController {
                 saveToken(userId, "instagram", pageToken);
             } catch (Exception e) {
                 String errMsg = e.getMessage() != null ? e.getMessage() : "Token exchange failed";
+                String redirectUrl = appBaseUrl + "?social_connect=error&platform=" + pid + "&error=" + URLEncoder.encode(errMsg, StandardCharsets.UTF_8);
+                return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(redirectUrl)).build();
+            }
+        }
+
+        // LinkedIn: exchange code for access token
+        if ("linkedin".equals(pid) && code != null && !code.isBlank()) {
+            if (linkedinClientId == null || linkedinClientId.isBlank()
+                    || linkedinClientSecret == null || linkedinClientSecret.isBlank()) {
+                String redirectUrl = appBaseUrl + "?social_connect=error&platform=" + pid + "&error=" + URLEncoder.encode("LinkedIn not configured", StandardCharsets.UTF_8);
+                return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(redirectUrl)).build();
+            }
+            Long userId = null;
+            if (state != null && state.startsWith("li_")) {
+                userId = STATE_TO_USER.remove(state);
+            }
+            if (userId == null) {
+                String redirectUrl = appBaseUrl + "?social_connect=error&platform=" + pid + "&error=" + URLEncoder.encode("Invalid state", StandardCharsets.UTF_8);
+                return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(redirectUrl)).build();
+            }
+            String cbUrl = buildApiBaseUrl(request) + "/api/social/callback/linkedin";
+            try {
+                MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
+                form.add("grant_type", "authorization_code");
+                form.add("code", code);
+                form.add("redirect_uri", cbUrl);
+                form.add("client_id", linkedinClientId);
+                form.add("client_secret", linkedinClientSecret);
+                HttpHeaders headers = new HttpHeaders();
+                headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+                HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(form, headers);
+                @SuppressWarnings("rawtypes")
+                ResponseEntity<Map> tokenRes = restTemplate.postForEntity(
+                        "https://www.linkedin.com/oauth/v2/accessToken", entity, Map.class);
+                Map<?, ?> body = tokenRes.getBody();
+                if (body == null || !body.containsKey("access_token")) {
+                    String err = body != null && body.containsKey("error_description")
+                            ? String.valueOf(body.get("error_description"))
+                            : "No access_token from LinkedIn";
+                    String redirectUrl = appBaseUrl + "?social_connect=error&platform=" + pid + "&error=" + URLEncoder.encode(err, StandardCharsets.UTF_8);
+                    return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(redirectUrl)).build();
+                }
+                String accessToken = (String) body.get("access_token");
+                saveToken(userId, "linkedin", accessToken);
+            } catch (Exception e) {
+                String errMsg = e.getMessage() != null ? e.getMessage() : "LinkedIn token exchange failed";
                 String redirectUrl = appBaseUrl + "?social_connect=error&platform=" + pid + "&error=" + URLEncoder.encode(errMsg, StandardCharsets.UTF_8);
                 return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(redirectUrl)).build();
             }

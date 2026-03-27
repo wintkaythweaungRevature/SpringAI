@@ -83,6 +83,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
   // { [pid]: { state: 'queued'|'publishing'|'done'|'failed', error: null|string } }
   const [publishingStatus, setPublishingStatus] = useState({});
   const [postType, setPostType]       = useState('video'); // 'video' | 'image' | 'text'
+  const [publishType, setPublishType] = useState('reels'); // 'reels' | 'story' (for Instagram/Facebook)
   const [imageFile, setImageFile]     = useState(null);
   const [textCaption, setTextCaption] = useState('');
   const [dashStats, setDashStats]     = useState(null);
@@ -479,7 +480,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
           const res = await fetch(api(`/publish/${pid}/variant`), {
             method: 'POST',
             headers: { ...authHeaders(), 'Content-Type': 'application/json' },
-            body: JSON.stringify({ variantId: variant.variantId, caption: variant.caption, hashtags }),
+            body: JSON.stringify({ variantId: variant.variantId, caption: variant.caption, hashtags, publishType }),
           });
           const data = await res.json().catch(() => ({}));
 
@@ -537,6 +538,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
           fd.append('file', video);
           fd.append('caption', variant.caption || '');
           fd.append('hashtags', hashtags);
+          fd.append('postType', publishType);
           const res = await fetch(api(`/publish/${pid}`), {
             method: 'POST',
             headers: authHeaders(),
@@ -658,6 +660,37 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
             <div style={s.sectionTitle}>
               {postType === 'video' ? '🎬 Upload Video' : postType === 'image' ? '🖼️ Upload Image' : '✍️ Write Your Post'}
             </div>
+
+            {/* Publish type selector — only for video when Instagram or Facebook selected */}
+            {postType === 'video' && (selectedPlatforms.includes('instagram') || selectedPlatforms.includes('facebook')) && (
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
+                {[
+                  { id: 'reels', icon: '🎬', label: 'Reels / Feed', desc: 'Regular post on feed' },
+                  { id: 'story', icon: '⏱️', label: 'Story',        desc: 'Disappears in 24h'   },
+                ].map(pt => (
+                  <button
+                    key={pt.id}
+                    type="button"
+                    onClick={() => setPublishType(pt.id)}
+                    style={{
+                      flex: 1, padding: '10px 12px', borderRadius: '10px', cursor: 'pointer',
+                      border: `2px solid ${publishType === pt.id ? '#6366f1' : '#e2e8f0'}`,
+                      background: publishType === pt.id ? '#eef2ff' : '#fff',
+                      color: publishType === pt.id ? '#4f46e5' : '#64748b',
+                      fontWeight: publishType === pt.id ? 700 : 500, fontSize: '13px',
+                      display: 'flex', alignItems: 'center', gap: '8px', textAlign: 'left',
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    <span style={{ fontSize: '18px' }}>{pt.icon}</span>
+                    <span>
+                      <div style={{ fontWeight: 700 }}>{pt.label}</div>
+                      <div style={{ fontSize: '11px', opacity: 0.7 }}>{pt.desc}</div>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
 
             {contentIdea && (
               <div style={{ marginBottom: '16px', padding: '12px 16px', borderRadius: '10px', background: 'linear-gradient(135deg,#eff6ff,#dbeafe)', border: '1px solid #93c5fd', fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>

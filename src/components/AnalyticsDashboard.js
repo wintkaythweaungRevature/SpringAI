@@ -3,12 +3,12 @@ import { useAuth } from '../context/AuthContext';
 import PlatformIcon from './PlatformIcon';
 
 const PLATFORMS = [
-  { id: 'instagram', label: 'Instagram', emoji: '📸', color: '#E1306C' },
-  { id: 'facebook',  label: 'Facebook',  emoji: '👍', color: '#1877F2' },
-  { id: 'youtube',   label: 'YouTube',   emoji: '▶️', color: '#FF0000' },
-  { id: 'x',         label: 'X',         emoji: '🐦', color: '#000000' },
-  { id: 'tiktok',    label: 'TikTok',    emoji: '🎵', color: '#010101' },
-  { id: 'linkedin',  label: 'LinkedIn',  emoji: '💼', color: '#0A66C2' },
+  { id: 'instagram', label: 'Instagram', emoji: '📸', color: '#E1306C', logo: 'instagram' },
+  { id: 'facebook',  label: 'Facebook',  emoji: '👍', color: '#1877F2', logo: 'facebook' },
+  { id: 'youtube',   label: 'YouTube',   emoji: '▶️', color: '#FF0000', logo: 'youtube' },
+  { id: 'x',         label: 'X',         emoji: '🐦', color: '#000000', logo: 'x' },
+  { id: 'tiktok',    label: 'TikTok',    emoji: '🎵', color: '#010101', logo: 'tiktok' },
+  { id: 'linkedin',  label: 'LinkedIn',  emoji: '💼', color: '#0A66C2', logo: 'linkedin' },
 ];
 
 function fmt(n) {
@@ -29,11 +29,13 @@ function StatCard({ icon, label, value, sub, color = '#6366f1', bg = '#eef2ff' }
   );
 }
 
-function HBar({ label, value, max, color, icon }) {
+function HBar({ label, value, max, color, icon, platform }) {
   const pct = max > 0 ? Math.max(4, Math.round((value / max) * 100)) : 4;
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-      <span style={{ fontSize: '16px', width: '22px', flexShrink: 0 }}>{icon}</span>
+      <span style={{ width: '22px', height: '22px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {platform ? <PlatformIcon platform={platform} size={18} /> : <span style={{ fontSize: '16px' }}>{icon}</span>}
+      </span>
       <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151', width: '78px', flexShrink: 0 }}>{label}</span>
       <div style={{ flex: 1, background: '#f1f5f9', borderRadius: '6px', height: '10px', overflow: 'hidden' }}>
         <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: '6px', transition: 'width 0.6s ease' }} />
@@ -314,7 +316,12 @@ export default function AnalyticsDashboard() {
                     transition: 'all 0.15s',
                   }}
                 >
-                  {isOverview ? '🌐 Overview' : `${p?.emoji ?? ''} ${p?.label ?? pid}`}
+                  {isOverview ? '🌐 Overview' : (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <PlatformIcon platform={p} size={15} />
+                      {p?.label ?? pid}
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -346,7 +353,7 @@ export default function AnalyticsDashboard() {
                       const val = d.followers ?? d.subscribers ?? d.fans ?? 0;
                       const allVals = connected.map(id => { const dd = platforms[id] ?? {}; return dd.followers ?? dd.subscribers ?? dd.fans ?? 0; });
                       const mx = Math.max(...allVals, 1);
-                      return <HBar key={pid} label={p?.label ?? pid} value={val} max={mx} color={p?.color ?? '#6366f1'} icon={p?.emoji ?? '📤'} />;
+                      return <HBar key={pid} label={p?.label ?? pid} value={val} max={mx} color={p?.color ?? '#6366f1'} icon={p?.emoji ?? '📤'} platform={p} />;
                     })
                   )}
                 </div>
@@ -377,7 +384,7 @@ export default function AnalyticsDashboard() {
                   <div style={{ fontWeight: 700, fontSize: '14px', color: '#1e293b', marginBottom: '16px' }}>📤 Content Shared by Platform</div>
                   {Object.entries(byPlatform).sort((a,b) => Number(b[1])-Number(a[1])).map(([pid, cnt]) => {
                     const p = PLATFORMS.find(x => x.id === pid);
-                    return <HBar key={pid} label={p?.label ?? pid} value={Number(cnt)} max={maxCount} color={p?.color ?? '#6366f1'} icon={p?.emoji ?? '📤'} />;
+                    return <HBar key={pid} label={p?.label ?? pid} value={Number(cnt)} max={maxCount} color={p?.color ?? '#6366f1'} icon={p?.emoji ?? '📤'} platform={p} />;
                   })}
                 </div>
               )}

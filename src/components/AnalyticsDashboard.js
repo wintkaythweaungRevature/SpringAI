@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import PlatformIcon from './PlatformIcon';
 
@@ -58,6 +58,14 @@ function IconEye({ size = 22, color = '#2563eb' }) {
     </svg>
   );
 }
+function IconTrash({ size = 16, color = '#94a3b8' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+      <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14zM10 11v6M14 11v6" stroke={color} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function IconPalette({ size = 18, color = '#6366f1' }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
@@ -68,6 +76,26 @@ function IconPalette({ size = 18, color = '#6366f1' }) {
       <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z" stroke={color} strokeWidth="1.5" fill="none" />
     </svg>
   );
+}
+
+const HIDDEN_ACTIVITY_PREFIX = 'wintaibot_analytics_hidden_activity';
+
+function loadHiddenActivityIds(userId) {
+  if (userId == null) return new Set();
+  try {
+    const raw = localStorage.getItem(`${HIDDEN_ACTIVITY_PREFIX}_${userId}`);
+    const arr = raw ? JSON.parse(raw) : [];
+    return new Set(Array.isArray(arr) ? arr.map(String) : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function saveHiddenActivityIds(userId, ids) {
+  if (userId == null) return;
+  try {
+    localStorage.setItem(`${HIDDEN_ACTIVITY_PREFIX}_${userId}`, JSON.stringify([...ids]));
+  } catch { /* ignore quota */ }
 }
 
 function fmt(n) {
@@ -264,13 +292,20 @@ function PlatformCard({ platform, data }) {
 
 /* ─────────────────────────────────────────────────────────── */
 export default function AnalyticsDashboard() {
-  const { apiBase, token } = useAuth();
+  const { apiBase, token, user } = useAuth();
   const base = apiBase || 'https://api.wintaibot.com';
 
   const [data,    setData]    = useState(null);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(null);
   const [tab,     setTab]     = useState('overview'); // 'overview' | platform id
+  const [hiddenActivityIds, setHiddenActivityIds] = useState(() => new Set());
+
+  useEffect(() => {
+    if (user?.id != null) {
+      setHiddenActivityIds(loadHiddenActivityIds(user.id));
+    }
+  }, [user?.id]);
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -295,6 +330,27 @@ export default function AnalyticsDashboard() {
   const platforms   = data?.platforms ?? {};
   const ownPosts    = data?.ownPosts   ?? {};
   const recent      = data?.recentActivity ?? [];
+
+  const removeActivityFromList = useCallback((activityId) => {
+    const sid = String(activityId);
+    setHiddenActivityIds((prev) => {
+      const next = new Set(prev);
+      next.add(sid);
+      if (user?.id != null) saveHiddenActivityIds(user.id, next);
+      return next;
+    });
+    if (token) {
+      fetch(`${base}/api/analytics/activity/${encodeURIComponent(sid)}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      }).catch(() => {});
+    }
+  }, [base, token, user?.id]);
+
+  const recentVisible = useMemo(
+    () => recent.filter((p) => p?.id == null || !hiddenActivityIds.has(String(p.id))),
+    [recent, hiddenActivityIds],
+  );
 
   const totalFollowers = connected.reduce((sum, pid) => {
     const d = platforms[pid] ?? {};
@@ -466,17 +522,37 @@ export default function AnalyticsDashboard() {
               )}
 
               {/* Recent activity */}
-              {recent.length > 0 && (
+              {recentVisible.length > 0 && (
                 <div style={{ background: '#fff', borderRadius: '14px', padding: '20px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
-                  <div style={{ fontWeight: 700, fontSize: '14px', color: '#1e293b', marginBottom: '14px' }}>🕐 Recent Activity</div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <div style={{ fontWeight: 700, fontSize: '14px', color: '#1e293b' }}>🕐 Recent Activity</div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const allIds = recentVisible.filter(p => p?.id != null).map(p => String(p.id));
+                        setHiddenActivityIds(prev => {
+                          const next = new Set(prev);
+                          allIds.forEach(id => next.add(id));
+                          return next;
+                        });
+                      }}
+                      style={{ padding: '5px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#f8fafc', color: '#ef4444', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
+                    >
+                      Clear All
+                    </button>
+                  </div>
+                  <p style={{ fontSize: '11px', color: '#94a3b8', margin: '0 0 14px' }}>
+                    Remove hides an entry here only; it does not delete the post on the social network.
+                  </p>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {recent.map(post => {
+                    {recentVisible.map(post => {
                       const p = PLATFORMS.find(x => x.id === post.platform);
                       const sc = post.status === 'SUCCESS' ? '#16a34a' : post.status === 'FAILED' ? '#dc2626' : '#d97706';
                       const sb = post.status === 'SUCCESS' ? '#f0fdf4'  : post.status === 'FAILED' ? '#fef2f2'  : '#fffbeb';
                       const d  = new Date(post.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                      const rowKey = post.id != null ? String(post.id) : `${post.platform}-${post.createdAt}-${(post.caption || '').slice(0, 20)}`;
                       return (
-                        <div key={post.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                        <div key={rowKey} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
                           <span style={{ width: 22, height: 22, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             {p ? <PlatformIcon platform={p} size={20} /> : <span style={{ fontSize: '16px' }}>📤</span>}
                           </span>
@@ -488,6 +564,31 @@ export default function AnalyticsDashboard() {
                               {p?.label ?? post.platform} · {post.mediaType} · {d}
                             </div>
                           </div>
+                          <button
+                            type="button"
+                            onClick={() => post.id != null && removeActivityFromList(post.id)}
+                            disabled={post.id == null}
+                            title="Remove from this list"
+                            aria-label="Remove from recent activity"
+                            style={{
+                              flexShrink: 0,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              padding: '6px 10px',
+                              borderRadius: '8px',
+                              border: '1px solid #e2e8f0',
+                              background: '#fff',
+                              color: '#64748b',
+                              fontSize: '11px',
+                              fontWeight: 600,
+                              cursor: post.id == null ? 'not-allowed' : 'pointer',
+                              opacity: post.id == null ? 0.5 : 1,
+                            }}
+                          >
+                            <IconTrash size={14} color="currentColor" />
+                            Remove
+                          </button>
                           <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '20px', background: sb, color: sc, flexShrink: 0 }}>
                             {post.status}
                           </span>

@@ -3,9 +3,10 @@ import { useAuth } from '../context/AuthContext';
 import PlatformIcon from './PlatformIcon';
 
 const PLATFORM_META = {
-  instagram: { id: 'instagram', label: 'Instagram', emoji: '📸', color: '#E1306C', bg: '#fce4ec', logo: 'instagram' },
-  facebook:  { id: 'facebook',  label: 'Facebook',  emoji: '👍', color: '#1877F2', bg: '#e3f2fd', logo: 'facebook'  },
-  youtube:   { id: 'youtube',   label: 'YouTube',   emoji: '▶️', color: '#FF0000', bg: '#fff0f0', logo: 'youtube'   },
+  instagram: { id: 'instagram', label: 'Instagram', color: '#E1306C', bg: '#fce4ec', logo: 'instagram' },
+  facebook:  { id: 'facebook',  label: 'Facebook',  color: '#1877F2', bg: '#e3f2fd', logo: 'facebook'  },
+  youtube:   { id: 'youtube',   label: 'YouTube',   color: '#FF0000', bg: '#fff0f0', logo: 'youtube'   },
+  linkedin:  { id: 'linkedin',  label: 'LinkedIn',  color: '#0A66C2', bg: '#e8f0fb', logo: 'linkedin'  },
 };
 
 const SOURCE_LABELS = {
@@ -14,6 +15,17 @@ const SOURCE_LABELS = {
   facebook_messenger: { label: 'Facebook Messenger', icon: '📨' },
   facebook_comment:   { label: 'Facebook Comment',   icon: '💬' },
   youtube_comment:    { label: 'YouTube Comment',    icon: '▶️' },
+  linkedin_message:   { label: 'LinkedIn Message',   icon: '💼' },
+  linkedin_comment:   { label: 'LinkedIn Comment',   icon: '💬' },
+};
+
+// Which type-tabs each platform supports
+const PLATFORM_TYPES = {
+  all:       ['all', 'messages', 'comments'],
+  instagram: ['all', 'messages', 'comments'],
+  facebook:  ['all', 'messages', 'comments'],
+  youtube:   ['comments'],                      // YouTube has no DM API
+  linkedin:  ['all', 'messages', 'comments'],
 };
 
 function timeAgo(iso) {
@@ -185,7 +197,8 @@ export default function MessagesInbox() {
   const [data,      setData]      = useState(null);
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState(null);
-  const [tab,       setTab]       = useState('all');       // all | messages | instagram | facebook | comments
+  const [platformTab, setPlatformTab] = useState('all');   // all | instagram | facebook | youtube | linkedin
+  const [typeTab,     setTypeTab]     = useState('all');   // all | messages | comments
   const [selected,  setSelected]  = useState(null);
 
   const load = useCallback(async () => {
@@ -210,29 +223,30 @@ export default function MessagesInbox() {
   const comments      = data?.comments      ?? [];
   const totalUnread   = Number(data?.totalUnread ?? 0);
 
-  const igConvs    = conversations.filter(c => c.platform === 'instagram');
-  const fbConvs    = conversations.filter(c => c.platform === 'facebook');
-  const ytConvs    = conversations.filter(c => c.platform === 'youtube');
-  const igComments = comments.filter(c => c.platform === 'instagram');
-  const fbComments = comments.filter(c => c.platform === 'facebook');
-  const ytComments = comments.filter(c => c.platform === 'youtube');
+  // Per-platform counts for stat cards
+  const byPlatform = (list, p) => list.filter(x => x.platform === p);
+  const igConvs = byPlatform(conversations, 'instagram');
+  const fbConvs = byPlatform(conversations, 'facebook');
+  const liConvs = byPlatform(conversations, 'linkedin');
+  const igComments = byPlatform(comments, 'instagram');
+  const fbComments = byPlatform(comments, 'facebook');
+  const ytComments = byPlatform(comments, 'youtube');
+  const liComments = byPlatform(comments, 'linkedin');
 
-  const displayConvs = tab === 'all'       ? conversations
-                     : tab === 'messages'  ? conversations
-                     : tab === 'instagram' ? igConvs
-                     : tab === 'facebook'  ? fbConvs
-                     : tab === 'youtube'   ? ytConvs
-                     : [];
+  // Step 1: filter by platform
+  const platConvs    = platformTab === 'all' ? conversations : byPlatform(conversations, platformTab);
+  const platComments = platformTab === 'all' ? comments      : byPlatform(comments,      platformTab);
 
-  const displayComments = tab === 'all'            ? comments
-                        : tab === 'comments'       ? comments
-                        : tab === 'ig_comments'    ? igComments
-                        : tab === 'fb_comments'    ? fbComments
-                        : tab === 'yt_comments'    ? ytComments
-                        : tab === 'instagram'      ? igComments
-                        : tab === 'facebook'       ? fbComments
-                        : tab === 'youtube'        ? ytComments
-                        : [];
+  // Step 2: filter by type
+  const displayConvs    = typeTab === 'comments' ? []         : platConvs;
+  const displayComments = typeTab === 'messages' ? []         : platComments;
+
+  // When switching platform, reset type if not supported
+  const handlePlatformTab = (p) => {
+    setPlatformTab(p);
+    const supported = PLATFORM_TYPES[p] || ['all'];
+    if (!supported.includes(typeTab)) setTypeTab(supported[0]);
+  };
 
   const selectedItem = selected
     ? [...conversations, ...comments].find(x => x.id === selected)
@@ -272,38 +286,60 @@ export default function MessagesInbox() {
 
       {/* Summary cards */}
       {data && (
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '20px' }}>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '20px' }}>
           {[
-            { icon: '📨', label: 'Total Messages', value: conversations.length,                            color: '#2563eb', bg: '#eff6ff' },
-            { icon: '🔴', label: 'Unread',          value: totalUnread,                                    color: '#dc2626', bg: '#fef2f2' },
-            { icon: '💭', label: 'Comments',         value: comments.length,                               color: '#d97706', bg: '#fffbeb' },
-            { icon: <PlatformIcon platform={PLATFORM_META.instagram} size={22} />, label: 'Instagram', value: igConvs.length + igComments.length,  color: '#E1306C', bg: '#fce4ec' },
-            { icon: <PlatformIcon platform={PLATFORM_META.facebook}  size={22} />, label: 'Facebook',  value: fbConvs.length + fbComments.length,  color: '#1877F2', bg: '#e3f2fd' },
-            { icon: <PlatformIcon platform={PLATFORM_META.youtube}   size={22} />, label: 'YouTube',   value: ytConvs.length  + ytComments.length,  color: '#FF0000', bg: '#fff0f0' },
+            { icon: '📨', label: 'Total DMs',  value: conversations.length, color: '#2563eb', bg: '#eff6ff' },
+            { icon: '🔴', label: 'Unread',      value: totalUnread,          color: '#dc2626', bg: '#fef2f2' },
+            { icon: '💭', label: 'Comments',    value: comments.length,      color: '#d97706', bg: '#fffbeb' },
+            { p: PLATFORM_META.instagram, label: 'Instagram', value: igConvs.length + igComments.length },
+            { p: PLATFORM_META.facebook,  label: 'Facebook',  value: fbConvs.length + fbComments.length },
+            { p: PLATFORM_META.youtube,   label: 'YouTube',   value: ytComments.length                  },
+            { p: PLATFORM_META.linkedin,  label: 'LinkedIn',  value: liConvs.length + liComments.length },
           ].map(c => (
-            <div key={c.label} style={{ background: c.bg, borderRadius: '12px', padding: '14px 18px', minWidth: '110px', flex: 1 }}>
-              <div style={{ fontSize: '20px', marginBottom: '4px' }}>{c.icon}</div>
-              <div style={{ fontSize: '22px', fontWeight: 800, color: c.color, lineHeight: 1.2 }}>{c.value}</div>
+            <div key={c.label} style={{ background: c.p ? c.p.bg : c.bg, borderRadius: '12px', padding: '12px 16px', minWidth: '100px', flex: 1, cursor: c.p ? 'pointer' : 'default' }}
+              onClick={c.p ? () => handlePlatformTab(c.p.id) : undefined}>
+              <div style={{ fontSize: '18px', marginBottom: '4px' }}>
+                {c.p ? <PlatformIcon platform={c.p} size={20} /> : c.icon}
+              </div>
+              <div style={{ fontSize: '20px', fontWeight: 800, color: c.p ? c.p.color : c.color, lineHeight: 1.2 }}>{c.value}</div>
               <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>{c.label}</div>
             </div>
           ))}
         </div>
       )}
 
-      {/* Tabs */}
-      <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px', marginBottom: '8px', flexWrap: 'wrap' }}>
-        <TabBtn label="All messages" active={tab === 'all'}      badge={totalUnread} onClick={() => setTab('all')} />
-        <TabBtn label="💬 Messages"  active={tab === 'messages'} badge={conversations.filter(c=>Number(c.unread)>0).length} onClick={() => setTab('messages')} />
-        <TabBtn label={<span style={{display:'flex',alignItems:'center',gap:'5px'}}><PlatformIcon platform={{...PLATFORM_META.instagram, color: tab==='instagram'?'#ffffff':'#E1306C'}} size={13}/>Instagram</span>} active={tab === 'instagram'} badge={igConvs.filter(c=>Number(c.unread)>0).length} onClick={() => setTab('instagram')} />
-        <TabBtn label={<span style={{display:'flex',alignItems:'center',gap:'5px'}}><PlatformIcon platform={{...PLATFORM_META.facebook,  color: tab==='facebook' ?'#ffffff':'#1877F2'}} size={13}/>Facebook</span>}  active={tab === 'facebook'}  badge={fbConvs.filter(c=>Number(c.unread)>0).length}  onClick={() => setTab('facebook')} />
-        <TabBtn label={<span style={{display:'flex',alignItems:'center',gap:'5px'}}><PlatformIcon platform={{...PLATFORM_META.youtube,   color: tab==='youtube'  ?'#ffffff':'#FF0000'}} size={13}/>YouTube</span>}   active={tab === 'youtube'}   badge={0}                                                onClick={() => setTab('youtube')} />
+      {/* Row 1: Platform tabs */}
+      <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px', marginBottom: '6px', flexWrap: 'wrap' }}>
+        <TabBtn label="All" active={platformTab === 'all'} badge={totalUnread} onClick={() => handlePlatformTab('all')} />
+        {Object.values(PLATFORM_META).map(p => (
+          <TabBtn
+            key={p.id}
+            label={<span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <PlatformIcon platform={{ ...p, color: platformTab === p.id ? '#fff' : p.color }} size={13} />
+              {p.label}
+            </span>}
+            active={platformTab === p.id}
+            badge={p.id === 'instagram' ? igConvs.filter(c=>Number(c.unread)>0).length
+                 : p.id === 'facebook'  ? fbConvs.filter(c=>Number(c.unread)>0).length
+                 : 0}
+            onClick={() => handlePlatformTab(p.id)}
+          />
+        ))}
       </div>
-      {/* Comments sub-tabs */}
-      <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px', marginBottom: '16px' }}>
-        <TabBtn label="💭 All Comments"  active={tab === 'comments'}     badge={comments.length}     onClick={() => setTab('comments')} />
-        <TabBtn label={<span style={{display:'flex',alignItems:'center',gap:'5px'}}><PlatformIcon platform={{...PLATFORM_META.instagram, color: tab==='ig_comments'?'#ffffff':'#E1306C'}} size={12}/>Instagram Comments</span>} active={tab === 'ig_comments'} badge={igComments.length} onClick={() => setTab('ig_comments')} />
-        <TabBtn label={<span style={{display:'flex',alignItems:'center',gap:'5px'}}><PlatformIcon platform={{...PLATFORM_META.facebook,  color: tab==='fb_comments'?'#ffffff':'#1877F2'}} size={12}/>Facebook Comments</span>}  active={tab === 'fb_comments'} badge={fbComments.length} onClick={() => setTab('fb_comments')} />
-        <TabBtn label={<span style={{display:'flex',alignItems:'center',gap:'5px'}}><PlatformIcon platform={{...PLATFORM_META.youtube,   color: tab==='yt_comments'?'#ffffff':'#FF0000'}} size={12}/>YouTube Comments</span>}   active={tab === 'yt_comments'} badge={ytComments.length} onClick={() => setTab('yt_comments')} />
+
+      {/* Row 2: Type tabs (context-aware) */}
+      <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px', marginBottom: '16px', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px' }}>
+        {(PLATFORM_TYPES[platformTab] || ['all']).map(t => (
+          <TabBtn
+            key={t}
+            label={t === 'all' ? '⚡ All' : t === 'messages' ? '💬 Messages' : '💭 Comments'}
+            active={typeTab === t}
+            badge={t === 'messages' ? platConvs.filter(c=>Number(c.unread)>0).length
+                 : t === 'comments' ? platComments.length
+                 : 0}
+            onClick={() => setTypeTab(t)}
+          />
+        ))}
       </div>
 
       {loading && !data && (

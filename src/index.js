@@ -9,6 +9,7 @@ import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsOfService from './components/TermsOfService';
 import ResetPassword from './components/ResetPassword';
 import SEOPublicLayout from './pages/SEOPublicLayout';
+import ToolLandingPage from './pages/ToolLandingPage';
 
 const rootElement = document.getElementById('root');
 
@@ -38,6 +39,7 @@ function Root() {
         <Route path="/pricing" element={<SEOPublicLayout />} />
         <Route path="/use-cases" element={<SEOPublicLayout />} />
         <Route path="/docs" element={<SEOPublicLayout />} />
+        <Route path="/tools/:slug" element={<ToolLandingPage />} />
         <Route path="/*" element={
           <AuthProvider>
             <App />

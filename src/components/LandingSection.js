@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import "./LandingSection.css";
 
 /* ─── Data ─────────────────────────────────────────────────── */
@@ -10,6 +11,7 @@ const features = [
     description:
       "Chat with a powerful AI assistant 24/7. Get answers, explanations, code help, writing assistance, and advice on any topic — no downloads, no setup.",
     badge: "Free",
+    slug: "ask-ai",
   },
   {
     icon: "🍳",
@@ -17,6 +19,7 @@ const features = [
     description:
       "Type the ingredients you have and get step-by-step recipes instantly. Reduce food waste, discover new dishes, and plan meals effortlessly.",
     badge: "Free",
+    slug: "recipe-generator",
   },
   {
     icon: "📄",
@@ -24,6 +27,7 @@ const features = [
     description:
       "Upload PDF, Excel, or Word files and extract structured data in seconds. Summarize reports, convert PDF tables to Excel, and analyze invoices with AI.",
     badge: "Member",
+    slug: "docuwizard",
   },
   {
     icon: "🎤",
@@ -31,6 +35,7 @@ const features = [
     description:
       "Convert audio recordings and live speech to accurate text. Transcribe meetings, lectures, and interviews — then summarize or translate the output.",
     badge: "Member",
+    slug: "echoscribe",
   },
   {
     icon: "🖼️",
@@ -38,6 +43,7 @@ const features = [
     description:
       "Turn text prompts into stunning images in seconds. Create digital art, product mockups, social media graphics, and illustrations — no design skills needed.",
     badge: "Member",
+    slug: "image-generator",
   },
   {
     icon: "✉️",
@@ -45,6 +51,7 @@ const features = [
     description:
       "Paste any email and get a polished AI-drafted reply instantly. Choose your tone — professional, friendly, casual, or urgent — and send with confidence.",
     badge: "Member",
+    slug: "reply-enchanter",
   },
   {
     icon: "📝",
@@ -52,6 +59,7 @@ const features = [
     description:
       "Upload your resume and receive AI-generated interview questions tailored to your experience. Practice answers, sharpen weak areas, and land your next role.",
     badge: "Member",
+    slug: "resume-warlock",
   },
   {
     icon: "🎬",
@@ -59,6 +67,7 @@ const features = [
     description:
       "Upload once, publish everywhere. Connect YouTube, Instagram, TikTok, and more. Get AI captions and hashtags per platform, schedule each post when you want (e.g. YouTube tomorrow 4 AM, Instagram 6 PM), and see viral trends and news to plan your next video.",
     badge: "Member",
+    slug: "video-publisher",
   },
 ];
 
@@ -177,19 +186,26 @@ export default function LandingSection({ onGetStarted, onOpenVideoPublisher }) {
         </p>
         <div className="ls-features-grid" role="list">
           {features.map((f) => (
-            <article className="ls-feature-card" key={f.title} role="listitem">
-              <div className="ls-feature-top">
-                <span className="ls-feature-icon" aria-hidden="true">{f.icon}</span>
-                <span className={`ls-badge ls-badge--${f.badge.toLowerCase()}`}>{f.badge}</span>
-              </div>
-              <h3 className="ls-feature-title">{f.title}</h3>
-              <p className="ls-feature-desc">{f.description}</p>
-              {onOpenVideoPublisher && f.title.startsWith("Video Publisher") && (
-                <button type="button" className="ls-btn-outline ls-feature-cta" onClick={onOpenVideoPublisher}>
-                  Try Video Publisher →
-                </button>
-              )}
-            </article>
+            <Link
+              key={f.title}
+              to={`/tools/${f.slug}`}
+              style={{ textDecoration: 'none', color: 'inherit', display: 'contents' }}
+            >
+              <article className="ls-feature-card ls-feature-card--linked" role="listitem">
+                <div className="ls-feature-top">
+                  <span className="ls-feature-icon" aria-hidden="true">{f.icon}</span>
+                  <span className={`ls-badge ls-badge--${f.badge.toLowerCase()}`}>{f.badge}</span>
+                </div>
+                <h3 className="ls-feature-title">{f.title}</h3>
+                <p className="ls-feature-desc">{f.description}</p>
+                {onOpenVideoPublisher && f.title.startsWith("Video Publisher") && (
+                  <button type="button" className="ls-btn-outline ls-feature-cta" onClick={(e) => { e.preventDefault(); onOpenVideoPublisher(); }}>
+                    Try Video Publisher →
+                  </button>
+                )}
+                <span className="ls-feature-learn">Learn more →</span>
+              </article>
+            </Link>
           ))}
         </div>
         <p className="ls-features-note">

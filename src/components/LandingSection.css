@@ -209,6 +209,24 @@
   border-color: #cbd5e1;
 }
 
+.ls-feature-card--linked {
+  cursor: pointer;
+}
+
+.ls-feature-learn {
+  display: block;
+  margin-top: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #2563eb;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.ls-feature-card--linked:hover .ls-feature-learn {
+  opacity: 1;
+}
+
 .ls-feature-top {
   display: flex;
   justify-content: space-between;

@@ -11,6 +11,65 @@ const PLATFORMS = [
   { id: 'linkedin',  label: 'LinkedIn',  emoji: '💼', color: '#0A66C2', logo: 'linkedin' },
 ];
 
+/** Small UI icons (not brand logos) */
+function IconChart({ size = 26, color = '#6366f1' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+      <rect x="3" y="13" width="4" height="8" rx="1" fill={color} />
+      <rect x="10" y="9" width="4" height="12" rx="1" fill={color} />
+      <rect x="17" y="5" width="4" height="16" rx="1" fill={color} />
+    </svg>
+  );
+}
+function IconGlobe({ size = 16, color = 'currentColor' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+      <circle cx="12" cy="12" r="9" stroke={color} strokeWidth="1.75" fill="none" />
+      <path d="M3 12h18M12 3c2.5 3 2.5 15 0 18M12 3c-2.5 3-2.5 15 0 18" stroke={color} strokeWidth="1.5" fill="none" />
+    </svg>
+  );
+}
+function IconUsers({ size = 22, color = '#6366f1' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke={color} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+function IconCheck({ size = 22, color = '#16a34a' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+      <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke={color} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+function IconBubble({ size = 22, color = '#d97706' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke={color} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+function IconEye({ size = 22, color = '#2563eb' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke={color} strokeWidth="1.75" />
+      <circle cx="12" cy="12" r="3" stroke={color} strokeWidth="1.75" />
+    </svg>
+  );
+}
+function IconPalette({ size = 18, color = '#6366f1' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+      <circle cx="13.5" cy="6.5" r=".5" fill={color} />
+      <circle cx="17.5" cy="10.5" r=".5" fill={color} />
+      <circle cx="8.5" cy="7.5" r=".5" fill={color} />
+      <circle cx="6.5" cy="12.5" r=".5" fill={color} />
+      <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z" stroke={color} strokeWidth="1.5" fill="none" />
+    </svg>
+  );
+}
+
 function fmt(n) {
   if (n === undefined || n === null) return '—';
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
@@ -21,7 +80,7 @@ function fmt(n) {
 function StatCard({ icon, label, value, sub, color = '#6366f1', bg = '#eef2ff' }) {
   return (
     <div style={{ background: bg, borderRadius: '14px', padding: '18px 16px', flex: 1, minWidth: '120px' }}>
-      <div style={{ fontSize: '22px', marginBottom: '6px' }}>{icon}</div>
+      <div style={{ marginBottom: '6px', display: 'flex', alignItems: 'center' }}>{icon}</div>
       <div style={{ fontSize: '26px', fontWeight: 800, color, lineHeight: 1 }}>{value}</div>
       <div style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', marginTop: '4px' }}>{label}</div>
       {sub && <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>{sub}</div>}
@@ -33,8 +92,8 @@ function HBar({ label, value, max, color, icon, platform }) {
   const pct = max > 0 ? Math.max(4, Math.round((value / max) * 100)) : 4;
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-      <span style={{ width: '22px', height: '22px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        {platform ? <PlatformIcon platform={platform} size={18} /> : <span style={{ fontSize: '16px' }}>{icon}</span>}
+      <span style={{ width: '24px', height: '24px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {platform ? <PlatformIcon platform={platform} size={22} /> : <span style={{ fontSize: '16px' }}>{icon}</span>}
       </span>
       <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151', width: '78px', flexShrink: 0 }}>{label}</span>
       <div style={{ flex: 1, background: '#f1f5f9', borderRadius: '6px', height: '10px', overflow: 'hidden' }}>
@@ -96,8 +155,8 @@ function PlatformCard({ platform, data }) {
       boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
-        <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: `${p.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>
-          {p.emoji}
+        <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: `${p.color}12`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <PlatformIcon platform={p} size={26} />
         </div>
         <div>
           <div style={{ fontWeight: 700, fontSize: '14px', color: '#1e293b' }}>{p.label}</div>
@@ -270,7 +329,10 @@ export default function AnalyticsDashboard() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: '22px', fontWeight: 800, color: '#0f172a' }}>📊 Analytics Dashboard</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <IconChart size={28} color="#6366f1" />
+            <h2 style={{ margin: 0, fontSize: '22px', fontWeight: 800, color: '#0f172a' }}>Analytics Dashboard</h2>
+          </div>
           <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#64748b' }}>
             Live stats from your connected platforms
           </p>
@@ -316,9 +378,14 @@ export default function AnalyticsDashboard() {
                     transition: 'all 0.15s',
                   }}
                 >
-                  {isOverview ? '🌐 Overview' : (
+                  {isOverview ? (
                     <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <PlatformIcon platform={p} size={15} />
+                      <IconGlobe size={16} color={active ? '#fff' : '#475569'} />
+                      Overview
+                    </span>
+                  ) : (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <PlatformIcon platform={p} size={16} />
                       {p?.label ?? pid}
                     </span>
                   )}
@@ -332,10 +399,10 @@ export default function AnalyticsDashboard() {
             <>
               {/* Summary cards */}
               <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', marginBottom: '24px' }}>
-                <StatCard icon="👥" label="Total Followers"   value={fmt(totalFollowers)}         sub={`across ${connected.length} platform${connected.length!==1?'s':''}`} color="#6366f1" bg="#eef2ff" />
-                <StatCard icon="✅" label="Posts Published"   value={fmt(ownPosts.totalPublished)} sub={`${fmt(ownPosts.thisWeek)} this week`}  color="#16a34a" bg="#f0fdf4" />
-                <StatCard icon="💬" label="Total Engagement"  value={fmt(totalEngagement)}         sub="likes + comments"                        color="#d97706" bg="#fffbeb" />
-                <StatCard icon="👁️" label="Total Views"       value={fmt(totalViews)}              sub="YouTube + profile views"                 color="#2563eb" bg="#eff6ff" />
+                <StatCard icon={<IconUsers />} label="Total Followers"   value={fmt(totalFollowers)}         sub={`across ${connected.length} platform${connected.length!==1?'s':''}`} color="#6366f1" bg="#eef2ff" />
+                <StatCard icon={<IconCheck />} label="Posts Published"   value={fmt(ownPosts.totalPublished)} sub={`${fmt(ownPosts.thisWeek)} this week`}  color="#16a34a" bg="#f0fdf4" />
+                <StatCard icon={<IconBubble />} label="Total Engagement"  value={fmt(totalEngagement)}         sub="likes + comments"                        color="#d97706" bg="#fffbeb" />
+                <StatCard icon={<IconEye />} label="Total Views"       value={fmt(totalViews)}              sub="YouTube + profile views"                 color="#2563eb" bg="#eff6ff" />
               </div>
 
               {/* Two-column: followers bar + content type donut */}
@@ -343,7 +410,10 @@ export default function AnalyticsDashboard() {
 
                 {/* Followers per platform */}
                 <div style={{ background: '#fff', borderRadius: '14px', padding: '20px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
-                  <div style={{ fontWeight: 700, fontSize: '14px', color: '#1e293b', marginBottom: '16px' }}>👥 Followers by Platform</div>
+                  <div style={{ fontWeight: 700, fontSize: '14px', color: '#1e293b', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <IconUsers size={18} color="#6366f1" />
+                    Followers by Platform
+                  </div>
                   {connected.length === 0 ? (
                     <div style={{ color: '#94a3b8', fontSize: '13px' }}>No platforms connected yet.</div>
                   ) : (
@@ -360,7 +430,10 @@ export default function AnalyticsDashboard() {
 
                 {/* Content type breakdown */}
                 <div style={{ background: '#fff', borderRadius: '14px', padding: '20px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
-                  <div style={{ fontWeight: 700, fontSize: '14px', color: '#1e293b', marginBottom: '16px' }}>🎨 Content Created</div>
+                  <div style={{ fontWeight: 700, fontSize: '14px', color: '#1e293b', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <IconPalette size={18} color="#6366f1" />
+                    Content Created
+                  </div>
                   <DonutChart segments={typeSegments} />
                   <div style={{ marginTop: '16px', display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '8px' }}>
                     {[
@@ -381,7 +454,10 @@ export default function AnalyticsDashboard() {
               {/* Posts per platform bar */}
               {Object.keys(byPlatform).length > 0 && (
                 <div style={{ background: '#fff', borderRadius: '14px', padding: '20px', marginBottom: '24px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
-                  <div style={{ fontWeight: 700, fontSize: '14px', color: '#1e293b', marginBottom: '16px' }}>📤 Content Shared by Platform</div>
+                  <div style={{ fontWeight: 700, fontSize: '14px', color: '#1e293b', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <IconChart size={18} color="#6366f1" />
+                    Content Shared by Platform
+                  </div>
                   {Object.entries(byPlatform).sort((a,b) => Number(b[1])-Number(a[1])).map(([pid, cnt]) => {
                     const p = PLATFORMS.find(x => x.id === pid);
                     return <HBar key={pid} label={p?.label ?? pid} value={Number(cnt)} max={maxCount} color={p?.color ?? '#6366f1'} icon={p?.emoji ?? '📤'} platform={p} />;
@@ -401,7 +477,9 @@ export default function AnalyticsDashboard() {
                       const d  = new Date(post.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                       return (
                         <div key={post.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                          <span style={{ fontSize: '18px' }}>{p?.emoji ?? '📤'}</span>
+                          <span style={{ width: 22, height: 22, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            {p ? <PlatformIcon platform={p} size={20} /> : <span style={{ fontSize: '16px' }}>📤</span>}
+                          </span>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                               {post.caption || '(no caption)'}

@@ -69,7 +69,7 @@ const PLANS = [
 
 /* ─── PricingPage ────────────────────────────────────────────────────── */
 export default function PricingPage({ onClose }) {
-  const { api, authHeaders, user } = useAuth();
+  const { apiBase, authHeaders, user } = useAuth();
   const [yearly, setYearly] = useState(false);
   const [loading, setLoading] = useState(null); // plan ID being processed
   const [currentPlan, setCurrentPlan] = useState(null);
@@ -77,7 +77,7 @@ export default function PricingPage({ onClose }) {
 
   useEffect(() => {
     if (!user) return;
-    api('/api/subscription/current', { headers: authHeaders() })
+    fetch(`${apiBase}/api/subscription/current`, { headers: authHeaders() })
       .then(r => r.json())
       .then(d => setCurrentPlan(d?.plan))
       .catch(() => {});
@@ -88,7 +88,7 @@ export default function PricingPage({ onClose }) {
     setLoading(planId);
     setError('');
     try {
-      const res = await api('/api/subscription/checkout', {
+      const res = await fetch(`${apiBase}/api/subscription/checkout`, {
         method: 'POST',
         headers: { ...authHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ plan: planId, billingInterval: yearly ? 'YEARLY' : 'MONTHLY' }),
@@ -203,8 +203,7 @@ export default function PricingPage({ onClose }) {
         </div>
 
         <p style={s.footer}>
-          All plans include a 7-day free trial. No charges until trial ends.
-          Powered by <strong>Stripe</strong> — your payment info is never stored on our servers.
+          Upgrade anytime. Cancel anytime. Powered by <strong>Stripe</strong> — your payment info is never stored on our servers.
         </p>
       </div>
     </div>

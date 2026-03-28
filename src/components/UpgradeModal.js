@@ -11,7 +11,7 @@ import { useAuth } from '../context/AuthContext';
  *   suggestPlan {string} — 'PRO' | 'GROWTH' (optional; auto-selects a plan card)
  */
 export default function UpgradeModal({ reason, feature, onClose, suggestPlan }) {
-  const { api, authHeaders, user } = useAuth();
+  const { apiBase, authHeaders, user } = useAuth();
   const [yearly, setYearly] = useState(false);
   const [loading, setLoading] = useState(null);
   const [error, setError] = useState('');
@@ -37,7 +37,7 @@ export default function UpgradeModal({ reason, feature, onClose, suggestPlan }) 
     setLoading(planId);
     setError('');
     try {
-      const res = await api('/api/subscription/checkout', {
+      const res = await fetch(`${apiBase}/api/subscription/checkout`, {
         method: 'POST',
         headers: { ...authHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ plan: planId, billingInterval: yearly ? 'YEARLY' : 'MONTHLY' }),
@@ -121,7 +121,7 @@ export default function UpgradeModal({ reason, feature, onClose, suggestPlan }) 
           })}
         </div>
 
-        <p style={s.footNote}>7-day free trial · Cancel anytime · Secured by Stripe</p>
+        <p style={s.footNote}>Cancel anytime · Secured by Stripe</p>
       </div>
     </div>
   );

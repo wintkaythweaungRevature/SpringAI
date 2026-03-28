@@ -247,6 +247,91 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
         </ul>
       </section>
 
+      {/* ── VS BUFFER / METRICOOL ───────────────────────────── */}
+      <section className="ls-section ls-vs" aria-labelledby="vs-heading">
+        <h2 id="vs-heading">How Wintaibot compares to Buffer &amp; Metricool</h2>
+        <p className="ls-section-sub">
+          Buffer and Metricool are great schedulers. Wintaibot is the only one where <strong>AI does the actual work</strong> — writing, replying, picking thumbnails, and adapting your video per platform automatically.
+        </p>
+        <div className="ls-vs-table-wrap">
+          <table className="ls-vs-table" aria-label="Feature comparison: Wintaibot vs Buffer vs Metricool">
+            <thead>
+              <tr>
+                <th scope="col">Feature</th>
+                <th scope="col">Buffer</th>
+                <th scope="col">Metricool</th>
+                <th scope="col" className="ls-vs-us">Wintaibot</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>AI writes captions &amp; hashtags per platform</td>
+                <td className="ls-vs-no">❌</td>
+                <td className="ls-vs-no">❌</td>
+                <td className="ls-vs-yes">✅</td>
+              </tr>
+              <tr>
+                <td>AI auto-replies to comments 24/7 (Instagram, Facebook, YouTube)</td>
+                <td className="ls-vs-no">❌</td>
+                <td className="ls-vs-no">❌</td>
+                <td className="ls-vs-yes">✅</td>
+              </tr>
+              <tr>
+                <td>Multi-platform video — auto-fixes format per destination</td>
+                <td className="ls-vs-no">❌</td>
+                <td className="ls-vs-no">❌</td>
+                <td className="ls-vs-yes">✅</td>
+              </tr>
+              <tr>
+                <td>AI thumbnail picker (scrub or AI-suggested frames)</td>
+                <td className="ls-vs-no">❌</td>
+                <td className="ls-vs-no">❌</td>
+                <td className="ls-vs-yes">✅</td>
+              </tr>
+              <tr>
+                <td>Social AI grounded in YOUR post history (RAG)</td>
+                <td className="ls-vs-no">❌</td>
+                <td className="ls-vs-no">❌</td>
+                <td className="ls-vs-yes">✅</td>
+              </tr>
+              <tr>
+                <td>Best time to post (AI analysis)</td>
+                <td className="ls-vs-no">❌</td>
+                <td className="ls-vs-yes">✅</td>
+                <td className="ls-vs-yes">✅</td>
+              </tr>
+              <tr>
+                <td>Link-in-bio page</td>
+                <td className="ls-vs-yes">✅</td>
+                <td className="ls-vs-no">❌</td>
+                <td className="ls-vs-yes">✅</td>
+              </tr>
+              <tr>
+                <td>Document &amp; PDF analysis</td>
+                <td className="ls-vs-no">❌</td>
+                <td className="ls-vs-no">❌</td>
+                <td className="ls-vs-yes">✅</td>
+              </tr>
+              <tr>
+                <td>Audio transcription</td>
+                <td className="ls-vs-no">❌</td>
+                <td className="ls-vs-no">❌</td>
+                <td className="ls-vs-yes">✅</td>
+              </tr>
+              <tr>
+                <td>Per-channel pricing</td>
+                <td className="ls-vs-warn">⚠️ $6/channel</td>
+                <td className="ls-vs-warn">⚠️ $20/brand</td>
+                <td className="ls-vs-yes">✅ Flat subscription</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p className="ls-vs-note">
+          Buffer and Metricool data based on publicly available information as of 2026. Feature availability may vary by plan.
+        </p>
+      </section>
+
       {/* ── FEATURES ────────────────────────────────────────── */}
       <section className="ls-section" id="features" aria-labelledby="features-heading">
         <h2 id="features-heading">Tools for video publishing, documents, and daily work</h2>

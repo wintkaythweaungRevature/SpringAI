@@ -1003,6 +1003,83 @@
   color: #1e3a8a;
 }
 
+/* ── VS Comparison Table ─────────────────────────────────── */
+.ls-vs-table-wrap {
+  overflow-x: auto;
+  margin-top: 28px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.ls-vs-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.ls-vs-table thead tr {
+  background: #f8fafc;
+}
+
+.ls-vs-table th {
+  padding: 14px 16px;
+  text-align: center;
+  font-weight: 700;
+  color: #0f172a;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.ls-vs-table th:first-child {
+  text-align: left;
+}
+
+.ls-vs-table th.ls-vs-us {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.ls-vs-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  text-align: center;
+  color: #475569;
+}
+
+.ls-vs-table td:first-child {
+  text-align: left;
+  color: #0f172a;
+  font-weight: 500;
+}
+
+.ls-vs-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.ls-vs-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.ls-vs-yes {
+  color: #16a34a;
+  font-weight: 600;
+  background: #f0fdf4;
+}
+
+.ls-vs-no {
+  color: #94a3b8;
+}
+
+.ls-vs-warn {
+  color: #b45309;
+  font-size: 0.85rem;
+}
+
+.ls-vs-note {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  margin-top: 12px;
+}
+
 /* ── Responsive ──────────────────────────────────────────── */
 @media (max-width: 640px) {
   .ls-hero {

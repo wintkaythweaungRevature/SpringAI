@@ -1,13 +1,26 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
+import PlatformIcon from './PlatformIcon';
+
+const API_BASE = process.env.REACT_APP_API_URL || 'https://api.wintaibot.com';
 
 const PLATFORMS = [
-  { id: 'instagram', label: 'Instagram', color: '#E1306C', emoji: '📸',
+  { id: 'instagram', label: 'Instagram', color: '#E1306C', emoji: '📸', logo: 'instagram',
     note: 'Replies to comments on your Instagram posts.' },
-  { id: 'facebook',  label: 'Facebook',  color: '#1877F2', emoji: '👍',
+  { id: 'facebook',  label: 'Facebook',  color: '#1877F2', emoji: '👍', logo: 'facebook',
     note: 'Replies to comments on your Facebook Page posts.' },
-  { id: 'youtube',   label: 'YouTube',   color: '#FF0000', emoji: '▶️',
+  { id: 'youtube',   label: 'YouTube',   color: '#FF0000', emoji: '▶️', logo: 'youtube',
     note: 'Replies to top-level comments on your YouTube videos.' },
+  { id: 'tiktok',   label: 'TikTok',    color: '#010101', emoji: '🎵', logo: 'tiktok',
+    note: 'Replies to comments on your TikTok videos.' },
+  { id: 'linkedin',  label: 'LinkedIn',  color: '#0A66C2', emoji: '💼', logo: 'linkedin',
+    note: 'Replies to comments on your LinkedIn posts.' },
+  { id: 'x',         label: 'X',         color: '#000000', emoji: '🐦', logo: 'x',
+    note: 'Replies to comments on your X (Twitter) posts.' },
+  { id: 'threads',   label: 'Threads',   color: '#101010', emoji: '🧵', logo: 'threads',
+    note: 'Replies to comments on your Threads posts.' },
+  { id: 'pinterest', label: 'Pinterest', color: '#E60023', emoji: '📌', logo: 'pinterest',
+    note: 'Replies to comments on your Pinterest pins.' },
 ];
 
 const DEFAULT_PROMPT =
@@ -15,7 +28,7 @@ const DEFAULT_PROMPT =
   "Be warm, helpful, and on-brand. Do NOT use hashtags or emojis unless the comment uses them.";
 
 export default function AutoReplySettings() {
-  const { api, authHeaders } = useAuth();
+  const { authHeaders } = useAuth();
 
   // rules[platform] = { enabled, promptTemplate, maxRepliesPerDay, replyToFirstOnly, keywordFilter }
   const [rules, setRules] = useState({});
@@ -39,7 +52,7 @@ export default function AutoReplySettings() {
   // ─── Load rules ───────────────────────────────────────────────────────────
   const loadRules = useCallback(async () => {
     try {
-      const res = await api('/api/auto-reply/rules', { headers: authHeaders() });
+      const res = await fetch(`${API_BASE}/api/auto-reply/rules`, { headers: authHeaders() });
       if (!res.ok) return;
       const data = await res.json();
       const map = {};
@@ -68,7 +81,7 @@ export default function AutoReplySettings() {
     } catch (e) {
       setGlobalError('Failed to load rules.');
     }
-  }, [api, authHeaders]);
+  }, [authHeaders]);
 
   useEffect(() => { loadRules(); }, [loadRules]);
 
@@ -77,7 +90,7 @@ export default function AutoReplySettings() {
     setSaving(s => ({ ...s, [platform]: true }));
     setGlobalError('');
     try {
-      const res = await api(`/api/auto-reply/rules/${platform}`, {
+      const res = await fetch(`${API_BASE}/api/auto-reply/rules/${platform}`, {
         method: 'PUT',
         headers: { ...authHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify(rules[platform]),
@@ -119,7 +132,7 @@ export default function AutoReplySettings() {
     setTestReply('');
     setTestError('');
     try {
-      const res = await api('/api/auto-reply/test', {
+      const res = await fetch(`${API_BASE}/api/auto-reply/test`, {
         method: 'POST',
         headers: { ...authHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -142,7 +155,7 @@ export default function AutoReplySettings() {
   const loadLogs = async () => {
     setLogsLoading(true);
     try {
-      const res = await api('/api/auto-reply/logs', { headers: authHeaders() });
+      const res = await fetch(`${API_BASE}/api/auto-reply/logs`, { headers: authHeaders() });
       const data = await res.json();
       setLogs(data);
     } catch { /* silent */ }
@@ -176,8 +189,8 @@ export default function AutoReplySettings() {
               {/* Card header */}
               <div style={s.cardHeader}>
                 <div style={s.platformInfo}>
-                  <div style={{ ...s.platformDot, background: p.color }}>
-                    <span style={{ fontSize: 18 }}>{p.emoji}</span>
+                  <div style={{ ...s.platformDot, background: p.color + '18' }}>
+                    <PlatformIcon platform={p} size={26} />
                   </div>
                   <div>
                     <div style={s.platformName}>{p.label}</div>

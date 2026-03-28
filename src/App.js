@@ -123,6 +123,59 @@ function App() {
     ? (user.firstName[0] + user.lastName[0]).toUpperCase()
     : (user?.email ? user.email.slice(0, 2).toUpperCase() : '??');
 
+  // Marketing navbar — shown only when not logged in
+  const MarketingNav = () => (
+    <nav style={{
+      position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000,
+      background: '#0f172a', display: 'flex', alignItems: 'center',
+      justifyContent: 'space-between', padding: '0 32px', height: '58px',
+      boxShadow: '0 1px 0 rgba(255,255,255,0.06)',
+    }}>
+      {/* Logo */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+           onClick={() => go(null)}>
+        <span style={{ fontSize: '22px' }}>🤖</span>
+        <span style={{ color: '#fff', fontWeight: 800, fontSize: '17px', letterSpacing: '-0.01em' }}>Wintaibot</span>
+      </div>
+
+      {/* Links */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '28px' }}>
+        {[
+          { label: 'Home',      action: () => go(null) },
+          { label: 'Features',  action: () => go(null) },
+          { label: 'Pricing',   action: () => go('pricing') },
+          { label: 'Use Cases', action: () => go(null) },
+        ].map(({ label, action }) => (
+          <button key={label} onClick={action} style={{
+            background: 'none', border: 'none', cursor: 'pointer',
+            color: 'rgba(255,255,255,0.78)', fontSize: '14px', fontWeight: 500,
+            padding: '0', fontFamily: 'inherit',
+            transition: 'color 0.15s',
+          }}
+          onMouseEnter={e => e.target.style.color = '#fff'}
+          onMouseLeave={e => e.target.style.color = 'rgba(255,255,255,0.78)'}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* CTA */}
+      <button
+        onClick={() => { setAuthMode('signup'); setShowAuthModal(true); }}
+        style={{
+          background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+          color: '#fff', border: 'none', borderRadius: '8px',
+          padding: '9px 20px', fontWeight: 700, fontSize: '14px',
+          cursor: 'pointer', whiteSpace: 'nowrap',
+          boxShadow: '0 2px 12px rgba(99,102,241,0.4)',
+        }}
+      >
+        Get Started Free →
+      </button>
+    </nav>
+  );
+
   return (
     <div style={s.shell}>
 
@@ -201,31 +254,11 @@ function App() {
       {/* ═══════════════ MAIN ═══════════════ */}
       <div style={s.main}>
 
-        {/* Announcement Banner */}
-        {!user && (
-          <div style={{
-            background: 'linear-gradient(90deg, #6366f1 0%, #8b5cf6 50%, #0ea5e9 100%)',
-            color: '#fff', textAlign: 'center', padding: '9px 16px',
-            fontSize: '13px', fontWeight: 600, letterSpacing: '0.01em',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-            flexWrap: 'wrap',
-          }}>
-            <span>🚀 Starter $19 · Pro $39 · Growth $79 — one login, 8 platforms, AI captions, auto-reply & analytics</span>
-            <button
-              onClick={() => { setAuthMode('signup'); setShowAuthModal(true); }}
-              style={{
-                background: '#fff', color: '#6366f1', border: 'none', borderRadius: '6px',
-                padding: '4px 12px', fontSize: '12px', fontWeight: 700, cursor: 'pointer',
-                flexShrink: 0,
-              }}
-            >
-              Get started free →
-            </button>
-          </div>
-        )}
+        {/* Marketing Nav for logged-out visitors */}
+        {!user && <MarketingNav />}
 
-        {/* Top Bar */}
-        <header style={s.topBar}>
+        {/* Top Bar — hidden for logged-out landing page (marketing nav replaces it) */}
+        <header style={{ ...s.topBar, display: !user && activeTab === null ? 'none' : undefined }}>
           {user && <button style={s.menuBtn} onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>}
 
           <div style={s.searchBox}>
@@ -273,7 +306,7 @@ function App() {
         </div>
 
         {/* Content */}
-        <div style={s.content}>
+        <div style={{ ...s.content, paddingTop: !user ? '58px' : undefined }}>
           {!activeTab && (
             <LandingSection onGetStarted={() => go('chat')} onChoosePlan={handleChoosePlan} />
           )}

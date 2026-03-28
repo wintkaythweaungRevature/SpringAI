@@ -370,6 +370,7 @@ export function AuthProvider({ children }) {
     emailVerified: user?.emailVerified ?? true,
     authAvailable,
     apiBase: API_BASE,
+    authHeaders: () => ({ Authorization: `Bearer ${token}` }),
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

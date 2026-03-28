@@ -1,15 +1,18 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
+import PlatformIcon from './PlatformIcon';
 
 const API = process.env.REACT_APP_API_URL || 'https://api.wintaibot.com';
 
 const PLATFORMS = [
-  { id: 'instagram', label: 'Instagram', color: '#E1306C', emoji: '📸' },
-  { id: 'facebook',  label: 'Facebook',  color: '#1877F2', emoji: '👍' },
-  { id: 'youtube',   label: 'YouTube',   color: '#FF0000', emoji: '▶️' },
-  { id: 'tiktok',    label: 'TikTok',    color: '#010101', emoji: '🎵' },
-  { id: 'linkedin',  label: 'LinkedIn',  color: '#0A66C2', emoji: '💼' },
-  { id: 'x',         label: 'X',         color: '#000000', emoji: '🐦' },
+  { id: 'instagram', label: 'Instagram', color: '#E1306C', emoji: '📸', logo: 'instagram' },
+  { id: 'facebook',  label: 'Facebook',  color: '#1877F2', emoji: '👍', logo: 'facebook'  },
+  { id: 'youtube',   label: 'YouTube',   color: '#FF0000', emoji: '▶️', logo: 'youtube'   },
+  { id: 'tiktok',    label: 'TikTok',    color: '#010101', emoji: '🎵', logo: 'tiktok'    },
+  { id: 'linkedin',  label: 'LinkedIn',  color: '#0A66C2', emoji: '💼', logo: 'linkedin'  },
+  { id: 'x',         label: 'X',         color: '#000000', emoji: '🐦', logo: 'x'         },
+  { id: 'threads',   label: 'Threads',   color: '#101010', emoji: '🧵', logo: 'threads'   },
+  { id: 'pinterest', label: 'Pinterest', color: '#E60023', emoji: '📌', logo: 'pinterest' },
 ];
 
 const DAY_LABELS  = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
@@ -245,9 +248,11 @@ export default function DeepAnalytics() {
               background: platform === p.id ? p.color : 'transparent',
               color: platform === p.id ? '#fff' : '#64748b',
               border: `1.5px solid ${platform === p.id ? p.color : '#e2e8f0'}`,
+              display: 'flex', alignItems: 'center', gap: 6,
             }}
           >
-            {p.emoji} {p.label}
+            <PlatformIcon platform={p} size={15} />
+            {p.label}
           </button>
         ))}
       </div>
@@ -354,8 +359,9 @@ export default function DeepAnalytics() {
                   const max = Math.max(...Object.values(postPerf.byPlatform || {}));
                   return (
                     <div key={plat} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontSize: 12, width: 80, color: '#475569' }}>
-                        {pc?.emoji} {pc?.label || plat}
+                      <span style={{ fontSize: 12, width: 90, color: '#475569', display: 'flex', alignItems: 'center', gap: 5 }}>
+                        {pc ? <PlatformIcon platform={pc} size={14} /> : null}
+                        {pc?.label || plat}
                       </span>
                       <div style={{ width: 120, height: 12, background: '#f1f5f9', borderRadius: 6, overflow: 'hidden' }}>
                         <div style={{ height: '100%', width: `${(count / max) * 100}%`,

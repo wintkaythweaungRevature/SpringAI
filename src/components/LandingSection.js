@@ -69,6 +69,14 @@ const features = [
     badge: "Member",
     slug: "video-publisher",
   },
+  {
+    icon: "🚀",
+    title: "Creator Suite – Grow, Automate & Analyze",
+    description:
+      "Everything to grow your audience in one place: follower growth charts, best-time forecasts, AI content ideas from your data, auto-reply to comments, link-in-bio page, and a full analytics dashboard.",
+    badge: "Member",
+    slug: "creator-suite",
+  },
 ];
 
 const steps = [

@@ -235,6 +235,33 @@ export const TOOLS = [
       'What were my best-performing posts last month?',
     ],
   },
+  {
+    slug: 'creator-suite',
+    tab: 'deep-analytics',
+    name: 'Creator Suite',
+    fullName: 'Creator Suite – Grow, Automate & Analyze',
+    icon: '🚀',
+    badge: 'Member',
+    color: '#0f766e',
+    headline: "Your full growth stack: analytics, forecasts, AI ideas, auto-reply, and link-in-bio — one place.",
+    description:
+      'Creator Suite brings together everything a creator needs to grow: visualize follower trends and engagement over 30/90 days, find your best posting day and hour, ask AI for content ideas based on your actual post history, auto-reply to comments on Instagram/Facebook/YouTube, create a public link-in-bio page, and track it all from your analytics dashboard.',
+    metaTitle: 'Creator Suite – AI Analytics, Auto Reply & Growth Tools',
+    metaDescription:
+      'Follower growth charts, best-time forecasts, AI content ideas, comment auto-reply, link-in-bio, and analytics — all in one creator dashboard.',
+    keywords: 'social media growth tools, AI analytics creator, auto reply comments, link in bio, follower growth tracker, content ideas AI',
+    useCases: [
+      { icon: '📈', title: 'Growth Forecasting', desc: 'Visualize follower trends over 30/90 days and discover your peak engagement windows.' },
+      { icon: '💡', title: 'AI Content Ideas', desc: 'Ask "What should I post next?" — AI answers using YOUR actual post history and top performers.' },
+      { icon: '🤖', title: 'Auto Reply', desc: 'Set rules and let AI reply to Instagram, Facebook, and YouTube comments 24/7 in your voice.' },
+      { icon: '🔗', title: 'Link in Bio', desc: 'Create a public page at wintaibot.com/u/yourname with unlimited links and click tracking.' },
+    ],
+    examplePrompts: [
+      'Show my follower growth over the last 90 days',
+      'What should I post next week based on my best content?',
+      'Set up auto-replies for comments asking about price',
+    ],
+  },
 ];
 
 export function getToolBySlug(slug) {

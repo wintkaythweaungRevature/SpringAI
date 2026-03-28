@@ -82,12 +82,25 @@ function App() {
   // authMode: 'login' | 'signup' | 'forgot-password' | 'forgot-username'
   const [authMode, setAuthMode] = useState('login');
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const { user, logout, loading } = useAuth();
+  const { user, logout, loading, token } = useAuth();
   const isMobile = useMediaQuery('(max-width: 768px)');
   const isTablet = useMediaQuery('(max-width: 1024px)');
 
   const go = (tab) => setActiveTab(tab);
   const pageTitle = PAGE_TITLES[activeTab ?? 'null'] ?? 'Dashboard';
+  const handleChoosePlan = async (plan) => {
+    if (!user) { setAuthMode('signup'); setShowAuthModal(true); return; }
+    try {
+      const res = await fetch(`https://api.wintaibot.com/api/subscription/checkout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ plan, billingInterval: 'MONTHLY' }),
+      });
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+      else alert(data.error || 'Checkout failed. Please try again.');
+    } catch { alert('Checkout failed. Please try again.'); }
+  };
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -224,7 +237,7 @@ function App() {
         {/* Content */}
         <div style={s.content}>
           {!activeTab && (
-            <LandingSection onGetStarted={() => go('chat')} />
+            <LandingSection onGetStarted={() => go('chat')} onChoosePlan={handleChoosePlan} />
           )}
           {activeTab === 'image-generator'  && <MemberGate featureName="Image Generator"><ImageGenerator /></MemberGate>}
           {activeTab === 'chat'             && <AskAIGate  featureName="Ask AI"><ChatComponent /></AskAIGate>}

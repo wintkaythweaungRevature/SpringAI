@@ -40,11 +40,12 @@ function VideoFramePicker({ videoFile, onFrameSelected, thumbnailUrl }) {
   const [preview, setPreview] = useState(null);
   const [capturing, setCapturing] = useState(false);
   const [saved, setSaved] = useState(false);
-  const objUrl = useRef(null);
+  const [objUrl, setObjUrl] = useState(null);
 
   useEffect(() => {
-    objUrl.current = URL.createObjectURL(videoFile);
-    return () => URL.revokeObjectURL(objUrl.current);
+    const url = URL.createObjectURL(videoFile);
+    setObjUrl(url);
+    return () => URL.revokeObjectURL(url);
   }, [videoFile]);
 
   const captureFrame = () => {
@@ -90,7 +91,7 @@ function VideoFramePicker({ videoFile, onFrameSelected, thumbnailUrl }) {
       {/* Hidden video + canvas for frame capture */}
       <video
         ref={videoRef}
-        src={objUrl.current}
+        src={objUrl}
         onLoadedMetadata={e => setDuration(e.target.duration)}
         onSeeked={handleSeeked}
         style={{ display: 'none' }}

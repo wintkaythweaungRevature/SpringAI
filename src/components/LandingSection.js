@@ -121,7 +121,7 @@ const techStack = [
 
 /* ─── Component ─────────────────────────────────────────────── */
 
-export default function LandingSection({ onGetStarted, onOpenVideoPublisher }) {
+export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideoPublisher }) {
   const [openFaq, setOpenFaq] = useState(null);
 
   return (
@@ -407,7 +407,7 @@ export default function LandingSection({ onGetStarted, onOpenVideoPublisher }) {
               <li className="ls-li-off">AI Social Chat (RAG)</li>
               <li><strong>1</strong> seat</li>
             </ul>
-            <button type="button" className="ls-btn-outline" onClick={onGetStarted}>Choose Starter</button>
+            <button type="button" className="ls-btn-outline" onClick={() => onChoosePlan ? onChoosePlan('STARTER') : onGetStarted()}>Choose Starter</button>
           </div>
 
           <div className="ls-plan ls-plan--featured">
@@ -424,7 +424,7 @@ export default function LandingSection({ onGetStarted, onOpenVideoPublisher }) {
               <li>AI captions, thumbnail picker, link-in-bio</li>
               <li><strong>1</strong> seat</li>
             </ul>
-            <button type="button" className="ls-btn-primary" onClick={onGetStarted}>Choose Pro</button>
+            <button type="button" className="ls-btn-primary" onClick={() => onChoosePlan ? onChoosePlan('PRO') : onGetStarted()}>Choose Pro</button>
           </div>
 
           <div className="ls-plan">
@@ -438,7 +438,7 @@ export default function LandingSection({ onGetStarted, onOpenVideoPublisher }) {
               <li><strong>3</strong> team seats <span style={{ color: '#64748b', fontWeight: 400 }}>(when enabled)</span></li>
               <li>Deep analytics · AI Social Chat (RAG)</li>
             </ul>
-            <button type="button" className="ls-btn-outline" onClick={onGetStarted}>Choose Growth</button>
+            <button type="button" className="ls-btn-outline" onClick={() => onChoosePlan ? onChoosePlan('GROWTH') : onGetStarted()}>Choose Growth</button>
           </div>
         </div>
 

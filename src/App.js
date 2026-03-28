@@ -24,6 +24,7 @@ import LinkInBioBuilder from './components/LinkInBioBuilder';
 import DeepAnalytics from './components/DeepAnalytics';
 import SocialAIChat from './components/SocialAIChat';
 import PricingPage from './components/PricingPage';
+import AutoReplySettings from './components/AutoReplySettings';
 
 const PAGE_TITLES = {
   null: 'Dashboard',
@@ -42,7 +43,8 @@ const PAGE_TITLES = {
   'bio':       'Link in Bio',
   'trends':    'Trends',
   'social-ai': 'Social AI',
-  'pricing':   'Pricing & Plans',
+  'pricing':      'Pricing & Plans',
+  'auto-reply':   'Auto Reply',
 };
 
 /* ─── NavItem ─────────────────────────────────────────────── */
@@ -140,6 +142,7 @@ function App() {
           <NavItem emoji="📲" label="Video Publisher"    active={activeTab === 'video-publisher'} onClick={() => go('video-publisher')} hasArrow />
           <NavItem emoji="📊" label="Analytics"            active={activeTab === 'analytics'}       onClick={() => go('analytics')} />
           <NavItem emoji="💬" label="Messages"            active={activeTab === 'messages'}         onClick={() => go('messages')} />
+          <NavItem emoji="🤖" label="Auto Reply"          active={activeTab === 'auto-reply'}       onClick={() => go('auto-reply')} />
           <NavItem emoji="🔗" label="Connected Accounts"  active={activeTab === 'social-connect'}  onClick={() => go('social-connect')} />
           <NavItem emoji="🌐" label="Link in Bio"         active={activeTab === 'bio'}              onClick={() => go('bio')} />
           <NavItem emoji="📈" label="Trends"              active={activeTab === 'trends'}           onClick={() => go('trends')} />
@@ -231,6 +234,7 @@ function App() {
           {activeTab === 'trends'          && <MemberGate featureName="Trends"><DeepAnalytics /></MemberGate>}
           {activeTab === 'social-ai'       && <MemberGate featureName="Social AI"><SocialAIChat /></MemberGate>}
           {activeTab === 'pricing'         && <PricingPage onClose={() => go(null)} />}
+          {activeTab === 'auto-reply'      && <MemberGate featureName="Auto Reply"><AutoReplySettings /></MemberGate>}
         </div>
       </div>
 

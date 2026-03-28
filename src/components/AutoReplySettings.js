@@ -112,7 +112,7 @@ export default function AutoReplySettings() {
     setRules(r => ({ ...r, [platform]: updated }));
     setSaving(s => ({ ...s, [platform]: true }));
     try {
-      await api(`/api/auto-reply/rules/${platform}`, {
+      await fetch(`${API_BASE}/api/auto-reply/rules/${platform}`, {
         method: 'PUT',
         headers: { ...authHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify(updated),

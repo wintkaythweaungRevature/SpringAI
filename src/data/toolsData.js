@@ -208,6 +208,33 @@ export const TOOLS = [
       'Generate hashtags for my travel vlog on Instagram and YouTube',
     ],
   },
+  {
+    slug: 'social-autopilot',
+    tab: 'deep-analytics',
+    name: 'Social Autopilot',
+    fullName: 'Social Autopilot – Analyze, Automate & Grow',
+    icon: '📊',
+    badge: 'Member',
+    color: '#7c3aed',
+    headline: 'Track what\'s growing, reply automatically, and let AI run your engagement.',
+    description:
+      'Your analytics and automation command center. Visualize follower growth and engagement trends, discover your best posting times, auto-reply to comments with AI while you sleep, manage every conversation from one inbox, and chat with your performance data in plain English — all without leaving the dashboard.',
+    metaTitle: 'Social Autopilot – AI Analytics & Comment Automation',
+    metaDescription:
+      'Track follower growth, find best posting times, auto-reply to comments with AI, and ask your data questions in plain English. One hub to analyze, automate, and grow.',
+    keywords: 'social media analytics, AI comment auto-reply, follower growth tracker, social media automation, engagement analytics, best time to post AI',
+    useCases: [
+      { icon: '📈', title: 'Growth Analytics', desc: 'Visualize follower trends and engagement rates over 30 or 90 days across all platforms.' },
+      { icon: '🤖', title: 'AI Auto-Reply', desc: 'Set rules and let AI reply to Instagram, Facebook, and YouTube comments 24/7 — in your voice.' },
+      { icon: '🕐', title: 'Best Time to Post', desc: 'AI analyzes your post history to find the exact day and hour your audience is most active.' },
+      { icon: '💬', title: 'Unified Inbox', desc: 'All your comments and messages from every platform in one place — reply manually or let AI handle it.' },
+    ],
+    examplePrompts: [
+      'Show my Instagram follower growth over the last 90 days',
+      'Set up AI auto-replies for comments containing "price" or "how much"',
+      'What were my best-performing posts last month?',
+    ],
+  },
 ];
 
 export function getToolBySlug(slug) {

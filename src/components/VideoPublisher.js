@@ -31,6 +31,125 @@ const POST_TYPES = [
   { id: 'text',  label: 'Text',   icon: '✍️' },
 ];
 
+/* ── Video Frame Scrubber ─────────────────────────────────────────────────── */
+function VideoFramePicker({ videoFile, onFrameSelected, thumbnailUrl }) {
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [preview, setPreview] = useState(null);
+  const [capturing, setCapturing] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const objUrl = useRef(null);
+
+  useEffect(() => {
+    objUrl.current = URL.createObjectURL(videoFile);
+    return () => URL.revokeObjectURL(objUrl.current);
+  }, [videoFile]);
+
+  const captureFrame = () => {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    if (!video || !canvas) return null;
+    canvas.width  = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    return canvas.toDataURL('image/jpeg', 0.92);
+  };
+
+  const handleScrub = (e) => {
+    const t = parseFloat(e.target.value);
+    setCurrentTime(t);
+    if (videoRef.current) videoRef.current.currentTime = t;
+  };
+
+  const handleSeeked = () => {
+    setPreview(captureFrame());
+  };
+
+  const handleUseFrame = () => {
+    const dataUrl = captureFrame();
+    if (!dataUrl) return;
+    setCapturing(true);
+    // Convert dataURL → Blob → File
+    fetch(dataUrl)
+      .then(r => r.blob())
+      .then(blob => {
+        const file = new File([blob], 'thumbnail.jpg', { type: 'image/jpeg' });
+        onFrameSelected(file, dataUrl);
+        setSaved(true);
+        setCapturing(false);
+      })
+      .catch(() => setCapturing(false));
+  };
+
+  const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {/* Hidden video + canvas for frame capture */}
+      <video
+        ref={videoRef}
+        src={objUrl.current}
+        onLoadedMetadata={e => setDuration(e.target.duration)}
+        onSeeked={handleSeeked}
+        style={{ display: 'none' }}
+        crossOrigin="anonymous"
+        preload="metadata"
+      />
+      <canvas ref={canvasRef} style={{ display: 'none' }} />
+
+      {/* Preview frame */}
+      <div style={{ position: 'relative', borderRadius: 12, overflow: 'hidden', background: '#0f172a', aspectRatio: '16/9' }}>
+        {preview ? (
+          <img src={preview} alt="frame preview" style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
+        ) : (
+          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#475569', fontSize: 13 }}>
+            Drag the slider to preview frames
+          </div>
+        )}
+        {duration > 0 && (
+          <div style={{ position: 'absolute', bottom: 8, right: 10, background: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: 11, padding: '2px 8px', borderRadius: 6 }}>
+            {fmt(currentTime)} / {fmt(duration)}
+          </div>
+        )}
+      </div>
+
+      {/* Scrubber */}
+      {duration > 0 && (
+        <input
+          type="range" min={0} max={duration} step={0.1}
+          value={currentTime}
+          onChange={handleScrub}
+          style={{ width: '100%', accentColor: '#2563eb', cursor: 'pointer' }}
+        />
+      )}
+
+      {/* Actions */}
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+        <button
+          type="button"
+          onClick={handleUseFrame}
+          disabled={capturing || !preview}
+          style={{ padding: '8px 20px', borderRadius: 8, border: 'none', background: '#2563eb', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer', opacity: (!preview || capturing) ? 0.5 : 1 }}
+        >
+          {capturing ? 'Saving…' : '📌 Use this frame'}
+        </button>
+        {(saved || thumbnailUrl) && (
+          <span style={{ fontSize: 12, color: '#22c55e', fontWeight: 600 }}>✅ Thumbnail saved!</span>
+        )}
+      </div>
+
+      {/* Current saved thumbnail */}
+      {thumbnailUrl && (
+        <div style={{ fontSize: 11, color: '#64748b' }}>
+          Current thumbnail: <img src={thumbnailUrl} alt="thumbnail" style={{ height: 40, borderRadius: 4, verticalAlign: 'middle', marginLeft: 6, border: '1px solid #e2e8f0' }} />
+        </div>
+      )}
+    </div>
+  );
+}
+
 function validateVideo(file) {
   if (!file) return null;
   const ext = '.' + file.name.split('.').pop().toLowerCase();
@@ -460,6 +579,23 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
       if (res.ok) {
         const data = await res.json();
         setThumbnailUrl(data.thumbnailUrl);
+      }
+    } catch (_) {}
+  };
+
+  const uploadFrameThumbnail = async (videoId, imageFile, previewDataUrl) => {
+    setThumbnailUrl(previewDataUrl); // show preview immediately
+    try {
+      const form = new FormData();
+      form.append('file', imageFile, 'thumbnail.jpg');
+      const res = await fetch(api(`/videos/${videoId}/thumbnail/upload`), {
+        method: 'POST',
+        headers: authHeaders(),
+        body: form,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setThumbnailUrl(data.thumbnailUrl || previewDataUrl);
       }
     } catch (_) {}
   };
@@ -1306,77 +1442,24 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
               );
             })()}
 
-            {/* ── Thumbnail Picker (only for video posts with a known videoId) ── */}
-            {postType === 'video' && uploadedVideoId && (
+            {/* ── Thumbnail Picker ── */}
+            {postType === 'video' && video && (
               <div style={s.card}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
                   <div style={s.sectionTitle}>🖼️ Thumbnail Picker</div>
-                  {frames.length === 0 && !framesLoading && (
-                    <button
-                      type="button"
-                      onClick={() => loadFrames(uploadedVideoId)}
-                      style={{ padding: '6px 14px', borderRadius: '8px', border: 'none', background: 'linear-gradient(135deg,#2563eb,#7c3aed)', color: '#fff', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
-                    >
-                      ✨ Let AI Pick
-                    </button>
-                  )}
+                  <span style={{ fontSize: 11, color: '#94a3b8' }}>Drag to scrub, then pick your frame</span>
                 </div>
-
-                {framesLoading && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '20px 0', color: '#64748b', fontSize: '13px' }}>
-                    <div style={{ width: '18px', height: '18px', border: '2px solid #e2e8f0', borderTopColor: '#2563eb', borderRadius: '50%', animation: 'spin 0.8s linear infinite', flexShrink: 0 }} />
-                    Scanning video for best frames...
-                  </div>
-                )}
-
-                {frames.length > 0 && (
-                  <>
-                    <p style={{ fontSize: '11px', color: '#64748b', marginBottom: '12px' }}>
-                      Click any frame to use as thumbnail. ⭐ = AI recommended.
-                    </p>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
-                      {frames.map(frame => {
-                        const isSelected = selectedFrameKey === frame.s3Key;
-                        return (
-                          <div
-                            key={frame.index}
-                            onClick={() => pickThumbnail(uploadedVideoId, frame)}
-                            style={{
-                              position: 'relative', borderRadius: '8px', overflow: 'hidden', cursor: 'pointer',
-                              border: isSelected ? '2.5px solid #2563eb' : '2px solid #e2e8f0',
-                              boxShadow: isSelected ? '0 0 0 3px rgba(37,99,235,0.2)' : 'none',
-                              aspectRatio: '16/9', background: '#0f172a',
-                            }}
-                          >
-                            <img
-                              src={frame.url}
-                              alt={`Frame at ${Math.round(frame.timestampSeconds)}s`}
-                              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                            />
-                            {frame.recommended && (
-                              <span style={{ position: 'absolute', top: '4px', left: '4px', background: 'rgba(37,99,235,0.9)', color: '#fff', fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '4px' }}>
-                                ⭐ AI Pick
-                              </span>
-                            )}
-                            {isSelected && (
-                              <span style={{ position: 'absolute', bottom: '4px', right: '4px', background: '#2563eb', color: '#fff', fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '4px' }}>
-                                ✓ Selected
-                              </span>
-                            )}
-                            <span style={{ position: 'absolute', bottom: '4px', left: '4px', background: 'rgba(0,0,0,0.55)', color: '#fff', fontSize: '10px', padding: '1px 5px', borderRadius: '3px' }}>
-                              {Math.floor(frame.timestampSeconds / 60)}:{String(Math.round(frame.timestampSeconds % 60)).padStart(2, '0')}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    {thumbnailUrl && (
-                      <div style={{ marginTop: '10px', fontSize: '12px', color: '#22c55e', fontWeight: 600 }}>
-                        ✅ Thumbnail saved! Will be used when publishing.
-                      </div>
-                    )}
-                  </>
-                )}
+                <VideoFramePicker
+                  videoFile={video}
+                  thumbnailUrl={thumbnailUrl}
+                  onFrameSelected={(file, preview) => {
+                    if (uploadedVideoId) {
+                      uploadFrameThumbnail(uploadedVideoId, file, preview);
+                    } else {
+                      setThumbnailUrl(preview); // before upload: just store preview
+                    }
+                  }}
+                />
               </div>
             )}
           </div>

@@ -3,9 +3,10 @@
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   color: #0f172a;
   line-height: 1.6;
-  max-width: 100%;
-  margin: 0;
-  padding: 0;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 20px 56px;
+  box-sizing: border-box;
 }
 
 .ls-section {
@@ -28,7 +29,8 @@
   font-size: 1rem;
   color: #64748b;
   margin: 0 0 36px;
-  max-width: 600px;
+  max-width: 680px;
+  line-height: 1.65;
 }
 
 /* ── Buttons ─────────────────────────────────────────────── */
@@ -95,33 +97,85 @@
 
 /* ── Hero ────────────────────────────────────────────────── */
 .ls-hero {
-  background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #2563eb 100%);
+  background: linear-gradient(145deg, #0c1222 0%, #152a52 42%, #1d4ed8 100%);
   border-radius: 20px;
-  padding: 72px 24px;
+  padding: clamp(48px, 6vw, 76px) clamp(20px, 4vw, 40px);
   text-align: center;
   color: #fff;
-  margin: 0;
-  box-shadow: 0 10px 40px rgba(15, 23, 42, 0.25);
+  margin: 0 0 8px;
+  box-shadow: 0 12px 48px rgba(15, 23, 42, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.ls-hero-inner {
+  max-width: 720px;
+  margin: 0 auto;
 }
 
 .ls-hero-badge {
   display: inline-block;
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  padding: 6px 16px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  padding: 7px 18px;
   border-radius: 999px;
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   font-weight: 600;
-  margin-bottom: 20px;
-  letter-spacing: 0.03em;
+  margin-bottom: 18px;
+  letter-spacing: 0.04em;
+  line-height: 1.35;
+  max-width: 100%;
+}
+
+.ls-hero-kicker {
+  margin: 0 0 10px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #a5b4fc;
+  line-height: 1.3;
 }
 
 .ls-hero-h1 {
-  font-size: clamp(1.85rem, 5vw, 3.05rem);
+  font-size: clamp(1.75rem, 4.8vw, 2.85rem);
   font-weight: 900;
-  line-height: 1.12;
-  margin: 0 0 16px;
-  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin: 0 0 18px;
+  letter-spacing: -0.03em;
+}
+
+.ls-hero-tagline {
+  margin: 0 auto 22px;
+  max-width: 640px;
+  font-size: clamp(0.98rem, 2.1vw, 1.12rem);
+  font-weight: 450;
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.ls-hero-chips {
+  list-style: none;
+  margin: 0 auto 28px;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  max-width: 640px;
+}
+
+.ls-hero-chips li {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.07);
+  line-height: 1.3;
+}
+
+.ls-hero-chips li::before {
+  display: none;
 }
 
 .ls-hero-h1-accent {
@@ -189,36 +243,69 @@
 
 .ls-hero-actions {
   display: flex;
-  gap: 16px;
+  gap: 14px;
   justify-content: center;
   flex-wrap: wrap;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 }
 
 .ls-hero-note {
-  font-size: 0.875rem;
-  opacity: 0.75;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  opacity: 0.78;
   margin: 0;
+  max-width: 520px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /* ── What Is ─────────────────────────────────────────────── */
+.ls-what-lead {
+  color: #334155;
+  font-size: 1.0625rem;
+  line-height: 1.7;
+  max-width: 720px;
+  margin: 0 0 20px;
+}
+
 .ls-what p {
   color: #334155;
   font-size: 1rem;
-  max-width: 100%;
+  max-width: 720px;
   margin-bottom: 12px;
 }
 
 .ls-what-bullets {
-  color: #334155 !important;
-  opacity: 1 !important;
-  justify-content: flex-start !important;
-  margin: 20px 0 !important;
-  max-width: 100% !important;
+  list-style: none;
+  margin: 0 0 24px;
+  padding: 0;
+  max-width: 720px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ls-what-bullets li {
+  position: relative;
+  padding: 14px 16px 14px 44px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: #334155;
 }
 
 .ls-what-bullets li::before {
-  background: #6366f1 !important;
+  content: "";
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1, #2563eb);
 }
 
 .ls-stat-row {
@@ -493,6 +580,18 @@
   border: 1px solid #e2e8f0;
   border-radius: 10px;
   padding: 20px 22px;
+}
+
+@media (min-width: 640px) {
+  .ls-usecase--featured {
+    grid-column: 1 / -1;
+  }
+}
+
+.ls-usecase--featured {
+  border-color: #c7d2fe;
+  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+  box-shadow: 0 2px 14px rgba(99, 102, 241, 0.07);
 }
 
 .ls-usecase h3 {

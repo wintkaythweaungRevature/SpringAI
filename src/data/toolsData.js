@@ -189,7 +189,7 @@ export const TOOLS = [
     icon: '🎬',
     badge: 'Member',
     color: '#dc2626',
-    headline: 'Upload once. Publish to YouTube, Instagram, TikTok & more — with AI captions.',
+    headline: 'If you can record it — we help you post it everywhere, with the right format per platform.',
     description:
       'Upload your video, choose platforms — Wintaibot adapts format per destination. Use the thumbnail picker (or AI-suggested frames), review editable AI captions and hashtags, and schedule direct publishing per network without a notification-heavy workflow. Use insights to plan what to post next.',
     metaTitle: 'Video Publisher – AI-Powered Multi-Platform Video Scheduler',

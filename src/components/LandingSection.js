@@ -83,7 +83,7 @@ const steps = [
   {
     num: "1",
     title: "Choose a Tool",
-    desc: "Select from 8 AI-powered tools — chatbot, document analyzer, transcription, image generator, email writer, interview prep, recipe planner, or video publisher for socials.",
+    desc: "Social media managers start with Video Publisher, Messages, or Analytics; everyone else can open DocuWizard, EchoScribe, Ask AI, and more — eight tools in one login.",
   },
   {
     num: "2",
@@ -133,50 +133,58 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
   const [openFaq, setOpenFaq] = useState(null);
 
   return (
-    <main className="ls-root" aria-label="Wintaibot – AI Platform">
+    <main className="ls-root" aria-label="Wintaibot — social media video publishing and AI tools">
 
-      {/* ── HERO ────────────────────────────────────────────── */}
+      {/* ── HERO (SEO: one H1 — video publishing + social managers) ── */}
       <section className="ls-hero" aria-labelledby="hero-heading">
-        <div className="ls-hero-badge">Video, social &amp; brand AI — for creators who publish everywhere</div>
-        <h1 id="hero-heading" className="ls-hero-h1">
-          Post Once,<br /><span className="ls-hero-h1-accent">Shine Everywhere.</span>
-        </h1>
-        <p className="ls-hero-lead">
-          One dashboard to publish videos, schedule posts, auto-reply to comments,
-          and analyze what's working — across every platform, without re-editing files.
-        </p>
-        <div className="ls-hero-actions">
-          <button className="ls-btn-primary" onClick={onGetStarted}>
-            Try Free — No Credit Card
-          </button>
-          <a className="ls-btn-ghost" href="/features">See All Features →</a>
+        <div className="ls-hero-inner">
+          <div className="ls-hero-badge">
+            Multi-platform video publishing · Social media managers &amp; creators
+          </div>
+          <p className="ls-hero-kicker">The end of format errors</p>
+          <h1 id="hero-heading" className="ls-hero-h1">
+            If You Can Record It,<br /><span className="ls-hero-h1-accent">We Can Post It.</span>
+          </h1>
+          <p className="ls-hero-tagline">
+            Upload once — Wintaibot adapts aspect ratio, framing, and quality for <strong>each network you choose</strong> (Instagram, YouTube Shorts, TikTok, Reels, and more).
+            Add <strong>AI thumbnails</strong> and <strong>editable captions</strong>, then <strong>schedule</strong> or publish directly — plus inbox, auto-reply, and analytics in the same workspace.
+          </p>
+          <ul className="ls-hero-chips" aria-label="Product highlights">
+            <li>No manual re-edits per platform</li>
+            <li>Thumbnail picker + AI frames</li>
+            <li>Schedule &amp; direct publishing</li>
+            <li>Brand-aware Social AI (RAG)</li>
+          </ul>
+          <div className="ls-hero-actions">
+            <button type="button" className="ls-btn-primary" onClick={onGetStarted}>
+              Try Free — No Credit Card
+            </button>
+            <a className="ls-btn-ghost" href="/features">See all tools →</a>
+          </div>
+          <p className="ls-hero-note">
+            <strong>Free:</strong> Ask AI &amp; Recipe Generator.{" "}
+            <strong>Paid:</strong> Starter <strong>$19/mo</strong> · Pro <strong>$39/mo</strong> · Growth <strong>$79/mo</strong> — no per-channel fees, no install.
+          </p>
         </div>
-        <p className="ls-hero-note">
-          Free tier: <strong>Ask AI</strong> &amp; <strong>Recipe Generator</strong>.{" "}
-          <strong>Starter $19/mo</strong> · <strong>Pro $39/mo</strong> · <strong>Growth $79/mo</strong>.{" "}
-          No per-channel fees. No installs.
-        </p>
       </section>
 
       {/* ── WHAT IS WINTAIBOT ───────────────────────────────── */}
       <section className="ls-section ls-what" aria-labelledby="what-heading">
-        <h2 id="what-heading">What Is Wintaibot?</h2>
-        <p>
-          Wintaibot is an AI productivity platform that combines <strong>8 specialized tools</strong> into one dashboard —
-          so you stop juggling multiple apps and subscriptions.
+        <h2 id="what-heading">One workspace for social video — and the rest of your work</h2>
+        <p className="ls-what-lead">
+          <strong>Wintaibot</strong> is an <strong>AI platform for social media managers</strong> who publish <strong>video across Instagram, YouTube, TikTok,</strong> and other networks — without export gymnastics.
+          The same account includes <strong>documents, transcription, email, and interview tools</strong> so teams do not pay for five different subscriptions.
         </p>
-        <ul className="ls-hero-punch-row ls-what-bullets" aria-label="Key benefits">
-          <li>Upload once — we format per platform (ratio, framing, quality)</li>
-          <li>AI thumbnail picker: scrub to your best frame or let AI suggest it</li>
-          <li>Schedule posts, read DMs &amp; comments, auto-reply — all in one place</li>
-          <li>Direct publishing — no waiting on phone notifications</li>
-          <li>Social AI that knows your brand &amp; post history</li>
-          <li>Documents, transcription, images, email &amp; interview prep included</li>
+        <ul className="ls-what-bullets" aria-label="What you get">
+          <li><strong>Video variants:</strong> correct format per platform you select — not one file forced everywhere</li>
+          <li><strong>Thumbnails &amp; copy:</strong> pick frames or use AI; captions and hashtags are always editable</li>
+          <li><strong>Ops in one place:</strong> schedule posts, Messages (DMs &amp; comments), optional AI auto-reply</li>
+          <li><strong>Strategy:</strong> Analytics, Trends, and Social AI grounded in your real post history</li>
+          <li><strong>Calm publishing:</strong> direct-to-network flow — fewer notification-driven steps</li>
         </ul>
         <p>
-          Whether you are a <strong>creator</strong> publishing to YouTube and socials,
-          a <strong>professional</strong> drowning in emails, a <strong>job seeker</strong> prepping for interviews,
-          or a <strong>student</strong> transcribing lectures — Wintaibot has a dedicated tool for your workflow.
+          <strong>Creators and social managers</strong> live in Video Publisher and analytics; <strong>professionals</strong> use DocuWizard and Reply Enchanter;
+          <strong>job seekers</strong> use Resume Warlock; <strong>students</strong> use EchoScribe and Ask AI — all in one dashboard.
         </p>
         <div className="ls-stat-row">
           <div className="ls-stat"><span className="ls-stat-num">8</span><span>AI Tools</span></div>
@@ -188,7 +196,7 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
 
       {/* ── ONE PLACE: SCHEDULE + INBOX + AUTO-REPLY ─────────── */}
       <section className="ls-section ls-social-hub" aria-labelledby="social-hub-heading">
-        <h2 id="social-hub-heading">Schedule, inbox &amp; auto-reply — without hopping apps</h2>
+        <h2 id="social-hub-heading">Schedule posts, read messages, automate replies — one login</h2>
         <p className="ls-section-sub ls-social-hub-intro">
           Creators shouldn&apos;t live in three tabs just to post, read messages, and answer fans.
           In Wintaibot you <strong>schedule posts</strong> per platform, open <strong>Messages</strong> for DMs and comments,
@@ -205,10 +213,10 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
 
       {/* ── THREE ADVANTAGES: FIXER · THUMBNAILS · BRAIN AI ───── */}
       <section className="ls-section ls-video-edge" aria-labelledby="video-edge-heading">
-        <h2 id="video-edge-heading">Built to beat &ldquo;upload failed&rdquo; — and generic AI</h2>
+        <h2 id="video-edge-heading">How we end format errors — and beat generic AI</h2>
         <p className="ls-section-sub ls-video-edge-intro">
-          Three things that define Wintaibot for video and strategy: <strong>we fix the file for each platform you pick</strong>,
-          <strong>you control the cover image</strong> (especially for Shorts-style video), and <strong>our AI remembers your brand</strong> — not just a blank chatbot.
+          <strong>If you can record it, we can post it</strong> is the promise; here is how: <strong>automatic format fixes per destination</strong>,
+          <strong>thumbnails you control</strong> (critical for Shorts and Reels), and <strong>strategy AI that knows your brand</strong> — not a one-size chatbot.
         </p>
         <ul className="ls-video-edge-list">
           <li>
@@ -241,10 +249,9 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
 
       {/* ── FEATURES ────────────────────────────────────────── */}
       <section className="ls-section" id="features" aria-labelledby="features-heading">
-        <h2 id="features-heading">Everything You Need, Built In</h2>
+        <h2 id="features-heading">Tools for video publishing, documents, and daily work</h2>
         <p className="ls-section-sub">
-          No more switching between ChatGPT, Whisper, DALL·E, and a dozen other tools.
-          Wintaibot puts documents, audio, images, email, resumes, recipes, and video publishing in one place.
+          Social media teams get <strong>multi-platform video scheduling</strong>, captions, and analytics next to <strong>DocuWizard</strong>, <strong>EchoScribe</strong>, <strong>Ask AI</strong>, and more — one subscription, fewer tabs.
         </p>
         <div className="ls-features-grid" role="list">
           {features.map((f) => (
@@ -296,6 +303,12 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
       <section className="ls-section" id="use-cases" aria-labelledby="usecases-heading">
         <h2 id="usecases-heading">Who Uses Wintaibot?</h2>
         <div className="ls-usecase-grid">
+          <div className="ls-usecase ls-usecase--featured">
+            <h3>Social media managers &amp; video creators</h3>
+            <p>
+              <strong>If you can record it, we can post it:</strong> use <strong>Video Publisher</strong> to upload once, <strong>pick your platforms</strong>, and let Wintaibot <strong>adapt format for each network</strong> — then refine <strong>AI captions and hashtags</strong>, <strong>schedule</strong> or publish directly, and use <strong>Analytics</strong>, <strong>Trends</strong>, and <strong>Social AI</strong> for ideas. <strong>AI Image Generator</strong> and <strong>Ask AI</strong> help with thumbnails and scripts.
+            </p>
+          </div>
           <div className="ls-usecase">
             <h3>Job Seekers</h3>
             <p>
@@ -318,12 +331,6 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
               Transcribe lectures and podcasts with <strong>EchoScribe</strong>, then
               paste the text into <strong>Ask AI</strong> for instant summaries, study notes,
               and explanations of complex topics.
-            </p>
-          </div>
-          <div className="ls-usecase">
-            <h3>Content Creators &amp; Social Managers</h3>
-            <p>
-              Use <strong>Video Publisher</strong> to upload once, <strong>pick your platforms</strong>, and let Wintaibot <strong>fix the video for each one</strong> — then get AI captions and hashtags per platform, <strong>schedule each post</strong> when you want, and check <strong>viral trends and news</strong> to plan your next video. Plus the <strong>AI Image Generator</strong> and <strong>Ask AI</strong> for thumbnails, scripts, and ideas.
             </p>
           </div>
           <div className="ls-usecase">
@@ -568,10 +575,10 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
 
       {/* ── FINAL CTA ───────────────────────────────────────── */}
       <section className="ls-section ls-final-cta" aria-label="Get started with Wintaibot">
-        <h2>Ready to Save Hours Every Week?</h2>
+        <h2>Ready to post video everywhere — without format headaches?</h2>
         <p>
-          Join users who use Wintaibot to automate documents, emails, transcriptions,
-          video publishing to socials, and more. Start free — no credit card needed.
+          Start free, then scale to <strong>Starter, Pro, or Growth</strong> for full <strong>video publishing</strong>, scheduling, and AI workflows.
+          No credit card for the free tier.
         </p>
         <button className="ls-btn-primary ls-btn-lg" onClick={onGetStarted}>
           Get Started Free →

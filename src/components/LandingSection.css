@@ -250,7 +250,19 @@
 
 .ls-social-hub-intro {
   max-width: 780px;
-  margin-bottom: 0;
+  margin-bottom: 16px;
+}
+
+.ls-social-hub-direct {
+  max-width: 780px;
+  margin: 0;
+  padding: 18px 20px;
+  background: linear-gradient(135deg, #f0f4ff 0%, #f8fafc 100%);
+  border: 1px solid #c7d2fe;
+  border-radius: 12px;
+  font-size: 0.98rem;
+  color: #334155;
+  line-height: 1.65;
 }
 
 /* ── Video variants / auto-fix ───────────────────────────── */

@@ -65,7 +65,7 @@ const features = [
     icon: "🎬",
     title: "Video Publisher – One Video, Every Platform",
     description:
-      "Upload once, choose your destinations — we handle format and framing for each platform so you are not re-editing in another app. Pick your Shorts/Reels thumbnail (or let AI suggest the strongest frame), then review AI-generated captions and hashtags per network — edit anything before you schedule. Per-platform timing plus signals to plan what to post next.",
+      "Upload once, choose your destinations — we handle format and framing for each platform so you are not re-editing in another app. Pick your Shorts/Reels thumbnail (or let AI suggest the strongest frame), then review AI-generated captions and hashtags per network — edit anything before you schedule. Direct publishing to each network on your schedule, without a notification-heavy gatekeeping flow. Per-platform timing plus signals to plan what to post next.",
     badge: "Member",
     slug: "video-publisher",
   },
@@ -140,12 +140,14 @@ export default function LandingSection({ onGetStarted, onOpenVideoPublisher }) {
         <ul className="ls-hero-punch-row" aria-label="Key benefits">
           <li>Schedule posts, messages &amp; auto-reply in one place</li>
           <li>Upload once — we format per platform; edit AI thumbnails, captions &amp; tags anytime</li>
+          <li>Direct publishing — not a day of waiting on phone notifications</li>
           <li>Ideas &amp; analysis from AI that knows your brand</li>
         </ul>
         <p className="ls-hero-sub">
           <strong>One dashboard:</strong> plan publishes per platform, read DMs and comments in <strong>Messages</strong>,
           and use <strong>Auto Reply</strong> with <strong>optional AI</strong> — you choose when automation helps and when you reply yourself.
           For video: <strong>thumbnail picker</strong> (your best frame or AI-suggested), plus <strong>AI captions and tags</strong> you can change before anything goes live.
+          When it&apos;s time to go live, we focus on <strong>direct publishing</strong> to the platforms you picked — not a product philosophy built on nagging you with endless notifications.
           Also: documents, transcription, images, email, interview prep — and <strong>Social AI</strong> grounded in your posts. No installs.
         </p>
         <div className="ls-hero-actions">
@@ -196,6 +198,12 @@ export default function LandingSection({ onGetStarted, onOpenVideoPublisher }) {
           In Wintaibot you <strong>schedule posts</strong> per platform, open <strong>Messages</strong> for DMs and comments,
           and configure <strong>Auto Reply</strong> with <strong>AI on or off</strong> — your rules, your tone, your choice to automate or stay hands-on.
           Pair that with <strong>Analytics</strong>, <strong>Trends</strong>, and <strong>Social AI</strong> to generate ideas and analyze what actually worked.
+        </p>
+        <p className="ls-social-hub-direct">
+          <strong>Direct publishing — we don&apos;t run your day on notifications.</strong>{" "}
+          Some apps feel like a full-time job of unlocking steps on your phone: wait for the buzz, tap through prompts, repeat.
+          Wintaibot is built the other way: <strong>you choose platforms and timing; we publish straight through</strong> when your content is ready.
+          The goal is clarity — fewer interruptions, less &ldquo;notification anxiety,&rdquo; more time creating — not a workflow designed to ping you all day.
         </p>
       </section>
 

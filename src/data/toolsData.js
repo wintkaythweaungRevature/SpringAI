@@ -191,7 +191,7 @@ export const TOOLS = [
     color: '#dc2626',
     headline: 'Upload once. Publish to YouTube, Instagram, TikTok & more — with AI captions.',
     description:
-      'Upload your video, choose which platforms to publish to — Wintaibot fixes the file for each one you pick (aspect ratio, framing, quality). You do not re-edit per site. AI captions and hashtags per network, independent scheduling, and trending insights to plan what to post next.',
+      'Upload your video, choose platforms — Wintaibot adapts format per destination. Use the thumbnail picker (or AI-suggested frames), review editable AI captions and hashtags, schedule each network independently, and use insights to plan what to post next.',
     metaTitle: 'Video Publisher – AI-Powered Multi-Platform Video Scheduler',
     metaDescription:
       'Pick your platforms; Wintaibot adapts your video for each destination automatically. No manual ratio fixes — AI captions, scheduling, and multi-platform publishing.',

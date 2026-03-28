@@ -65,7 +65,7 @@ const features = [
     icon: "🎬",
     title: "Video Publisher – One Video, Every Platform",
     description:
-      "Upload once, choose your destinations — we handle the rest. For every platform you select, Wintaibot builds a matching video variant (aspect ratio, framing, quality) so you never have to fix the upload yourself. AI captions and hashtags per network, per-platform scheduling, plus trends to plan what to post next.",
+      "Upload once, choose your destinations — we handle format and framing for each platform so you are not re-editing in another app. Pick your Shorts/Reels thumbnail (or let AI suggest the strongest frame), then review AI-generated captions and hashtags per network — edit anything before you schedule. Per-platform timing plus signals to plan what to post next.",
     badge: "Member",
     slug: "video-publisher",
   },
@@ -138,14 +138,15 @@ export default function LandingSection({ onGetStarted, onOpenVideoPublisher }) {
           <strong>You don&apos;t fix the file — we do.</strong> Pick where you want to publish (Instagram, YouTube Shorts, TikTok, etc.); Wintaibot adjusts ratio, framing, and quality <em>for each platform you choose</em> — no manual re-editing on your side.
         </p>
         <ul className="ls-hero-punch-row" aria-label="Key benefits">
-          <li>An AI that actually knows your brand</li>
-          <li>Chat with your social media history</li>
-          <li>Your data, your strategy, our AI</li>
+          <li>Schedule posts, messages &amp; auto-reply in one place</li>
+          <li>Upload once — we format per platform; edit AI thumbnails, captions &amp; tags anytime</li>
+          <li>Ideas &amp; analysis from AI that knows your brand</li>
         </ul>
         <p className="ls-hero-sub">
-          Beyond video: extract data from PDFs, transcribe audio, generate images, draft replies,
-          prep for interviews — plus <strong>Social AI</strong> that remembers what worked for you,
-          not generic captions everyone else is posting. All in one dashboard, no installs.
+          <strong>One dashboard:</strong> plan publishes per platform, read DMs and comments in <strong>Messages</strong>,
+          and use <strong>Auto Reply</strong> with <strong>optional AI</strong> — you choose when automation helps and when you reply yourself.
+          For video: <strong>thumbnail picker</strong> (your best frame or AI-suggested), plus <strong>AI captions and tags</strong> you can change before anything goes live.
+          Also: documents, transcription, images, email, interview prep — and <strong>Social AI</strong> grounded in your posts. No installs.
         </p>
         <div className="ls-hero-actions">
           <button className="ls-btn-primary" onClick={onGetStarted}>
@@ -187,30 +188,48 @@ export default function LandingSection({ onGetStarted, onOpenVideoPublisher }) {
         </div>
       </section>
 
-      {/* ── VIDEO VARIANTS & AUTO-FIX ───────────────────────── */}
+      {/* ── ONE PLACE: SCHEDULE + INBOX + AUTO-REPLY ─────────── */}
+      <section className="ls-section ls-social-hub" aria-labelledby="social-hub-heading">
+        <h2 id="social-hub-heading">Schedule, inbox &amp; auto-reply — without hopping apps</h2>
+        <p className="ls-section-sub ls-social-hub-intro">
+          Creators shouldn&apos;t live in three tabs just to post, read messages, and answer fans.
+          In Wintaibot you <strong>schedule posts</strong> per platform, open <strong>Messages</strong> for DMs and comments,
+          and configure <strong>Auto Reply</strong> with <strong>AI on or off</strong> — your rules, your tone, your choice to automate or stay hands-on.
+          Pair that with <strong>Analytics</strong>, <strong>Trends</strong>, and <strong>Social AI</strong> to generate ideas and analyze what actually worked.
+        </p>
+      </section>
+
+      {/* ── THREE ADVANTAGES: FIXER · THUMBNAILS · BRAIN AI ───── */}
       <section className="ls-section ls-video-edge" aria-labelledby="video-edge-heading">
-        <h2 id="video-edge-heading">You choose the platform — we&apos;ll fix it for you</h2>
+        <h2 id="video-edge-heading">Built to beat &ldquo;upload failed&rdquo; — and generic AI</h2>
         <p className="ls-section-sub ls-video-edge-intro">
-          Tell Wintaibot <strong>where</strong> this video should go — Instagram, YouTube, TikTok, and so on.
-          You don&apos;t re-cut or re-export for each site: <strong>we adapt the file for every destination you pick</strong> — ratio, framing, and quality — so you&apos;re not stuck in &ldquo;let me fix that&rdquo; mode. That&apos;s our job.
+          Three things that define Wintaibot for video and strategy: <strong>we fix the file for each platform you pick</strong>,
+          <strong>you control the cover image</strong> (especially for Shorts-style video), and <strong>our AI remembers your brand</strong> — not just a blank chatbot.
         </p>
         <ul className="ls-video-edge-list">
           <li>
-            <span className="ls-video-edge-li-title">Smart video variants per destination</span>
+            <span className="ls-video-edge-li-kicker">The fixer</span>
+            <span className="ls-video-edge-li-title">Auto-optimization per destination</span>
             <span className="ls-video-edge-li-body">
-              Our <strong>video variants</strong> layer creates a tailored output for <em>each platform you selected</em> — not one generic file. Instagram gets what Instagram needs; Shorts gets what Shorts needs; you don&apos;t micromanage the technical details.
+              Other tools often stop at &ldquo;wrong ratio&rdquo; or &ldquo;wrong resolution&rdquo; and send <em>you</em> back to an editor.
+              Wintaibot uses <strong>video variants</strong>: for <strong>each platform you select</strong>, we work toward the right shape, framing, and quality — crop, pad, upscale in the pipeline when needed — so the feeling is &ldquo;I uploaded once; Instagram <em>and</em> TikTok are already covered.&rdquo;
             </span>
           </li>
           <li>
-            <span className="ls-video-edge-li-title">Auto-healing for your chosen platforms</span>
+            <span className="ls-video-edge-li-kicker">The eye-catcher</span>
+            <span className="ls-video-edge-li-title">Thumbnail picker + AI assist</span>
             <span className="ls-video-edge-li-body">
-              Upload a 720p horizontal clip, choose vertical destinations, and the pipeline (e.g. <strong>FFmpeg</strong>) can upscale toward 1080p-class delivery and <strong>crop or pad</strong> into 9:16 (or other targets) <strong>for those platforms</strong> — automatically. No editor session required from you.
+              Shorts and vertical video live or die on the cover frame. Instead of accepting whatever the platform grabs automatically,
+              use our <strong>thumbnail picker</strong>: choose the exact moment that looks best, or ask <strong>AI to suggest strong frames</strong>.
+              Pair with <strong>AI captions and tags</strong> — always <strong>editable</strong> before you hit publish.
             </span>
           </li>
           <li>
-            <span className="ls-video-edge-li-title">No &ldquo;you fix it&rdquo; — we fix it</span>
+            <span className="ls-video-edge-li-kicker">The brain</span>
+            <span className="ls-video-edge-li-title">Contextual strategy (your data, not generic text)</span>
             <span className="ls-video-edge-li-body">
-              Instead of errors that send you back to fix the file yourself, Wintaibot works toward a valid variant <strong>for the platforms you chose</strong>. Your workflow is: pick destinations, publish — not troubleshoot codecs and aspect ratios.
+              Plain AI only writes text. Wintaibot&apos;s <strong>Social AI</strong> is built on your indexed posts (RAG): ask what format drove engagement last month,
+              mirror a winning pattern in the next caption, or brainstorm ideas grounded in <strong>your</strong> history — a personal assistant that actually knows your brand.
             </span>
           </li>
         </ul>

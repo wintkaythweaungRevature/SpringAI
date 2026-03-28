@@ -242,6 +242,17 @@
   text-align: center;
 }
 
+/* ── Schedule + inbox + auto-reply ───────────────────────── */
+.ls-social-hub {
+  padding-top: 48px;
+  padding-bottom: 48px;
+}
+
+.ls-social-hub-intro {
+  max-width: 780px;
+  margin-bottom: 0;
+}
+
 /* ── Video variants / auto-fix ───────────────────────────── */
 .ls-video-edge {
   background: linear-gradient(180deg, #f8fafc 0%, #fff 100%);
@@ -275,6 +286,15 @@
   border: 1px solid #e2e8f0;
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+}
+
+.ls-video-edge-li-kicker {
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #6366f1;
+  margin-bottom: 2px;
 }
 
 .ls-video-edge-li-title {

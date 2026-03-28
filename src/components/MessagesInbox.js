@@ -22,7 +22,7 @@ const SOURCE_LABELS = {
 // Which type-tabs each platform supports
 const PLATFORM_TYPES = {
   all:       ['all', 'messages', 'comments'],
-  instagram: ['all', 'messages', 'comments'],
+  instagram: ['comments'],                      // Instagram DMs require Meta App Review — comments only
   facebook:  ['all', 'messages', 'comments'],
   youtube:   ['comments'],                      // YouTube has no DM API
   linkedin:  ['all', 'messages', 'comments'],
@@ -237,9 +237,9 @@ export default function MessagesInbox() {
   const platConvs    = platformTab === 'all' ? conversations : byPlatform(conversations, platformTab);
   const platComments = platformTab === 'all' ? comments      : byPlatform(comments,      platformTab);
 
-  // Step 2: filter by type
-  const displayConvs    = typeTab === 'comments' ? []         : platConvs;
-  const displayComments = typeTab === 'messages' ? []         : platComments;
+  // Step 2: filter by type (Instagram DMs are disabled — requires Meta App Review)
+  const displayConvs    = typeTab === 'comments' ? [] : platConvs.filter(c => c.platform !== 'instagram');
+  const displayComments = typeTab === 'messages' ? [] : platComments;
 
   // When switching platform, reset type if not supported
   const handlePlatformTab = (p) => {
@@ -291,7 +291,7 @@ export default function MessagesInbox() {
             { icon: '📨', label: 'Total DMs',  value: conversations.length, color: '#2563eb', bg: '#eff6ff' },
             { icon: '🔴', label: 'Unread',      value: totalUnread,          color: '#dc2626', bg: '#fef2f2' },
             { icon: '💭', label: 'Comments',    value: comments.length,      color: '#d97706', bg: '#fffbeb' },
-            { p: PLATFORM_META.instagram, label: 'Instagram', value: igConvs.length + igComments.length },
+            { p: PLATFORM_META.instagram, label: 'Instagram', value: igComments.length },
             { p: PLATFORM_META.facebook,  label: 'Facebook',  value: fbConvs.length + fbComments.length },
             { p: PLATFORM_META.youtube,   label: 'YouTube',   value: ytComments.length                  },
             { p: PLATFORM_META.linkedin,  label: 'LinkedIn',  value: liConvs.length + liComments.length },

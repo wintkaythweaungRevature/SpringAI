@@ -90,6 +90,12 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
   const [dashHistory, setDashHistory] = useState([]);
   const [dashLoading, setDashLoading] = useState(false);
   const [retryingId, setRetryingId]   = useState(null);
+  // Thumbnail picker state
+  const [uploadedVideoId, setUploadedVideoId] = useState(null);
+  const [frames, setFrames]             = useState([]);
+  const [framesLoading, setFramesLoading] = useState(false);
+  const [selectedFrameKey, setSelectedFrameKey] = useState(null);
+  const [thumbnailUrl, setThumbnailUrl] = useState(null);
   const fileRef    = useRef();
   const imageRef   = useRef();
   const skippedRef = useRef(false);
@@ -330,6 +336,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
 
       const data = await res.json();
       const videoId = data.videoId ?? data.id;
+      setUploadedVideoId(videoId);
 
       log('🎙️ Transcribing audio with Whisper...');
       log('📝 Generating captions & hashtags with GPT-4...');
@@ -425,6 +432,35 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
     return 'TIMEOUT';
   };
 
+  const loadFrames = async (videoId) => {
+    if (!videoId || framesLoading) return;
+    setFramesLoading(true);
+    setFrames([]);
+    try {
+      const res = await fetch(api(`/videos/${videoId}/frames?count=9`), { headers: authHeaders() });
+      if (res.ok) {
+        const data = await res.json();
+        setFrames(data);
+      }
+    } catch (_) {}
+    finally { setFramesLoading(false); }
+  };
+
+  const pickThumbnail = async (videoId, frame) => {
+    setSelectedFrameKey(frame.s3Key);
+    try {
+      const res = await fetch(api(`/videos/${videoId}/thumbnail`), {
+        method: 'POST',
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ s3Key: frame.s3Key }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setThumbnailUrl(data.thumbnailUrl);
+      }
+    } catch (_) {}
+  };
+
   const scheduleVariant = async (variantId, platform, scheduledAt) => {
     if (!variantId) return false;
     try {
@@ -462,18 +498,14 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
       setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'publishing', error: null } }));
 
       try {
-        if (hasSchedule) {
-          // ── Schedule for later (stays sync — fast) ──
-          if (variant.variantId) {
-            const ok = await scheduleVariant(variant.variantId, pid, scheduledAt);
-            if (ok) {
-              successPlatforms.push(pid);
-              setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'done', error: null } }));
-            } else {
-              setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'failed', error: 'Schedule failed' } }));
-            }
+        if (hasSchedule && variant.variantId) {
+          // ── Schedule for later via backend variant (fast) ──
+          const ok = await scheduleVariant(variant.variantId, pid, scheduledAt);
+          if (ok) {
+            successPlatforms.push(pid);
+            setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'done', error: null } }));
           } else {
-            setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'failed', error: 'Cannot schedule without variant. Re-upload.' } }));
+            setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'failed', error: 'Schedule failed' } }));
           }
         } else if (variant.variantId) {
           // ── Async publish via variant (202 + poll) ──
@@ -1182,22 +1214,60 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
                     </div>
                   </div>
 
-                  <div style={s.fieldLabel}>Caption</div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px', marginTop: '12px' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>Caption</span>
+                    <span style={{ fontSize: '11px', color: '#64748b', background: '#f1f5f9', borderRadius: '6px', padding: '2px 8px' }}>
+                      {CAPTION_FORMAT_HINTS[pid] || 'Edit caption below'}
+                    </span>
+                  </div>
                   <textarea
                     style={s.textarea}
                     value={v.caption}
                     onChange={e => setVariants(prev => ({ ...prev, [pid]: { ...prev[pid], caption: e.target.value } }))}
                   />
-                  <div style={{ fontSize: '11px', color: '#94a3b8', textAlign: 'right', marginTop: '4px' }}>
-                    {v.caption.length} / {p.maxLen}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
+                    <span style={{ fontSize: '11px', color: v.caption.length > p.maxLen * 0.9 ? '#ef4444' : '#94a3b8' }}>
+                      {v.caption.length > p.maxLen ? `⚠️ ${v.caption.length - p.maxLen} chars over limit` : ''}
+                    </span>
+                    <span style={{ fontSize: '11px', color: v.caption.length > p.maxLen ? '#ef4444' : '#94a3b8' }}>
+                      {v.caption.length} / {p.maxLen}
+                    </span>
                   </div>
 
                   <div style={s.fieldLabel}>Hashtags</div>
                   <div style={s.hashtagBox}>
                     {v.hashtags.map(h => (
-                      <span key={h} style={{ ...s.hashtagChip, borderColor: p.color, color: p.color }}>{h}</span>
+                      <span key={h} style={{ ...s.hashtagChip, borderColor: p.color, color: p.color, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        {h}
+                        <button
+                          type="button"
+                          onClick={() => setVariants(prev => ({ ...prev, [pid]: { ...prev[pid], hashtags: prev[pid].hashtags.filter(t => t !== h) } }))}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: p.color, padding: '0', fontSize: '13px', lineHeight: 1, fontWeight: 700 }}
+                          title="Remove tag"
+                        >×</button>
+                      </span>
                     ))}
                   </div>
+                  <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
+                    <input
+                      type="text"
+                      placeholder="+ Add tag and press Enter"
+                      style={{ flex: 1, padding: '6px 10px', borderRadius: '8px', border: '1.5px solid #e2e8f0', fontSize: '12px', outline: 'none', color: '#1e293b' }}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          let tag = e.target.value.trim();
+                          if (!tag) return;
+                          if (!tag.startsWith('#')) tag = '#' + tag;
+                          if (!variants[pid].hashtags.includes(tag)) {
+                            setVariants(prev => ({ ...prev, [pid]: { ...prev[pid], hashtags: [...prev[pid].hashtags, tag] } }));
+                          }
+                          e.target.value = '';
+                        }
+                      }}
+                    />
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>{v.hashtags.length} tags</div>
 
                   <p style={{ fontSize: '12px', color: '#64748b', marginTop: '12px' }}>
                     Schedule for {p.label} is set in the panel on the left.
@@ -1205,6 +1275,80 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
                 </div>
               );
             })()}
+
+            {/* ── Thumbnail Picker (only for video posts with a known videoId) ── */}
+            {postType === 'video' && uploadedVideoId && (
+              <div style={s.card}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                  <div style={s.sectionTitle}>🖼️ Thumbnail Picker</div>
+                  {frames.length === 0 && !framesLoading && (
+                    <button
+                      type="button"
+                      onClick={() => loadFrames(uploadedVideoId)}
+                      style={{ padding: '6px 14px', borderRadius: '8px', border: 'none', background: 'linear-gradient(135deg,#2563eb,#7c3aed)', color: '#fff', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
+                    >
+                      ✨ Let AI Pick
+                    </button>
+                  )}
+                </div>
+
+                {framesLoading && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '20px 0', color: '#64748b', fontSize: '13px' }}>
+                    <div style={{ width: '18px', height: '18px', border: '2px solid #e2e8f0', borderTopColor: '#2563eb', borderRadius: '50%', animation: 'spin 0.8s linear infinite', flexShrink: 0 }} />
+                    Scanning video for best frames...
+                  </div>
+                )}
+
+                {frames.length > 0 && (
+                  <>
+                    <p style={{ fontSize: '11px', color: '#64748b', marginBottom: '12px' }}>
+                      Click any frame to use as thumbnail. ⭐ = AI recommended.
+                    </p>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                      {frames.map(frame => {
+                        const isSelected = selectedFrameKey === frame.s3Key;
+                        return (
+                          <div
+                            key={frame.index}
+                            onClick={() => pickThumbnail(uploadedVideoId, frame)}
+                            style={{
+                              position: 'relative', borderRadius: '8px', overflow: 'hidden', cursor: 'pointer',
+                              border: isSelected ? '2.5px solid #2563eb' : '2px solid #e2e8f0',
+                              boxShadow: isSelected ? '0 0 0 3px rgba(37,99,235,0.2)' : 'none',
+                              aspectRatio: '16/9', background: '#0f172a',
+                            }}
+                          >
+                            <img
+                              src={frame.url}
+                              alt={`Frame at ${Math.round(frame.timestampSeconds)}s`}
+                              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                            />
+                            {frame.recommended && (
+                              <span style={{ position: 'absolute', top: '4px', left: '4px', background: 'rgba(37,99,235,0.9)', color: '#fff', fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '4px' }}>
+                                ⭐ AI Pick
+                              </span>
+                            )}
+                            {isSelected && (
+                              <span style={{ position: 'absolute', bottom: '4px', right: '4px', background: '#2563eb', color: '#fff', fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '4px' }}>
+                                ✓ Selected
+                              </span>
+                            )}
+                            <span style={{ position: 'absolute', bottom: '4px', left: '4px', background: 'rgba(0,0,0,0.55)', color: '#fff', fontSize: '10px', padding: '1px 5px', borderRadius: '3px' }}>
+                              {Math.floor(frame.timestampSeconds / 60)}:{String(Math.round(frame.timestampSeconds % 60)).padStart(2, '0')}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {thumbnailUrl && (
+                      <div style={{ marginTop: '10px', fontSize: '12px', color: '#22c55e', fontWeight: 600 }}>
+                        ✅ Thumbnail saved! Will be used when publishing.
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -1297,7 +1441,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
                 );
               })}
               <button style={{ ...s.btnPrimary, marginTop: '16px', fontSize: '13px' }}
-                onClick={() => { setStep('upload'); setVideo(null); setVariants({}); setPublished([]); setScheduledTimes({}); setProcessLog([]); setContentIdea(null); }}>
+                onClick={() => { setStep('upload'); setVideo(null); setVariants({}); setPublished([]); setScheduledTimes({}); setProcessLog([]); setContentIdea(null); setFrames([]); setSelectedFrameKey(null); setThumbnailUrl(null); setUploadedVideoId(null); }}>
                 + New Video
               </button>
             </div>
@@ -1397,6 +1541,17 @@ function formatPublishError(platform, rawError) {
 }
 
 /* ─── Mock data generators (replace with GPT API calls) ─────── */
+const CAPTION_FORMAT_HINTS = {
+  youtube:   '📋 Long description · timestamps · SEO keywords',
+  instagram: '✨ Short & punchy · 3–5 lines · emojis + CTA',
+  tiktok:    '🎵 1 line max · trending phrase · #fyp style',
+  linkedin:  '💼 Professional · 3 bullet takeaways · question CTA',
+  facebook:  '👋 Conversational · tag people · longer ok',
+  x:         '🐦 Under 280 chars · punchy · thread hint',
+  threads:   '🧵 Short & conversational · 1-2 sentences',
+  pinterest: '📌 Keyword-rich · "Save this" · benefit-first',
+};
+
 function mockCaption(platform, filename) {
   const base = filename ? filename.replace(/\.[^.]+$/, '') : 'my latest video';
   const captions = {

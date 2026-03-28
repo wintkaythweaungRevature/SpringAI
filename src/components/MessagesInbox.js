@@ -279,14 +279,49 @@ function ConversationItem({ item, selected, onClick }) {
   );
 }
 
-function CommentItem({ item }) {
+function CommentItem({ item, apiBase, token }) {
   const p  = PLATFORM_META[item.platform] ?? PLATFORM_META.instagram;
   const sl = SOURCE_LABELS[item.source]   ?? { label: item.source, icon: '💭' };
 
+  const [showReply,  setShowReply]  = useState(false);
+  const [replyText,  setReplyText]  = useState('');
+  const [sending,    setSending]    = useState(false);
+  const [sent,       setSent]       = useState(false);
+  const [replyError, setReplyError] = useState('');
+
+  const sendReply = async () => {
+    if (!replyText.trim()) return;
+    setSending(true); setReplyError('');
+    try {
+      const res = await fetch(`${apiBase}/api/auto-reply/manual-reply`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          platform: item.platform,
+          commentId: item.id,
+          postId: item.postId || '',
+          commentText: item.text || '',
+          authorUsername: item.from || '',
+          replyText: replyText.trim(),
+        }),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        setReplyError(d.error || `Error ${res.status}`);
+      } else {
+        setSent(true);
+        setReplyText('');
+        setShowReply(false);
+      }
+    } catch (e) {
+      setReplyError('Network error.');
+    } finally {
+      setSending(false);
+    }
+  };
+
   return (
-    <div style={{
-      padding: '13px 16px', borderBottom: '1px solid #f1f5f9', background: '#fff',
-    }}>
+    <div style={{ padding: '13px 16px', borderBottom: '1px solid #f1f5f9', background: '#fff' }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
         <div style={{
           width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0,
@@ -319,12 +354,59 @@ function CommentItem({ item }) {
               On: {item.postCaption}
             </div>
           )}
-          <div style={{ marginTop: '5px', display: 'flex', gap: '12px' }}>
+          <div style={{ marginTop: '6px', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
             <span style={{ fontSize: '11px', color: '#94a3b8' }}>{sl.icon} {sl.label}</span>
             {item.likes > 0 && (
               <span style={{ fontSize: '11px', color: '#94a3b8' }}>❤️ {item.likes}</span>
             )}
+            {sent && <span style={{ fontSize: '11px', color: '#22c55e', fontWeight: 600 }}>✓ Replied</span>}
+            {!sent && (
+              <button
+                type="button"
+                onClick={() => { setShowReply(!showReply); setReplyError(''); }}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  fontSize: '11px', color: p.color, fontWeight: 700, padding: '2px 0',
+                }}
+              >
+                {showReply ? 'Cancel' : '↩ Reply'}
+              </button>
+            )}
           </div>
+
+          {/* Reply input */}
+          {showReply && (
+            <div style={{ marginTop: '10px', display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+              <textarea
+                rows={2}
+                placeholder={`Reply to @${item.from || 'user'}…`}
+                value={replyText}
+                onChange={e => setReplyText(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendReply(); } }}
+                style={{
+                  flex: 1, border: `1.5px solid ${p.color}55`, borderRadius: 8,
+                  padding: '8px 10px', fontSize: 13, fontFamily: 'inherit',
+                  resize: 'none', outline: 'none',
+                }}
+              />
+              <button
+                type="button"
+                onClick={sendReply}
+                disabled={sending || !replyText.trim()}
+                style={{
+                  background: p.color, border: 'none', borderRadius: 8,
+                  padding: '8px 14px', color: '#fff', fontWeight: 700,
+                  fontSize: 12, cursor: sending ? 'wait' : 'pointer',
+                  opacity: !replyText.trim() ? 0.5 : 1, flexShrink: 0,
+                }}
+              >
+                {sending ? '…' : 'Send'}
+              </button>
+            </div>
+          )}
+          {replyError && (
+            <div style={{ marginTop: 6, fontSize: 12, color: '#dc2626' }}>⚠ {replyError}</div>
+          )}
         </div>
       </div>
     </div>
@@ -612,7 +694,7 @@ export default function MessagesInbox() {
                   Comments ({displayComments.length})
                 </div>
                 {displayComments.map((item, i) => (
-                  <CommentItem key={`${item.source}-${i}`} item={item} />
+                  <CommentItem key={`${item.source}-${i}`} item={item} apiBase={base} token={token} />
                 ))}
               </>
             )}

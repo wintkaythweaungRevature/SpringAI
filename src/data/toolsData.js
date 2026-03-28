@@ -191,13 +191,14 @@ export const TOOLS = [
     color: '#dc2626',
     headline: 'Upload once. Publish to YouTube, Instagram, TikTok & more — with AI captions.',
     description:
-      'Video Publisher lets you upload one video and automatically publish it to all your social platforms. AI generates platform-specific captions and hashtags, lets you schedule each post independently, and shows you trending topics to plan your next video.',
+      'Upload your video, choose which platforms to publish to — Wintaibot fixes the file for each one you pick (aspect ratio, framing, quality). You do not re-edit per site. AI captions and hashtags per network, independent scheduling, and trending insights to plan what to post next.',
     metaTitle: 'Video Publisher – AI-Powered Multi-Platform Video Scheduler',
     metaDescription:
-      'Upload once, publish everywhere. Connect YouTube, Instagram, TikTok, and more. AI captions and hashtags per platform, independent scheduling, and trending insights.',
+      'Pick your platforms; Wintaibot adapts your video for each destination automatically. No manual ratio fixes — AI captions, scheduling, and multi-platform publishing.',
     keywords: 'video publishing tool, multi-platform video scheduler, AI video captions, YouTube scheduler, Instagram video publisher, TikTok automation',
     useCases: [
       { icon: '🚀', title: 'Publish Everywhere', desc: 'One upload → YouTube, Instagram Reels, TikTok, Facebook, LinkedIn simultaneously.' },
+      { icon: '🎞️', title: 'We fix it per platform', desc: 'You select Instagram, YouTube Shorts, TikTok, etc. — we generate the right variant for each; upscale, crop, or pad in the pipeline so you do not have to.' },
       { icon: '🤖', title: 'AI Captions & Hashtags', desc: 'AI writes platform-optimized captions and hashtag sets for each channel.' },
       { icon: '📅', title: 'Smart Scheduling', desc: 'Set different publish times per platform — YouTube at 4 AM, Instagram at 6 PM.' },
     ],

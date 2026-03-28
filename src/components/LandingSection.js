@@ -65,7 +65,7 @@ const features = [
     icon: "🎬",
     title: "Video Publisher – One Video, Every Platform",
     description:
-      "Upload once, publish everywhere. Connect YouTube, Instagram, TikTok, and more. Get AI captions and hashtags per platform, schedule each post when you want (e.g. YouTube tomorrow 4 AM, Instagram 6 PM), and see viral trends and news to plan your next video.",
+      "Upload once, choose your destinations — we handle the rest. For every platform you select, Wintaibot builds a matching video variant (aspect ratio, framing, quality) so you never have to fix the upload yourself. AI captions and hashtags per network, per-platform scheduling, plus trends to plan what to post next.",
     badge: "Member",
     slug: "video-publisher",
   },
@@ -129,16 +129,23 @@ export default function LandingSection({ onGetStarted, onOpenVideoPublisher }) {
 
       {/* ── HERO ────────────────────────────────────────────── */}
       <section className="ls-hero" aria-labelledby="hero-heading">
-        <div className="ls-hero-badge">AI Assistant for PDFs, Documents &amp; Productivity</div>
+        <div className="ls-hero-badge">Video, social &amp; brand AI — for creators who publish everywhere</div>
         <h1 id="hero-heading" className="ls-hero-h1">
-          Analyze PDFs, Transcribe Audio,<br />Publish Videos &amp; Automate Your Work with AI
+          Post Once,<br /><span className="ls-hero-h1-accent">Shine Everywhere.</span>
         </h1>
+        <p className="ls-hero-lead">
+          <strong>Stop guessing your Shorts thumbnails.</strong>{" "}
+          <strong>You don&apos;t fix the file — we do.</strong> Pick where you want to publish (Instagram, YouTube Shorts, TikTok, etc.); Wintaibot adjusts ratio, framing, and quality <em>for each platform you choose</em> — no manual re-editing on your side.
+        </p>
+        <ul className="ls-hero-punch-row" aria-label="Key benefits">
+          <li>An AI that actually knows your brand</li>
+          <li>Chat with your social media history</li>
+          <li>Your data, your strategy, our AI</li>
+        </ul>
         <p className="ls-hero-sub">
-          Wintaibot is an AI assistant that extracts data from PDFs and documents,
-          transcribes audio, generates images, writes email replies, prepares you
-          for job interviews, publishes videos to YouTube and socials with smart scheduling
-          and viral trends, and answers any question — all in one platform,
-          no installs required.
+          Beyond video: extract data from PDFs, transcribe audio, generate images, draft replies,
+          prep for interviews — plus <strong>Social AI</strong> that remembers what worked for you,
+          not generic captions everyone else is posting. All in one dashboard, no installs.
         </p>
         <div className="ls-hero-actions">
           <button className="ls-btn-primary" onClick={onGetStarted}>
@@ -147,8 +154,11 @@ export default function LandingSection({ onGetStarted, onOpenVideoPublisher }) {
           <a className="ls-btn-ghost" href="/features">See All Features →</a>
         </div>
         <p className="ls-hero-note">
-          Free tier includes <strong>Ask AI</strong> and <strong>Recipe Generator</strong>.
-          Paid plans from <strong>$19/month</strong> (or <strong>$15/mo</strong> billed annually).
+          Free tier: <strong>Ask AI</strong> &amp; <strong>Recipe Generator</strong>.{" "}
+          <strong>Starter $19/mo</strong> — five platforms, <strong>no per-channel fees</strong>.{" "}
+          <strong>Pro $39/mo</strong>, <strong>Growth $79/mo</strong>.{" "}
+          Pay yearly to save (Starter <strong>$180/yr</strong> — about <strong>$15/mo</strong> when billed annually).{" "}
+          Pro tools for solo creators. Why pay $99/mo for old-school schedulers? Get stronger AI here from <strong>$19</strong>.
         </p>
       </section>
 
@@ -175,6 +185,35 @@ export default function LandingSection({ onGetStarted, onOpenVideoPublisher }) {
           <div className="ls-stat"><span className="ls-stat-num">$19+</span><span>Paid plans / mo</span></div>
           <div className="ls-stat"><span className="ls-stat-num">0</span><span>Installs Required</span></div>
         </div>
+      </section>
+
+      {/* ── VIDEO VARIANTS & AUTO-FIX ───────────────────────── */}
+      <section className="ls-section ls-video-edge" aria-labelledby="video-edge-heading">
+        <h2 id="video-edge-heading">You choose the platform — we&apos;ll fix it for you</h2>
+        <p className="ls-section-sub ls-video-edge-intro">
+          Tell Wintaibot <strong>where</strong> this video should go — Instagram, YouTube, TikTok, and so on.
+          You don&apos;t re-cut or re-export for each site: <strong>we adapt the file for every destination you pick</strong> — ratio, framing, and quality — so you&apos;re not stuck in &ldquo;let me fix that&rdquo; mode. That&apos;s our job.
+        </p>
+        <ul className="ls-video-edge-list">
+          <li>
+            <span className="ls-video-edge-li-title">Smart video variants per destination</span>
+            <span className="ls-video-edge-li-body">
+              Our <strong>video variants</strong> layer creates a tailored output for <em>each platform you selected</em> — not one generic file. Instagram gets what Instagram needs; Shorts gets what Shorts needs; you don&apos;t micromanage the technical details.
+            </span>
+          </li>
+          <li>
+            <span className="ls-video-edge-li-title">Auto-healing for your chosen platforms</span>
+            <span className="ls-video-edge-li-body">
+              Upload a 720p horizontal clip, choose vertical destinations, and the pipeline (e.g. <strong>FFmpeg</strong>) can upscale toward 1080p-class delivery and <strong>crop or pad</strong> into 9:16 (or other targets) <strong>for those platforms</strong> — automatically. No editor session required from you.
+            </span>
+          </li>
+          <li>
+            <span className="ls-video-edge-li-title">No &ldquo;you fix it&rdquo; — we fix it</span>
+            <span className="ls-video-edge-li-body">
+              Instead of errors that send you back to fix the file yourself, Wintaibot works toward a valid variant <strong>for the platforms you chose</strong>. Your workflow is: pick destinations, publish — not troubleshoot codecs and aspect ratios.
+            </span>
+          </li>
+        </ul>
       </section>
 
       {/* ── FEATURES ────────────────────────────────────────── */}
@@ -261,7 +300,7 @@ export default function LandingSection({ onGetStarted, onOpenVideoPublisher }) {
           <div className="ls-usecase">
             <h3>Content Creators &amp; Social Managers</h3>
             <p>
-              Use <strong>Video Publisher</strong> to upload once and publish to YouTube, Instagram, TikTok, and more. Get AI captions and hashtags per platform, <strong>schedule each post</strong> when you want (e.g. YouTube tomorrow 4 AM, Instagram 6 PM), and check <strong>viral trends and news</strong> to plan your next video. Plus the <strong>AI Image Generator</strong> and <strong>Ask AI</strong> for thumbnails, scripts, and ideas.
+              Use <strong>Video Publisher</strong> to upload once, <strong>pick your platforms</strong>, and let Wintaibot <strong>fix the video for each one</strong> — then get AI captions and hashtags per platform, <strong>schedule each post</strong> when you want, and check <strong>viral trends and news</strong> to plan your next video. Plus the <strong>AI Image Generator</strong> and <strong>Ask AI</strong> for thumbnails, scripts, and ideas.
             </p>
           </div>
           <div className="ls-usecase">
@@ -485,7 +524,7 @@ export default function LandingSection({ onGetStarted, onOpenVideoPublisher }) {
           },
           {
             q: "What does Video Publisher do?",
-            a: "Video Publisher lets you upload one video and publish it to YouTube, Instagram, TikTok, LinkedIn, and more. You get AI-generated captions and hashtags per platform, can schedule each platform at a different time (e.g. YouTube tomorrow 4 AM, Instagram 6 PM), and see viral trends and news to plan your next content.",
+            a: "Upload once, choose your platforms — Wintaibot adapts the video for each destination (format and framing) so you are not fixing files by hand. You get AI captions and hashtags per platform, can schedule each at a different time, and see trends to plan your next content.",
           },
         ].map((item, i) => (
           <div className="ls-faq-item" key={i}>

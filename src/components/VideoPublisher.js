@@ -216,6 +216,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
   const [framesLoading, setFramesLoading] = useState(false);
   const [selectedFrameKey, setSelectedFrameKey] = useState(null);
   const [thumbnailUrl, setThumbnailUrl] = useState(null);
+  const [thumbnailMode, setThumbnailMode] = useState('scrub'); // 'scrub' | 'ai'
   const fileRef    = useRef();
   const imageRef   = useRef();
   const skippedRef = useRef(false);
@@ -1446,20 +1447,85 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
             {postType === 'video' && video && (
               <div style={s.card}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                  <div style={s.sectionTitle}>🖼️ Thumbnail Picker</div>
-                  <span style={{ fontSize: 11, color: '#94a3b8' }}>Drag to scrub, then pick your frame</span>
+                  <div style={s.sectionTitle}>🖼️ Thumbnail</div>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    {[{ id: 'scrub', label: '🎯 Scrub & Pick' }, { id: 'ai', label: '✨ AI Suggested' }].map(m => (
+                      <button key={m.id} onClick={() => {
+                        setThumbnailMode(m.id);
+                        if (m.id === 'ai' && uploadedVideoId && frames.length === 0 && !framesLoading) {
+                          loadFrames(uploadedVideoId);
+                        }
+                      }} style={{
+                        padding: '5px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: 'none',
+                        background: thumbnailMode === m.id ? '#6366f1' : '#f1f5f9',
+                        color: thumbnailMode === m.id ? '#fff' : '#64748b',
+                      }}>
+                        {m.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <VideoFramePicker
-                  videoFile={video}
-                  thumbnailUrl={thumbnailUrl}
-                  onFrameSelected={(file, preview) => {
-                    if (uploadedVideoId) {
-                      uploadFrameThumbnail(uploadedVideoId, file, preview);
-                    } else {
-                      setThumbnailUrl(preview); // before upload: just store preview
-                    }
-                  }}
-                />
+
+                {thumbnailMode === 'scrub' && (
+                  <VideoFramePicker
+                    videoFile={video}
+                    thumbnailUrl={thumbnailUrl}
+                    onFrameSelected={(file, preview) => {
+                      if (uploadedVideoId) uploadFrameThumbnail(uploadedVideoId, file, preview);
+                      else setThumbnailUrl(preview);
+                    }}
+                  />
+                )}
+
+                {thumbnailMode === 'ai' && (
+                  <div>
+                    {!uploadedVideoId && (
+                      <p style={{ color: '#94a3b8', fontSize: 13, textAlign: 'center', padding: '20px 0' }}>
+                        Upload your video first to generate AI-suggested frames.
+                      </p>
+                    )}
+                    {uploadedVideoId && framesLoading && (
+                      <div style={{ textAlign: 'center', padding: '24px 0', color: '#6366f1', fontSize: 13 }}>
+                        ✨ AI is analyzing your video...
+                      </div>
+                    )}
+                    {uploadedVideoId && !framesLoading && frames.length === 0 && (
+                      <div style={{ textAlign: 'center', padding: '16px 0' }}>
+                        <button onClick={() => loadFrames(uploadedVideoId)} style={{
+                          padding: '8px 20px', borderRadius: 8, background: '#6366f1', color: '#fff',
+                          border: 'none', fontWeight: 600, cursor: 'pointer', fontSize: 13,
+                        }}>Generate AI Frames</button>
+                      </div>
+                    )}
+                    {frames.length > 0 && (
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                        {frames.map(frame => (
+                          <div key={frame.s3Key} onClick={() => pickThumbnail(uploadedVideoId, frame)}
+                            style={{
+                              position: 'relative', borderRadius: 8, overflow: 'hidden', cursor: 'pointer',
+                              border: selectedFrameKey === frame.s3Key ? '2.5px solid #6366f1' : '2px solid transparent',
+                              boxShadow: selectedFrameKey === frame.s3Key ? '0 0 0 3px #6366f133' : 'none',
+                            }}>
+                            <img src={frame.url} alt={`frame ${frame.index}`}
+                              style={{ width: '100%', aspectRatio: '16/9', objectFit: 'cover', display: 'block' }} />
+                            {frame.recommended && (
+                              <span style={{
+                                position: 'absolute', top: 4, left: 4, background: '#6366f1', color: '#fff',
+                                fontSize: 9, fontWeight: 700, padding: '2px 5px', borderRadius: 4,
+                              }}>AI Pick</span>
+                            )}
+                            {selectedFrameKey === frame.s3Key && (
+                              <span style={{
+                                position: 'absolute', top: 4, right: 4, background: '#22c55e', color: '#fff',
+                                fontSize: 9, fontWeight: 700, padding: '2px 5px', borderRadius: 4,
+                              }}>✓ Selected</span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>

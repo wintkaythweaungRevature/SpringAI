@@ -90,6 +90,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
   const [dashHistory, setDashHistory] = useState([]);
   const [dashLoading, setDashLoading] = useState(false);
   const [retryingId, setRetryingId]   = useState(null);
+  const [videoDurationSec, setVideoDurationSec] = useState(0);
   // Thumbnail picker state
   const [uploadedVideoId, setUploadedVideoId] = useState(null);
   const [frames, setFrames]             = useState([]);
@@ -361,6 +362,8 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
       }
 
       log('📦 Packaging content variants...');
+
+      if (pollData?.durationSeconds) setVideoDurationSec(pollData.durationSeconds);
 
       const generated = {};
       for (const pid of selectedPlatforms) {
@@ -1091,6 +1094,33 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
 
       {/* ── STEP: REVIEW & PUBLISH ── */}
       {step === 'review' && (
+        <div>
+        {/* Clip-limit warning banner — shown when video exceeds a platform's max duration */}
+        {postType === 'video' && videoDurationSec > 0 && (() => {
+          const clipped = selectedPlatforms.filter(pid => {
+            const max = PLATFORM_MAX_SEC[pid];
+            return max && videoDurationSec > max;
+          });
+          if (clipped.length === 0) return null;
+          const fmt = sec => sec >= 3600 ? `${Math.floor(sec/3600)}h` : sec >= 60 ? `${Math.floor(sec/60)}m` : `${sec}s`;
+          return (
+            <div style={{ background: '#fffbeb', border: '1.5px solid #f59e0b', borderRadius: '10px', padding: '12px 16px', marginBottom: '16px', fontSize: '13px', color: '#92400e' }}>
+              <strong>⚠️ Auto-clip notice</strong> — your video is {fmt(videoDurationSec)} long.
+              These platforms will be clipped automatically:
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px' }}>
+                {clipped.map(pid => {
+                  const p = PLATFORMS.find(x => x.id === pid);
+                  const max = PLATFORM_MAX_SEC[pid];
+                  return (
+                    <span key={pid} style={{ background: '#fef3c7', border: '1px solid #f59e0b', borderRadius: '6px', padding: '2px 10px', fontWeight: 600 }}>
+                      {p.label} → max {fmt(max)}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
         <div style={{ ...s.layout, ...(isMobile ? { flexDirection: 'column', flexWrap: 'wrap' } : {}) }}>
           {/* Platform tabs on left */}
           <div style={{ ...s.left, ...(isMobile ? { width: '100%', minWidth: 0 } : {}) }}>
@@ -1351,6 +1381,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
             )}
           </div>
         </div>
+        </div>
       )}
 
       {/* ── STEP: PUBLISHING ── */}
@@ -1441,7 +1472,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
                 );
               })}
               <button style={{ ...s.btnPrimary, marginTop: '16px', fontSize: '13px' }}
-                onClick={() => { setStep('upload'); setVideo(null); setVariants({}); setPublished([]); setScheduledTimes({}); setProcessLog([]); setContentIdea(null); setFrames([]); setSelectedFrameKey(null); setThumbnailUrl(null); setUploadedVideoId(null); }}>
+                onClick={() => { setStep('upload'); setVideo(null); setVariants({}); setPublished([]); setScheduledTimes({}); setProcessLog([]); setContentIdea(null); setFrames([]); setSelectedFrameKey(null); setThumbnailUrl(null); setUploadedVideoId(null); setVideoDurationSec(0); }}>
                 + New Video
               </button>
             </div>
@@ -1541,6 +1572,18 @@ function formatPublishError(platform, rawError) {
 }
 
 /* ─── Mock data generators (replace with GPT API calls) ─────── */
+// Max video duration in seconds per platform (null = no limit)
+const PLATFORM_MAX_SEC = {
+  youtube:   null,
+  instagram: 900,   // 15 min (Reels)
+  tiktok:    600,   // 10 min
+  linkedin:  600,   // 10 min
+  facebook:  null,  // 4 hours — effectively no limit
+  x:         140,   // 2 min 20 sec
+  threads:   300,   // 5 min
+  pinterest: 900,   // 15 min
+};
+
 const CAPTION_FORMAT_HINTS = {
   youtube:   '📋 Long description · timestamps · SEO keywords',
   instagram: '✨ Short & punchy · 3–5 lines · emojis + CTA',

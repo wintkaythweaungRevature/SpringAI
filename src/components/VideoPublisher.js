@@ -863,7 +863,9 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
                     const max = Math.max(...Object.values(dashStats.byPlatform));
                     return (
                       <div key={pid} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '7px' }}>
-                        <span style={{ fontSize: '14px', width: '20px' }}>{p?.emoji || '📤'}</span>
+                        <span style={{ width: 22, height: 22, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          {p ? <PlatformIcon platform={p} size={20} /> : <span style={{ fontSize: '14px' }} aria-hidden>📤</span>}
+                        </span>
                         <span style={{ fontSize: '12px', width: '70px', color: '#374151', fontWeight: 500 }}>{p?.label || pid}</span>
                         <div style={{ flex: 1, background: '#e2e8f0', borderRadius: '4px', height: '6px', overflow: 'hidden' }}>
                           <div style={{ width: `${(count / max) * 100}%`, height: '100%', background: p?.color || '#6366f1', borderRadius: '4px', transition: 'width 0.4s' }} />
@@ -890,7 +892,9 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
                   const date = new Date(post.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                   return (
                     <div key={post.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '11px 13px', borderRadius: '10px', background: '#fff', border: '1px solid #e2e8f0' }}>
-                      <span style={{ fontSize: '18px', flexShrink: 0, marginTop: '2px' }}>{p?.emoji || '📤'}</span>
+                      <span style={{ width: 24, height: 24, flexShrink: 0, marginTop: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {p ? <PlatformIcon platform={p} size={22} /> : <span style={{ fontSize: '18px' }} aria-hidden>📤</span>}
+                      </span>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: '12px', fontWeight: 600, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {post.caption || '(no caption)'}

@@ -188,7 +188,7 @@ export default function LinkInBioBuilder() {
       <div style={s.header}>
         <div>
           <h2 style={s.title}>🔗 Link in Bio</h2>
-          <p style={s.sub}>One link for all your content. Put <strong>api.wintaibot.com/u/{slug || 'yourname'}</strong> in your Instagram bio.</p>
+          <p style={s.sub}>One link for all your content. Put <strong>www.wintaibot.com/u/{slug || 'yourname'}</strong> in your Instagram bio.</p>
         </div>
         {exists && publicUrl && (
           <div style={s.urlRow}>
@@ -210,7 +210,7 @@ export default function LinkInBioBuilder() {
 
           <label style={s.label}>Slug (your unique URL path)</label>
           <div style={s.slugRow}>
-            <span style={s.slugPrefix}>api.wintaibot.com/u/</span>
+            <span style={s.slugPrefix}>www.wintaibot.com/u/</span>
             <input
               style={s.slugInput}
               value={slug}

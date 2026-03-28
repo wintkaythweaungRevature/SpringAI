@@ -10,6 +10,7 @@ import TermsOfService from './components/TermsOfService';
 import ResetPassword from './components/ResetPassword';
 import SEOPublicLayout from './pages/SEOPublicLayout';
 import ToolLandingPage from './pages/ToolLandingPage';
+import PublicBioPage from './pages/PublicBioPage';
 
 const rootElement = document.getElementById('root');
 
@@ -40,6 +41,7 @@ function Root() {
         <Route path="/use-cases" element={<SEOPublicLayout />} />
         <Route path="/docs" element={<SEOPublicLayout />} />
         <Route path="/tools/:slug" element={<ToolLandingPage />} />
+        <Route path="/u/:slug" element={<PublicBioPage />} />
         <Route path="/*" element={
           <AuthProvider>
             <App />

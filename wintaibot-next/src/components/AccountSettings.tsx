@@ -266,11 +266,11 @@ export default function AccountSettings() {
           {!isMember && (
             <div style={{ marginTop: 12 }}>
               <p style={s.desc}>
-                Upgrade to Member ($5.99/month) to unlock Image Generator, Transcription,
+                Upgrade (from $19/month; annual options) to unlock Image Generator, Transcription,
                 DocuWizard, Reply Enchanter, and Resume Worlock.
               </p>
               <button onClick={handleUpgrade} disabled={!!loading} style={s.btnSuccess}>
-                {loading === 'upgrade' ? 'Redirecting...' : 'Upgrade to Member — $5.99/mo'}
+                {loading === 'upgrade' ? 'Redirecting...' : 'Upgrade — plans from $19/mo'}
               </button>
             </div>
           )}

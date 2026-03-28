@@ -105,11 +105,27 @@ const structuredData = {
       },
       {
         '@type': 'Offer',
-        name: 'Member',
-        price: '5.99',
+        name: 'Starter',
+        price: '19',
         priceCurrency: 'USD',
         billingIncrement: 'P1M',
-        description: 'Full access to all AI tools including PDF analysis, transcription, image generation',
+        description: 'Premium AI + Video Publisher limits; annual billing available',
+      },
+      {
+        '@type': 'Offer',
+        name: 'Pro',
+        price: '39',
+        priceCurrency: 'USD',
+        billingIncrement: 'P1M',
+        description: 'All platforms, analytics, AI Social Chat; annual billing available',
+      },
+      {
+        '@type': 'Offer',
+        name: 'Growth',
+        price: '79',
+        priceCurrency: 'USD',
+        billingIncrement: 'P1M',
+        description: 'Unlimited videos, priority processing, team seats; annual billing available',
       },
     ],
     creator: {
@@ -161,7 +177,7 @@ const structuredData = {
         name: 'Is Wintaibot free?',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'Yes. The AI chatbot and recipe generator are completely free. Full access to all tools including PDF analysis, transcription, image generation, email writer, and interview prep costs $5.99/month.',
+          text: 'Yes. The AI chatbot and recipe generator are completely free. Paid plans start at $19/month (Starter) with Pro ($39) and Growth ($79); annual discounts apply.',
         },
       },
       {

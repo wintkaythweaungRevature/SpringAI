@@ -105,18 +105,90 @@ function fmt(n) {
   return n.toString();
 }
 
-function StatCard({ icon, label, value, sub, color = '#6366f1', bg = '#eef2ff' }) {
+/** Summary metric — white card + tinted icon (consistent with Messages inbox). */
+function StatTile({ icon, label, value, sub, accent = '#6366f1' }) {
   return (
-    <div style={{ background: bg, borderRadius: '14px', padding: '18px 16px', flex: 1, minWidth: '120px' }}>
-      <div style={{ marginBottom: '6px', display: 'flex', alignItems: 'center' }}>{icon}</div>
-      <div style={{ fontSize: '26px', fontWeight: 800, color, lineHeight: 1 }}>{value}</div>
-      <div style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', marginTop: '4px' }}>{label}</div>
-      {sub && <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>{sub}</div>}
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: '12px',
+        padding: '16px 18px',
+        background: '#fff',
+        border: '1px solid #e2e8f0',
+        borderRadius: '12px',
+        boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+        flex: 1,
+        minWidth: '140px',
+      }}
+    >
+      <div
+        style={{
+          width: '44px',
+          height: '44px',
+          borderRadius: '10px',
+          background: `${accent}14`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+          color: accent,
+        }}
+        aria-hidden
+      >
+        {icon}
+      </div>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontSize: '24px', fontWeight: 800, color: '#0f172a', lineHeight: 1.1 }}>{value}</div>
+        <div style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', marginTop: '4px' }}>{label}</div>
+        {sub && <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '3px', lineHeight: 1.35 }}>{sub}</div>}
+      </div>
     </div>
   );
 }
 
-function HBar({ label, value, max, color, icon, platform }) {
+function RefreshIcon({ size = 14 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+      <path
+        d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function IconCalendar({ size = 16, color = '#64748b' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+      <rect x="3" y="4" width="18" height="18" rx="2" stroke={color} strokeWidth="1.75" />
+      <path d="M16 2v4M8 2v4M3 10h18" stroke={color} strokeWidth="1.75" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconClock({ size = 16, color = '#64748b' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+      <circle cx="12" cy="12" r="9" stroke={color} strokeWidth="1.75" />
+      <path d="M12 7v5l3 2" stroke={color} strokeWidth="1.75" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconXCircle({ size = 16, color = '#dc2626' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+      <circle cx="12" cy="12" r="9" stroke={color} strokeWidth="1.75" />
+      <path d="M15 9l-6 6M9 9l6 6" stroke={color} strokeWidth="1.75" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function HBar({ label, value, max, color, icon, platform, barHeight = 10 }) {
   const pct = max > 0 ? Math.max(4, Math.round((value / max) * 100)) : 4;
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
@@ -124,13 +196,41 @@ function HBar({ label, value, max, color, icon, platform }) {
         {platform ? <PlatformIcon platform={platform} size={22} /> : <span style={{ fontSize: '16px' }}>{icon}</span>}
       </span>
       <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151', width: '78px', flexShrink: 0 }}>{label}</span>
-      <div style={{ flex: 1, background: '#f1f5f9', borderRadius: '6px', height: '10px', overflow: 'hidden' }}>
+      <div style={{ flex: 1, background: '#f1f5f9', borderRadius: '6px', height: `${barHeight}px`, overflow: 'hidden' }}>
         <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: '6px', transition: 'width 0.6s ease' }} />
       </div>
       <span style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b', width: '48px', textAlign: 'right', flexShrink: 0 }}>
         {fmt(value)}
       </span>
     </div>
+  );
+}
+
+function PlatformTabBtn({ active, onClick, children, activeColor }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        padding: '8px 14px',
+        borderRadius: '8px',
+        border: active ? `1px solid ${activeColor || '#0f172a'}` : '1px solid #e2e8f0',
+        cursor: 'pointer',
+        fontWeight: active ? 600 : 500,
+        fontSize: '13px',
+        whiteSpace: 'nowrap',
+        background: active ? (activeColor || '#0f172a') : '#fff',
+        color: active ? '#fff' : '#475569',
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '6px',
+        transition: 'background 0.15s, border-color 0.15s, color 0.15s',
+        boxShadow: active ? 'none' : '0 1px 2px rgba(15, 23, 42, 0.04)',
+        fontFamily: 'inherit',
+      }}
+    >
+      {children}
+    </button>
   );
 }
 
@@ -329,7 +429,7 @@ export default function AnalyticsDashboard() {
   const connected   = data?.connectedPlatforms ?? [];
   const platforms   = data?.platforms ?? {};
   const ownPosts    = data?.ownPosts   ?? {};
-  const recent      = data?.recentActivity ?? [];
+  const recent      = data?.recentActivity;
 
   const removeActivityFromList = useCallback((activityId) => {
     const sid = String(activityId);
@@ -347,10 +447,10 @@ export default function AnalyticsDashboard() {
     }
   }, [base, token, user?.id]);
 
-  const recentVisible = useMemo(
-    () => recent.filter((p) => p?.id == null || !hiddenActivityIds.has(String(p.id))),
-    [recent, hiddenActivityIds],
-  );
+  const recentVisible = useMemo(() => {
+    const list = Array.isArray(recent) ? recent : [];
+    return list.filter((p) => p?.id == null || !hiddenActivityIds.has(String(p.id)));
+  }, [recent, hiddenActivityIds]);
 
   const totalFollowers = connected.reduce((sum, pid) => {
     const d = platforms[pid] ?? {};
@@ -382,23 +482,43 @@ export default function AnalyticsDashboard() {
   return (
     <div style={{ maxWidth: '1100px', margin: '0 auto', fontFamily: "'Inter',-apple-system,sans-serif" }}>
 
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <IconChart size={28} color="#6366f1" />
-            <h2 style={{ margin: 0, fontSize: '22px', fontWeight: 800, color: '#0f172a' }}>Analytics Dashboard</h2>
-          </div>
-          <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#64748b' }}>
-            Live stats from your connected platforms
-          </p>
-        </div>
+      {/* Subtitle + refresh (page title is in the app shell) */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          gap: '16px',
+          flexWrap: 'wrap',
+          marginBottom: '14px',
+        }}
+      >
+        <p style={{ margin: 0, fontSize: '13px', color: '#475569', lineHeight: 1.55, maxWidth: '520px' }}>
+          Live metrics from connected social accounts. Use Overview for a combined view or open a single platform.
+        </p>
         <button
+          type="button"
           onClick={load}
           disabled={loading}
-          style={{ padding: '9px 18px', borderRadius: '10px', border: '1.5px solid #e2e8f0', background: '#fff', color: '#4f46e5', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '8px 14px',
+            borderRadius: '8px',
+            border: '1px solid #e2e8f0',
+            background: '#fff',
+            color: '#334155',
+            fontWeight: 600,
+            fontSize: '13px',
+            cursor: loading ? 'wait' : 'pointer',
+            boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+            flexShrink: 0,
+            fontFamily: 'inherit',
+          }}
         >
-          {loading ? '⟳ Loading...' : '↻ Refresh'}
+          <RefreshIcon />
+          {loading ? 'Refreshing…' : 'Refresh'}
         </button>
       </div>
 
@@ -409,43 +529,46 @@ export default function AnalyticsDashboard() {
       )}
 
       {!data && loading && (
-        <div style={{ textAlign: 'center', padding: '60px', color: '#94a3b8', fontSize: '14px' }}>
-          ⟳ Loading your analytics...
-        </div>
+        <div style={{ textAlign: 'center', padding: '56px 24px', color: '#64748b', fontSize: '14px' }}>Loading analytics…</div>
       )}
 
       {data && (
         <>
           {/* Platform tabs */}
-          <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px', marginBottom: '24px' }}>
+          <div
+            style={{
+              display: 'flex',
+              gap: '8px',
+              overflowX: 'auto',
+              paddingBottom: '4px',
+              marginBottom: '14px',
+              flexWrap: 'wrap',
+            }}
+          >
             {tabPlatforms.map(pid => {
               const p = PLATFORMS.find(x => x.id === pid);
               const isOverview = pid === 'overview';
               const active = tab === pid;
+              const brand = p?.color ?? '#6366f1';
               return (
-                <button
+                <PlatformTabBtn
                   key={pid}
+                  active={active}
                   onClick={() => setTab(pid)}
-                  style={{
-                    padding: '8px 16px', borderRadius: '20px', border: 'none', cursor: 'pointer',
-                    fontWeight: active ? 700 : 500, fontSize: '13px', whiteSpace: 'nowrap',
-                    background: active ? (isOverview ? '#1e293b' : (p?.color ?? '#6366f1')) : '#f1f5f9',
-                    color: active ? '#fff' : '#475569',
-                    transition: 'all 0.15s',
-                  }}
+                  activeColor={isOverview ? '#0f172a' : brand}
                 >
                   {isOverview ? (
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                       <IconGlobe size={16} color={active ? '#fff' : '#475569'} />
                       Overview
                     </span>
                   ) : (
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                       <PlatformIcon platform={p} size={16} />
                       {p?.label ?? pid}
                     </span>
                   )}
-                </button>
+                </PlatformTabBtn>
               );
             })}
           </div>
@@ -453,19 +576,19 @@ export default function AnalyticsDashboard() {
           {/* ── OVERVIEW TAB ── */}
           {tab === 'overview' && (
             <>
-              {/* Summary cards */}
-              <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', marginBottom: '24px' }}>
-                <StatCard icon={<IconUsers />} label="Total Followers"   value={fmt(totalFollowers)}         sub={`across ${connected.length} platform${connected.length!==1?'s':''}`} color="#6366f1" bg="#eef2ff" />
-                <StatCard icon={<IconCheck />} label="Posts Published"   value={fmt(ownPosts.totalPublished)} sub={`${fmt(ownPosts.thisWeek)} this week`}  color="#16a34a" bg="#f0fdf4" />
-                <StatCard icon={<IconBubble />} label="Total Engagement"  value={fmt(totalEngagement)}         sub="likes + comments"                        color="#d97706" bg="#fffbeb" />
-                <StatCard icon={<IconEye />} label="Total Views"       value={fmt(totalViews)}              sub="YouTube + profile views"                 color="#2563eb" bg="#eff6ff" />
+              {/* Summary metrics */}
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '14px' }}>
+                <StatTile icon={<IconUsers size={22} color="#6366f1" />} label="Total followers" value={fmt(totalFollowers)} sub={`Across ${connected.length} platform${connected.length !== 1 ? 's' : ''}`} accent="#6366f1" />
+                <StatTile icon={<IconCheck size={22} color="#16a34a" />} label="Posts published" value={fmt(ownPosts.totalPublished)} sub={`${fmt(ownPosts.thisWeek)} this week`} accent="#16a34a" />
+                <StatTile icon={<IconBubble size={22} color="#d97706" />} label="Total engagement" value={fmt(totalEngagement)} sub="Likes + comments" accent="#d97706" />
+                <StatTile icon={<IconEye size={22} color="#2563eb" />} label="Total views" value={fmt(totalViews)} sub="YouTube + profile views" accent="#2563eb" />
               </div>
 
               {/* Two-column: followers bar + content type donut */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: '16px', marginBottom: '24px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: '14px', marginBottom: '14px' }}>
 
                 {/* Followers per platform */}
-                <div style={{ background: '#fff', borderRadius: '14px', padding: '20px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+                <div style={{ background: '#fff', borderRadius: '12px', padding: '18px 20px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)' }}>
                   <div style={{ fontWeight: 700, fontSize: '14px', color: '#1e293b', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <IconUsers size={18} color="#6366f1" />
                     Followers by Platform
@@ -485,22 +608,32 @@ export default function AnalyticsDashboard() {
                 </div>
 
                 {/* Content type breakdown */}
-                <div style={{ background: '#fff', borderRadius: '14px', padding: '20px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+                <div style={{ background: '#fff', borderRadius: '12px', padding: '18px 20px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)' }}>
                   <div style={{ fontWeight: 700, fontSize: '14px', color: '#1e293b', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <IconPalette size={18} color="#6366f1" />
-                    Content Created
+                    Content created
                   </div>
                   <DonutChart segments={typeSegments} />
-                  <div style={{ marginTop: '16px', display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '8px' }}>
+                  <div style={{ marginTop: '14px', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
                     {[
-                      { label: 'This Week',  value: ownPosts.thisWeek,  icon: '📅' },
-                      { label: 'This Month', value: ownPosts.thisMonth, icon: '🗓️' },
-                      { label: 'Failed',     value: ownPosts.totalFailed, icon: '❌' },
+                      { label: 'This week', value: ownPosts.thisWeek, node: <IconCalendar color="#64748b" /> },
+                      { label: 'This month', value: ownPosts.thisMonth, node: <IconCalendar color="#64748b" /> },
+                      { label: 'Failed', value: ownPosts.totalFailed, node: <IconXCircle color="#dc2626" /> },
                     ].map(c => (
-                      <div key={c.label} style={{ background: '#f8fafc', borderRadius: '10px', padding: '10px', textAlign: 'center' }}>
-                        <div style={{ fontSize: '16px' }}>{c.icon}</div>
-                        <div style={{ fontSize: '16px', fontWeight: 800, color: '#1e293b' }}>{fmt(c.value ?? 0)}</div>
-                        <div style={{ fontSize: '10px', color: '#64748b' }}>{c.label}</div>
+                      <div
+                        key={c.label}
+                        style={{
+                          background: '#fff',
+                          border: '1px solid #e2e8f0',
+                          borderRadius: '10px',
+                          padding: '12px 8px',
+                          textAlign: 'center',
+                          boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>{c.node}</div>
+                        <div style={{ fontSize: '17px', fontWeight: 800, color: '#0f172a' }}>{fmt(c.value ?? 0)}</div>
+                        <div style={{ fontSize: '10px', fontWeight: 600, color: '#64748b', marginTop: '4px', letterSpacing: '0.02em' }}>{c.label}</div>
                       </div>
                     ))}
                   </div>
@@ -509,23 +642,37 @@ export default function AnalyticsDashboard() {
 
               {/* Posts per platform bar */}
               {Object.keys(byPlatform).length > 0 && (
-                <div style={{ background: '#fff', borderRadius: '14px', padding: '20px', marginBottom: '24px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+                <div style={{ background: '#fff', borderRadius: '12px', padding: '18px 20px', marginBottom: '14px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)' }}>
                   <div style={{ fontWeight: 700, fontSize: '14px', color: '#1e293b', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <IconChart size={18} color="#6366f1" />
-                    Content Shared by Platform
+                    Content shared by platform
                   </div>
-                  {Object.entries(byPlatform).sort((a,b) => Number(b[1])-Number(a[1])).map(([pid, cnt]) => {
+                  {Object.entries(byPlatform).sort((a, b) => Number(b[1]) - Number(a[1])).map(([pid, cnt]) => {
                     const p = PLATFORMS.find(x => x.id === pid);
-                    return <HBar key={pid} label={p?.label ?? pid} value={Number(cnt)} max={maxCount} color={p?.color ?? '#6366f1'} icon={p?.emoji ?? '📤'} platform={p} />;
+                    return (
+                      <HBar
+                        key={pid}
+                        label={p?.label ?? pid}
+                        value={Number(cnt)}
+                        max={maxCount}
+                        color={p?.color ?? '#6366f1'}
+                        icon={p?.emoji ?? '📤'}
+                        platform={p}
+                        barHeight={10}
+                      />
+                    );
                   })}
                 </div>
               )}
 
               {/* Recent activity */}
               {recentVisible.length > 0 && (
-                <div style={{ background: '#fff', borderRadius: '14px', padding: '20px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+                <div style={{ background: '#fff', borderRadius: '12px', padding: '18px 20px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                    <div style={{ fontWeight: 700, fontSize: '14px', color: '#1e293b' }}>🕐 Recent Activity</div>
+                    <div style={{ fontWeight: 700, fontSize: '14px', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <IconClock size={18} color="#6366f1" />
+                      Recent activity
+                    </div>
                     <button
                       type="button"
                       onClick={() => {

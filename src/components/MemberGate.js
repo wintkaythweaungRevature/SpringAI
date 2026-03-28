@@ -5,7 +5,7 @@ import Signup from "./Signup";
 import VerifyEmailBlock from "./VerifyEmailBlock";
 
 const MEMBER_MESSAGE =
-  "This feature requires a member subscription ($5.99/month). Please upgrade to continue.";
+  "This feature requires a paid plan (from $19/month). Please upgrade to continue.";
 
 /**
  * Gate for member-only features: requires login + verified email + MEMBER subscription.
@@ -82,7 +82,7 @@ export default function MemberGate({ children, featureName = "this feature" }) {
               cursor: checkoutLoading ? "not-allowed" : "pointer",
             }}
           >
-            {checkoutLoading ? "Redirecting..." : "Upgrade ($5.99/month)"}
+            {checkoutLoading ? "Redirecting..." : "Upgrade (from $19/mo)"}
           </button>
           <button
             onClick={logout}

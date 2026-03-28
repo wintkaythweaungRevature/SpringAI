@@ -1,6 +1,6 @@
 # SpringAI Backend - Auth & Subscription
 
-Spring Boot backend for authentication, email verification, and Stripe subscription ($5.99/month).
+Spring Boot backend for authentication, email verification, and Stripe subscription. The marketing site lists Starter / Pro / Growth; wire **separate Stripe Price IDs** per tier (or one price until you add multi-plan checkout).
 
 ## Features
 
@@ -25,7 +25,7 @@ app.base-url=https://your-frontend-domain.com
 
 # Stripe
 stripe.secret-key=sk_live_...
-stripe.price-id=price_...   # Stripe Price ID for $5.99/month
+stripe.price-id=price_...   # Default recurring Price ID (add more env vars when you ship multi-tier checkout)
 stripe.webhook-secret=whsec_...
 
 # Success/Cancel URLs (after Stripe checkout)
@@ -33,11 +33,10 @@ app.success-url=https://your-frontend-domain.com
 app.cancel-url=https://your-frontend-domain.com
 ```
 
-### 2. Create Stripe Product & Price
+### 2. Create Stripe Products & Prices
 
-1. Stripe Dashboard → Products → Add product
-2. Add a recurring price: $5.99/month
-3. Copy the Price ID (e.g. `price_1ABC...`) to `stripe.price-id`
+1. Stripe Dashboard → Products — create prices for **Starter ($19)**, **Pro ($39)**, **Growth ($79)** (monthly and optional annual).
+2. Copy the default monthly Price ID to `stripe.price-id` until checkout passes a selected price.
 
 ### 3. Webhook
 

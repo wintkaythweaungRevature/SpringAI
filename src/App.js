@@ -37,7 +37,7 @@ const PAGE_TITLES = {
   'account': 'Account',
   'video-publisher': 'Video Publisher',
   'social-connect': 'Connected Accounts',
-  'analytics': 'Analytics',
+  'analytics': 'Analytics Dashboard',
   'messages':  'Messages & Comments',
   'bio':       'Link in Bio',
   'trends':    'Trends',
@@ -200,17 +200,13 @@ function App() {
           </div>
         </header>
 
-        {/* Page Header Bar */}
+        {/* Page title (account email / member badge stay in the top bar only) */}
         <div style={s.pageBar}>
           <h2 style={s.pageTitle}>{pageTitle}</h2>
           {user && (
-            <div style={s.pageRight}>
-              <span style={s.pageEmail}>{user.email}</span>
-              {user?.membershipType === 'MEMBER' && (
-                <span style={s.pageMemberBadge}>✓ Member</span>
-              )}
-              <button style={s.settingsBtn} onClick={() => go('account')} title="Account Settings">⚙️</button>
-            </div>
+            <button type="button" style={s.settingsBtn} onClick={() => go('account')} title="Account settings" aria-label="Account settings">
+              ⚙️
+            </button>
           )}
         </div>
 
@@ -427,19 +423,12 @@ const s = {
   /* Page Header */
   pageBar: {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    padding: '16px 0 0', flexShrink: 0,
+    padding: '12px 16px 0', flexShrink: 0,
     flexWrap: 'wrap', gap: '8px',
   },
   pageTitle: {
     margin: 0, fontSize: 'clamp(18px, 4vw, 22px)', fontWeight: '800',
     color: '#0f172a', letterSpacing: '-0.4px',
-  },
-  pageRight: { display: 'flex', alignItems: 'center', gap: '10px' },
-  pageEmail: { fontSize: '13px', color: '#64748b' },
-  pageMemberBadge: {
-    fontSize: '11.5px', fontWeight: '700', color: '#16a34a',
-    background: '#f0fdf4', border: '1px solid #bbf7d0',
-    padding: '3px 10px', borderRadius: '20px',
   },
   settingsBtn: {
     background: '#f1f5f9', border: '1px solid #e2e8f0',

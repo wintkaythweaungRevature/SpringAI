@@ -3,10 +3,10 @@ import { useAuth } from '../context/AuthContext';
 import PlatformIcon from './PlatformIcon';
 
 const PLATFORM_META = {
-  instagram: { id: 'instagram', label: 'Instagram', color: '#E1306C', bg: '#fce4ec', logo: 'instagram' },
-  facebook:  { id: 'facebook',  label: 'Facebook',  color: '#1877F2', bg: '#e3f2fd', logo: 'facebook'  },
-  youtube:   { id: 'youtube',   label: 'YouTube',   color: '#FF0000', bg: '#fff0f0', logo: 'youtube'   },
-  linkedin:  { id: 'linkedin',  label: 'LinkedIn',  color: '#0A66C2', bg: '#e8f0fb', logo: 'linkedin'  },
+  instagram: { id: 'instagram', label: 'Instagram', color: '#E1306C', logo: 'instagram' },
+  facebook:  { id: 'facebook',  label: 'Facebook',  color: '#1877F2', logo: 'facebook'  },
+  youtube:   { id: 'youtube',   label: 'YouTube',   color: '#FF0000', logo: 'youtube'   },
+  linkedin:  { id: 'linkedin',  label: 'LinkedIn',  color: '#0A66C2', logo: 'linkedin'  },
 };
 
 const SOURCE_LABELS = {
@@ -28,6 +28,8 @@ const PLATFORM_TYPES = {
   linkedin:  ['all', 'messages', 'comments'],
 };
 
+const TYPE_TAB_LABELS = { all: 'All', messages: 'Messages', comments: 'Comments' };
+
 function timeAgo(iso) {
   if (!iso) return '';
   const diff = Date.now() - new Date(iso).getTime();
@@ -42,27 +44,167 @@ function timeAgo(iso) {
 function TabBtn({ label, active, badge, onClick }) {
   return (
     <button
+      type="button"
       onClick={onClick}
       style={{
-        padding: '8px 16px', borderRadius: '20px', border: 'none',
-        cursor: 'pointer', fontWeight: active ? 700 : 500,
-        fontSize: '13px', whiteSpace: 'nowrap',
-        background: active ? '#1e293b' : '#f1f5f9',
+        padding: '8px 14px',
+        borderRadius: '8px',
+        border: active ? '1px solid #0f172a' : '1px solid #e2e8f0',
+        cursor: 'pointer',
+        fontWeight: active ? 600 : 500,
+        fontSize: '13px',
+        whiteSpace: 'nowrap',
+        background: active ? '#0f172a' : '#fff',
         color: active ? '#fff' : '#475569',
-        display: 'flex', alignItems: 'center', gap: '6px',
-        transition: 'all 0.15s',
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '6px',
+        transition: 'background 0.15s, border-color 0.15s, color 0.15s',
+        boxShadow: active ? 'none' : '0 1px 2px rgba(15, 23, 42, 0.04)',
       }}
     >
       {label}
       {badge > 0 && (
-        <span style={{
-          background: '#ef4444', color: '#fff', borderRadius: '20px',
-          padding: '1px 6px', fontSize: '10px', fontWeight: 700,
-        }}>
+        <span
+          style={{
+            background: active ? 'rgba(255,255,255,0.2)' : '#fee2e2',
+            color: active ? '#fff' : '#b91c1c',
+            borderRadius: '6px',
+            padding: '1px 6px',
+            fontSize: '10px',
+            fontWeight: 700,
+            minWidth: '18px',
+            textAlign: 'center',
+          }}
+        >
           {badge}
         </span>
       )}
     </button>
+  );
+}
+
+/** Unified metric tile — white card + tinted icon (no mixed solid fills). */
+function StatTile({ icon, label, value, accent, onClick }) {
+  const interactive = typeof onClick === 'function';
+  const tint = accent ? `${accent}14` : '#f1f5f9';
+  const content = (
+    <>
+      <div
+        style={{
+          width: '40px',
+          height: '40px',
+          borderRadius: '10px',
+          background: tint,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+          color: accent || '#64748b',
+          fontSize: '18px',
+        }}
+        aria-hidden
+      >
+        {icon}
+      </div>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>{value}</div>
+        <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', marginTop: '2px', letterSpacing: '0.02em' }}>
+          {label}
+        </div>
+      </div>
+    </>
+  );
+  const baseStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    padding: '14px 16px',
+    background: '#fff',
+    border: '1px solid #e2e8f0',
+    borderRadius: '12px',
+    textAlign: 'left',
+    transition: 'border-color 0.15s, box-shadow 0.15s',
+    boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+    width: '100%',
+    fontFamily: 'inherit',
+  };
+  if (interactive) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        style={{ ...baseStyle, cursor: 'pointer' }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.borderColor = accent || '#cbd5e1';
+          e.currentTarget.style.boxShadow = '0 2px 8px rgba(15, 23, 42, 0.06)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.borderColor = '#e2e8f0';
+          e.currentTarget.style.boxShadow = '0 1px 2px rgba(15, 23, 42, 0.04)';
+        }}
+      >
+        {content}
+      </button>
+    );
+  }
+  return (
+    <div role="status" style={{ ...baseStyle, cursor: 'default' }}>
+      {content}
+    </div>
+  );
+}
+
+function RefreshIcon({ size = 14 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+      <path
+        d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function UnreadDotIcon({ color = '#dc2626' }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden>
+      <circle cx="12" cy="12" r="8" fill={color} opacity="0.2" />
+      <circle cx="12" cy="12" r="4" fill={color} />
+    </svg>
+  );
+}
+
+function StatEnvelopeIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="M3 7l9 6 9-6" />
+    </svg>
+  );
+}
+
+function StatCommentIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8.5z" />
+    </svg>
+  );
+}
+
+function EmptyInboxIllustration() {
+  return (
+    <svg width="56" height="56" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden style={{ margin: '0 auto 14px', display: 'block', color: '#94a3b8' }}>
+      <path
+        d="M4 6a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      />
+      <path d="M4 8l8 5 8-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }
 
@@ -252,29 +394,68 @@ export default function MessagesInbox() {
     ? [...conversations, ...comments].find(x => x.id === selected)
     : null;
 
+  const filteredView = platformTab !== 'all' || typeTab !== 'all';
+
   return (
     <div style={{ maxWidth: '1100px', margin: '0 auto', fontFamily: "'Inter',-apple-system,sans-serif" }}>
 
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-        <div>
-          <h2 style={{ margin: 0, fontSize: '22px', fontWeight: 800, color: '#0f172a' }}>
-            💬 Messages & Comments
-            {totalUnread > 0 && (
-              <span style={{ marginLeft: '10px', background: '#ef4444', color: '#fff', borderRadius: '20px', padding: '2px 10px', fontSize: '14px', fontWeight: 700 }}>
-                {totalUnread} unread
-              </span>
-            )}
-          </h2>
-          <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#64748b' }}>
-            Instagram DMs · Facebook Messenger · YouTube Comments
+      {/* Toolbar (page title lives in app shell — subtitle only here) */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          gap: '16px',
+          flexWrap: 'wrap',
+          marginBottom: '14px',
+        }}
+      >
+        <div style={{ flex: '1 1 240px', minWidth: 0 }}>
+          <p style={{ margin: 0, fontSize: '13px', color: '#475569', lineHeight: 1.55 }}>
+            Comments and direct messages from connected accounts in one place.
           </p>
+          <p style={{ margin: '6px 0 0', fontSize: '12px', color: '#94a3b8', lineHeight: 1.5 }}>
+            Instagram comments · Facebook Messenger · YouTube comments · LinkedIn
+          </p>
+          {totalUnread > 0 && (
+            <span
+              style={{
+                display: 'inline-block',
+                marginTop: '10px',
+                background: '#dc2626',
+                color: '#fff',
+                borderRadius: '8px',
+                padding: '4px 10px',
+                fontSize: '12px',
+                fontWeight: 700,
+              }}
+            >
+              {totalUnread} unread
+            </span>
+          )}
         </div>
         <button
-          onClick={load} disabled={loading}
-          style={{ padding: '9px 18px', borderRadius: '10px', border: '1.5px solid #e2e8f0', background: '#fff', color: '#4f46e5', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}
+          type="button"
+          onClick={load}
+          disabled={loading}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '8px 14px',
+            borderRadius: '8px',
+            border: '1px solid #e2e8f0',
+            background: '#fff',
+            color: '#334155',
+            fontWeight: 600,
+            fontSize: '13px',
+            cursor: loading ? 'wait' : 'pointer',
+            boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+            flexShrink: 0,
+          }}
         >
-          {loading ? '⟳ Loading...' : '↻ Refresh'}
+          <RefreshIcon />
+          {loading ? 'Refreshing…' : 'Refresh'}
         </button>
       </div>
 
@@ -284,66 +465,121 @@ export default function MessagesInbox() {
         </div>
       )}
 
-      {/* Summary cards */}
+      {/* Summary — unified StatTile style */}
       {data && (
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '20px' }}>
-          {[
-            { icon: '📨', label: 'Total DMs',  value: conversations.length, color: '#2563eb', bg: '#eff6ff' },
-            { icon: '🔴', label: 'Unread',      value: totalUnread,          color: '#dc2626', bg: '#fef2f2' },
-            { icon: '💭', label: 'Comments',    value: comments.length,      color: '#d97706', bg: '#fffbeb' },
-            { p: PLATFORM_META.instagram, label: 'Instagram', value: igComments.length },
-            { p: PLATFORM_META.facebook,  label: 'Facebook',  value: fbConvs.length + fbComments.length },
-            { p: PLATFORM_META.youtube,   label: 'YouTube',   value: ytComments.length                  },
-            { p: PLATFORM_META.linkedin,  label: 'LinkedIn',  value: liConvs.length + liComments.length },
-          ].map(c => (
-            <div key={c.label} style={{ background: c.p ? c.p.bg : c.bg, borderRadius: '12px', padding: '12px 16px', minWidth: '100px', flex: 1, cursor: c.p ? 'pointer' : 'default' }}
-              onClick={c.p ? () => handlePlatformTab(c.p.id) : undefined}>
-              <div style={{ fontSize: '18px', marginBottom: '4px' }}>
-                {c.p ? <PlatformIcon platform={c.p} size={20} /> : c.icon}
-              </div>
-              <div style={{ fontSize: '20px', fontWeight: 800, color: c.p ? c.p.color : c.color, lineHeight: 1.2 }}>{c.value}</div>
-              <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>{c.label}</div>
-            </div>
-          ))}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(152px, 1fr))',
+            gap: '12px',
+            marginBottom: '14px',
+          }}
+        >
+          <StatTile icon={<StatEnvelopeIcon />} label="Total DMs" value={conversations.length} accent="#2563eb" />
+          <StatTile icon={<UnreadDotIcon />} label="Unread" value={totalUnread} accent="#dc2626" />
+          <StatTile icon={<StatCommentIcon />} label="Comments" value={comments.length} accent="#d97706" />
+          <StatTile
+            icon={<PlatformIcon platform={PLATFORM_META.instagram} size={20} />}
+            label="Instagram"
+            value={igComments.length}
+            accent={PLATFORM_META.instagram.color}
+            onClick={() => handlePlatformTab('instagram')}
+          />
+          <StatTile
+            icon={<PlatformIcon platform={PLATFORM_META.facebook} size={20} />}
+            label="Facebook"
+            value={fbConvs.length + fbComments.length}
+            accent={PLATFORM_META.facebook.color}
+            onClick={() => handlePlatformTab('facebook')}
+          />
+          <StatTile
+            icon={<PlatformIcon platform={PLATFORM_META.youtube} size={20} />}
+            label="YouTube"
+            value={ytComments.length}
+            accent={PLATFORM_META.youtube.color}
+            onClick={() => handlePlatformTab('youtube')}
+          />
+          <StatTile
+            icon={<PlatformIcon platform={PLATFORM_META.linkedin} size={20} />}
+            label="LinkedIn"
+            value={liConvs.length + liComments.length}
+            accent={PLATFORM_META.linkedin.color}
+            onClick={() => handlePlatformTab('linkedin')}
+          />
         </div>
       )}
 
-      {/* Row 1: Platform tabs */}
-      <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px', marginBottom: '6px', flexWrap: 'wrap' }}>
-        <TabBtn label="All" active={platformTab === 'all'} badge={totalUnread} onClick={() => handlePlatformTab('all')} />
-        {Object.values(PLATFORM_META).map(p => (
-          <TabBtn
-            key={p.id}
-            label={<span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-              <PlatformIcon platform={{ ...p, color: platformTab === p.id ? '#fff' : p.color }} size={13} />
-              {p.label}
-            </span>}
-            active={platformTab === p.id}
-            badge={p.id === 'instagram' ? igConvs.filter(c=>Number(c.unread)>0).length
-                 : p.id === 'facebook'  ? fbConvs.filter(c=>Number(c.unread)>0).length
-                 : 0}
-            onClick={() => handlePlatformTab(p.id)}
-          />
-        ))}
-      </div>
-
-      {/* Row 2: Type tabs (context-aware) */}
-      <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px', marginBottom: '16px', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px' }}>
-        {(PLATFORM_TYPES[platformTab] || ['all']).map(t => (
-          <TabBtn
-            key={t}
-            label={t === 'all' ? '⚡ All' : t === 'messages' ? '💬 Messages' : '💭 Comments'}
-            active={typeTab === t}
-            badge={t === 'messages' ? platConvs.filter(c=>Number(c.unread)>0).length
-                 : t === 'comments' ? platComments.length
-                 : 0}
-            onClick={() => setTypeTab(t)}
-          />
-        ))}
+      {/* Filters */}
+      <div
+        style={{
+          background: '#f8fafc',
+          border: '1px solid #e2e8f0',
+          borderRadius: '12px',
+          padding: '12px 14px',
+          marginBottom: '14px',
+        }}
+      >
+        <div
+          style={{
+            fontSize: '10px',
+            fontWeight: 700,
+            color: '#64748b',
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
+            marginBottom: '8px',
+          }}
+        >
+          Platform
+        </div>
+        <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', flexWrap: 'wrap', paddingBottom: '2px' }}>
+          <TabBtn label="All" active={platformTab === 'all'} badge={totalUnread} onClick={() => handlePlatformTab('all')} />
+          {Object.values(PLATFORM_META).map(p => (
+            <TabBtn
+              key={p.id}
+              label={(
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                  <PlatformIcon platform={{ ...p, color: platformTab === p.id ? '#fff' : p.color }} size={14} />
+                  {p.label}
+                </span>
+              )}
+              active={platformTab === p.id}
+              badge={p.id === 'instagram' ? igConvs.filter(c => Number(c.unread) > 0).length
+                : p.id === 'facebook' ? fbConvs.filter(c => Number(c.unread) > 0).length
+                  : 0}
+              onClick={() => handlePlatformTab(p.id)}
+            />
+          ))}
+        </div>
+        <div
+          style={{
+            fontSize: '10px',
+            fontWeight: 700,
+            color: '#64748b',
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
+            marginTop: '12px',
+            marginBottom: '8px',
+          }}
+        >
+          Type
+        </div>
+        <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', flexWrap: 'wrap' }}>
+          {(PLATFORM_TYPES[platformTab] || ['all']).map(t => (
+            <TabBtn
+              key={t}
+              label={TYPE_TAB_LABELS[t] || t}
+              active={typeTab === t}
+              badge={t === 'messages' ? platConvs.filter(c => Number(c.unread) > 0).length
+                : t === 'comments' ? platComments.length
+                  : 0}
+              onClick={() => setTypeTab(t)}
+            />
+          ))}
+        </div>
       </div>
 
       {loading && !data && (
-        <div style={{ textAlign: 'center', padding: '60px', color: '#94a3b8', fontSize: '14px' }}>⟳ Loading messages...</div>
+        <div style={{ textAlign: 'center', padding: '56px 24px', color: '#64748b', fontSize: '14px' }}>Loading inbox…</div>
       )}
 
       {data && (
@@ -382,11 +618,15 @@ export default function MessagesInbox() {
             )}
 
             {displayConvs.length === 0 && displayComments.length === 0 && (
-              <div style={{ padding: '48px 24px', textAlign: 'center' }}>
-                <div style={{ fontSize: '36px', marginBottom: '10px' }}>📭</div>
-                <div style={{ fontWeight: 700, fontSize: '15px', color: '#1e293b', marginBottom: '6px' }}>No messages found</div>
-                <div style={{ fontSize: '13px', color: '#64748b' }}>
-                  {!data ? 'Connect Instagram or Facebook to see messages.' : 'No messages in this category yet.'}
+              <div style={{ padding: '44px 28px', textAlign: 'center', maxWidth: '400px', margin: '0 auto' }}>
+                <EmptyInboxIllustration />
+                <div style={{ fontWeight: 700, fontSize: '15px', color: '#0f172a', marginBottom: '8px' }}>
+                  {filteredView ? 'No results for this filter' : 'Your inbox is empty'}
+                </div>
+                <div style={{ fontSize: '13px', color: '#64748b', lineHeight: 1.55 }}>
+                  {filteredView
+                    ? 'Try choosing All platforms or All types, or pick a different combination.'
+                    : 'New comments and messages from connected accounts will appear here.'}
                 </div>
               </div>
             )}

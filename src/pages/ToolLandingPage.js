@@ -46,7 +46,7 @@ export default function ToolLandingPage() {
             <span style={s.icon}>{tool.icon}</span>
           </div>
           <span style={{ ...s.badge, background: tool.badge === 'Free' ? '#dcfce7' : '#ede9fe', color: tool.badge === 'Free' ? '#15803d' : '#6d28d9' }}>
-            {tool.badge === 'Free' ? '✓ Free — no credit card' : `Member — $5.99/month`}
+            {tool.badge === 'Free' ? '✓ Free — no credit card' : `Paid — from $19/mo (annual discounts)`}
           </span>
           <h1 style={s.h1}>{tool.fullName}</h1>
           <p style={s.heroSub}>{tool.headline}</p>
@@ -98,7 +98,7 @@ export default function ToolLandingPage() {
           <p style={s.ctaSub}>
             {tool.badge === 'Free'
               ? 'It\'s completely free — no credit card, no download.'
-              : 'Full access from $5.99/month — cancel any time.'}
+              : 'Unlock on Starter, Pro, or Growth — from $19/mo, annual options available.'}
           </p>
           <a href="/" style={{ ...s.ctaBtn, background: tool.color, fontSize: '18px', padding: '16px 40px' }}>
             Start for Free →

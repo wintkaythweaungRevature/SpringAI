@@ -138,8 +138,8 @@ export default function LandingSection() {
           </Link>
         </div>
         <p className="ls-hero-note">
-          Free tier includes <strong>Ask AI</strong> and <strong>Recipe Generator</strong>. Full
-          access from <strong>$5.99/month</strong>.
+          Free tier includes <strong>Ask AI</strong> and <strong>Recipe Generator</strong>. Paid
+          plans from <strong>$19/month</strong> (or <strong>$15/mo</strong> billed annually).
         </p>
       </section>
 
@@ -168,8 +168,8 @@ export default function LandingSection() {
             <span>To Start</span>
           </div>
           <div className="ls-stat">
-            <span className="ls-stat-num">$5.99</span>
-            <span>Full Access / mo</span>
+            <span className="ls-stat-num">$19+</span>
+            <span>Paid plans / mo</span>
           </div>
           <div className="ls-stat">
             <span className="ls-stat-num">0</span>
@@ -205,7 +205,8 @@ export default function LandingSection() {
         </div>
         <p className="ls-features-note">
           <strong>Free</strong> tools are available immediately after signup.{' '}
-          <strong>Member</strong> tools unlock with a $5.99/month subscription.
+          <strong>Premium</strong> tools unlock on <strong>Starter</strong>, <strong>Pro</strong>, or{' '}
+          <strong>Growth</strong> — see pricing for limits.
         </p>
       </section>
 
@@ -282,7 +283,35 @@ export default function LandingSection() {
 
       <section className="ls-section ls-pricing" id="pricing" aria-labelledby="pricing-heading">
         <h2 id="pricing-heading">Simple, Transparent Pricing</h2>
-        <p className="ls-section-sub">Start free. Upgrade when you need more.</p>
+        <p className="ls-section-sub">Start free. Upgrade when you need more — annual billing saves up to ~21%.</p>
+
+        <div className="ls-pricing-why" aria-labelledby="why-pricing-heading">
+          <h3 id="why-pricing-heading">Why these numbers?</h3>
+          <div className="ls-pricing-why-grid">
+            <div className="ls-pricing-why-block">
+              <h4>Starter — $19/mo</h4>
+              <p>
+                Buffer charges about <strong>$18/mo</strong> for fewer features. Staying <strong>under $20</strong> is a
+                psychological anchor — cheap enough to try. Roughly <strong>7 paying users</strong> cover baseline AWS hosting.
+              </p>
+            </div>
+            <div className="ls-pricing-why-block">
+              <h4>Pro — $39/mo</h4>
+              <p>
+                About <strong>half the price of Hootsuite</strong> (~$99) with stronger <strong>video &amp; AI</strong> workflows.
+                A sweet spot for small businesses; on the order of <strong>4 users</strong> covers a typical full AWS bill.
+              </p>
+            </div>
+            <div className="ls-pricing-why-block">
+              <h4>Growth — $79/mo</h4>
+              <p>
+                Still <strong>below many enterprise schedulers</strong>, with <strong>team seats</strong> (as you roll them out) and
+                room for margin — roughly <strong>2 accounts</strong> can cover AWS plus profit at this tier.
+              </p>
+            </div>
+          </div>
+        </div>
+
         <div className="ls-plans">
           <article className="ls-plan">
             <div className="ls-plan-name">Free</div>
@@ -293,36 +322,175 @@ export default function LandingSection() {
               <li>Ask AI chatbot (unlimited)</li>
               <li>Recipe Generator (unlimited)</li>
               <li>No credit card required</li>
-              <li>—</li>
-              <li>—</li>
-              <li>—</li>
-              <li>—</li>
             </ul>
             <Link href="/chat" className="ls-btn-outline">
               Get Started Free
             </Link>
           </article>
 
-          <article className="ls-plan ls-plan--featured">
-            <div className="ls-plan-popular">Most Popular</div>
-            <div className="ls-plan-name">Member</div>
+          <article className="ls-plan">
+            <div className="ls-plan-name">Starter</div>
             <div className="ls-plan-price">
-              $5.99 <span>/ month</span>
+              $19 <span>/ month</span>
             </div>
+            <p className="ls-plan-annual">
+              <strong>$15/mo</strong> billed annually (<strong>$180/yr</strong>)
+            </p>
             <ul className="ls-plan-features">
               <li>Everything in Free</li>
-              <li>DocuWizard (PDF &amp; Doc AI)</li>
-              <li>EchoScribe (Voice Transcription)</li>
-              <li>AI Image Generator</li>
-              <li>Reply Enchanter (Email AI)</li>
-              <li>Resume Warlock (Interview Prep)</li>
-              <li>Video Publisher (multi-platform, schedule per channel)</li>
-              <li>Cancel anytime</li>
+              <li>Premium AI: DocuWizard, EchoScribe, Image Gen, Email, Resume</li>
+              <li>Video Publisher: <strong>5</strong> connected platforms</li>
+              <li>
+                <strong>10</strong> videos / month · <strong>30</strong> scheduled posts / month
+              </li>
+              <li>AI captions, thumbnail picker, link-in-bio</li>
+              <li className="ls-li-off">Deep analytics</li>
+              <li className="ls-li-off">AI Social Chat (RAG)</li>
+              <li>
+                <strong>1</strong> seat
+              </li>
             </ul>
-            <Link href="/chat" className="ls-btn-primary">
-              Start Free Trial
+            <Link href="/chat" className="ls-btn-outline">
+              Choose Starter
             </Link>
           </article>
+
+          <article className="ls-plan ls-plan--featured">
+            <div className="ls-plan-popular">Most Popular</div>
+            <div className="ls-plan-name">Pro</div>
+            <div className="ls-plan-price">
+              $39 <span>/ month</span>
+            </div>
+            <p className="ls-plan-annual">
+              <strong>$32/mo</strong> billed annually (<strong>$384/yr</strong>)
+            </p>
+            <ul className="ls-plan-features">
+              <li>Everything in Starter</li>
+              <li>
+                <strong>All 8</strong> platforms · <strong>30</strong> videos / month
+              </li>
+              <li>
+                <strong>Unlimited</strong> scheduled posts
+              </li>
+              <li>Deep analytics</li>
+              <li>AI Social Chat (RAG)</li>
+              <li>AI captions, thumbnail picker, link-in-bio</li>
+              <li>
+                <strong>1</strong> seat
+              </li>
+            </ul>
+            <Link href="/chat" className="ls-btn-primary">
+              Choose Pro
+            </Link>
+          </article>
+
+          <article className="ls-plan">
+            <div className="ls-plan-name">Growth</div>
+            <div className="ls-plan-price">
+              $79 <span>/ month</span>
+            </div>
+            <p className="ls-plan-annual">
+              <strong>$64/mo</strong> billed annually (<strong>$768/yr</strong>)
+            </p>
+            <ul className="ls-plan-features">
+              <li>Everything in Pro</li>
+              <li>
+                <strong>Unlimited</strong> videos
+              </li>
+              <li>
+                <strong>Priority</strong> processing queue
+              </li>
+              <li>
+                <strong>3</strong> team seats <span style={{ color: '#64748b', fontWeight: 400 }}>(when enabled)</span>
+              </li>
+              <li>Deep analytics · AI Social Chat (RAG)</li>
+            </ul>
+            <Link href="/chat" className="ls-btn-outline">
+              Choose Growth
+            </Link>
+          </article>
+        </div>
+
+        <div className="ls-comparison-wrap">
+          <p className="ls-comparison-title">Video &amp; social — per-plan limits</p>
+          <table className="ls-comparison-table">
+            <thead>
+              <tr>
+                <th scope="col">Feature</th>
+                <th scope="col">Starter $19</th>
+                <th scope="col">Pro $39</th>
+                <th scope="col">Growth $79</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Platforms</td>
+                <td>5</td>
+                <td>All 8</td>
+                <td>All 8</td>
+              </tr>
+              <tr>
+                <td>Videos / month</td>
+                <td>10</td>
+                <td>30</td>
+                <td>Unlimited</td>
+              </tr>
+              <tr>
+                <td>AI captions</td>
+                <td className="ls-ok">✓</td>
+                <td className="ls-ok">✓</td>
+                <td className="ls-ok">✓</td>
+              </tr>
+              <tr>
+                <td>Thumbnail picker</td>
+                <td className="ls-ok">✓</td>
+                <td className="ls-ok">✓</td>
+                <td className="ls-ok">✓</td>
+              </tr>
+              <tr>
+                <td>Link-in-bio</td>
+                <td className="ls-ok">✓</td>
+                <td className="ls-ok">✓</td>
+                <td className="ls-ok">✓</td>
+              </tr>
+              <tr>
+                <td>Deep analytics</td>
+                <td className="ls-no">—</td>
+                <td className="ls-ok">✓</td>
+                <td className="ls-ok">✓</td>
+              </tr>
+              <tr>
+                <td>AI Social Chat (RAG)</td>
+                <td className="ls-no">—</td>
+                <td className="ls-ok">✓</td>
+                <td className="ls-ok">✓</td>
+              </tr>
+              <tr>
+                <td>Team seats</td>
+                <td>1</td>
+                <td>1</td>
+                <td>3</td>
+              </tr>
+              <tr>
+                <td>Scheduled posts</td>
+                <td>30/mo</td>
+                <td>Unlimited</td>
+                <td>Unlimited</td>
+              </tr>
+              <tr>
+                <td>Priority processing</td>
+                <td className="ls-no">—</td>
+                <td className="ls-no">—</td>
+                <td className="ls-ok">✓</td>
+              </tr>
+              <tr>
+                <td>Annual (effective / mo)</td>
+                <td>$15 ($180/yr)</td>
+                <td>$32 ($384/yr)</td>
+                <td>$64 ($768/yr)</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </section>
 
@@ -388,7 +556,7 @@ export default function LandingSection() {
         {[
           {
             q: 'Is Wintaibot really free to use?',
-            a: 'Yes. The Ask AI chatbot and Recipe Generator are completely free with no credit card required. Premium tools require a $5.99/month Member subscription.',
+            a: 'Yes. The Ask AI chatbot and Recipe Generator are completely free with no credit card required. Premium tools unlock on Starter ($19/mo), Pro ($39/mo), or Growth ($79/mo), with annual discounts. See pricing for Video Publisher and analytics limits.',
           },
           {
             q: 'What file types does DocuWizard support?',
@@ -400,7 +568,7 @@ export default function LandingSection() {
           },
           {
             q: 'Can I cancel my subscription anytime?',
-            a: 'Yes, absolutely. You can cancel your Member subscription at any time from your Account Settings. You keep full access until the end of your current billing period.',
+            a: 'Yes, absolutely. You can cancel any paid plan at any time from your Account Settings. You keep access until the end of your current billing period.',
           },
           {
             q: 'Is my data secure?',

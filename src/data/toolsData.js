@@ -64,7 +64,7 @@ export const TOOLS = [
       'DocuWizard uses AI to read and analyze your documents. Summarize lengthy reports, convert PDF tables to Excel, extract key facts from contracts, and answer questions about any uploaded file.',
     metaTitle: 'DocuWizard – AI PDF Analyzer & Document Data Extractor',
     metaDescription:
-      'Upload PDF, Excel, or Word files and extract structured data instantly. Summarize reports, convert tables, and analyze contracts with AI. From $5.99/mo.',
+      'Upload PDF, Excel, or Word files and extract structured data instantly. Summarize reports, convert tables, and analyze contracts with AI. On paid plans from $19/mo.',
     keywords: 'AI PDF analyzer, PDF data extraction, document AI, PDF to Excel, contract analyzer, AI document reader',
     useCases: [
       { icon: '📊', title: 'Extract Tables & Data', desc: 'Convert PDF tables into structured Excel or CSV data automatically.' },

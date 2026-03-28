@@ -3,7 +3,7 @@
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   color: #0f172a;
   line-height: 1.6;
-  max-width: 1100px;
+  max-width: 1180px;
   margin: 0 auto;
   padding: 0 20px 0;
 }
@@ -350,22 +350,24 @@
 }
 
 .ls-plans {
-  display: flex;
-  gap: 24px;
-  justify-content: center;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
   margin-top: 8px;
+  align-items: stretch;
 }
 
 .ls-plan {
   background: #fff;
   border: 1px solid #e2e8f0;
   border-radius: 14px;
-  padding: 32px 28px;
-  width: 280px;
+  padding: 28px 22px;
+  min-width: 0;
   text-align: left;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
 .ls-plan--featured {
@@ -407,6 +409,17 @@
   color: #64748b;
 }
 
+.ls-plan-annual {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin: -12px 0 16px;
+  line-height: 1.4;
+}
+
+.ls-plan-annual strong {
+  color: #0f172a;
+}
+
 .ls-plan-features {
   list-style: none;
   padding: 0;
@@ -414,16 +427,17 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  flex: 1;
 }
 
 .ls-plan-features li {
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   color: #334155;
-  padding-left: 20px;
+  padding-left: 22px;
   position: relative;
 }
 
-.ls-plan-features li:not(:nth-child(n+4)):before {
+.ls-plan-features li::before {
   content: "✓";
   position: absolute;
   left: 0;
@@ -431,28 +445,114 @@
   font-weight: 700;
 }
 
-.ls-plan-features li:nth-child(n+5):empty {
-  display: none;
-}
-
-.ls-plan-features li:is(:nth-child(4), :nth-child(5), :nth-child(6), :nth-child(7)):not(:empty) {
+.ls-plan-features li.ls-li-off {
   color: #94a3b8;
 }
 
-.ls-plan--featured .ls-plan-features li:before {
-  content: "✓";
-  position: absolute;
-  left: 0;
+.ls-plan-features li.ls-li-off::before {
+  content: "—";
+  color: #cbd5e1;
+  font-weight: 600;
+}
+
+.ls-plan .ls-btn-primary,
+.ls-plan .ls-btn-outline {
+  width: 100%;
+  margin-top: auto;
+}
+
+.ls-pricing-why {
+  text-align: left;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 28px 32px;
+  margin: 40px 0 32px;
+}
+
+.ls-pricing-why h3 {
+  margin: 0 0 16px;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.ls-pricing-why-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px 28px;
+}
+
+.ls-pricing-why-block h4 {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #1e3a8a;
+}
+
+.ls-pricing-why-block p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #475569;
+  line-height: 1.65;
+}
+
+.ls-comparison-wrap {
+  margin-top: 48px;
+  text-align: left;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.ls-comparison-title {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #0f172a;
+  padding: 16px 20px 0;
+  margin: 0;
+}
+
+.ls-comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.ls-comparison-table th,
+.ls-comparison-table td {
+  padding: 12px 14px;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+  vertical-align: middle;
+}
+
+.ls-comparison-table th {
+  background: #f1f5f9;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.ls-comparison-table td:first-child {
+  font-weight: 600;
+  color: #334155;
+  min-width: 160px;
+}
+
+.ls-comparison-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.ls-comparison-table .ls-ok {
   color: #16a34a;
   font-weight: 700;
 }
 
-.ls-plan--featured .ls-plan-features li:nth-child(n+4) {
-  color: #334155;
-}
-
-.ls-plan--featured .ls-btn-primary {
-  width: 100%;
+.ls-comparison-table .ls-no {
+  color: #cbd5e1;
+  font-weight: 700;
 }
 
 .ls-testimonials {

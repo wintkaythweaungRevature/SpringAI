@@ -6,7 +6,7 @@ import Login from './Login';
 import Signup from './Signup';
 
 const MEMBER_MESSAGE =
-  'This feature requires a member subscription ($5.99/month). Please upgrade to continue.';
+  'This feature requires a paid plan (from $19/month). Please upgrade to continue.';
 
 export default function MemberGate({
   children,
@@ -117,7 +117,7 @@ export default function MemberGate({
               cursor: checkoutLoading ? 'not-allowed' : 'pointer',
             }}
           >
-            {checkoutLoading ? 'Redirecting...' : 'Upgrade ($5.99/month)'}
+            {checkoutLoading ? 'Redirecting...' : 'Upgrade (from $19/mo)'}
           </button>
           <button
             onClick={logout}

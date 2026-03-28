@@ -13,7 +13,8 @@ const PLANS = [
     badge: null,
     features: [
       '3 social platforms',
-      '10 videos / month',
+      '100 videos / month',
+      '1,000 images / month',
       '30 scheduled posts / month',
       'AI Captions & Hashtags',
       'Thumbnail AI Picker',
@@ -32,7 +33,8 @@ const PLANS = [
     badge: 'Most Popular',
     features: [
       'All 8 social platforms',
-      '30 videos / month',
+      'Unlimited videos',
+      'Unlimited images',
       'Unlimited scheduled posts',
       'AI Captions & Hashtags',
       'Thumbnail AI Picker',
@@ -54,6 +56,7 @@ const PLANS = [
     features: [
       'All 8 social platforms',
       'Unlimited videos',
+      'Unlimited images',
       'Unlimited scheduled posts',
       'AI Captions & Hashtags',
       'Thumbnail AI Picker',

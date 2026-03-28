@@ -15,6 +15,17 @@ const PLATFORMS = [
   { id: 'pinterest', label: 'Pinterest',  emoji: '📌',  color: '#E60023', maxLen: 500,   logo: 'pinterest', supports: ['image'] },
 ];
 
+const PLATFORM_ID_TO_BACKEND = {
+  youtube:   'YouTube',
+  instagram: 'Instagram Post',
+  tiktok:    'TikTok',
+  linkedin:  'LinkedIn',
+  facebook:  'Facebook',
+  x:         'X (Twitter)',
+  threads:   'Threads',
+  pinterest: 'Pinterest',
+};
+
 const STEPS = ['upload', 'processing', 'review', 'publishing', 'analytics'];
 
 const MAX_FILE_SIZE_BYTES = 2 * 1024 * 1024 * 1024; // 2GB
@@ -488,7 +499,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
 
       const generated = {};
       for (const pid of selectedPlatforms) {
-        const aiVariant = pollData?.variants?.find(v => v.platform === pid);
+        const aiVariant = pollData?.variants?.find(v => v.platform === PLATFORM_ID_TO_BACKEND[pid]);
         const hashtagsStr = aiVariant?.hashtags || '';
         const hashtagsArr = hashtagsStr.trim().split(/\s+/).filter(t => t.startsWith('#'));
         generated[pid] = {

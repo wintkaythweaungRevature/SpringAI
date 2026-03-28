@@ -12,7 +12,7 @@ const PLANS = [
     color: '#6366f1',
     badge: null,
     features: [
-      '5 social platforms',
+      '3 social platforms',
       '10 videos / month',
       '30 scheduled posts / month',
       'AI Captions & Hashtags',

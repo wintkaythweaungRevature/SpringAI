@@ -6,13 +6,13 @@ import { useAuth } from '../context/AuthContext';
  * Must be nested inside MemberGate (user is already logged in + subscribed).
  */
 export default function ProGate({ featureName = 'this feature', children }) {
-  const { user, api, authHeaders } = useAuth();
+  const { user, apiBase, authHeaders } = useAuth();
   const [plan, setPlan] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) { setLoading(false); return; }
-    api('/api/subscription/current', { headers: authHeaders() })
+    fetch(`${apiBase}/api/subscription/current`, { headers: authHeaders() })
       .then(r => r.json())
       .then(d => setPlan(d?.plan))
       .catch(() => setPlan(null))

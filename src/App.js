@@ -23,6 +23,7 @@ import MessagesInbox from './components/MessagesInbox';
 import LinkInBioBuilder from './components/LinkInBioBuilder';
 import DeepAnalytics from './components/DeepAnalytics';
 import SocialAIChat from './components/SocialAIChat';
+import PricingPage from './components/PricingPage';
 
 const PAGE_TITLES = {
   null: 'Dashboard',
@@ -41,6 +42,7 @@ const PAGE_TITLES = {
   'bio':       'Link in Bio',
   'trends':    'Trends',
   'social-ai': 'Social AI',
+  'pricing':   'Pricing & Plans',
 };
 
 /* ─── NavItem ─────────────────────────────────────────────── */
@@ -150,7 +152,8 @@ function App() {
           {user && (
             <>
               <div style={s.groupLabel}>Settings</div>
-              <NavItem emoji="⚙️" label="Account" active={activeTab === 'account'} onClick={() => go('account')} hasArrow />
+              <NavItem emoji="⚙️" label="Account"  active={activeTab === 'account'}  onClick={() => go('account')} hasArrow />
+              <NavItem emoji="💳" label="Pricing"   active={activeTab === 'pricing'}  onClick={() => go('pricing')} />
             </>
           )}
         </nav>
@@ -231,6 +234,7 @@ function App() {
           {activeTab === 'bio'              && <MemberGate featureName="Link in Bio"><LinkInBioBuilder /></MemberGate>}
           {activeTab === 'trends'          && <MemberGate featureName="Trends"><DeepAnalytics /></MemberGate>}
           {activeTab === 'social-ai'       && <MemberGate featureName="Social AI"><SocialAIChat /></MemberGate>}
+          {activeTab === 'pricing'         && <PricingPage onClose={() => go(null)} />}
         </div>
       </div>
 

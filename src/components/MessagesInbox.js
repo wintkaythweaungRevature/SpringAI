@@ -286,11 +286,14 @@ function CommentItem({ item, apiBase, token }) {
   const [showReply,  setShowReply]  = useState(false);
   const [replyText,  setReplyText]  = useState('');
   const [sending,    setSending]    = useState(false);
-  const [sent,       setSent]       = useState(false);
+  const [sentReplies, setSentReplies] = useState(
+    item.replies && item.replies.length > 0 ? item.replies : []
+  );
   const [replyError, setReplyError] = useState('');
 
   const sendReply = async () => {
     if (!replyText.trim()) return;
+    const textToSend = replyText.trim();
     setSending(true); setReplyError('');
     try {
       const res = await fetch(`${apiBase}/api/auto-reply/manual-reply`, {
@@ -302,14 +305,14 @@ function CommentItem({ item, apiBase, token }) {
           postId: item.postId || '',
           commentText: item.text || '',
           authorUsername: item.from || '',
-          replyText: replyText.trim(),
+          replyText: textToSend,
         }),
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
         setReplyError(d.error || `Error ${res.status}`);
       } else {
-        setSent(true);
+        setSentReplies(prev => [...prev, { text: textToSend, time: new Date().toISOString(), fromMe: true }]);
         setReplyText('');
         setShowReply(false);
       }
@@ -319,6 +322,8 @@ function CommentItem({ item, apiBase, token }) {
       setSending(false);
     }
   };
+
+  const hasSent = sentReplies.length > 0;
 
   return (
     <div style={{ padding: '13px 16px', borderBottom: '1px solid #f1f5f9', background: '#fff' }}>
@@ -354,24 +359,43 @@ function CommentItem({ item, apiBase, token }) {
               On: {item.postCaption}
             </div>
           )}
+
+          {/* Show sent replies as bubbles */}
+          {sentReplies.map((r, i) => (
+            <div key={i} style={{ marginTop: '8px', display: 'flex', justifyContent: 'flex-end' }}>
+              <div style={{
+                maxWidth: '85%',
+                background: p.color,
+                color: '#fff',
+                borderRadius: '12px 12px 2px 12px',
+                padding: '7px 12px',
+                fontSize: '12.5px',
+                lineHeight: 1.5,
+              }}>
+                <div>{r.text}</div>
+                <div style={{ fontSize: '10px', opacity: 0.75, marginTop: '3px', textAlign: 'right' }}>
+                  You · {timeAgo(r.time)}
+                </div>
+              </div>
+            </div>
+          ))}
+
           <div style={{ marginTop: '6px', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
             <span style={{ fontSize: '11px', color: '#94a3b8' }}>{sl.icon} {sl.label}</span>
             {item.likes > 0 && (
               <span style={{ fontSize: '11px', color: '#94a3b8' }}>❤️ {item.likes}</span>
             )}
-            {sent && <span style={{ fontSize: '11px', color: '#22c55e', fontWeight: 600 }}>✓ Replied</span>}
-            {!sent && (
-              <button
-                type="button"
-                onClick={() => { setShowReply(!showReply); setReplyError(''); }}
-                style={{
-                  background: 'none', border: 'none', cursor: 'pointer',
-                  fontSize: '11px', color: p.color, fontWeight: 700, padding: '2px 0',
-                }}
-              >
-                {showReply ? 'Cancel' : '↩ Reply'}
-              </button>
-            )}
+            {hasSent && <span style={{ fontSize: '11px', color: '#22c55e', fontWeight: 600 }}>✓ Replied</span>}
+            <button
+              type="button"
+              onClick={() => { setShowReply(!showReply); setReplyError(''); }}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                fontSize: '11px', color: p.color, fontWeight: 700, padding: '2px 0',
+              }}
+            >
+              {showReply ? 'Cancel' : hasSent ? '↩ Reply again' : '↩ Reply'}
+            </button>
           </div>
 
           {/* Reply input */}

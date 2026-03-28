@@ -20,6 +20,9 @@ import VideoPublisher from './components/VideoPublisher';
 import SocialConnect from './components/SocialConnect';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
 import MessagesInbox from './components/MessagesInbox';
+import LinkInBioBuilder from './components/LinkInBioBuilder';
+import DeepAnalytics from './components/DeepAnalytics';
+import SocialAIChat from './components/SocialAIChat';
 
 const PAGE_TITLES = {
   null: 'Dashboard',
@@ -35,6 +38,9 @@ const PAGE_TITLES = {
   'social-connect': 'Connected Accounts',
   'analytics': 'Analytics',
   'messages':  'Messages & Comments',
+  'bio':       'Link in Bio',
+  'trends':    'Trends',
+  'social-ai': 'Social AI',
 };
 
 /* ─── NavItem ─────────────────────────────────────────────── */
@@ -133,6 +139,9 @@ function App() {
           <NavItem emoji="📊" label="Analytics"            active={activeTab === 'analytics'}       onClick={() => go('analytics')} />
           <NavItem emoji="💬" label="Messages"            active={activeTab === 'messages'}         onClick={() => go('messages')} />
           <NavItem emoji="🔗" label="Connected Accounts"  active={activeTab === 'social-connect'}  onClick={() => go('social-connect')} />
+          <NavItem emoji="🌐" label="Link in Bio"         active={activeTab === 'bio'}              onClick={() => go('bio')} />
+          <NavItem emoji="📈" label="Trends"              active={activeTab === 'trends'}           onClick={() => go('trends')} />
+          <NavItem emoji="🤖" label="Social AI"           active={activeTab === 'social-ai'}        onClick={() => go('social-ai')} />
 
           <div style={s.groupLabel}>Writing Tools</div>
           <NavItem emoji="✉️" label="Reply Enchanter" active={activeTab === 'Content'} onClick={() => go('Content')} />
@@ -219,6 +228,9 @@ function App() {
           {activeTab === 'analytics'        && <MemberGate featureName="Analytics"><AnalyticsDashboard /></MemberGate>}
           {activeTab === 'messages'         && <MemberGate featureName="Messages"><MessagesInbox /></MemberGate>}
           {activeTab === 'social-connect'   && <MemberGate featureName="Connected Accounts"><SocialConnect /></MemberGate>}
+          {activeTab === 'bio'              && <MemberGate featureName="Link in Bio"><LinkInBioBuilder /></MemberGate>}
+          {activeTab === 'trends'          && <MemberGate featureName="Trends"><DeepAnalytics /></MemberGate>}
+          {activeTab === 'social-ai'       && <MemberGate featureName="Social AI"><SocialAIChat /></MemberGate>}
         </div>
       </div>
 

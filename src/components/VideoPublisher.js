@@ -1290,19 +1290,19 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
               );
             })}
 
-            {/* Schedule per platform — SEO & advertising */}
+            {/* Schedule per platform */}
             <div style={{ ...s.card, marginTop: '16px', padding: '14px' }}>
               <div style={{ ...s.sectionTitle, marginBottom: '10px', fontSize: '14px' }}>
-                📅 Schedule per platform (SEO & advertising)
+                📅 Schedule your posts
               </div>
               <p style={{ fontSize: '11px', color: '#64748b', marginBottom: '12px' }}>
-                Set when to post on each social account. Leave &quot;Publish now&quot; for immediate posting.
+                Choose when to publish on each platform, or leave as &quot;Publish now&quot; to post immediately.
               </p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
                 {[
-                  { label: 'Best for SEO (9 AM)', hour: 9 },
-                  { label: 'Peak engagement (7 PM)', hour: 19 },
-                  { label: 'Lunch hour (12 PM)', hour: 12 },
+                  { label: 'Morning (9 AM)', hour: 9 },
+                  { label: 'Evening (7 PM)', hour: 19 },
+                  { label: 'Lunch (12 PM)', hour: 12 },
                 ].map(({ label, hour }) => {
                   const d = new Date();
                   d.setDate(d.getDate() + 1);

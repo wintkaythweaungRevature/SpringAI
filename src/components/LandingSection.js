@@ -134,21 +134,8 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
           Post Once,<br /><span className="ls-hero-h1-accent">Shine Everywhere.</span>
         </h1>
         <p className="ls-hero-lead">
-          <strong>Stop guessing your Shorts thumbnails.</strong>{" "}
-          <strong>You don&apos;t fix the file — we do.</strong> Pick where you want to publish (Instagram, YouTube Shorts, TikTok, etc.); Wintaibot adjusts ratio, framing, and quality <em>for each platform you choose</em> — no manual re-editing on your side.
-        </p>
-        <ul className="ls-hero-punch-row" aria-label="Key benefits">
-          <li>Schedule posts, messages &amp; auto-reply in one place</li>
-          <li>Upload once — we format per platform; edit AI thumbnails, captions &amp; tags anytime</li>
-          <li>Direct publishing — not a day of waiting on phone notifications</li>
-          <li>Ideas &amp; analysis from AI that knows your brand</li>
-        </ul>
-        <p className="ls-hero-sub">
-          <strong>One dashboard:</strong> plan publishes per platform, read DMs and comments in <strong>Messages</strong>,
-          and use <strong>Auto Reply</strong> with <strong>optional AI</strong> — you choose when automation helps and when you reply yourself.
-          For video: <strong>thumbnail picker</strong> (your best frame or AI-suggested), plus <strong>AI captions and tags</strong> you can change before anything goes live.
-          When it&apos;s time to go live, we focus on <strong>direct publishing</strong> to the platforms you picked — not a product philosophy built on nagging you with endless notifications.
-          Also: documents, transcription, images, email, interview prep — and <strong>Social AI</strong> grounded in your posts. No installs.
+          One dashboard to publish videos, schedule posts, auto-reply to comments,
+          and analyze what's working — across every platform, without re-editing files.
         </p>
         <div className="ls-hero-actions">
           <button className="ls-btn-primary" onClick={onGetStarted}>
@@ -158,10 +145,8 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
         </div>
         <p className="ls-hero-note">
           Free tier: <strong>Ask AI</strong> &amp; <strong>Recipe Generator</strong>.{" "}
-          <strong>Starter $19/mo</strong> — five platforms, <strong>no per-channel fees</strong>.{" "}
-          <strong>Pro $39/mo</strong>, <strong>Growth $79/mo</strong>.{" "}
-          Pay yearly to save (Starter <strong>$180/yr</strong> — about <strong>$15/mo</strong> when billed annually).{" "}
-          Pro tools for solo creators. Why pay $99/mo for old-school schedulers? Get stronger AI here from <strong>$19</strong>.
+          <strong>Starter $19/mo</strong> · <strong>Pro $39/mo</strong> · <strong>Growth $79/mo</strong>.{" "}
+          No per-channel fees. No installs.
         </p>
       </section>
 
@@ -169,18 +154,21 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
       <section className="ls-section ls-what" aria-labelledby="what-heading">
         <h2 id="what-heading">What Is Wintaibot?</h2>
         <p>
-          Wintaibot is an AI productivity platform built on{" "}
-          <strong>Spring AI</strong> and <strong>React</strong>. It combines
-          eight specialized AI tools into a single, easy-to-use dashboard — so
-          you stop juggling multiple apps and subscriptions.
+          Wintaibot is an AI productivity platform that combines <strong>8 specialized tools</strong> into one dashboard —
+          so you stop juggling multiple apps and subscriptions.
         </p>
+        <ul className="ls-hero-punch-row ls-what-bullets" aria-label="Key benefits">
+          <li>Upload once — we format per platform (ratio, framing, quality)</li>
+          <li>AI thumbnail picker: scrub to your best frame or let AI suggest it</li>
+          <li>Schedule posts, read DMs &amp; comments, auto-reply — all in one place</li>
+          <li>Direct publishing — no waiting on phone notifications</li>
+          <li>Social AI that knows your brand &amp; post history</li>
+          <li>Documents, transcription, images, email &amp; interview prep included</li>
+        </ul>
         <p>
-          Whether you are a <strong>job seeker</strong> preparing for interviews,
-          a <strong>professional</strong> drowning in emails and documents, a{" "}
-          <strong>student</strong> who needs lecture transcriptions, a{" "}
-          <strong>creator</strong> publishing to YouTube and socials, or a{" "}
-          <strong>content team</strong> scheduling posts per platform — Wintaibot has a dedicated
-          tool built for your workflow.
+          Whether you are a <strong>creator</strong> publishing to YouTube and socials,
+          a <strong>professional</strong> drowning in emails, a <strong>job seeker</strong> prepping for interviews,
+          or a <strong>student</strong> transcribing lectures — Wintaibot has a dedicated tool for your workflow.
         </p>
         <div className="ls-stat-row">
           <div className="ls-stat"><span className="ls-stat-num">8</span><span>AI Tools</span></div>

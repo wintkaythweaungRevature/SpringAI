@@ -205,8 +205,20 @@
 .ls-what p {
   color: #334155;
   font-size: 1rem;
-  max-width: 780px;
+  max-width: 100%;
   margin-bottom: 12px;
+}
+
+.ls-what-bullets {
+  color: #334155 !important;
+  opacity: 1 !important;
+  justify-content: flex-start !important;
+  margin: 20px 0 !important;
+  max-width: 100% !important;
+}
+
+.ls-what-bullets li::before {
+  background: #6366f1 !important;
 }
 
 .ls-stat-row {
@@ -249,12 +261,12 @@
 }
 
 .ls-social-hub-intro {
-  max-width: 780px;
+  max-width: 100%;
   margin-bottom: 16px;
 }
 
 .ls-social-hub-direct {
-  max-width: 780px;
+  max-width: 100%;
   margin: 0;
   padding: 18px 20px;
   background: linear-gradient(135deg, #f0f4ff 0%, #f8fafc 100%);
@@ -276,7 +288,7 @@
 }
 
 .ls-video-edge-intro {
-  max-width: 720px;
+  max-width: 100%;
 }
 
 .ls-video-edge-list {
@@ -286,7 +298,7 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
-  max-width: 800px;
+  max-width: 100%;
 }
 
 .ls-video-edge-list > li {

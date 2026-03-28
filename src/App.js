@@ -33,6 +33,7 @@ import DeepAnalytics from './components/DeepAnalytics';
 import SocialAIChat from './components/SocialAIChat';
 import PricingPage from './components/PricingPage';
 import AutoReplySettings from './components/AutoReplySettings';
+import ProGate from './components/ProGate';
 
 const PAGE_TITLES = {
   null: 'Dashboard',
@@ -108,6 +109,12 @@ function App() {
       setActiveTab('video-publisher');
     }
     // Reset flow uses /reset-password?token= (handled by Root)
+  }, []);
+
+  useEffect(() => {
+    const handler = (e) => go(e.detail);
+    window.addEventListener('wintaibot:go', handler);
+    return () => window.removeEventListener('wintaibot:go', handler);
   }, []);
   const userDisplayName = user?.firstName || user?.lastName
     ? [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim()
@@ -243,19 +250,19 @@ function App() {
           {activeTab === 'chat'             && <AskAIGate  featureName="Ask AI"><ChatComponent /></AskAIGate>}
           {activeTab === 'analyzer'         && <MemberGate featureName="DocuWizard"><SpendingAnalyzer /></MemberGate>}
           {activeTab === 'recipe-generator' && <AskAIGate  featureName="Recipe Generator"><ReceipeGenerator /></AskAIGate>}
-          {activeTab === 'transcription'    && <MemberGate featureName="EchoScribe"><Transcription /></MemberGate>}
+          {activeTab === 'transcription'    && <MemberGate featureName="EchoScribe"><ProGate featureName="EchoScribe"><Transcription /></ProGate></MemberGate>}
           {activeTab === 'Content'          && <MemberGate featureName="Reply Enchanter"><Content /></MemberGate>}
           {activeTab === 'Resume'           && <MemberGate featureName="Resume Worlock"><Resume /></MemberGate>}
           {activeTab === 'account'          && <AskAIGate  featureName="Account"><AccountSettings /></AskAIGate>}
           {activeTab === 'video-publisher'  && <MemberGate featureName="Video Publisher"><VideoPublisher onNavigateToSocialConnect={() => go('social-connect')} /></MemberGate>}
           {activeTab === 'analytics'        && <MemberGate featureName="Analytics"><AnalyticsDashboard /></MemberGate>}
-          {activeTab === 'messages'         && <MemberGate featureName="Messages"><MessagesInbox /></MemberGate>}
+          {activeTab === 'messages'         && <MemberGate featureName="Messages"><ProGate featureName="Messages"><MessagesInbox /></ProGate></MemberGate>}
           {activeTab === 'social-connect'   && <MemberGate featureName="Connected Accounts"><SocialConnect /></MemberGate>}
           {activeTab === 'bio'              && <MemberGate featureName="Link in Bio"><LinkInBioBuilder /></MemberGate>}
-          {activeTab === 'trends'          && <MemberGate featureName="Trends"><DeepAnalytics /></MemberGate>}
-          {activeTab === 'social-ai'       && <MemberGate featureName="Social AI"><SocialAIChat /></MemberGate>}
+          {activeTab === 'trends'          && <MemberGate featureName="Trends"><ProGate featureName="Trends"><DeepAnalytics /></ProGate></MemberGate>}
+          {activeTab === 'social-ai'       && <MemberGate featureName="Social AI"><ProGate featureName="Social AI"><SocialAIChat /></ProGate></MemberGate>}
           {activeTab === 'pricing'         && <PricingPage onClose={() => go(null)} />}
-          {activeTab === 'auto-reply'      && <MemberGate featureName="Auto Reply"><AutoReplySettings /></MemberGate>}
+          {activeTab === 'auto-reply'      && <MemberGate featureName="Auto Reply"><ProGate featureName="Auto Reply"><AutoReplySettings /></ProGate></MemberGate>}
         </div>
       </div>
 

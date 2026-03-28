@@ -467,8 +467,11 @@ export default function AnalyticsDashboard() {
     return sum + (d.totalViews ?? d.profileViews ?? 0);
   }, 0);
 
-  const byPlatform = ownPosts.byPlatform ?? {};
-  const byType     = ownPosts.byType     ?? {};
+  const byPlatform          = ownPosts.byPlatform          ?? {};
+  const byType              = ownPosts.byType              ?? {};
+  const byPlatformThisWeek  = ownPosts.byPlatformThisWeek  ?? {};
+  const byPlatformThisMonth = ownPosts.byPlatformThisMonth ?? {};
+  const byPlatformFailed    = ownPosts.byPlatformFailed    ?? {};
   const maxCount   = Math.max(...Object.values(byPlatform).map(Number), 1);
 
   const typeSegments = [
@@ -616,26 +619,44 @@ export default function AnalyticsDashboard() {
                   <DonutChart segments={typeSegments} />
                   <div style={{ marginTop: '14px', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
                     {[
-                      { label: 'This week', value: ownPosts.thisWeek, node: <IconCalendar color="#64748b" /> },
-                      { label: 'This month', value: ownPosts.thisMonth, node: <IconCalendar color="#64748b" /> },
-                      { label: 'Failed', value: ownPosts.totalFailed, node: <IconXCircle color="#dc2626" /> },
-                    ].map(c => (
-                      <div
-                        key={c.label}
-                        style={{
-                          background: '#fff',
-                          border: '1px solid #e2e8f0',
-                          borderRadius: '10px',
-                          padding: '12px 8px',
-                          textAlign: 'center',
-                          boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
-                        }}
-                      >
-                        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>{c.node}</div>
-                        <div style={{ fontSize: '17px', fontWeight: 800, color: '#0f172a' }}>{fmt(c.value ?? 0)}</div>
-                        <div style={{ fontSize: '10px', fontWeight: 600, color: '#64748b', marginTop: '4px', letterSpacing: '0.02em' }}>{c.label}</div>
-                      </div>
-                    ))}
+                      { label: 'This week',  value: ownPosts.thisWeek,    node: <IconCalendar color="#64748b" />, breakdown: byPlatformThisWeek },
+                      { label: 'This month', value: ownPosts.thisMonth,   node: <IconCalendar color="#64748b" />, breakdown: byPlatformThisMonth },
+                      { label: 'Failed',     value: ownPosts.totalFailed, node: <IconXCircle color="#dc2626" />,  breakdown: byPlatformFailed },
+                    ].map(c => {
+                      const lines = Object.entries(c.breakdown ?? {})
+                        .sort((a, b) => Number(b[1]) - Number(a[1]))
+                        .map(([pid, cnt]) => {
+                          const p = PLATFORMS.find(x => x.id === pid);
+                          return `${p?.label ?? pid}: ${cnt}`;
+                        });
+                      const tip = lines.length > 0 ? `${fmt(c.value ?? 0)} total\n${lines.join('\n')}` : null;
+                      return (
+                        <div
+                          key={c.label}
+                          title={tip ?? undefined}
+                          style={{
+                            background: '#fff',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '10px',
+                            padding: '12px 8px',
+                            textAlign: 'center',
+                            boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+                            cursor: tip ? 'help' : 'default',
+                            position: 'relative',
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>{c.node}</div>
+                          <div style={{ fontSize: '17px', fontWeight: 800, color: '#0f172a' }}>{fmt(c.value ?? 0)}</div>
+                          <div style={{ fontSize: '10px', fontWeight: 600, color: '#64748b', marginTop: '4px', letterSpacing: '0.02em' }}>{c.label}</div>
+                          {lines.length > 0 && (
+                            <div style={{ fontSize: '9px', color: '#94a3b8', marginTop: '5px', lineHeight: 1.6 }}>
+                              {lines.slice(0, 3).map(l => <div key={l}>{l}</div>)}
+                              {lines.length > 3 && <div>+{lines.length - 3} more</div>}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>

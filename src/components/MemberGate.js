@@ -11,9 +11,8 @@ const MEMBER_MESSAGE =
  * Gate for member-only features: requires login + verified email + MEMBER subscription.
  */
 export default function MemberGate({ children, featureName = "this feature" }) {
-  const { user, loading, isSubscribed, emailVerified, checkoutSubscription, logout, resendVerification, authAvailable } = useAuth();
+  const { user, loading, isSubscribed, emailVerified, logout, resendVerification, authAvailable } = useAuth();
   const [showLogin, setShowLogin] = useState(true);
-  const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   if (authAvailable === false) return children;
   if (loading) {
@@ -60,17 +59,7 @@ export default function MemberGate({ children, featureName = "this feature" }) {
         <p style={{ color: "#666", marginTop: "8px" }}>{MEMBER_MESSAGE}</p>
         <div style={{ display: "flex", gap: "12px", justifyContent: "center", marginTop: "20px", flexWrap: "wrap" }}>
           <button
-            onClick={async () => {
-              setCheckoutLoading(true);
-              try {
-                await checkoutSubscription();
-              } catch (e) {
-                alert(e.message || "Checkout failed");
-              } finally {
-                setCheckoutLoading(false);
-              }
-            }}
-            disabled={checkoutLoading}
+            onClick={() => window.dispatchEvent(new CustomEvent('wintaibot:go', { detail: 'pricing' }))}
             style={{
               padding: "12px 24px",
               backgroundColor: "#28a745",
@@ -79,10 +68,10 @@ export default function MemberGate({ children, featureName = "this feature" }) {
               borderRadius: "8px",
               fontSize: "16px",
               fontWeight: "bold",
-              cursor: checkoutLoading ? "not-allowed" : "pointer",
+              cursor: "pointer",
             }}
           >
-            {checkoutLoading ? "Redirecting..." : "Upgrade (from $19/mo)"}
+            View Plans &amp; Pricing
           </button>
           <button
             onClick={logout}

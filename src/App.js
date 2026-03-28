@@ -201,6 +201,29 @@ function App() {
       {/* ═══════════════ MAIN ═══════════════ */}
       <div style={s.main}>
 
+        {/* Announcement Banner */}
+        {!user && (
+          <div style={{
+            background: 'linear-gradient(90deg, #6366f1 0%, #8b5cf6 50%, #0ea5e9 100%)',
+            color: '#fff', textAlign: 'center', padding: '9px 16px',
+            fontSize: '13px', fontWeight: 600, letterSpacing: '0.01em',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+            flexWrap: 'wrap',
+          }}>
+            <span>🚀 Starter $19 · Pro $39 · Growth $79 — one login, 8 platforms, AI captions, auto-reply & analytics</span>
+            <button
+              onClick={() => { setAuthMode('signup'); setShowAuthModal(true); }}
+              style={{
+                background: '#fff', color: '#6366f1', border: 'none', borderRadius: '6px',
+                padding: '4px 12px', fontSize: '12px', fontWeight: 700, cursor: 'pointer',
+                flexShrink: 0,
+              }}
+            >
+              Get started free →
+            </button>
+          </div>
+        )}
+
         {/* Top Bar */}
         <header style={s.topBar}>
           {user && <button style={s.menuBtn} onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>}
@@ -216,9 +239,17 @@ function App() {
             ) : user ? (
               <>
                 <span style={s.topEmail} title={user.email}>{user.email}</span>
-                {user?.membershipType === 'MEMBER' && (
-                  <span style={s.memberBadge}>✓ Member</span>
-                )}
+                {(() => {
+                  const mt = user?.membershipType;
+                  const planColors = { STARTER: '#6366f1', PRO: '#8b5cf6', GROWTH: '#0ea5e9', MEMBER: '#22c55e' };
+                  const planLabel = { STARTER: 'Starter', PRO: 'Pro', GROWTH: 'Growth', MEMBER: 'Member' };
+                  if (!mt || mt === 'FREE') return null;
+                  return (
+                    <span style={{ ...s.memberBadge, background: planColors[mt] || '#22c55e' }}>
+                      ✓ {planLabel[mt] || mt}
+                    </span>
+                  );
+                })()}
                 <button onClick={logout} style={s.logoutBtn}>Logout</button>
                 <div style={s.avatar}>{userInitials}</div>
               </>

@@ -1,6 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 import { useMediaQuery } from './hooks/useMediaQuery';
+
+// Icons — react-icons/hi2 (Heroicons v2, solid style)
+import { HiHome, HiChatBubbleLeftRight, HiPhoto, HiSparkles } from 'react-icons/hi2';
+import { HiDocumentText, HiMicrophone } from 'react-icons/hi2';
+import { HiVideoCamera, HiChartBar, HiChatBubbleOvalLeft, HiArrowPathRoundedSquare,
+         HiLink, HiGlobeAlt, HiArrowTrendingUp, HiCpuChip } from 'react-icons/hi2';
+import { HiPencilSquare, HiDocumentMagnifyingGlass } from 'react-icons/hi2';
+import { HiCog6Tooth, HiCreditCard } from 'react-icons/hi2';
 import ImageGenerator from './components/ImageGenerator';
 import ChatComponent from './components/ChatComponent';
 import ReceipeGenerator from './components/ReceipeGenerator';
@@ -48,7 +56,7 @@ const PAGE_TITLES = {
 };
 
 /* ─── NavItem ─────────────────────────────────────────────── */
-function NavItem({ emoji, label, active, onClick, hasArrow }) {
+function NavItem({ icon, label, active, onClick, hasArrow }) {
   const [hovered, setHovered] = useState(false);
   return (
     <button
@@ -60,7 +68,7 @@ function NavItem({ emoji, label, active, onClick, hasArrow }) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      <span style={nav.emoji}>{emoji}</span>
+      <span style={nav.icon}>{icon}</span>
       <span style={nav.label}>{label}</span>
       {hasArrow && <span style={nav.arrow}>›</span>}
     </button>
@@ -127,36 +135,36 @@ function App() {
 
         {/* Nav */}
         <nav style={s.nav}>
-          <NavItem emoji="🏠" label="Dashboard" active={activeTab === null} onClick={() => go(null)} />
+          <NavItem icon={<HiHome size={17} />} label="Dashboard" active={activeTab === null} onClick={() => go(null)} />
 
           <div style={s.groupLabel}>AI Tools</div>
-          <NavItem emoji="💬" label="Ask AI"           active={activeTab === 'chat'}             onClick={() => go('chat')}             hasArrow />
-          <NavItem emoji="🖼️" label="Image Generator"  active={activeTab === 'image-generator'}  onClick={() => go('image-generator')} />
-          <NavItem emoji="🍲" label="Recipe Generator" active={activeTab === 'recipe-generator'} onClick={() => go('recipe-generator')} />
+          <NavItem icon={<HiChatBubbleLeftRight size={17} />} label="Ask AI"           active={activeTab === 'chat'}             onClick={() => go('chat')}             hasArrow />
+          <NavItem icon={<HiPhoto size={17} />}               label="Image Generator"  active={activeTab === 'image-generator'}  onClick={() => go('image-generator')} />
+          <NavItem icon={<HiSparkles size={17} />}            label="Recipe Generator" active={activeTab === 'recipe-generator'} onClick={() => go('recipe-generator')} />
 
           <div style={s.groupLabel}>Documents</div>
-          <NavItem emoji="🧙‍♂️" label="DocuWizard" active={activeTab === 'analyzer'}     onClick={() => go('analyzer')} />
-          <NavItem emoji="🎙️" label="EchoScribe"  active={activeTab === 'transcription'} onClick={() => go('transcription')} />
+          <NavItem icon={<HiDocumentMagnifyingGlass size={17} />} label="DocuWizard" active={activeTab === 'analyzer'}     onClick={() => go('analyzer')} />
+          <NavItem icon={<HiMicrophone size={17} />}              label="EchoScribe"  active={activeTab === 'transcription'} onClick={() => go('transcription')} />
 
           <div style={s.groupLabel}>Social Media</div>
-          <NavItem emoji="📲" label="Video Publisher"    active={activeTab === 'video-publisher'} onClick={() => go('video-publisher')} hasArrow />
-          <NavItem emoji="📊" label="Analytics"            active={activeTab === 'analytics'}       onClick={() => go('analytics')} />
-          <NavItem emoji="💬" label="Messages"            active={activeTab === 'messages'}         onClick={() => go('messages')} />
-          <NavItem emoji="🤖" label="Auto Reply"          active={activeTab === 'auto-reply'}       onClick={() => go('auto-reply')} />
-          <NavItem emoji="🔗" label="Connected Accounts"  active={activeTab === 'social-connect'}  onClick={() => go('social-connect')} />
-          <NavItem emoji="🌐" label="Link in Bio"         active={activeTab === 'bio'}              onClick={() => go('bio')} />
-          <NavItem emoji="📈" label="Trends"              active={activeTab === 'trends'}           onClick={() => go('trends')} />
-          <NavItem emoji="🤖" label="Social AI"           active={activeTab === 'social-ai'}        onClick={() => go('social-ai')} />
+          <NavItem icon={<HiVideoCamera size={17} />}              label="Video Publisher"    active={activeTab === 'video-publisher'} onClick={() => go('video-publisher')} hasArrow />
+          <NavItem icon={<HiChartBar size={17} />}                 label="Analytics"          active={activeTab === 'analytics'}       onClick={() => go('analytics')} />
+          <NavItem icon={<HiChatBubbleOvalLeft size={17} />}       label="Messages"           active={activeTab === 'messages'}         onClick={() => go('messages')} />
+          <NavItem icon={<HiArrowPathRoundedSquare size={17} />}   label="Auto Reply"         active={activeTab === 'auto-reply'}       onClick={() => go('auto-reply')} />
+          <NavItem icon={<HiLink size={17} />}                     label="Connected Accounts" active={activeTab === 'social-connect'}   onClick={() => go('social-connect')} />
+          <NavItem icon={<HiGlobeAlt size={17} />}                 label="Link in Bio"        active={activeTab === 'bio'}              onClick={() => go('bio')} />
+          <NavItem icon={<HiArrowTrendingUp size={17} />}          label="Trends"             active={activeTab === 'trends'}           onClick={() => go('trends')} />
+          <NavItem icon={<HiCpuChip size={17} />}                  label="Social AI"          active={activeTab === 'social-ai'}        onClick={() => go('social-ai')} />
 
           <div style={s.groupLabel}>Writing Tools</div>
-          <NavItem emoji="✉️" label="Reply Enchanter" active={activeTab === 'Content'} onClick={() => go('Content')} />
-          <NavItem emoji="📝" label="Resume Worlock"  active={activeTab === 'Resume'}  onClick={() => go('Resume')} />
+          <NavItem icon={<HiChatBubbleLeftRight size={17} />} label="Reply Enchanter" active={activeTab === 'Content'} onClick={() => go('Content')} />
+          <NavItem icon={<HiDocumentText size={17} />}        label="Resume Worlock"  active={activeTab === 'Resume'}  onClick={() => go('Resume')} />
 
           {user && (
             <>
               <div style={s.groupLabel}>Settings</div>
-              <NavItem emoji="⚙️" label="Account"  active={activeTab === 'account'}  onClick={() => go('account')} hasArrow />
-              <NavItem emoji="💳" label="Pricing"   active={activeTab === 'pricing'}  onClick={() => go('pricing')} />
+              <NavItem icon={<HiCog6Tooth size={17} />} label="Account" active={activeTab === 'account'} onClick={() => go('account')} hasArrow />
+              <NavItem icon={<HiCreditCard size={17} />} label="Pricing" active={activeTab === 'pricing'} onClick={() => go('pricing')} />
             </>
           )}
         </nav>
@@ -284,7 +292,7 @@ const nav = {
     background: 'rgba(255,255,255,0.08)',
     color: '#ffffff',
   },
-  emoji: { fontSize: '16px', flexShrink: 0, width: '20px', textAlign: 'center' },
+  icon: { fontSize: '0px', flexShrink: 0, width: '20px', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   label: { flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
   arrow: { opacity: 0.45, fontSize: '17px', marginLeft: 'auto' },
 };

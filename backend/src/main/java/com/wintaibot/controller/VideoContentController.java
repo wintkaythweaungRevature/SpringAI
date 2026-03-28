@@ -49,6 +49,26 @@ public class VideoContentController {
         return ResponseEntity.ok(body);
     }
 
+    @GetMapping("/videos/{id}/frames")
+    public ResponseEntity<List<Map<String, Object>>> getFrames(
+            @PathVariable String id,
+            @RequestParam(defaultValue = "9") int count,
+            Authentication auth) {
+        if (auth == null || !(auth.getPrincipal() instanceof Long)) {
+            return ResponseEntity.status(401).build();
+        }
+        List<Map<String, Object>> frames = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            Map<String, Object> frame = new HashMap<>();
+            frame.put("s3Key", "frame-" + i);
+            frame.put("url", "https://picsum.photos/seed/" + id + "-" + i + "/320/180");
+            frame.put("index", i);
+            frame.put("recommended", i == 0);
+            frames.add(frame);
+        }
+        return ResponseEntity.ok(frames);
+    }
+
     @PostMapping("/publish/{platform}")
     public ResponseEntity<?> publish(
             @PathVariable String platform,

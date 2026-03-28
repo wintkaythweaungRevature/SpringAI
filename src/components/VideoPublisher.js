@@ -1640,30 +1640,15 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
           </div>
 
           <div style={s.right}>
-            {/* AI Performance Report */}
-            <div style={{ ...s.card, background: 'linear-gradient(135deg,#1e3a8a,#2563eb)', color: '#fff', marginBottom: '16px' }}>
-              <div style={{ fontSize: '14px', fontWeight: 700, marginBottom: '12px', opacity: 0.85 }}>🤖 AI Performance Insights</div>
-              {[
-                '📈 Your short videos (15–20s) perform 4x better than long ones',
-                '🔥 Best posting time: Tuesday & Thursday 7–9 PM',
-                '💡 Recommendation: Create more vertical clips for TikTok & Reels',
-                '🎯 Trending topic detected: #AITools — create content now',
-              ].map((tip, i) => (
-                <div key={i} style={{ fontSize: '13px', padding: '8px 0', borderBottom: i < 3 ? '1px solid rgba(255,255,255,0.15)' : 'none' }}>
-                  {tip}
-                </div>
-              ))}
-            </div>
-
-            {/* Analytics cards */}
+            {/* Publish stats cards */}
             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: '12px', marginBottom: '16px' }}>
               {[
-                { label: 'Views',          value: '12.4K', icon: '👁️',  color: '#2563eb' },
-                { label: 'Likes',          value: '1.8K',  icon: '❤️',  color: '#ef4444' },
-                { label: 'Comments',       value: '342',   icon: '💬',  color: '#f59e0b' },
-                { label: 'Shares',         value: '891',   icon: '🔁',  color: '#22c55e' },
-                { label: 'Engagement',     value: '8.4%',  icon: '📊',  color: '#7c3aed' },
-                { label: 'New Followers',  value: '+214',  icon: '👥',  color: '#0891b2' },
+                { label: 'Total Published', value: dashStats?.totalPublished ?? '—', icon: '✅', color: '#16a34a' },
+                { label: 'This Week',       value: dashStats?.thisWeek       ?? '—', icon: '📅', color: '#2563eb' },
+                { label: 'This Month',      value: dashStats?.thisMonth      ?? '—', icon: '📆', color: '#7c3aed' },
+                { label: 'Failed',          value: dashStats?.totalFailed    ?? '—', icon: '❌', color: '#dc2626' },
+                { label: 'Platforms Used',  value: dashStats?.byPlatform ? Object.keys(dashStats.byPlatform).length : '—', icon: '📡', color: '#0891b2' },
+                { label: 'Just Published',  value: published.length,                icon: '🚀', color: '#f59e0b' },
               ].map(m => (
                 <div key={m.label} style={s.metricCard}>
                   <div style={{ fontSize: '22px', marginBottom: '4px' }}>{m.icon}</div>
@@ -1676,34 +1661,20 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
             {/* Per-platform breakdown */}
             <div style={s.card}>
               <div style={s.sectionTitle}>📡 Platform Breakdown</div>
-              {published.map(pid => {
-                const p = PLATFORMS.find(x => x.id === pid);
-                const views = Math.floor(Math.random() * 8000) + 500;
-                const eng   = (Math.random() * 10 + 2).toFixed(1);
-                return (
-                  <div key={pid} style={s.platformRow}>
-                    <PlatformIcon platform={p} size={24} />
-                    <span style={{ fontSize: '13px', fontWeight: 600, flex: 1 }}>{p.label}</span>
-                    <span style={{ fontSize: '12px', color: '#64748b' }}>{views.toLocaleString()} views</span>
-                    <span style={{ fontSize: '12px', fontWeight: 700, color: '#22c55e', marginLeft: '12px' }}>{eng}% eng</span>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Next content ideas */}
-            <div style={s.card}>
-              <div style={s.sectionTitle}>💡 Next Content Ideas (AI Generated)</div>
-              {[
-                '🎬 "5 AI tools that replace your whole team" — trending format',
-                '📱 Behind-the-scenes: How you built Wintaibot',
-                '🔥 React vs Vue debate — high engagement topic this week',
-              ].map((idea, i) => (
-                <div key={i} style={s.ideaRow}>
-                  <span style={{ fontSize: '13px' }}>{idea}</span>
-                  <button type="button" style={s.useIdeaBtn} onClick={() => applyIdeaForNextVideo(idea)}>Use →</button>
-                </div>
-              ))}
+              {dashStats?.byPlatform && Object.keys(dashStats.byPlatform).length > 0 ? (
+                Object.entries(dashStats.byPlatform).sort((a, b) => b[1] - a[1]).map(([pid, count]) => {
+                  const p = PLATFORMS.find(x => x.id === pid) || { label: pid, color: '#64748b' };
+                  return (
+                    <div key={pid} style={s.platformRow}>
+                      {p.logo && <PlatformIcon platform={p} size={24} />}
+                      <span style={{ fontSize: '13px', fontWeight: 600, flex: 1 }}>{p.label}</span>
+                      <span style={{ fontSize: '12px', fontWeight: 700, color: '#22c55e' }}>{count} post{count !== 1 ? 's' : ''}</span>
+                    </div>
+                  );
+                })
+              ) : (
+                <div style={{ fontSize: '13px', color: '#94a3b8', padding: '8px 0' }}>No publish history yet.</div>
+              )}
             </div>
           </div>
         </div>

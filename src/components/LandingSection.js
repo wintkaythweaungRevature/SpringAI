@@ -289,6 +289,12 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
                 <td className="ls-vs-yes">✅</td>
               </tr>
               <tr>
+                <td>AI scans your video &amp; pinpoints the strongest frame — "second 20 is your best thumbnail"</td>
+                <td className="ls-vs-no">❌</td>
+                <td className="ls-vs-no">❌</td>
+                <td className="ls-vs-yes">✅</td>
+              </tr>
+              <tr>
                 <td>Social AI grounded in YOUR post history (RAG)</td>
                 <td className="ls-vs-no">❌</td>
                 <td className="ls-vs-no">❌</td>

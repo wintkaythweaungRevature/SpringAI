@@ -140,7 +140,7 @@ function buildCalendarDays(year, month) {
 }
 
 /* ── Scheduled post modal ───────────────────────────────────────────────── */
-function DayModal({ date, posts, onClose }) {
+function DayModal({ date, posts, onClose, onRetryFailed, retryingIds = {} }) {
   const dayPosts = posts.filter(p => {
     try { return sameDay(new Date(p.createdAt || p.scheduledAt), date); } catch { return false; }
   });
@@ -163,6 +163,8 @@ function DayModal({ date, posts, onClose }) {
               const pInfo = PLATFORM_MAP[p.platform?.toLowerCase()];
               const preview = getPostPreview(p);
               const isVideo = String(p.mediaType || '').toLowerCase() === 'video';
+              const canRetry = String(p.status || '').toUpperCase() === 'FAILED' && p.id != null;
+              const retrying = canRetry && !!retryingIds[String(p.id)];
               return (
                 <div key={i} style={{ ...ms.postCard, borderLeft: `3px solid ${platformColor(p.platform)}` }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
@@ -204,6 +206,27 @@ function DayModal({ date, posts, onClose }) {
                       <div style={{ fontSize: 13, color: '#334155', lineHeight: 1.45 }}>
                         {p.caption || <em style={{ color: '#94a3b8' }}>(no caption)</em>}
                       </div>
+                      {canRetry && (
+                        <div style={{ marginTop: 8 }}>
+                          <button
+                            type="button"
+                            onClick={() => onRetryFailed && onRetryFailed(p.id)}
+                            disabled={retrying}
+                            style={{
+                              padding: '6px 10px',
+                              borderRadius: 8,
+                              border: '1px solid #dc2626',
+                              background: retrying ? '#fee2e2' : '#fff',
+                              color: '#dc2626',
+                              fontSize: 11,
+                              fontWeight: 700,
+                              cursor: retrying ? 'wait' : 'pointer',
+                            }}
+                          >
+                            {retrying ? 'Retrying…' : '↻ Retry failed post'}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 5, textTransform: 'capitalize' }}>
@@ -242,6 +265,8 @@ export default function ContentCalendar() {
   const [selectedDay, setSelectedDay] = useState(null);
   const [feedDetailPost, setFeedDetailPost] = useState(null);
   const [filterPlatform, setFilterPlatform] = useState('all');
+  const [retryingIds, setRetryingIds] = useState({});
+  const [actionMsg, setActionMsg] = useState('');
 
   const loadPosts = useCallback(async () => {
     if (!token) return;
@@ -267,6 +292,27 @@ export default function ContentCalendar() {
   }, [base, token]);
 
   useEffect(() => { loadPosts(); }, [loadPosts]);
+
+  const retryFailedPost = async (postId) => {
+    if (!postId || !token) return;
+    const sid = String(postId);
+    setRetryingIds(prev => ({ ...prev, [sid]: true }));
+    setActionMsg('');
+    try {
+      const res = await fetch(`${base}/api/social/post/retry/${encodeURIComponent(sid)}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Retry failed');
+      setActionMsg('Retry started. We refreshed your post list.');
+      await loadPosts();
+    } catch (_) {
+      setActionMsg('Could not retry this post. Please try again.');
+    } finally {
+      setRetryingIds(prev => ({ ...prev, [sid]: false }));
+      setTimeout(() => setActionMsg(''), 3500);
+    }
+  };
 
   const prevMonth = () => {
     if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1); }
@@ -350,6 +396,21 @@ export default function ContentCalendar() {
           </button>
         ))}
       </div>
+
+      {actionMsg && (
+        <div style={{
+          marginBottom: 12,
+          background: '#eff6ff',
+          border: '1px solid #bfdbfe',
+          color: '#1d4ed8',
+          borderRadius: 10,
+          padding: '8px 12px',
+          fontSize: 12,
+          fontWeight: 600,
+        }}>
+          {actionMsg}
+        </div>
+      )}
 
       <div style={s.body}>
 
@@ -436,6 +497,8 @@ export default function ContentCalendar() {
                   {upcoming.map((p, i) => {
                     const pInfo = PLATFORM_MAP[p.platform?.toLowerCase()];
                     const isVideo = p.mediaType === 'video';
+                    const canRetry = String(p.status || '').toUpperCase() === 'FAILED' && p.id != null;
+                    const retrying = canRetry && !!retryingIds[String(p.id)];
                     return (
                       <div key={i} style={{ ...s.upcomingItem, borderLeft: `3px solid ${platformColor(p.platform)}` }}>
                         <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
@@ -469,6 +532,26 @@ export default function ContentCalendar() {
                             <div style={s.upcomingMeta}>
                               {fmtDate(p.createdAt)} · {p.mediaType || 'post'}
                             </div>
+                            {canRetry && (
+                              <button
+                                type="button"
+                                onClick={() => retryFailedPost(p.id)}
+                                disabled={retrying}
+                                style={{
+                                  marginTop: 6,
+                                  padding: '4px 8px',
+                                  borderRadius: 7,
+                                  border: '1px solid #dc2626',
+                                  background: retrying ? '#fee2e2' : '#fff',
+                                  color: '#dc2626',
+                                  fontSize: 10,
+                                  fontWeight: 700,
+                                  cursor: retrying ? 'wait' : 'pointer',
+                                }}
+                              >
+                                {retrying ? 'Retrying…' : '↻ Retry'}
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -496,6 +579,8 @@ export default function ContentCalendar() {
                 {filteredPosts.map((p, i) => {
                   const pInfo = PLATFORM_MAP[p.platform?.toLowerCase()];
                   const isVideo = p.mediaType === 'video';
+                  const canRetry = String(p.status || '').toUpperCase() === 'FAILED' && p.id != null;
+                  const retrying = canRetry && !!retryingIds[String(p.id)];
                   const cardKey = p.id != null ? `post-${p.id}` : `feed-${postMergeKey(p)}-${i}`;
                   return (
                     <div
@@ -577,6 +662,31 @@ export default function ContentCalendar() {
                         <span>·</span>
                         <span>{fmtDate(p.createdAt)}</span>
                       </div>
+                      {canRetry && (
+                        <div style={{ padding: '0 12px 12px' }}>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              retryFailedPost(p.id);
+                            }}
+                            disabled={retrying}
+                            style={{
+                              width: '100%',
+                              padding: '6px 8px',
+                              borderRadius: 8,
+                              border: '1px solid #dc2626',
+                              background: retrying ? '#fee2e2' : '#fff',
+                              color: '#dc2626',
+                              fontSize: 11,
+                              fontWeight: 700,
+                              cursor: retrying ? 'wait' : 'pointer',
+                            }}
+                          >
+                            {retrying ? 'Retrying…' : '↻ Retry failed post'}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -591,6 +701,8 @@ export default function ContentCalendar() {
         <DayModal
           date={selectedDay}
           posts={filteredPosts}
+          onRetryFailed={retryFailedPost}
+          retryingIds={retryingIds}
           onClose={() => setSelectedDay(null)}
         />
       )}

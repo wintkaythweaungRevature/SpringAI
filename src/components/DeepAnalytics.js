@@ -73,13 +73,48 @@ function typeTowerColors(platformHex) {
   return { video: mix(0), image: mix(0.32), text: mix(0.58) };
 }
 
+/** Pale track behind tower fill — same hue family as the selected platform (e.g. Facebook = light blue). */
+function brandTowerTrackBg(platformHex) {
+  const { r, g, b } = hexToRgb(platformHex);
+  const t = 0.86;
+  return `rgb(${Math.round(r + (255 - r) * t)},${Math.round(g + (255 - g) * t)},${Math.round(b + (255 - b) * t)})`;
+}
+
 /* ── SVG Line Chart ─────────────────────────────────────────── */
 function LineChart({ data, color = '#6366f1', width = 500, height = 160 }) {
-  if (!data || data.length < 2) {
+  if (!data || data.length === 0) {
     return (
-      <div style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: '#94a3b8', fontSize: 13, background: '#f8fafc', borderRadius: 12 }}>
-        No data yet — snapshots save daily at 3am UTC or click "Refresh Now"
+      <div style={{ height, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    gap: 8, color: '#64748b', fontSize: 13, background: '#f8fafc', borderRadius: 12, padding: '16px 20px', textAlign: 'center' }}>
+        <span style={{ fontSize: 22, opacity: 0.35 }}>📈</span>
+        <div><strong style={{ color: '#475569' }}>Follower trend chart</strong></div>
+        <div style={{ maxWidth: 360, lineHeight: 1.5 }}>
+          No history points yet. Snapshots are saved daily (3am UTC) or when you use <strong>Refresh Now</strong> — after two or more points, your line appears here.
+        </div>
+      </div>
+    );
+  }
+
+  if (data.length === 1) {
+    const d0 = data[0];
+    const f = d0.followers ?? 0;
+    return (
+      <div style={{
+        height, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        gap: 10, background: '#f8fafc', borderRadius: 12, padding: '16px 20px', textAlign: 'center',
+        border: `1px dashed ${color}55`,
+      }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: '#475569' }}>One snapshot so far</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ width: 14, height: 14, borderRadius: '50%', background: color, boxShadow: `0 0 0 4px ${color}33` }} />
+          <div style={{ textAlign: 'left' }}>
+            <div style={{ fontSize: 20, fontWeight: 800, color }}>{f.toLocaleString()}</div>
+            <div style={{ fontSize: 11, color: '#94a3b8' }}>followers · {d0.date || 'latest'}</div>
+          </div>
+        </div>
+        <div style={{ fontSize: 12, color: '#64748b', maxWidth: 340, lineHeight: 1.5 }}>
+          A line needs at least <strong>two</strong> days of snapshots. Run <strong>Refresh Now</strong> again tomorrow or wait for the next scheduled snapshot.
+        </div>
       </div>
     );
   }
@@ -240,65 +275,239 @@ function PostHeatmap({ heatmap, bestDay, bestHour, postsDetail = [], platformLab
   );
 }
 
-/* ── Three towers: video / image / text tinted by selected platform brand ── */
-function TypeTowersChart({ data, platformColor = '#6366f1' }) {
-  const normalized = {};
-  Object.entries(data || {}).forEach(([k, v]) => {
-    normalized[String(k).toLowerCase()] = v;
+function getTypeCountNorm(normalizedByType, key) {
+  const v = normalizedByType[key];
+  if (v == null) return 0;
+  if (typeof v === 'number') return v;
+  return Number(v.count) || 0;
+}
+
+/** Map varied API keys (photo, carousel, …) into video | image | text totals. */
+function aggregateCanonicalTypeCounts(rawByType) {
+  const totals = { video: 0, image: 0, text: 0 };
+  const toVideo = new Set(['video', 'videos', 'reel', 'reels', 'short', 'shorts', 'clip', 'clips', 'vod']);
+  const toImage = new Set([
+    'image', 'images', 'photo', 'photos', 'carousel', 'carousels', 'picture', 'pictures',
+    'pin', 'pins', 'igcarousel', 'media',
+  ]);
+  const toText = new Set(['text', 'texts', 'status', 'link', 'article', 'poll', 'polls', 'caption', 'captions']);
+
+  Object.entries(rawByType || {}).forEach(([k, v]) => {
+    const key = String(k).toLowerCase().replace(/[\s_-]+/g, '');
+    const n = typeof v === 'number' ? v : Number(v?.count) || 0;
+    if (!n) return;
+    if (toVideo.has(key)) totals.video += n;
+    else if (toImage.has(key)) totals.image += n;
+    else if (toText.has(key)) totals.text += n;
+    else if (key === 'video' || key.endsWith('video')) totals.video += n;
+    else if (/photo|carousel|image|picture|pin/.test(key)) totals.image += n;
+    else if (/text|status|link|article|poll/.test(key)) totals.text += n;
   });
+  return totals;
+}
+
+/** Server can send { video: { youtube: 4 }, image: { instagram: 3 }, text: {...} } — any alias key merged per canonical type. */
+function extractExplicitTypePlatform(byTypeByPlatform, typeKey) {
+  if (!byTypeByPlatform || typeof byTypeByPlatform !== 'object') return null;
+  const raw =
+    byTypeByPlatform[typeKey] ||
+    byTypeByPlatform[typeKey.toLowerCase()] ||
+    byTypeByPlatform[typeKey.charAt(0).toUpperCase() + typeKey.slice(1).toLowerCase()];
+  if (!raw || typeof raw !== 'object') return null;
+  const segs = [];
+  Object.entries(raw).forEach(([k, v]) => {
+    const n = typeof v === 'number' ? v : Number(v?.count) || 0;
+    if (n <= 0) return;
+    const id = String(k).toLowerCase();
+    const pc = PLATFORMS.find((p) => p.id === id);
+    segs.push({
+      platformId: id,
+      label: pc?.label || id,
+      color: pc?.color || PLATFORM_COLORS[id] || '#64748b',
+      count: n,
+    });
+  });
+  return segs.length ? segs : null;
+}
+
+const EXPLICIT_ALIASES = {
+  video: ['video', 'videos', 'reel', 'reels', 'short', 'shorts', 'clip', 'clips'],
+  image: ['image', 'images', 'photo', 'photos', 'carousel', 'picture', 'pictures', 'pin', 'pins', 'igcarousel'],
+  text: ['text', 'texts', 'status', 'link', 'article', 'poll', 'polls', 'caption'],
+};
+
+/** Merge all API variant keys into one segment list per Video / Image / Text tower. */
+function extractExplicitForCanonical(byTypeByPlatform, canonKey) {
+  if (!byTypeByPlatform || typeof byTypeByPlatform !== 'object') return null;
+  const aliases = EXPLICIT_ALIASES[canonKey] || [canonKey];
+  const merged = {};
+  for (const tk of aliases) {
+    const part = extractExplicitTypePlatform(byTypeByPlatform, tk);
+    if (!part) continue;
+    part.forEach((s) => {
+      merged[s.platformId] = (merged[s.platformId] || 0) + s.count;
+    });
+  }
+  const arr = Object.entries(merged).map(([platformId, count]) => {
+    const pc = PLATFORMS.find((p) => p.id === platformId);
+    return {
+      platformId,
+      label: pc?.label || platformId,
+      color: pc?.color || PLATFORM_COLORS[platformId] || '#64748b',
+      count,
+    };
+  }).filter((x) => x.count > 0);
+  return arr.length ? arr : null;
+}
+
+/**
+ * Each tower stacks platform brand colors by share of that content type.
+ * Prefers postPerf.byTypeByPlatform; else estimates from byPlatform mix (same ratio applied per type).
+ */
+function TypeTowersChart({ postPerf, platformColor = '#6366f1' }) {
+  const canon = aggregateCanonicalTypeCounts(postPerf?.byType || {});
+  const normalized = {
+    video: { count: canon.video },
+    image: { count: canon.image },
+    text: { count: canon.text },
+  };
+  const byPlatNorm = {};
+  Object.entries(postPerf?.byPlatform || {}).forEach(([k, v]) => {
+    byPlatNorm[String(k).toLowerCase()] = Number(v) || 0;
+  });
+  const totalPosts = Object.values(byPlatNorm).reduce((a, b) => a + b, 0);
+
+  const explicitRoot =
+    postPerf?.byTypeByPlatform ||
+    postPerf?.typeByPlatform ||
+    postPerf?.postsByTypeAndPlatform;
+
+  const tint = typeTowerColors(platformColor);
+  const tintFor = (key) => (key === 'video' ? tint.video : key === 'image' ? tint.image : tint.text);
+
+  function segmentsForType(typeKey) {
+    const tc = getTypeCountNorm(normalized, typeKey);
+    if (tc <= 0) return { segments: [], total: 0 };
+
+    const ex = extractExplicitForCanonical(explicitRoot, typeKey);
+    if (ex) {
+      const sum = ex.reduce((s, x) => s + x.count, 0) || 1;
+      return {
+        segments: ex.map((x) => ({
+          ...x,
+          pctOfType: Math.round((x.count / sum) * 1000) / 10,
+        })),
+        total: tc,
+      };
+    }
+
+    if (totalPosts <= 0) {
+      return {
+        segments: [{ platformId: '_all', label: 'All', color: tintFor(typeKey), count: tc, pctOfType: 100 }],
+        total: tc,
+      };
+    }
+
+    const segs = [];
+    PLATFORMS.forEach((p) => {
+      const share = byPlatNorm[p.id] || 0;
+      if (share <= 0) return;
+      const cnt = tc * (share / totalPosts);
+      if (cnt < 0.005) return;
+      segs.push({
+        platformId: p.id,
+        label: p.label,
+        color: p.color,
+        count: cnt,
+        pctOfType: (cnt / tc) * 100,
+      });
+    });
+    if (segs.length === 0) {
+      return {
+        segments: [{ platformId: '_all', label: 'Mix', color: tintFor(typeKey), count: tc, pctOfType: 100 }],
+        total: tc,
+      };
+    }
+    return { segments: segs, total: tc };
+  }
+
   const towers = [
     { key: 'video', label: 'Video' },
     { key: 'image', label: 'Image' },
     { key: 'text', label: 'Text' },
   ];
-  const colors = typeTowerColors(platformColor);
-  const colorByKey = { video: colors.video, image: colors.image, text: colors.text };
-  const rows = towers.map((t) => ({
-    ...t,
-    count: normalized[t.key]?.count ?? 0,
-  }));
+  const trackBg = brandTowerTrackBg(platformColor);
+  const rows = towers.map((t) => {
+    const { segments, total } = segmentsForType(t.key);
+    return { ...t, segments, count: total };
+  });
   const max = Math.max(...rows.map((r) => r.count), 1);
-  const total = rows.reduce((s, r) => s + r.count, 0) || 1;
+  const sumTypes = rows.reduce((s, r) => s + r.count, 0) || 1;
+  const CH = 100;
 
   return (
-    <div style={{ display: 'flex', gap: 28, alignItems: 'flex-end', height: 150, justifyContent: 'center', flexWrap: 'wrap' }}>
-      {rows.map((r) => {
-        const h = max ? (r.count / max) * 100 : 0;
-        const pct = Math.round((r.count / total) * 1000) / 10;
-        return (
-          <div key={r.key} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, width: 76 }}>
-            <span style={{ fontSize: 12, color: '#64748b', fontWeight: 700 }}>{r.count}</span>
-            <div
-              title={`${r.label}: ${r.count} posts (${pct}% of types on view)`}
-              style={{
-                width: 58,
-                height: 110,
-                background: '#f1f5f9',
-                borderRadius: '12px 12px 10px 10px',
-                display: 'flex',
-                alignItems: 'flex-end',
-                justifyContent: 'center',
-                padding: 5,
-                boxSizing: 'border-box',
-                border: `1px solid ${colorByKey[r.key]}33`,
-              }}
-            >
+    <div>
+      <p style={{ fontSize: 11, color: '#94a3b8', margin: '0 0 12px', lineHeight: 1.45, maxWidth: 560 }}>
+        <strong>Video</strong>, <strong>Image</strong>, and <strong>Text</strong> towers all work the same: each bar is stacked by{' '}
+        <strong>platform</strong> (brand colors). True splits when the API sends{' '}
+        <code style={{ fontSize: 10 }}>byTypeByPlatform</code> for each type; otherwise shares are estimated from overall posts per platform.
+        Hover a band for % of that tower.
+      </p>
+      <div style={{ display: 'flex', gap: 28, alignItems: 'flex-end', minHeight: 168, justifyContent: 'center', flexWrap: 'wrap' }}>
+        {rows.map((r) => {
+          const pctOfAllTypes = Math.round((r.count / sumTypes) * 1000) / 10;
+          const innerPx = Math.max((r.count / max) * CH, r.count > 0 ? 14 : 0);
+          const borderTint = r.segments[0]?.color || tintFor(r.key);
+          return (
+            <div key={r.key} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, width: 82 }}>
+              <span style={{ fontSize: 12, color: '#64748b', fontWeight: 700 }}>{r.count}</span>
               <div
+                title={`${r.label}: ${r.count} posts (${pctOfAllTypes}% of video+image+text)`}
                 style={{
-                  width: '100%',
-                  height: Math.max(h, r.count > 0 ? 10 : 0),
-                  borderRadius: 10,
-                  background: colorByKey[r.key],
-                  boxShadow: `0 4px 12px ${colorByKey[r.key]}44`,
-                  transition: 'height 0.25s ease',
+                  width: 60,
+                  height: 118,
+                  background: trackBg,
+                  borderRadius: '12px 12px 10px 10px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'flex-end',
+                  padding: 5,
+                  boxSizing: 'border-box',
+                  border: `1px solid ${borderTint}44`,
                 }}
-              />
+              >
+                <div
+                  style={{
+                    width: '100%',
+                    height: innerPx,
+                    display: 'flex',
+                    flexDirection: 'column-reverse',
+                    borderRadius: 10,
+                    overflow: 'hidden',
+                    boxShadow: `0 2px 10px ${borderTint}33`,
+                  }}
+                >
+                  {r.segments.map((seg) => (
+                    <div
+                      key={seg.platformId}
+                      title={`${seg.label}: ~${Math.round(seg.count)} (${Math.round(seg.pctOfType * 10) / 10}% of ${r.label})`}
+                      style={{
+                        flex: Math.max(seg.count, 0.001),
+                        minHeight: seg.count > 0 ? 3 : 0,
+                        background: seg.color,
+                        boxSizing: 'border-box',
+                        borderTop: r.segments.length > 1 ? '1px solid rgba(255,255,255,0.35)' : 'none',
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+              <span style={{ fontSize: 11, color: '#475569', fontWeight: 700, textTransform: 'capitalize' }}>{r.label}</span>
+              <span style={{ fontSize: 11, color: tintFor(r.key), fontWeight: 800 }}>{pctOfAllTypes}%</span>
             </div>
-            <span style={{ fontSize: 11, color: '#475569', fontWeight: 700, textTransform: 'capitalize' }}>{r.label}</span>
-            <span style={{ fontSize: 11, color: colorByKey[r.key], fontWeight: 800 }}>{pct}%</span>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -1087,7 +1296,6 @@ export default function DeepAnalytics() {
   const { authHeaders } = useAuth();
 
   const [platform,     setPlatform]     = useState('instagram');
-  const [section,      setSection]      = useState('growth');
   const [days,         setDays]         = useState(30);
   const [history,      setHistory]      = useState(null);
   const [bestTime,     setBestTime]     = useState(null);
@@ -1119,12 +1327,13 @@ export default function DeepAnalytics() {
 
   const fetchPerformance = useCallback(() => {
     setLoadPerf(true);
-    fetch(`${API}/api/analytics/post-performance`, { headers: authHeaders() })
-      .then(r => r.json())
+    const q = new URLSearchParams({ platform });
+    fetch(`${API}/api/analytics/post-performance?${q}`, { headers: authHeaders() })
+      .then((r) => r.json())
       .then(setPostPerf)
       .catch(() => setPostPerf(null))
       .finally(() => setLoadPerf(false));
-  }, [authHeaders]);
+  }, [platform, authHeaders]);
 
   useEffect(() => { fetchHistory(); }, [fetchHistory]);
   useEffect(() => { fetchBestTime(); }, [fetchBestTime]);
@@ -1155,35 +1364,37 @@ export default function DeepAnalytics() {
         <p style={s.sub}>Follower growth, best posting times, competitor research, and your content calendar</p>
       </div>
 
-      {/* ── SECTION TABS ── */}
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
+      {/* ── Jump links (all sections below on one page) ── */}
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16, alignItems: 'center' }}>
+        <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', marginRight: 4 }}>Jump to</span>
         {SECTION_TABS.map(tab => (
-          <button key={tab.id} onClick={() => setSection(tab.id)} style={{
-            ...s.tab,
-            background: section === tab.id ? '#6366f1' : 'transparent',
-            color: section === tab.id ? '#fff' : '#64748b',
-            border: `1.5px solid ${section === tab.id ? '#6366f1' : '#e2e8f0'}`,
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 8,
-          }}>
-            <span style={{
-              fontSize: 11,
-              fontWeight: 800,
-              opacity: section === tab.id ? 0.95 : 0.85,
-              minWidth: 18,
-              textAlign: 'center',
-            }}>{tab.serial}.</span>
-            <span>{tab.label}</span>
-          </button>
+          <a
+            key={tab.id}
+            href={`#trends-${tab.id}`}
+            style={{
+              fontSize: 12,
+              fontWeight: 600,
+              color: '#6366f1',
+              textDecoration: 'none',
+              padding: '4px 10px',
+              borderRadius: 999,
+              border: '1px solid #e0e7ff',
+              background: '#f5f3ff',
+            }}
+          >
+            <span style={{ opacity: 0.85 }}>{tab.serial}.</span> {tab.label}
+          </a>
         ))}
       </div>
 
-      {/* ── PLATFORM TABS (only for growth/besttime/breakdown) ── */}
-      {['growth','besttime','breakdown'].includes(section) && (
+      {/* ── PLATFORM (sections 1–3: growth, best time, breakdown) ── */}
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 8, fontWeight: 600 }}>
+          Platform for follower growth, best time & breakdown
+        </div>
         <div style={s.tabs}>
           {PLATFORMS.map(p => (
-            <button key={p.id} onClick={() => setPlatform(p.id)} style={{
+            <button key={p.id} type="button" onClick={() => setPlatform(p.id)} style={{
               ...s.tab,
               background: platform === p.id ? p.color : 'transparent',
               color: platform === p.id ? '#fff' : '#64748b',
@@ -1195,10 +1406,10 @@ export default function DeepAnalytics() {
             </button>
           ))}
         </div>
-      )}
+      </div>
 
       {/* ── FOLLOWER GROWTH ── */}
-      {section === 'growth' && (
+      <section id="trends-growth" style={{ scrollMarginTop: 12 }}>
         <div style={s.card}>
           <div style={s.cardHeader}>
             <h3 style={s.cardTitle}>👥 Follower Growth</h3>
@@ -1256,10 +1467,10 @@ export default function DeepAnalytics() {
             </>
           )}
         </div>
-      )}
+      </section>
 
       {/* ── BEST TIME ── */}
-      {section === 'besttime' && (
+      <section id="trends-besttime" style={{ scrollMarginTop: 12 }}>
         <div style={s.card}>
           <h3 style={s.cardTitle}>⏰ Your posting times — {platformConfig.label}</h3>
           <p style={{ fontSize: 12, color: '#64748b', marginBottom: 8, lineHeight: 1.55 }}>
@@ -1286,10 +1497,10 @@ export default function DeepAnalytics() {
             <BestTimeMonthPostStrip authHeaders={authHeaders} platformId={platform} />
           )}
         </div>
-      )}
+      </section>
 
       {/* ── POST TYPE BREAKDOWN ── */}
-      {section === 'breakdown' && (
+      <section id="trends-breakdown" style={{ scrollMarginTop: 12 }}>
         <div style={s.card}>
           <h3 style={s.cardTitle}>📊 Post Type Breakdown</h3>
           {loadPerf ? (
@@ -1297,13 +1508,18 @@ export default function DeepAnalytics() {
           ) : postPerf && Object.keys(postPerf.byType || {}).length > 0 ? (
             <div style={s.perfRow}>
               <div style={{ flex: '1 1 300px', minWidth: 0 }}>
-                <p style={{ fontSize: 12, color: '#64748b', marginBottom: 8 }}>
-                  Posts by type — three towers use <strong style={{ color: platformConfig.color }}>{platformConfig.label}</strong> brand tints (video = strongest, text = lightest)
+                <p style={{ fontSize: 12, color: '#64748b', marginBottom: 8, lineHeight: 1.5 }}>
+                  <strong>Video</strong>, <strong>Image</strong>, and <strong>Text</strong> each get a tower with{' '}
+                  <strong>multi-color platform stacks</strong> (same behavior for all three). The pale frame uses{' '}
+                  <strong style={{ color: platformConfig.color }}>{platformConfig.label}</strong> tint; band colors are each network&apos;s brand.
+                  Bottom % is that type&apos;s share of video+image+text.
                 </p>
-                <TypeTowersChart data={postPerf.byType} platformColor={platformConfig.color} />
+                <TypeTowersChart postPerf={postPerf} platformColor={platformConfig.color} />
               </div>
               <div style={{ flex: '2 1 360px', minWidth: 0 }}>
-                <p style={{ fontSize: 12, color: '#64748b', marginBottom: 12 }}>Posts by platform</p>
+                <p style={{ fontSize: 12, color: '#64748b', marginBottom: 12, lineHeight: 1.45 }}>
+                  <strong>Posts by platform</strong> — totals across <em>all</em> connected networks (not filtered by the tab above).
+                </p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {Object.entries(postPerf.byPlatform || {}).map(([plat, count]) => {
                     const pc  = PLATFORMS.find(p => p.id === plat);
@@ -1328,26 +1544,26 @@ export default function DeepAnalytics() {
             <p style={{ color: '#94a3b8', fontSize: 13 }}>No published posts yet. Start publishing to see performance data.</p>
           )}
         </div>
-      )}
+      </section>
 
       {/* ── CALENDAR ── */}
-      {section === 'calendar' && (
+      <section id="trends-calendar" style={{ scrollMarginTop: 12 }}>
         <div style={s.card}>
           <h3 style={s.cardTitle}>📅 Posts Calendar</h3>
           <p style={{ fontSize: 12, color: '#94a3b8', marginBottom: 16 }}>
-            View all your published and scheduled posts by month. Switch to "Best Times" to see which days historically get the most engagement.
+            View all your published and scheduled posts by month. The <strong>Best Time</strong> section above shows which days and hours you post most often.
           </p>
           <TrendsCalendar authHeaders={authHeaders} />
         </div>
-      )}
+      </section>
 
       {/* ── COMPETITOR ── */}
-      {section === 'competitor' && (
+      <section id="trends-competitor" style={{ scrollMarginTop: 12 }}>
         <div style={s.card}>
           <h3 style={s.cardTitle}>🔍 YouTube Competitor Analysis</h3>
           <CompetitorTab authHeaders={authHeaders} />
         </div>
-      )}
+      </section>
 
     </div>
   );

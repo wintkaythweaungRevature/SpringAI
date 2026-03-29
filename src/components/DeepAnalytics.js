@@ -388,7 +388,7 @@ export default function DeepAnalytics() {
 /* ── Styles ── */
 const s = {
   wrap: {
-    maxWidth: 900, margin: '0 auto', padding: '24px 20px',
+    maxWidth: 1400, margin: '0 auto', padding: '24px 28px',
     fontFamily: "'Inter', -apple-system, sans-serif",
   },
   header: { marginBottom: 20 },

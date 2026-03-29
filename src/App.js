@@ -34,6 +34,7 @@ import SocialAIChat from './components/SocialAIChat';
 import PricingPage from './components/PricingPage';
 import AutoReplySettings from './components/AutoReplySettings';
 import ProGate from './components/ProGate';
+import ContentCalendar from './components/ContentCalendar';
 
 const PAGE_TITLES = {
   null: 'Dashboard',
@@ -54,6 +55,7 @@ const PAGE_TITLES = {
   'social-ai': 'Social AI',
   'pricing':      'Pricing & Plans',
   'auto-reply':   'Auto Reply',
+  'calendar':     'Content Calendar',
 };
 
 /* ─── NavItem ─────────────────────────────────────────────── */
@@ -231,6 +233,7 @@ function App() {
           <NavItem icon={<HiGlobeAlt size={17} />}                 label="Link in Bio"        active={activeTab === 'bio'}              onClick={() => go('bio')} />
           <NavItem icon={<HiArrowTrendingUp size={17} />}          label="Trends"             active={activeTab === 'trends'}           onClick={() => go('trends')} />
           <NavItem icon={<HiCpuChip size={17} />}                  label="Social AI"          active={activeTab === 'social-ai'}        onClick={() => go('social-ai')} />
+          <NavItem icon={<HiPhoto size={17} />}                    label="Content Calendar"   active={activeTab === 'calendar'}         onClick={() => go('calendar')} />
 
           <div style={s.groupLabel}>Writing Tools</div>
           <NavItem icon={<HiChatBubbleLeftRight size={17} />} label="Reply Enchanter" active={activeTab === 'Content'} onClick={() => go('Content')} />
@@ -324,6 +327,7 @@ function App() {
           {activeTab === 'social-ai'       && <MemberGate featureName="Social AI"><ProGate featureName="Social AI"><SocialAIChat /></ProGate></MemberGate>}
           {activeTab === 'pricing'         && <PricingPage onClose={() => go(null)} />}
           {activeTab === 'auto-reply'      && <MemberGate featureName="Auto Reply"><ProGate featureName="Auto Reply"><AutoReplySettings /></ProGate></MemberGate>}
+          {activeTab === 'calendar'        && <MemberGate featureName="Content Calendar"><ContentCalendar /></MemberGate>}
         </div>
       </div>
 

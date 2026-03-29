@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import PlatformIcon from './PlatformIcon';
+import VideoTrimmer from './VideoTrimmer';
 
 /* ─── Constants ─────────────────────────────────────────────── */
 const PLATFORMS = [
@@ -190,7 +191,8 @@ function validateImage(file) {
 
 /* ─── Component ─────────────────────────────────────────────── */
 export default function VideoPublisher({ onNavigateToSocialConnect }) {
-  const { apiBase, token, logout } = useAuth();
+  const { apiBase, token, logout, user } = useAuth();
+  const isGrowth = user?.membershipType === 'GROWTH';
   const base = apiBase || 'https://api.wintaibot.com';
   const isMobile = useMediaQuery('(max-width: 768px)');
 
@@ -229,6 +231,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
   const [selectedFrameKey, setSelectedFrameKey] = useState(null);
   const [thumbnailUrl, setThumbnailUrl] = useState(null);
   const [thumbnailMode, setThumbnailMode] = useState('scrub'); // 'scrub' | 'ai'
+  const [showTrimmer, setShowTrimmer] = useState(false); // Growth-only trim modal
   const fileRef    = useRef();
   const imageRef   = useRef();
   const skippedRef = useRef(false);
@@ -749,6 +752,19 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
   return (
     <div style={s.page}>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+
+      {/* ── Video Trimmer modal (Growth only) ── */}
+      {showTrimmer && video && (
+        <VideoTrimmer
+          videoFile={video}
+          onApply={(trimmedFile) => {
+            setVideo(trimmedFile);
+            setShowTrimmer(false);
+          }}
+          onCancel={() => setShowTrimmer(false)}
+        />
+      )}
+
       {/* ── Publish error modal ── */}
       {publishError && (
         <div style={{
@@ -899,6 +915,33 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
                     <div style={s.fileName}>{video.name}</div>
                     <div style={s.fileSize}>{(video.size / 1024 / 1024).toFixed(1)} MB</div>
                     <div style={s.changeFile}>Click to change</div>
+                    {/* Growth-only trim button */}
+                    {isGrowth && (
+                      <button
+                        type="button"
+                        onClick={e => { e.stopPropagation(); setShowTrimmer(true); }}
+                        style={{
+                          marginTop: '10px',
+                          padding: '7px 18px',
+                          borderRadius: '8px',
+                          border: 'none',
+                          background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
+                          color: '#fff',
+                          fontWeight: 700,
+                          fontSize: '13px',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          boxShadow: '0 2px 10px rgba(99,102,241,0.35)',
+                        }}
+                      >
+                        ✂️ Trim Video
+                        <span style={{ fontSize: '10px', background: 'rgba(255,255,255,0.25)', borderRadius: '99px', padding: '1px 7px', fontWeight: 700 }}>
+                          Growth
+                        </span>
+                      </button>
+                    )}
                   </>
                 ) : (
                   <>

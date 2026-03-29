@@ -28,8 +28,7 @@ public class SubscriptionController {
             return ResponseEntity.status(401).build();
         }
         Long userId = (Long) auth.getPrincipal();
-        String url = stripeService.createCheckoutSession(userId);
-        return ResponseEntity.ok(new CheckoutResponse(url));
+        return ResponseEntity.ok(stripeService.checkout(userId, req));
     }
 
     @GetMapping("/verify-session")
@@ -61,6 +60,19 @@ public class SubscriptionController {
         Long userId = (Long) auth.getPrincipal();
         Map<String, Object> status = stripeService.getSubscriptionStatus(userId);
         return ResponseEntity.ok(status);
+    }
+
+    /**
+     * Current Stripe-backed plan tier and billing interval (for pricing UI / Pro gate).
+     * {@code plan} is STARTER, PRO, GROWTH, or FREE; {@code billingInterval} is MONTHLY, YEARLY, or null.
+     */
+    @GetMapping("/current")
+    public ResponseEntity<Map<String, Object>> current(Authentication auth) {
+        if (auth == null || !(auth.getPrincipal() instanceof Long)) {
+            return ResponseEntity.status(401).build();
+        }
+        Long userId = (Long) auth.getPrincipal();
+        return ResponseEntity.ok(stripeService.getSubscriptionCurrent(userId));
     }
 
     /** Cancel membership at period end — user keeps access until then. */

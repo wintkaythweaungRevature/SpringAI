@@ -70,11 +70,12 @@ const PLANS = [
 
 /* ─── PricingPage ────────────────────────────────────────────────────── */
 export default function PricingPage({ onClose }) {
-  const { apiBase, authHeaders, user } = useAuth();
+  const { apiBase, authHeaders, user, refetchUser } = useAuth();
   const [yearly, setYearly] = useState(false);
   const [loading, setLoading] = useState(null); // plan ID being processed
   const [currentPlan, setCurrentPlan] = useState(null);
   const [error, setError] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
 
   useEffect(() => {
     if (!user) return;
@@ -84,10 +85,19 @@ export default function PricingPage({ onClose }) {
       .catch(() => {});
   }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const refreshCurrentPlan = () => {
+    if (!user) return;
+    fetch(`${apiBase}/api/subscription/current`, { headers: authHeaders() })
+      .then((r) => r.json())
+      .then((d) => setCurrentPlan(d?.plan))
+      .catch(() => {});
+  };
+
   const handleSubscribe = async (planId) => {
     if (!user) { setError('Please log in first.'); return; }
     setLoading(planId);
     setError('');
+    setSuccessMsg('');
     try {
       const res = await fetch(`${apiBase}/api/subscription/checkout`, {
         method: 'POST',
@@ -96,7 +106,15 @@ export default function PricingPage({ onClose }) {
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Checkout failed.'); return; }
-      window.location.href = data.url;
+      if (data.updated) {
+        setSuccessMsg(data.message || 'Your subscription was updated.');
+        if (typeof refetchUser === 'function') refetchUser();
+        refreshCurrentPlan();
+        return;
+      }
+      const url = data.url || data.checkoutUrl;
+      if (url) window.location.href = url;
+      else setError('No checkout URL returned.');
     } catch (e) {
       setError('Network error. Please try again.');
     } finally {
@@ -120,21 +138,36 @@ export default function PricingPage({ onClose }) {
           )}
         </div>
 
-        {/* Billing toggle */}
-        <div style={s.toggleRow}>
-          <span style={{ ...s.toggleLabel, opacity: yearly ? 0.5 : 1 }}>Monthly</span>
-          <button
-            style={{ ...s.toggle, background: yearly ? '#6366f1' : '#e2e8f0' }}
-            onClick={() => setYearly(!yearly)}
-            aria-label="Toggle billing period"
-          >
-            <div style={{ ...s.toggleThumb, transform: yearly ? 'translateX(22px)' : 'translateX(2px)' }} />
-          </button>
-          <span style={{ ...s.toggleLabel, opacity: yearly ? 1 : 0.5 }}>
-            Yearly <span style={s.saveBadge}>Save ~20%</span>
-          </span>
+        {/* Billing cycle — segmented control (clearer than a small toggle) */}
+        <div style={s.billingWrap}>
+          <p style={s.billingTitle}>Billing cycle</p>
+          <div style={s.segmentRow} role="group" aria-label="Choose monthly or yearly billing">
+            <button
+              type="button"
+              style={s.segmentBtn(!yearly)}
+              onClick={() => setYearly(false)}
+              aria-pressed={!yearly}
+            >
+              <span style={s.segmentMain}>Monthly</span>
+              <span style={s.segmentSub}>Pay each month</span>
+            </button>
+            <button
+              type="button"
+              style={s.segmentBtn(yearly)}
+              onClick={() => setYearly(true)}
+              aria-pressed={yearly}
+            >
+              <span style={s.segmentMain}>
+                Yearly <span style={s.saveBadge}>Save ~20%</span>
+              </span>
+              <span style={s.segmentSub}>One payment per year</span>
+            </button>
+          </div>
         </div>
 
+        {successMsg && (
+          <div style={s.successBanner}>{successMsg}</div>
+        )}
         {error && <div style={s.errorBanner}>{error}</div>}
 
         {/* Plan cards */}
@@ -165,10 +198,12 @@ export default function PricingPage({ onClose }) {
                   <span style={s.pricePer}>/mo</span>
                 </div>
 
-                {yearly && (
+                {yearly ? (
                   <div style={s.yearlyNote}>
-                    ${plan.yearlyTotal}/year · saves ${(plan.monthlyPrice - plan.yearlyPrice) * 12}/yr
+                    ${plan.yearlyTotal}/year total · saves ${(plan.monthlyPrice - plan.yearlyPrice) * 12}/yr vs monthly
                   </div>
+                ) : (
+                  <div style={s.monthlyNote}>Billed monthly · shown as $/mo</div>
                 )}
 
                 {/* Features */}
@@ -195,7 +230,11 @@ export default function PricingPage({ onClose }) {
                     onClick={() => handleSubscribe(plan.id)}
                     disabled={loading === plan.id}
                   >
-                    {loading === plan.id ? 'Redirecting...' : plan.id === 'STARTER' ? 'Start 7-Day Free Trial' : `Get ${plan.name}`}
+                    {loading === plan.id
+                      ? 'Redirecting...'
+                      : plan.id === 'STARTER'
+                        ? (yearly ? 'Start trial — yearly' : 'Start 7-Day Free Trial')
+                        : (yearly ? `Get ${plan.name} — yearly` : `Get ${plan.name} — monthly`)}
                   </button>
                 )}
               </div>
@@ -233,24 +272,65 @@ const s = {
     background: '#f1f5f9', border: 'none', borderRadius: 8, padding: '6px 12px',
     cursor: 'pointer', fontSize: 16, color: '#64748b',
   },
-  toggleRow: {
-    display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24, justifyContent: 'center',
+  billingWrap: {
+    marginBottom: 28,
+    padding: '16px 18px',
+    background: '#f8fafc',
+    borderRadius: 16,
+    border: '1px solid #e2e8f0',
   },
-  toggleLabel: { fontSize: 14, fontWeight: 500, color: '#334155' },
-  toggle: {
-    position: 'relative', width: 48, height: 26, borderRadius: 13, border: 'none',
-    cursor: 'pointer', transition: 'background 0.2s', flexShrink: 0,
+  billingTitle: {
+    margin: '0 0 12px',
+    fontSize: 12,
+    fontWeight: 800,
+    color: '#64748b',
+    textAlign: 'center',
+    textTransform: 'uppercase',
+    letterSpacing: '0.06em',
   },
-  toggleThumb: {
-    position: 'absolute', top: 3, width: 20, height: 20, borderRadius: '50%',
-    background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.2)', transition: 'transform 0.2s',
+  segmentRow: {
+    display: 'flex',
+    gap: 10,
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+  },
+  segmentBtn: (active) => ({
+    flex: '1 1 160px',
+    maxWidth: 280,
+    padding: '12px 14px',
+    borderRadius: 14,
+    border: active ? '2px solid #6366f1' : '1px solid #cbd5e1',
+    background: active ? '#fff' : '#f1f5f9',
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    textAlign: 'center',
+    boxShadow: active ? '0 4px 14px rgba(99,102,241,0.2)' : 'none',
+    transition: 'border 0.15s, box-shadow 0.15s, background 0.15s',
+  }),
+  segmentMain: {
+    display: 'block',
+    fontSize: 16,
+    fontWeight: 800,
+    color: '#0f172a',
+    marginBottom: 4,
+  },
+  segmentSub: {
+    display: 'block',
+    fontSize: 12,
+    fontWeight: 500,
+    color: '#64748b',
+    lineHeight: 1.35,
   },
   saveBadge: {
-    background: '#dcfce7', color: '#16a34a', fontSize: 11, fontWeight: 600,
-    padding: '2px 7px', borderRadius: 99, marginLeft: 4,
+    background: '#dcfce7', color: '#16a34a', fontSize: 11, fontWeight: 700,
+    padding: '2px 8px', borderRadius: 99, marginLeft: 6, verticalAlign: 'middle',
   },
   errorBanner: {
     background: '#fef2f2', border: '1px solid #fca5a5', color: '#dc2626',
+    borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 14,
+  },
+  successBanner: {
+    background: '#f0fdf4', border: '1px solid #86efac', color: '#166534',
     borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 14,
   },
   cardsRow: {
@@ -276,7 +356,10 @@ const s = {
   priceNumber: { fontSize: 40, fontWeight: 800, color: '#0f172a', lineHeight: 1 },
   pricePer: { fontSize: 14, color: '#94a3b8', marginLeft: 2 },
   yearlyNote: {
-    fontSize: 12, color: '#16a34a', fontWeight: 500, marginBottom: 4,
+    fontSize: 12, color: '#16a34a', fontWeight: 600, marginBottom: 4, lineHeight: 1.4,
+  },
+  monthlyNote: {
+    fontSize: 12, color: '#64748b', fontWeight: 500, marginBottom: 4,
   },
   featureList: { listStyle: 'none', padding: 0, margin: '16px 0 20px', flex: 1 },
   featureItem: { fontSize: 13.5, color: '#334155', padding: '4px 0', display: 'flex', alignItems: 'center' },

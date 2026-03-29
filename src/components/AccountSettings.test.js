@@ -11,6 +11,10 @@ const mockLogout = jest.fn();
 function makeMockAuth(overrides = {}) {
   return {
     user: { email: 'user@example.com' },
+    token: 'test-token',
+    apiBase: 'http://localhost',
+    authHeaders: () => ({ Authorization: 'Bearer test-token' }),
+    refetchUser: jest.fn().mockResolvedValue(undefined),
     isSubscribed: false,
     checkoutSubscription: mockCheckoutSubscription,
     cancelSubscription: mockCancelSubscription,
@@ -31,6 +35,18 @@ jest.mock('../context/AuthContext', () => ({
 describe('AccountSettings', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        plan: 'PRO',
+        billingInterval: 'YEARLY',
+        cancelAtPeriodEnd: false,
+      }),
+    });
+  });
+
+  afterEach(() => {
+    if (jest.isMockFunction(global.fetch)) global.fetch.mockClear();
   });
 
   // ─── Rendering ───────────────────────────────────────────────────────────────
@@ -52,7 +68,7 @@ describe('AccountSettings', () => {
     render(<AccountSettings />);
     expect(screen.getByText('Subscription')).toBeInTheDocument();
     expect(screen.getByText('Billing & Invoices')).toBeInTheDocument();
-    expect(screen.getByText('Deactivate Account')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /deactivate account/i })).toBeInTheDocument();
   });
 
   // ─── Free user ───────────────────────────────────────────────────────────────
@@ -67,7 +83,7 @@ describe('AccountSettings', () => {
     mockAuthValue = makeMockAuth({ isSubscribed: false });
     render(<AccountSettings />);
     expect(
-      screen.getByRole('button', { name: /upgrade to member/i })
+      screen.getByRole('button', { name: /upgrade.*\$19/i })
     ).toBeInTheDocument();
   });
 
@@ -75,7 +91,7 @@ describe('AccountSettings', () => {
     mockCheckoutSubscription.mockResolvedValueOnce({});
     mockAuthValue = makeMockAuth({ isSubscribed: false });
     render(<AccountSettings />);
-    fireEvent.click(screen.getByRole('button', { name: /upgrade to member/i }));
+    fireEvent.click(screen.getByRole('button', { name: /upgrade.*\$19/i }));
     await waitFor(() => expect(mockCheckoutSubscription).toHaveBeenCalled());
   });
 
@@ -83,9 +99,9 @@ describe('AccountSettings', () => {
     mockCheckoutSubscription.mockRejectedValueOnce(new Error('Checkout failed'));
     mockAuthValue = makeMockAuth({ isSubscribed: false });
     render(<AccountSettings />);
-    fireEvent.click(screen.getByRole('button', { name: /upgrade to member/i }));
+    fireEvent.click(screen.getByRole('button', { name: /upgrade.*\$19/i }));
     await waitFor(() =>
-      expect(screen.getByText('Checkout failed')).toBeInTheDocument()
+      expect(screen.getByText(/checkout failed/i)).toBeInTheDocument()
     );
   });
 
@@ -98,6 +114,26 @@ describe('AccountSettings', () => {
     });
     render(<AccountSettings />);
     expect(screen.getByText('Member')).toBeInTheDocument();
+  });
+
+  test('shows annual upsell when subscription is monthly on a paid tier', async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        plan: 'PRO',
+        billingInterval: 'MONTHLY',
+        cancelAtPeriodEnd: false,
+      }),
+    });
+    mockAuthValue = makeMockAuth({
+      user: { email: 'user@example.com', membershipType: 'PRO', cancelAtPeriodEnd: false },
+      isSubscribed: true,
+    });
+    render(<AccountSettings />);
+    await waitFor(() => {
+      expect(screen.getByText(/you are on a monthly billing plan/i)).toBeInTheDocument();
+    });
+    expect(screen.getByRole('button', { name: /get pro annual plan/i })).toBeInTheDocument();
   });
 
   test('shows Cancel Subscription button for active member', () => {
@@ -229,7 +265,7 @@ describe('AccountSettings', () => {
     render(<AccountSettings />);
     fireEvent.click(screen.getByRole('button', { name: /manage billing/i }));
     await waitFor(() =>
-      expect(screen.getByText('Portal unavailable')).toBeInTheDocument()
+      expect(screen.getByText(/portal unavailable/i)).toBeInTheDocument()
     );
   });
 
@@ -298,7 +334,7 @@ describe('AccountSettings', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: /confirm deactivate/i }));
     await waitFor(() =>
-      expect(screen.getByText('Wrong password')).toBeInTheDocument()
+      expect(screen.getByText(/wrong password/i)).toBeInTheDocument()
     );
   });
 

@@ -294,6 +294,19 @@ describe('AuthContext', () => {
     expect(authValue.isSubscribed).toBe(false);
   });
 
+  test('isSubscribed is true when membershipType is GROWTH', async () => {
+    global.fetch.mockResolvedValue(
+      mockFetchOk({ email: 'user@example.com', membershipType: 'GROWTH', emailVerified: true })
+    );
+
+    let authValue;
+    await act(async () => {
+      renderWithProvider((val) => { authValue = val; }, 'growth-token');
+    });
+
+    expect(authValue.isSubscribed).toBe(true);
+  });
+
   // ─── emailVerified ────────────────────────────────────────────────────────
 
   test('emailVerified defaults to true when not provided by server', async () => {

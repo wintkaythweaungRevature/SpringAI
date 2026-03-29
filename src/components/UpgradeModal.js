@@ -11,10 +11,11 @@ import { useAuth } from '../context/AuthContext';
  *   suggestPlan {string} — 'PRO' | 'GROWTH' (optional; auto-selects a plan card)
  */
 export default function UpgradeModal({ reason, feature, onClose, suggestPlan }) {
-  const { apiBase, authHeaders, user } = useAuth();
+  const { apiBase, authHeaders, user, refetchUser } = useAuth();
   const [yearly, setYearly] = useState(false);
   const [loading, setLoading] = useState(null);
   const [error, setError] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
 
   const plans = [
     {
@@ -36,6 +37,7 @@ export default function UpgradeModal({ reason, feature, onClose, suggestPlan }) 
     if (!user) { setError('Please log in first.'); return; }
     setLoading(planId);
     setError('');
+    setSuccessMsg('');
     try {
       const res = await fetch(`${apiBase}/api/subscription/checkout`, {
         method: 'POST',
@@ -44,7 +46,15 @@ export default function UpgradeModal({ reason, feature, onClose, suggestPlan }) 
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Checkout failed.'); setLoading(null); return; }
-      window.location.href = data.url;
+      if (data.updated) {
+        setSuccessMsg(data.message || 'Subscription updated.');
+        if (typeof refetchUser === 'function') refetchUser();
+        setLoading(null);
+        return;
+      }
+      const url = data.url || data.checkoutUrl;
+      if (url) window.location.href = url;
+      else { setError('No checkout URL returned.'); setLoading(null); }
     } catch {
       setError('Network error. Try again.');
       setLoading(null);
@@ -65,20 +75,33 @@ export default function UpgradeModal({ reason, feature, onClose, suggestPlan }) 
 
         {reason && <p style={s.reason}>{reason}</p>}
 
-        {/* Billing toggle */}
-        <div style={s.toggleRow}>
-          <span style={{ ...s.toggleLabel, opacity: yearly ? 0.5 : 1 }}>Monthly</span>
-          <button
-            style={{ ...s.toggleBtn, background: yearly ? '#6366f1' : '#e2e8f0' }}
-            onClick={() => setYearly(!yearly)}
-          >
-            <div style={{ ...s.thumb, transform: yearly ? 'translateX(22px)' : 'translateX(2px)' }} />
-          </button>
-          <span style={{ ...s.toggleLabel, opacity: yearly ? 1 : 0.5 }}>
-            Yearly <span style={s.savePill}>Save ~20%</span>
-          </span>
+        <div style={s.billingWrap}>
+          <p style={s.billingTitle}>Billing cycle</p>
+          <div style={s.segmentRow} role="group" aria-label="Choose monthly or yearly billing">
+            <button
+              type="button"
+              style={s.segmentBtn(!yearly)}
+              onClick={() => setYearly(false)}
+              aria-pressed={!yearly}
+            >
+              <span style={s.segmentMain}>Monthly</span>
+              <span style={s.segmentSub}>Pay each month</span>
+            </button>
+            <button
+              type="button"
+              style={s.segmentBtn(yearly)}
+              onClick={() => setYearly(true)}
+              aria-pressed={yearly}
+            >
+              <span style={s.segmentMain}>
+                Yearly <span style={s.savePill}>Save ~20%</span>
+              </span>
+              <span style={s.segmentSub}>One payment per year</span>
+            </button>
+          </div>
         </div>
 
+        {successMsg && <div style={s.okBox}>{successMsg}</div>}
         {error && <div style={s.errBox}>{error}</div>}
 
         {/* Plan cards */}
@@ -104,6 +127,13 @@ export default function UpgradeModal({ reason, feature, onClose, suggestPlan }) 
                   <span style={s.price}>{price}</span>
                   <span style={s.per}>/mo</span>
                 </div>
+                {yearly ? (
+                  <div style={s.yearlyHint}>
+                    Billed annually (${(plan.yearlyPrice * 12).toLocaleString()}/yr)
+                  </div>
+                ) : (
+                  <div style={s.monthlyHint}>Billed monthly</div>
+                )}
                 <ul style={s.feats}>
                   {plan.highlight.map(f => (
                     <li key={f} style={s.feat}><span style={s.checkmark}>✓</span>{f}</li>
@@ -114,7 +144,11 @@ export default function UpgradeModal({ reason, feature, onClose, suggestPlan }) 
                   onClick={() => handleUpgrade(plan.id)}
                   disabled={loading === plan.id}
                 >
-                  {loading === plan.id ? '...' : plan.id === 'STARTER' ? 'Start Free Trial' : `Get ${plan.name}`}
+                  {loading === plan.id
+                    ? '...'
+                    : plan.id === 'STARTER'
+                      ? (yearly ? 'Start trial — yearly' : 'Start Free Trial')
+                      : (yearly ? `Get ${plan.name} — yearly` : `Get ${plan.name} — monthly`)}
                 </button>
               </div>
             );
@@ -149,23 +183,55 @@ const s = {
     fontSize: 26, margin: '0 auto 12px',
   },
   title: { margin: '0 0 8px', fontSize: 22, fontWeight: 700, color: '#1e293b' },
-  reason: { color: '#64748b', fontSize: 14, margin: '0 0 20px' },
-  toggleRow: { display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center', marginBottom: 20 },
-  toggleLabel: { fontSize: 13, fontWeight: 500, color: '#334155' },
-  toggleBtn: {
-    position: 'relative', width: 48, height: 26, borderRadius: 13,
-    border: 'none', cursor: 'pointer', transition: 'background 0.2s', flexShrink: 0,
+  reason: { color: '#64748b', fontSize: 14, margin: '0 0 16px' },
+  billingWrap: {
+    marginBottom: 20,
+    padding: '14px 16px',
+    background: '#f8fafc',
+    borderRadius: 16,
+    border: '1px solid #e2e8f0',
+    textAlign: 'center',
   },
-  thumb: {
-    position: 'absolute', top: 3, width: 20, height: 20, borderRadius: '50%',
-    background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.2)', transition: 'transform 0.2s',
+  billingTitle: {
+    margin: '0 0 10px',
+    fontSize: 11,
+    fontWeight: 800,
+    color: '#64748b',
+    textTransform: 'uppercase',
+    letterSpacing: '0.06em',
   },
+  segmentRow: { display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' },
+  segmentBtn: (active) => ({
+    flex: '1 1 140px',
+    maxWidth: 260,
+    padding: '10px 12px',
+    borderRadius: 12,
+    border: active ? '2px solid #6366f1' : '1px solid #cbd5e1',
+    background: active ? '#fff' : '#f1f5f9',
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    boxShadow: active ? '0 3px 12px rgba(99,102,241,0.18)' : 'none',
+  }),
+  segmentMain: {
+    display: 'block',
+    fontSize: 15,
+    fontWeight: 800,
+    color: '#0f172a',
+    marginBottom: 3,
+  },
+  segmentSub: { display: 'block', fontSize: 11, fontWeight: 500, color: '#64748b', lineHeight: 1.35 },
   savePill: {
     background: '#dcfce7', color: '#16a34a', fontSize: 10, fontWeight: 700,
-    padding: '2px 6px', borderRadius: 99, marginLeft: 3,
+    padding: '2px 6px', borderRadius: 99, marginLeft: 4,
   },
+  yearlyHint: { fontSize: 11, color: '#16a34a', fontWeight: 600, marginBottom: 8, marginTop: -4 },
+  monthlyHint: { fontSize: 11, color: '#64748b', fontWeight: 500, marginBottom: 8, marginTop: -4 },
   errBox: {
     background: '#fef2f2', border: '1px solid #fca5a5', color: '#dc2626',
+    borderRadius: 8, padding: '8px 12px', marginBottom: 16, fontSize: 13,
+  },
+  okBox: {
+    background: '#f0fdf4', border: '1px solid #86efac', color: '#166534',
     borderRadius: 8, padding: '8px 12px', marginBottom: 16, fontSize: 13,
   },
   cards: {

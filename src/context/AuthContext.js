@@ -27,6 +27,13 @@ function isOwnerToken(t) {
   return t === OWNER_TOKEN;
 }
 
+/** Paid tiers from API / Stripe; must match header plan badges (MEMBER = legacy single paid tier). */
+const PAID_MEMBERSHIP_TYPES = new Set(["MEMBER", "STARTER", "PRO", "GROWTH"]);
+
+function isPaidMembershipType(mt) {
+  return !!(mt && PAID_MEMBERSHIP_TYPES.has(mt));
+}
+
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
@@ -226,10 +233,14 @@ export function AuthProvider({ children }) {
     const res = await fetch(`${API_BASE}/api/subscription/checkout`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ plan: "MEMBER" }),
+      body: JSON.stringify({ plan: "STARTER", billingInterval: "MONTHLY" }),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || data.message || "Checkout failed");
+    if (data.updated) {
+      await refetchUser();
+      return;
+    }
     const url = data.url || data.checkoutUrl;
     if (url) window.location.href = url;
     else throw new Error("Checkout failed");
@@ -365,7 +376,7 @@ export function AuthProvider({ children }) {
     reactivateSubscription,
     deactivateAccount,
     reactivateAccount,
-    isSubscribed: user?.membershipType === "MEMBER",
+    isSubscribed: isPaidMembershipType(user?.membershipType),
     isLoggedIn: !!user,
     emailVerified: user?.emailVerified ?? true,
     authAvailable,

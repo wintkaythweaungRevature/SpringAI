@@ -1,21 +1,100 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
+
+/** Matches PricingPage / UpgradeModal (per-month equivalent when billed annually). */
+const TIER_CATALOG = {
+  STARTER: {
+    name: "Starter",
+    monthlyPrice: 19,
+    yearlyPrice: 15,
+    tagline: "Social scheduling, AI captions & core publishing",
+  },
+  PRO: {
+    name: "Pro",
+    monthlyPrice: 39,
+    yearlyPrice: 32,
+    tagline: "Deep analytics, Social AI & unlimited posts",
+  },
+  GROWTH: {
+    name: "Growth",
+    monthlyPrice: 79,
+    yearlyPrice: 66,
+    tagline: "Priority processing & full platform limits",
+  },
+};
+
+function normalizeTierKey(plan, membershipType) {
+  const p = (plan || "").toUpperCase();
+  if (p === "STARTER" || p === "PRO" || p === "GROWTH") return p;
+  if (p === "MEMBER" || (membershipType || "").toUpperCase() === "MEMBER") return "STARTER";
+  const m = (membershipType || "").toUpperCase();
+  if (m === "STARTER" || m === "PRO" || m === "GROWTH") return m;
+  return null;
+}
 
 export default function AccountSettings() {
   const {
-    user, isSubscribed, checkoutSubscription, cancelSubscription,
+    user, token, isSubscribed, checkoutSubscription, cancelSubscription,
     reactivateSubscription, openBillingPortal, deactivateAccount, logout,
+    apiBase, authHeaders, refetchUser,
   } = useAuth();
 
   const [loading, setLoading] = useState(null);
+  const [subSnap, setSubSnap] = useState(null);
   const [confirmDeactivate, setConfirmDeactivate] = useState(false);
   const [deactivatePassword, setDeactivatePassword] = useState("");
   const [confirmCancelSub, setConfirmCancelSub] = useState(false);
   const [message, setMessage] = useState(null);
 
   const isMember = isSubscribed;
+  const planBadgeLabel = (() => {
+    if (!isMember) return "Free";
+    const mt = user?.membershipType;
+    const map = { STARTER: "Starter", PRO: "Pro", GROWTH: "Growth", MEMBER: "Starter" };
+    return map[mt] || mt || "Member";
+  })();
   const cancelAtPeriodEnd = user?.cancelAtPeriodEnd === true;
   const periodEnd = user?.subscriptionPeriodEnd;
+
+  useEffect(() => {
+    if (!isMember || cancelAtPeriodEnd || !apiBase || !token || user?.id === "owner") {
+      setSubSnap(null);
+      return undefined;
+    }
+    let cancelled = false;
+    const ac = new AbortController();
+    fetch(`${apiBase}/api/subscription/current`, {
+      headers: { ...authHeaders(), Accept: "application/json" },
+      signal: ac.signal,
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!cancelled) setSubSnap(d && typeof d === "object" ? d : null);
+      })
+      .catch(() => {
+        if (!cancelled) setSubSnap(null);
+      });
+    return () => {
+      cancelled = true;
+      ac.abort();
+    };
+  }, [isMember, cancelAtPeriodEnd, apiBase, token, user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const tierKey = normalizeTierKey(subSnap?.plan, user?.membershipType);
+  const apiSaysMonthly = subSnap?.billingInterval === "MONTHLY";
+  const showAnnualUpsell =
+    isMember &&
+    !cancelAtPeriodEnd &&
+    apiSaysMonthly &&
+    tierKey &&
+    TIER_CATALOG[tierKey];
+
+  const annualMeta = showAnnualUpsell ? TIER_CATALOG[tierKey] : null;
+  const savePct =
+    annualMeta &&
+    annualMeta.monthlyPrice > 0
+      ? Math.max(0, Math.round((1 - annualMeta.yearlyPrice / annualMeta.monthlyPrice) * 100))
+      : 0;
 
   const showMessage = (msg, isError = false) => {
     setMessage({ text: msg, error: isError });
@@ -66,6 +145,41 @@ export default function AccountSettings() {
     finally { setLoading(null); }
   };
 
+  const handleSwitchToAnnual = async () => {
+    if (!tierKey || !apiBase) return;
+    setLoading("annual");
+    try {
+      const res = await fetch(`${apiBase}/api/subscription/checkout`, {
+        method: "POST",
+        headers: { ...authHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: tierKey, billingInterval: "YEARLY" }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || data.message || "Checkout failed");
+      if (data.updated) {
+        showMessage(data.message || "Your plan was updated.", false);
+        if (typeof refetchUser === "function") await refetchUser();
+        const r2 = await fetch(`${apiBase}/api/subscription/current`, {
+          headers: { ...authHeaders(), Accept: "application/json" },
+        });
+        const d2 = r2.ok ? await r2.json() : null;
+        setSubSnap(d2 && typeof d2 === "object" ? d2 : null);
+        return;
+      }
+      const url = data.url || data.checkoutUrl;
+      if (url) window.location.href = url;
+      else throw new Error("Checkout failed");
+    } catch (e) {
+      showMessage(e.message || "Could not start checkout", true);
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  const openChangePlan = () => {
+    window.dispatchEvent(new CustomEvent("wintaibot:go", { detail: "pricing" }));
+  };
+
   return (
     <div style={s.wrap}>
       <div style={s.card}>
@@ -89,7 +203,7 @@ export default function AccountSettings() {
           <h3 style={s.sectionTitle}>Subscription</h3>
           <div style={s.badgeRow}>
             <span style={isMember ? s.memberBadge : s.freeBadge}>
-              {isMember ? "Member" : "Free"}
+              {planBadgeLabel}
             </span>
             {isMember && cancelAtPeriodEnd && (
               <span style={s.warnBadge}>Cancels {periodEnd ? `on ${periodEnd}` : "at period end"}</span>
@@ -99,11 +213,61 @@ export default function AccountSettings() {
             )}
           </div>
 
+          {isMember && !cancelAtPeriodEnd && user?.id !== "owner" && (
+            <div style={{ marginTop: 14 }}>
+              <p style={s.desc}>
+                Switch to another tier or change monthly vs yearly billing. You can also use Stripe for payment method and invoices.
+              </p>
+              <button
+                type="button"
+                onClick={openChangePlan}
+                disabled={!!loading}
+                style={s.btnPrimary}
+              >
+                Change plan or billing
+              </button>
+            </div>
+          )}
+
           {!isMember && (
             <div style={{ marginTop: 12 }}>
               <p style={s.desc}>Upgrade to a paid plan (from $19/mo; annual billing available) to unlock Image Generator, Transcription, DocuWizard, Reply Enchanter, Resume Warlock, and Video Publisher limits per tier.</p>
               <button onClick={handleUpgrade} disabled={!!loading} style={s.btnSuccess}>
                 {loading === "upgrade" ? "Redirecting..." : "Upgrade — see plans from $19/mo"}
+              </button>
+            </div>
+          )}
+
+          {showAnnualUpsell && annualMeta && (
+            <div style={s.annualCard}>
+              <div style={s.annualCardHeader}>
+                <span style={s.annualIcon} aria-hidden>◇</span>
+                <div>
+                  <div style={s.annualPlanTitle}>{annualMeta.name}</div>
+                  <p style={s.annualTagline}>{annualMeta.tagline}</p>
+                </div>
+              </div>
+              <div style={s.annualPriceRow}>
+                <span style={s.annualPriceBig}>${annualMeta.yearlyPrice}</span>
+                <div style={s.annualPriceSide}>
+                  <span>USD / month</span>
+                  <span style={s.annualBilledNote}>billed annually</span>
+                </div>
+              </div>
+              <div style={s.annualInfoBox}>
+                <span style={s.annualInfoIcon} aria-hidden>i</span>
+                <div>
+                  <strong style={s.annualInfoStrong}>You are on a monthly billing plan.</strong>
+                  <p style={s.annualInfoSub}>Pay annually to save {savePct}%.</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleSwitchToAnnual}
+                disabled={!!loading}
+                style={s.annualCta}
+              >
+                {loading === "annual" ? "Redirecting…" : `Get ${annualMeta.name} annual plan`}
               </button>
             </div>
           )}
@@ -250,5 +414,66 @@ const s = {
     border: "1px solid #e2e8f0", background: "#fff",
     color: "#475057", fontSize: "14px", fontWeight: "600",
     cursor: "pointer", fontFamily: "inherit",
+  },
+  annualCard: {
+    marginTop: "20px",
+    padding: "20px",
+    borderRadius: "12px",
+    border: "1px solid #e2e8f0",
+    background: "#fafafa",
+    maxWidth: "100%",
+  },
+  annualCardHeader: { display: "flex", gap: "12px", alignItems: "flex-start", marginBottom: "16px" },
+  annualIcon: {
+    fontSize: "22px",
+    lineHeight: 1,
+    color: "#64748b",
+    marginTop: "2px",
+    fontFamily: "Georgia, serif",
+  },
+  annualPlanTitle: { fontSize: "22px", fontWeight: "800", color: "#0f172a", letterSpacing: "-0.02em" },
+  annualTagline: { margin: "4px 0 0", fontSize: "14px", color: "#64748b", lineHeight: 1.45 },
+  annualPriceRow: { display: "flex", alignItems: "flex-start", gap: "10px", marginBottom: "16px" },
+  annualPriceBig: { fontSize: "40px", fontWeight: "800", color: "#0f172a", lineHeight: 1 },
+  annualPriceSide: { display: "flex", flexDirection: "column", fontSize: "13px", color: "#475569", paddingTop: "6px" },
+  annualBilledNote: { color: "#94a3b8", fontSize: "12px", marginTop: "2px" },
+  annualInfoBox: {
+    display: "flex",
+    gap: "12px",
+    alignItems: "flex-start",
+    padding: "12px 14px",
+    borderRadius: "10px",
+    border: "1px solid #e2e8f0",
+    background: "#f8fafc",
+    marginBottom: "16px",
+  },
+  annualInfoIcon: {
+    width: "22px",
+    height: "22px",
+    borderRadius: "999px",
+    border: "2px solid #94a3b8",
+    color: "#64748b",
+    fontSize: "12px",
+    fontWeight: "700",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+    fontStyle: "italic",
+    fontFamily: "Georgia, serif",
+  },
+  annualInfoStrong: { display: "block", fontSize: "14px", color: "#0f172a", marginBottom: "4px" },
+  annualInfoSub: { margin: 0, fontSize: "13px", color: "#64748b", lineHeight: 1.5 },
+  annualCta: {
+    width: "100%",
+    padding: "12px 18px",
+    borderRadius: "10px",
+    border: "2px solid #0f172a",
+    background: "#fff",
+    color: "#0f172a",
+    fontSize: "15px",
+    fontWeight: "700",
+    cursor: "pointer",
+    fontFamily: "inherit",
   },
 };

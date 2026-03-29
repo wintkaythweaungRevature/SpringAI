@@ -85,7 +85,7 @@ function App() {
   // authMode: 'login' | 'signup' | 'forgot-password' | 'forgot-username'
   const [authMode, setAuthMode] = useState('login');
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const { user, logout, loading, token } = useAuth();
+  const { user, logout, loading, token, apiBase, refetchUser } = useAuth();
   const isMobile = useMediaQuery('(max-width: 768px)');
   const isTablet = useMediaQuery('(max-width: 1024px)');
 
@@ -93,14 +93,21 @@ function App() {
   const pageTitle = PAGE_TITLES[activeTab ?? 'null'] ?? 'Dashboard';
   const handleChoosePlan = async (plan) => {
     if (!user) { setAuthMode('signup'); setShowAuthModal(true); return; }
+    const base = apiBase || 'https://api.wintaibot.com';
     try {
-      const res = await fetch(`https://api.wintaibot.com/api/subscription/checkout`, {
+      const res = await fetch(`${base}/api/subscription/checkout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ plan, billingInterval: 'MONTHLY' }),
       });
       const data = await res.json();
-      if (data.url) window.location.href = data.url;
+      if (!res.ok) { alert(data.error || 'Checkout failed. Please try again.'); return; }
+      if (data.updated) {
+        alert(data.message || 'Your subscription was updated.');
+        if (typeof refetchUser === 'function') refetchUser();
+        return;
+      }
+      if (data.url || data.checkoutUrl) window.location.href = data.url || data.checkoutUrl;
       else alert(data.error || 'Checkout failed. Please try again.');
     } catch { alert('Checkout failed. Please try again.'); }
   };

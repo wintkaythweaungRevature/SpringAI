@@ -7,6 +7,8 @@ const PLATFORM_META = {
   facebook:  { id: 'facebook',  label: 'Facebook',  color: '#1877F2', logo: 'facebook'  },
   youtube:   { id: 'youtube',   label: 'YouTube',   color: '#FF0000', logo: 'youtube'   },
   linkedin:  { id: 'linkedin',  label: 'LinkedIn',  color: '#0A66C2', logo: 'linkedin'  },
+  tiktok:    { id: 'tiktok',    label: 'TikTok',    color: '#010101', logo: 'tiktok'    },
+  x:         { id: 'x',         label: 'X',         color: '#000000', logo: 'x'         },
 };
 
 const SOURCE_LABELS = {
@@ -17,6 +19,9 @@ const SOURCE_LABELS = {
   youtube_comment:    { label: 'YouTube Comment',    icon: '▶️' },
   linkedin_message:   { label: 'LinkedIn Message',   icon: '💼' },
   linkedin_comment:   { label: 'LinkedIn Comment',   icon: '💬' },
+  tiktok_comment:     { label: 'TikTok Comment',     icon: '🎵' },
+  x_mention:          { label: 'X Mention',          icon: '🐦' },
+  x_reply:            { label: 'X Reply',            icon: '🐦' },
 };
 
 // Which type-tabs each platform supports
@@ -26,6 +31,8 @@ const PLATFORM_TYPES = {
   facebook:  ['all', 'messages', 'comments'],
   youtube:   ['comments'],                      // YouTube has no DM API
   linkedin:  ['all', 'messages', 'comments'],
+  tiktok:    ['comments'],                      // TikTok comments only
+  x:         ['comments'],                      // X/Twitter — replies to tweets treated as comments
 };
 
 const TYPE_TAB_LABELS = { all: 'All', messages: 'Messages', comments: 'Comments' };
@@ -765,6 +772,8 @@ export default function MessagesInbox() {
   const fbComments = byPlatform(comments, 'facebook');
   const ytComments = byPlatform(comments, 'youtube');
   const liComments = byPlatform(comments, 'linkedin');
+  const ttComments = byPlatform(comments, 'tiktok');
+  const xComments  = byPlatform(comments, 'x');
 
   // Step 1: filter by platform
   const platConvs    = platformTab === 'all' ? conversations : byPlatform(conversations, platformTab);
@@ -808,7 +817,7 @@ export default function MessagesInbox() {
             Comments and direct messages from connected accounts in one place.
           </p>
           <p style={{ margin: '6px 0 0', fontSize: '12px', color: '#94a3b8', lineHeight: 1.5 }}>
-            Instagram comments · Facebook Messenger · YouTube comments · LinkedIn
+            Instagram · Facebook · YouTube · LinkedIn · TikTok · X — comments &amp; messages
           </p>
           {totalUnread > 0 && (
             <span
@@ -898,6 +907,20 @@ export default function MessagesInbox() {
             value={liConvs.length + liComments.length}
             accent={PLATFORM_META.linkedin.color}
             onClick={() => handlePlatformTab('linkedin')}
+          />
+          <StatTile
+            icon={<PlatformIcon platform={PLATFORM_META.tiktok} size={20} />}
+            label="TikTok"
+            value={ttComments.length}
+            accent={PLATFORM_META.tiktok.color}
+            onClick={() => handlePlatformTab('tiktok')}
+          />
+          <StatTile
+            icon={<PlatformIcon platform={PLATFORM_META.x} size={20} />}
+            label="X"
+            value={xComments.length}
+            accent="#000000"
+            onClick={() => handlePlatformTab('x')}
           />
         </div>
       )}

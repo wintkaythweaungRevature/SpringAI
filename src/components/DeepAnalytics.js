@@ -92,54 +92,137 @@ function LineChart({ data, color = '#6366f1', width = 500, height = 160 }) {
   );
 }
 
+const PLATFORM_COLORS = {
+  instagram: '#E1306C', facebook: '#1877F2', youtube: '#FF0000',
+  tiktok: '#010101', linkedin: '#0A66C2', x: '#000000',
+  threads: '#101010', pinterest: '#E60023',
+};
+
 /* ── Heatmap ─────────────────────────────────────────────────── */
-function PostHeatmap({ heatmap, bestDay, bestHour }) {
+function PostHeatmap({ heatmap, bestDay, bestHour, postsDetail = [] }) {
+  const [selected, setSelected] = useState(null); // {d, h}
+
   if (!heatmap || heatmap.length === 0) {
     return <p style={{ color: '#94a3b8', fontSize: 13 }}>No posts yet to analyze.</p>;
   }
 
   const maxVal = Math.max(...heatmap.flat(), 1);
+  const selectedPosts = selected
+    ? postsDetail.filter(p => p.dayIndex === selected.d && p.hour === selected.h)
+    : [];
+
+  const bestDayIndex = DAY_LABELS.findIndex(dl =>
+    bestDay?.toLowerCase().startsWith(dl.toLowerCase())
+  );
 
   return (
-    <div style={{ overflowX: 'auto' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: `44px repeat(24, 22px)`, gap: 2 }}>
-        {/* Header row */}
-        <div />
-        {HOUR_LABELS.map((h, i) => (
-          <div key={i} style={{ fontSize: 8, color: '#94a3b8', textAlign: 'center',
-                                fontWeight: i === bestHour ? 700 : 400,
-                                color: i === bestHour ? '#6366f1' : '#94a3b8' }}>{h}</div>
-        ))}
-        {/* Data rows */}
-        {DAY_LABELS.map((day, d) => (
-          <React.Fragment key={d}>
-            <div style={{ fontSize: 10, color: '#64748b', display: 'flex', alignItems: 'center',
-                          fontWeight: day.toLowerCase().startsWith(bestDay?.slice(0,3).toLowerCase()) ? 700 : 400,
-                          paddingRight: 6 }}>{day}</div>
-            {(heatmap[d] || []).map((count, h) => {
-              const intensity = count / maxVal;
-              const bg = count > 0
-                ? `rgba(99,102,241,${0.1 + intensity * 0.9})`
-                : '#f1f5f9';
-              return (
-                <div
-                  key={h}
-                  title={`${day} ${HOUR_LABELS[h]}: ${count} post${count !== 1 ? 's' : ''}`}
-                  style={{
-                    width: 22, height: 18, borderRadius: 4,
-                    background: bg,
-                    outline: (d === DAY_LABELS.indexOf(bestDay?.slice(0,3)) && h === bestHour)
-                      ? '2px solid #6366f1' : 'none',
-                  }}
-                />
-              );
-            })}
-          </React.Fragment>
-        ))}
+    <div>
+      <div style={{ overflowX: 'auto' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: `52px repeat(24, 32px)`, gap: 3, minWidth: 'max-content' }}>
+          {/* Header row */}
+          <div />
+          {HOUR_LABELS.map((h, i) => (
+            <div key={i} style={{
+              fontSize: 9, textAlign: 'center', paddingBottom: 4,
+              fontWeight: i === bestHour ? 800 : 400,
+              color: i === bestHour ? '#6366f1' : '#94a3b8',
+            }}>{h}</div>
+          ))}
+          {/* Data rows */}
+          {DAY_LABELS.map((day, d) => (
+            <React.Fragment key={d}>
+              <div style={{
+                fontSize: 11, color: '#475569', display: 'flex', alignItems: 'center',
+                fontWeight: d === bestDayIndex ? 800 : 500, paddingRight: 8,
+              }}>{day}</div>
+              {(heatmap[d] || []).map((count, h) => {
+                const intensity = count / maxVal;
+                const isSelected = selected?.d === d && selected?.h === h;
+                const isBest = d === bestDayIndex && h === bestHour;
+                const bg = count > 0
+                  ? `rgba(99,102,241,${0.12 + intensity * 0.88})`
+                  : '#f1f5f9';
+                return (
+                  <div
+                    key={h}
+                    onClick={() => count > 0 && setSelected(isSelected ? null : { d, h })}
+                    title={`${day} ${HOUR_LABELS[h]}: ${count} post${count !== 1 ? 's' : ''}`}
+                    style={{
+                      width: 32, height: 28, borderRadius: 5,
+                      background: isSelected ? '#6366f1' : bg,
+                      outline: isBest && !isSelected ? '2px solid #6366f1' : 'none',
+                      cursor: count > 0 ? 'pointer' : 'default',
+                      transition: 'transform 0.1s',
+                      transform: isSelected ? 'scale(1.15)' : 'scale(1)',
+                    }}
+                  />
+                );
+              })}
+            </React.Fragment>
+          ))}
+        </div>
       </div>
-      <div style={{ fontSize: 11, color: '#64748b', marginTop: 10 }}>
-        🏆 Best time to post: <strong>{bestDay}</strong> at <strong>{bestHour < 12 ? `${bestHour}am` : bestHour === 12 ? '12pm' : `${bestHour - 12}pm`}</strong>
+
+      <div style={{ fontSize: 11, color: '#64748b', marginTop: 12 }}>
+        🏆 Best time to post: <strong>{bestDay}</strong> at <strong>{bestHour < 12 ? `${bestHour || 12}am` : bestHour === 12 ? '12pm' : `${bestHour - 12}pm`}</strong>
+        {selected && <span style={{ marginLeft: 16, color: '#6366f1' }}>
+          · Click another cell or same cell to deselect
+        </span>}
       </div>
+
+      {/* ── Post Detail Card ── */}
+      {selected && selectedPosts.length > 0 && (
+        <div style={{
+          marginTop: 16, background: '#f8fafc', borderRadius: 14,
+          border: '1.5px solid #e2e8f0', overflow: 'hidden',
+        }}>
+          <div style={{
+            padding: '12px 16px', borderBottom: '1px solid #e2e8f0',
+            background: '#fff', display: 'flex', alignItems: 'center',
+            justifyContent: 'space-between',
+          }}>
+            <span style={{ fontWeight: 700, fontSize: 13, color: '#1e293b' }}>
+              {DAY_LABELS[selected.d]} {HOUR_LABELS[selected.h]} — {selectedPosts.length} post{selectedPosts.length !== 1 ? 's' : ''}
+            </span>
+            <button onClick={() => setSelected(null)} style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: '#94a3b8', fontSize: 16, lineHeight: 1,
+            }}>✕</button>
+          </div>
+          {selectedPosts.map((p, i) => {
+            const platColor = PLATFORM_COLORS[p.platform?.toLowerCase()] || '#6366f1';
+            const date = p.createdAt ? new Date(p.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+            return (
+              <div key={i} style={{
+                padding: '14px 16px',
+                borderBottom: i < selectedPosts.length - 1 ? '1px solid #f1f5f9' : 'none',
+                background: '#fff',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                  <span style={{
+                    background: platColor, color: '#fff', borderRadius: 20,
+                    padding: '3px 10px', fontSize: 11, fontWeight: 700,
+                    textTransform: 'capitalize',
+                  }}>{p.platform || 'Unknown'}</span>
+                  <span style={{
+                    background: '#f1f5f9', color: '#64748b', borderRadius: 20,
+                    padding: '3px 10px', fontSize: 11, fontWeight: 600,
+                    textTransform: 'capitalize',
+                  }}>{p.mediaType}</span>
+                  <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 'auto' }}>{date}</span>
+                </div>
+                <p style={{
+                  margin: 0, fontSize: 13, color: '#334155', lineHeight: 1.55,
+                  whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                  maxHeight: 100, overflowY: 'auto',
+                }}>
+                  {p.caption || <em style={{ color: '#94a3b8' }}>No caption</em>}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -334,6 +417,7 @@ export default function DeepAnalytics() {
             heatmap={bestTime.heatmap}
             bestDay={bestTime.bestDay}
             bestHour={bestTime.bestHour}
+            postsDetail={bestTime.postsDetail || []}
           />
         ) : (
           <p style={{ color: '#94a3b8', fontSize: 13 }}>Could not load best time data.</p>

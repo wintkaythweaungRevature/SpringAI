@@ -35,7 +35,8 @@ import PricingPage from './components/PricingPage';
 import AutoReplySettings from './components/AutoReplySettings';
 import ProGate from './components/ProGate';
 import ContentCalendar from './components/ContentCalendar';
-import wintaibotMark from './assets/wintaibot-mark.svg';
+
+const BRAND_LOGO_SRC = '/android-chrome-192x192.png';
 
 const PAGE_TITLES = {
   null: 'Dashboard',
@@ -122,6 +123,16 @@ function App() {
   }, []);
 
   useEffect(() => {
+    if (loading || user) return;
+    const params = new URLSearchParams(window.location.search);
+    const auth = params.get('auth');
+    if (auth === 'login' || auth === 'signup') {
+      setAuthMode(auth);
+      setShowAuthModal(true);
+    }
+  }, [loading, user]);
+
+  useEffect(() => {
     const handler = (e) => go(e.detail);
     window.addEventListener('wintaibot:go', handler);
     return () => window.removeEventListener('wintaibot:go', handler);
@@ -144,7 +155,7 @@ function App() {
       {/* Logo */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
            onClick={() => go(null)}>
-        <img src={wintaibotMark} alt="" width={34} height={34} style={{ display: 'block', flexShrink: 0 }} />
+        <img src={BRAND_LOGO_SRC} alt="Wintaibot logo" width={34} height={34} style={{ display: 'block', flexShrink: 0, borderRadius: '7px' }} />
         <span style={{ color: '#fff', fontWeight: 800, fontSize: '17px', letterSpacing: '-0.01em' }}>Wintaibot</span>
       </div>
 
@@ -170,19 +181,37 @@ function App() {
         ))}
       </div>
 
-      {/* CTA */}
-      <button
-        onClick={() => { setAuthMode('signup'); setShowAuthModal(true); }}
-        style={{
-          background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-          color: '#fff', border: 'none', borderRadius: '8px',
-          padding: '9px 20px', fontWeight: 700, fontSize: '14px',
-          cursor: 'pointer', whiteSpace: 'nowrap',
-          boxShadow: '0 2px 12px rgba(99,102,241,0.4)',
-        }}
-      >
-        Get Started Free →
-      </button>
+      {/* Auth actions */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <button
+          onClick={() => { setAuthMode('login'); setShowAuthModal(true); }}
+          style={{
+            background: 'transparent',
+            color: '#e2e8f0',
+            border: '1px solid rgba(148,163,184,0.6)',
+            borderRadius: '8px',
+            padding: '9px 16px',
+            fontWeight: 700,
+            fontSize: '14px',
+            cursor: 'pointer',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          Login
+        </button>
+        <button
+          onClick={() => { setAuthMode('signup'); setShowAuthModal(true); }}
+          style={{
+            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+            color: '#fff', border: 'none', borderRadius: '8px',
+            padding: '9px 20px', fontWeight: 700, fontSize: '14px',
+            cursor: 'pointer', whiteSpace: 'nowrap',
+            boxShadow: '0 2px 12px rgba(99,102,241,0.4)',
+          }}
+        >
+          Get Started Free →
+        </button>
+      </div>
     </nav>
   );
 
@@ -216,7 +245,7 @@ function App() {
         {/* Logo */}
         <div style={s.logoArea}>
           <div style={s.logoIconBg}>
-            <img src={wintaibotMark} alt="" width={34} height={34} style={{ display: 'block' }} />
+            <img src={BRAND_LOGO_SRC} alt="Wintaibot logo" width={34} height={34} style={{ display: 'block', borderRadius: '7px' }} />
           </div>
           {sidebarOpen && <span style={s.logoText}>Wintaibot</span>}
         </div>

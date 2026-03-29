@@ -30,7 +30,8 @@ const ROUTE_META = {
 export default function SEOPublicLayout({ onGetStarted, onOpenVideoPublisher }) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const handleGetStarted = () => (onGetStarted ? onGetStarted() : navigate('/'));
+  const handleGetStarted = () => (onGetStarted ? onGetStarted() : navigate('/?auth=signup'));
+  const handleLogin = () => navigate('/?auth=login');
   const meta = ROUTE_META[pathname] || ROUTE_META['/'];
   const scrollTarget = pathname === '/' ? null : (pathname === '/docs' ? 'about' : pathname.slice(1));
 
@@ -51,13 +52,17 @@ export default function SEOPublicLayout({ onGetStarted, onOpenVideoPublisher }) 
 
       <header className="seo-nav" role="banner">
         <nav className="seo-nav-inner" aria-label="Main navigation">
-          <a href="/" className="seo-nav-brand">Wintaibot</a>
+          <a href="/" className="seo-nav-brand">
+            <img src="/android-chrome-192x192.png" alt="Wintaibot logo" className="seo-nav-brand-logo" />
+            <span>Wintaibot</span>
+          </a>
           <div className="seo-nav-links">
             <a href="/">Home</a>
             <a href="/features">Features</a>
             <a href="/pricing">Pricing</a>
             <a href="/use-cases">Use Cases</a>
             <a href="/docs">Docs</a>
+            <a href="/?auth=login" className="seo-nav-login" onClick={(e) => { e.preventDefault(); handleLogin(); }}>Login</a>
             <a href="/" className="seo-nav-cta" onClick={(e) => { e.preventDefault(); handleGetStarted(); }}>Get Started Free →</a>
           </div>
         </nav>

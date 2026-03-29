@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import PlatformIcon from './PlatformIcon';
 import VideoTrimmer from './VideoTrimmer';
+import PostDetailModal from './PostDetailModal';
 
 /* ─── Constants ─────────────────────────────────────────────── */
 const PLATFORMS = [
@@ -223,6 +224,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
   const [dashHistory, setDashHistory] = useState([]);
   const [dashLoading, setDashLoading] = useState(false);
   const [retryingId, setRetryingId]   = useState(null);
+  const [historyDetailPost, setHistoryDetailPost] = useState(null);
   const [videoDurationSec, setVideoDurationSec] = useState(0);
   // Thumbnail picker state
   const [uploadedVideoId, setUploadedVideoId] = useState(null);
@@ -1216,7 +1218,38 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
                   const statusBg    = post.status === 'SUCCESS' ? '#f0fdf4'  : post.status === 'FAILED' ? '#fef2f2'  : '#fffbeb';
                   const date = new Date(post.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                   return (
-                    <div key={post.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '11px 13px', borderRadius: '10px', background: '#fff', border: '1px solid #e2e8f0' }}>
+                    <div
+                      key={post.id}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => setHistoryDetailPost(post)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setHistoryDetailPost(post);
+                        }
+                      }}
+                      title="View full post details"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: '10px',
+                        padding: '11px 13px',
+                        borderRadius: '10px',
+                        background: '#fff',
+                        border: '1px solid #e2e8f0',
+                        cursor: 'pointer',
+                        transition: 'border-color 0.15s, box-shadow 0.15s',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = '#cbd5e1';
+                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(15,23,42,0.06)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = '#e2e8f0';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }}
+                    >
                       <span style={{ width: 24, height: 24, flexShrink: 0, marginTop: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         {p ? <PlatformIcon platform={p} size={22} /> : <span style={{ fontSize: '18px' }} aria-hidden>📤</span>}
                       </span>
@@ -1240,7 +1273,10 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
                         {post.status === 'FAILED' && (
                           <button
                             type="button"
-                            onClick={() => handleRetry(post.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRetry(post.id);
+                            }}
                             disabled={retryingId === post.id}
                             style={{ fontSize: '10px', padding: '3px 8px', borderRadius: '6px', border: '1px solid #dc2626', background: retryingId === post.id ? '#fee2e2' : '#fff', color: '#dc2626', cursor: 'pointer', fontWeight: 600 }}
                           >
@@ -1942,6 +1978,14 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
             </div>
           </div>
         </div>
+      )}
+
+      {historyDetailPost && (
+        <PostDetailModal
+          post={historyDetailPost}
+          platform={PLATFORMS.find((x) => x.id === String(historyDetailPost.platform || '').toLowerCase())}
+          onClose={() => setHistoryDetailPost(null)}
+        />
       )}
     </div>
   );

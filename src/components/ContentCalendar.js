@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import PlatformIcon from './PlatformIcon';
+import PostDetailModal from './PostDetailModal';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    ContentCalendar — Visual Calendar & Feed Planner
@@ -42,6 +43,80 @@ function fmtDate(iso) {
   try {
     return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   } catch { return ''; }
+}
+
+function pickFirstUrl(...vals) {
+  for (const v of vals) {
+    if (typeof v === 'string' && v.trim()) return v.trim();
+  }
+  return '';
+}
+
+function getPostPreview(post) {
+  const mediaType = String(post?.mediaType || '').toLowerCase();
+  const mediaUrl = pickFirstUrl(
+    post?.mediaUrl,
+    post?.videoUrl,
+    post?.fileUrl,
+    post?.assetUrl,
+    post?.url,
+  );
+  const thumbUrl = pickFirstUrl(
+    post?.thumbnailUrl,
+    post?.thumbnail,
+    post?.thumbUrl,
+    post?.posterUrl,
+    post?.previewImageUrl,
+    post?.previewUrl,
+    post?.imageUrl,
+    post?.coverUrl,
+  );
+
+  if (thumbUrl) return { kind: 'image', url: thumbUrl };
+  if (mediaType === 'image' && mediaUrl) return { kind: 'image', url: mediaUrl };
+  if (mediaType === 'video' && mediaUrl) return { kind: 'video', url: mediaUrl };
+  if (mediaUrl) return { kind: 'media', url: mediaUrl };
+  return null;
+}
+
+function postMergeKey(post) {
+  const platform = String(post?.platform || '').toLowerCase();
+  const caption = String(post?.caption || '').trim().slice(0, 80).toLowerCase();
+  const rawTs = post?.createdAt || post?.scheduledAt;
+  const ts = rawTs ? new Date(rawTs).getTime() : 0;
+  const minuteBucket = Number.isFinite(ts) ? Math.floor(ts / 60000) : 0;
+  return `${platform}|${caption}|${minuteBucket}`;
+}
+
+function mergeRecentWithHistory(recentActivity, historyPosts) {
+  const recent = Array.isArray(recentActivity) ? recentActivity : [];
+  const history = Array.isArray(historyPosts) ? historyPosts : [];
+
+  const historyById = new Map(history.filter(p => p?.id != null).map(p => [String(p.id), p]));
+  const historyByKey = new Map(history.map(p => [postMergeKey(p), p]));
+
+  return recent.map((p) => {
+    const byId = p?.id != null ? historyById.get(String(p.id)) : null;
+    const byKey = historyByKey.get(postMergeKey(p));
+    const src = byId || byKey || {};
+    return {
+      ...src,
+      ...p,
+      mediaUrl: pickFirstUrl(p?.mediaUrl, src?.mediaUrl),
+      thumbnailUrl: pickFirstUrl(
+        p?.thumbnailUrl,
+        src?.thumbnailUrl,
+        src?.thumbnail,
+        src?.thumbUrl,
+        src?.posterUrl,
+        src?.previewImageUrl,
+        src?.previewUrl,
+        src?.imageUrl,
+        src?.coverUrl,
+      ),
+      imageUrl: pickFirstUrl(p?.imageUrl, src?.imageUrl),
+    };
+  });
 }
 
 function sameDay(a, b) {
@@ -86,44 +161,50 @@ function DayModal({ date, posts, onClose }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {dayPosts.map((p, i) => {
               const pInfo = PLATFORM_MAP[p.platform?.toLowerCase()];
-              const isVideo = p.mediaType === 'video';
-              const hasMedia = !!p.mediaUrl;
+              const preview = getPostPreview(p);
+              const isVideo = String(p.mediaType || '').toLowerCase() === 'video';
               return (
                 <div key={i} style={{ ...ms.postCard, borderLeft: `3px solid ${platformColor(p.platform)}` }}>
-                  {/* Header row */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                    {pInfo && <PlatformIcon platform={pInfo} size={16} />}
-                    <span style={{ fontWeight: 700, fontSize: 13, color: platformColor(p.platform), textTransform: 'capitalize' }}>{p.platform}</span>
-                    <span style={{ marginLeft: 'auto', fontSize: 11, color: '#94a3b8' }}>{fmtTime(p.createdAt || p.scheduledAt)}</span>
-                    <span style={{
-                      fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 99,
-                      background: p.status === 'SUCCESS' ? '#f0fdf4' : p.status === 'FAILED' ? '#fef2f2' : '#fff7ed',
-                      color: p.status === 'SUCCESS' ? '#16a34a' : p.status === 'FAILED' ? '#dc2626' : '#d97706',
-                    }}>{p.status || 'SCHEDULED'}</span>
-                  </div>
-
-                  {/* Media thumbnail */}
-                  {hasMedia && (
-                    <div style={{ marginBottom: 10, borderRadius: 10, overflow: 'hidden', background: '#f1f5f9', lineHeight: 0 }}>
-                      {isVideo ? (
-                        <video
-                          src={p.mediaUrl}
-                          controls
-                          style={{ width: '100%', maxHeight: 260, objectFit: 'cover', borderRadius: 10 }}
-                        />
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                    <div style={{
+                      width: 84, height: 84, borderRadius: 10, overflow: 'hidden', flexShrink: 0,
+                      background: '#f1f5f9', border: '1px solid #e2e8f0', position: 'relative',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      {preview?.kind === 'image' ? (
+                        <img src={preview.url} alt="post thumbnail" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : preview?.kind === 'video' ? (
+                        <video src={preview.url} muted preload="metadata" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       ) : (
-                        <img
-                          src={p.mediaUrl}
-                          alt="post media"
-                          style={{ width: '100%', maxHeight: 260, objectFit: 'cover', borderRadius: 10 }}
-                        />
+                        <span style={{ fontSize: 20 }}>{isVideo ? '🎬' : String(p.mediaType || '').toLowerCase() === 'image' ? '🖼️' : '✍️'}</span>
+                      )}
+                      {isVideo && (
+                        <div style={{
+                          position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.25)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          color: '#fff', fontSize: 13, fontWeight: 700,
+                        }}>▶</div>
                       )}
                     </div>
-                  )}
 
-                  {/* Caption */}
-                  <div style={{ fontSize: 13, color: '#334155', lineHeight: 1.5 }}>
-                    {p.caption || <em style={{ color: '#94a3b8' }}>(no caption)</em>}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      {/* Header row */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                        {pInfo && <PlatformIcon platform={pInfo} size={16} />}
+                        <span style={{ fontWeight: 700, fontSize: 13, color: platformColor(p.platform), textTransform: 'capitalize' }}>{p.platform}</span>
+                        <span style={{ marginLeft: 'auto', fontSize: 11, color: '#94a3b8' }}>{fmtTime(p.createdAt || p.scheduledAt)}</span>
+                        <span style={{
+                          fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 99,
+                          background: p.status === 'SUCCESS' ? '#f0fdf4' : p.status === 'FAILED' ? '#fef2f2' : '#fff7ed',
+                          color: p.status === 'SUCCESS' ? '#16a34a' : p.status === 'FAILED' ? '#dc2626' : '#d97706',
+                        }}>{p.status || 'SCHEDULED'}</span>
+                      </div>
+
+                      {/* Caption */}
+                      <div style={{ fontSize: 13, color: '#334155', lineHeight: 1.45 }}>
+                        {p.caption || <em style={{ color: '#94a3b8' }}>(no caption)</em>}
+                      </div>
+                    </div>
                   </div>
                   <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 5, textTransform: 'capitalize' }}>
                     {p.mediaType || 'post'}
@@ -159,19 +240,25 @@ export default function ContentCalendar() {
   const [posts,     setPosts]     = useState([]);
   const [loading,   setLoading]   = useState(true);
   const [selectedDay, setSelectedDay] = useState(null);
+  const [feedDetailPost, setFeedDetailPost] = useState(null);
   const [filterPlatform, setFilterPlatform] = useState('all');
 
   const loadPosts = useCallback(async () => {
     if (!token) return;
     setLoading(true);
     try {
-      const res = await fetch(`${base}/api/analytics/overview`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error('Failed');
-      const data = await res.json();
+      const headers = { Authorization: `Bearer ${token}` };
+      const [overviewRes, historyRes] = await Promise.all([
+        fetch(`${base}/api/analytics/overview`, { headers }),
+        fetch(`${base}/api/social/post/history?limit=200`, { headers }),
+      ]);
+
+      if (!overviewRes.ok) throw new Error('Failed');
+      const data = await overviewRes.json();
       const activity = data?.recentActivity || [];
-      setPosts(activity);
+      const history = historyRes.ok ? await historyRes.json() : [];
+      const enriched = mergeRecentWithHistory(activity, history);
+      setPosts(enriched);
     } catch {
       setPosts([]);
     } finally {
@@ -409,8 +496,34 @@ export default function ContentCalendar() {
                 {filteredPosts.map((p, i) => {
                   const pInfo = PLATFORM_MAP[p.platform?.toLowerCase()];
                   const isVideo = p.mediaType === 'video';
+                  const cardKey = p.id != null ? `post-${p.id}` : `feed-${postMergeKey(p)}-${i}`;
                   return (
-                    <div key={i} style={s.feedCard}>
+                    <div
+                      key={cardKey}
+                      role="button"
+                      tabIndex={0}
+                      title="View post details"
+                      onClick={() => setFeedDetailPost(p)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setFeedDetailPost(p);
+                        }
+                      }}
+                      style={{
+                        ...s.feedCard,
+                        cursor: 'pointer',
+                        transition: 'box-shadow 0.2s, border-color 0.15s',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.boxShadow = '0 4px 14px rgba(15,23,42,0.1)';
+                        e.currentTarget.style.borderColor = '#cbd5e1';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.boxShadow = 'none';
+                        e.currentTarget.style.borderColor = '#e2e8f0';
+                      }}
+                    >
                       {/* Thumbnail area */}
                       <div style={{
                         ...s.feedThumb,
@@ -481,6 +594,14 @@ export default function ContentCalendar() {
           onClose={() => setSelectedDay(null)}
         />
       )}
+
+      {feedDetailPost && (
+        <PostDetailModal
+          post={feedDetailPost}
+          platform={PLATFORM_MAP[feedDetailPost.platform?.toLowerCase()]}
+          onClose={() => setFeedDetailPost(null)}
+        />
+      )}
     </div>
   );
 }
@@ -546,7 +667,7 @@ const s = {
   feedTitle: { fontSize: 17, fontWeight: 800, color: '#0f172a', display: 'block' },
   feedSub: { fontSize: 13, color: '#94a3b8', marginTop: 2, display: 'block' },
   feedGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 14 },
-  feedCard: { borderRadius: 12, border: '1.5px solid #e2e8f0', overflow: 'hidden', background: '#fff', transition: 'box-shadow 0.2s', cursor: 'default' },
+  feedCard: { borderRadius: 12, border: '1.5px solid #e2e8f0', overflow: 'hidden', background: '#fff' },
   feedThumb: { height: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' },
   feedPlatformBadge: { position: 'absolute', top: 8, left: 8, borderRadius: 6, padding: '3px 6px', display: 'flex', alignItems: 'center' },
   feedStatusBadge: { position: 'absolute', top: 8, right: 8, borderRadius: '50%', width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#fff' },

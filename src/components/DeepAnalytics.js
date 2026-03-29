@@ -16,8 +16,18 @@ const PLATFORMS = [
 ];
 
 const DAY_LABELS  = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const DAY_FULL_LABELS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 const HOUR_LABELS = Array.from({ length: 24 }, (_, i) =>
   i === 0 ? '12a' : i < 12 ? `${i}a` : i === 12 ? '12p' : `${i-12}p`);
+
+function formatHour12(hour) {
+  const h = Number(hour);
+  if (Number.isNaN(h)) return '';
+  if (h === 0) return '12:00 AM';
+  if (h < 12) return `${h}:00 AM`;
+  if (h === 12) return '12:00 PM';
+  return `${h - 12}:00 PM`;
+}
 
 /* ── SVG Line Chart ─────────────────────────────────────────── */
 function LineChart({ data, color = '#6366f1', width = 500, height = 160 }) {
@@ -146,7 +156,7 @@ function PostHeatmap({ heatmap, bestDay, bestHour, postsDetail = [] }) {
                   <div
                     key={h}
                     onClick={() => count > 0 && setSelected(isSelected ? null : { d, h })}
-                    title={`${day} ${HOUR_LABELS[h]}: ${count} post${count !== 1 ? 's' : ''}`}
+                    title={`${DAY_FULL_LABELS[d]} ${formatHour12(h)} — You posted ${count} time${count !== 1 ? 's' : ''} here`}
                     style={{
                       width: 32, height: 28, borderRadius: 5,
                       background: isSelected ? '#6366f1' : bg,
@@ -164,9 +174,9 @@ function PostHeatmap({ heatmap, bestDay, bestHour, postsDetail = [] }) {
       </div>
 
       <div style={{ fontSize: 11, color: '#64748b', marginTop: 12 }}>
-        🏆 Best time to post: <strong>{bestDay}</strong> at <strong>{bestHour < 12 ? `${bestHour || 12}am` : bestHour === 12 ? '12pm' : `${bestHour - 12}pm`}</strong>
+        🏆 Top posting window from your history: <strong>{bestDay}</strong> at <strong>{formatHour12(bestHour)}</strong>
         {selected && <span style={{ marginLeft: 16, color: '#6366f1' }}>
-          · Click another cell or same cell to deselect
+          · Tip: darker blocks are your most-used posting times
         </span>}
       </div>
 
@@ -182,7 +192,7 @@ function PostHeatmap({ heatmap, bestDay, bestHour, postsDetail = [] }) {
             justifyContent: 'space-between',
           }}>
             <span style={{ fontWeight: 700, fontSize: 13, color: '#1e293b' }}>
-              {DAY_LABELS[selected.d]} {HOUR_LABELS[selected.h]} — {selectedPosts.length} post{selectedPosts.length !== 1 ? 's' : ''}
+              {DAY_FULL_LABELS[selected.d]} {formatHour12(selected.h)} — {selectedPosts.length} post{selectedPosts.length !== 1 ? 's' : ''}
             </span>
             <button onClick={() => setSelected(null)} style={{
               background: 'none', border: 'none', cursor: 'pointer',
@@ -410,7 +420,7 @@ export default function DeepAnalytics() {
         <div style={{ ...s.card, marginBottom: 0 }}>
           <h3 style={s.cardTitle}>⏰ Best Time to Post</h3>
           <p style={{ fontSize: 12, color: '#94a3b8', marginBottom: 16 }}>
-            Based on when you've published across all platforms. Darker = more posts.
+            Based on your posting history across platforms. Darker blocks = times you post most often.
           </p>
           {loadBestTime ? (
             <div style={s.loadingRow}><div style={s.spinner} /> Loading…</div>

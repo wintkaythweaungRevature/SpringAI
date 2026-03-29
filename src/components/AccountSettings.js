@@ -26,8 +26,8 @@ const TIER_CATALOG = {
   GROWTH: {
     name: "Growth",
     monthlyPrice: 79,
-    yearlyPrice: 66,
-    yearlyTotal: 792,
+    yearlyPrice: 64,
+    yearlyTotal: 768,
     tagline: "Priority processing & full platform limits",
     features: ["Unlimited posts", "All platforms", "Video trimming tool", "Priority processing", "All Pro features"],
     badge: "Best Value",

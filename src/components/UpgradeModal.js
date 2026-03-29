@@ -43,7 +43,7 @@ export default function UpgradeModal({ reason, feature, onClose, suggestPlan }) 
       highlight: ['8 platforms', '30 videos/mo', 'Deep Analytics', 'Social AI Chat', 'Unlimited schedule'],
     },
     {
-      id: 'GROWTH', name: 'Growth', monthlyPrice: 79, yearlyPrice: 66, color: '#0ea5e9',
+      id: 'GROWTH', name: 'Growth', monthlyPrice: 79, yearlyPrice: 64, color: '#0ea5e9',
       highlight: ['8 platforms', 'Unlimited videos', 'Priority processing', 'Video trimming', 'All features'],
     },
   ];

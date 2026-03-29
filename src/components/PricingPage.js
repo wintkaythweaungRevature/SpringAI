@@ -47,8 +47,8 @@ const PLANS = [
     id: 'GROWTH',
     name: 'Growth',
     monthlyPrice: 79,
-    yearlyPrice: 66,
-    yearlyTotal: 792,
+    yearlyPrice: 64,
+    yearlyTotal: 768,
     color: '#0ea5e9',
     badge: 'Best Value',
     features: [

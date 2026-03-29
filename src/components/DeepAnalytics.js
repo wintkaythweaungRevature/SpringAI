@@ -340,88 +340,91 @@ export default function DeepAnalytics() {
         ))}
       </div>
 
-      {/* ── FOLLOWER GROWTH ── */}
-      <div style={s.card}>
-        <div style={s.cardHeader}>
-          <h3 style={s.cardTitle}>👥 Follower Growth</h3>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <select
-              value={days}
-              onChange={e => setDays(Number(e.target.value))}
-              style={s.select}
-            >
-              <option value={7}>7 days</option>
-              <option value={30}>30 days</option>
-              <option value={90}>90 days</option>
-            </select>
-            <button
-              style={{ ...s.refreshBtn, background: platformConfig.color, opacity: snapping ? 0.7 : 1 }}
-              onClick={refreshSnapshot}
-              disabled={snapping}
-              title="Save a snapshot right now (normally runs at 3am)"
-            >
-              {snapping ? '⏳' : '🔄'} Refresh Now
-            </button>
+      {/* ── FOLLOWER GROWTH + BEST TIME (wide screens: side by side) ── */}
+      <div style={s.topGrid}>
+        <div style={{ ...s.card, marginBottom: 0 }}>
+          <div style={s.cardHeader}>
+            <h3 style={s.cardTitle}>👥 Follower Growth</h3>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              <select
+                value={days}
+                onChange={e => setDays(Number(e.target.value))}
+                style={s.select}
+              >
+                <option value={7}>7 days</option>
+                <option value={30}>30 days</option>
+                <option value={90}>90 days</option>
+              </select>
+              <button
+                style={{ ...s.refreshBtn, background: platformConfig.color, opacity: snapping ? 0.7 : 1 }}
+                onClick={refreshSnapshot}
+                disabled={snapping}
+                title="Save a snapshot right now (normally runs at 3am)"
+              >
+                {snapping ? '⏳' : '🔄'} Refresh Now
+              </button>
+            </div>
           </div>
-        </div>
-        {snapMsg && <div style={s.snapMsg}>{snapMsg}</div>}
-        {loadHistory ? (
-          <div style={s.loadingRow}><div style={s.spinner} /> Loading…</div>
-        ) : (
-          <>
-            <LineChart
-              data={history?.dataPoints || []}
-              color={platformConfig.color}
-              width={580}
-              height={180}
-            />
-            {history?.dataPoints?.length > 0 && (
-              <div style={s.statRow}>
-                <div style={s.stat}>
-                  <span style={s.statNum}>
-                    {(history.dataPoints[history.dataPoints.length - 1]?.followers || 0).toLocaleString()}
-                  </span>
-                  <span style={s.statLabel}>Current Followers</span>
-                </div>
-                {history.dataPoints.length >= 2 && (
-                  <div style={s.stat}>
-                    <span style={{ ...s.statNum, color: '#10b981' }}>
-                      {((history.dataPoints[history.dataPoints.length - 1]?.followers || 0)
-                        - (history.dataPoints[0]?.followers || 0)).toLocaleString()}
-                    </span>
-                    <span style={s.statLabel}>Growth ({days}d)</span>
-                  </div>
-                )}
-                <div style={s.stat}>
-                  <span style={s.statNum}>
-                    {history.dataPoints[history.dataPoints.length - 1]?.engagementRate || '—'}%
-                  </span>
-                  <span style={s.statLabel}>Engagement Rate</span>
-                </div>
+          {snapMsg && <div style={s.snapMsg}>{snapMsg}</div>}
+          {loadHistory ? (
+            <div style={s.loadingRow}><div style={s.spinner} /> Loading…</div>
+          ) : (
+            <>
+              <div style={s.chartStretch}>
+                <LineChart
+                  data={history?.dataPoints || []}
+                  color={platformConfig.color}
+                  width={960}
+                  height={200}
+                />
               </div>
-            )}
-          </>
-        )}
-      </div>
+              {history?.dataPoints?.length > 0 && (
+                <div style={s.statRow}>
+                  <div style={s.stat}>
+                    <span style={s.statNum}>
+                      {(history.dataPoints[history.dataPoints.length - 1]?.followers || 0).toLocaleString()}
+                    </span>
+                    <span style={s.statLabel}>Current Followers</span>
+                  </div>
+                  {history.dataPoints.length >= 2 && (
+                    <div style={s.stat}>
+                      <span style={{ ...s.statNum, color: '#10b981' }}>
+                        {((history.dataPoints[history.dataPoints.length - 1]?.followers || 0)
+                          - (history.dataPoints[0]?.followers || 0)).toLocaleString()}
+                      </span>
+                      <span style={s.statLabel}>Growth ({days}d)</span>
+                    </div>
+                  )}
+                  <div style={s.stat}>
+                    <span style={s.statNum}>
+                      {history.dataPoints[history.dataPoints.length - 1]?.engagementRate || '—'}%
+                    </span>
+                    <span style={s.statLabel}>Engagement Rate</span>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
 
-      {/* ── BEST TIME TO POST ── */}
-      <div style={s.card}>
-        <h3 style={s.cardTitle}>⏰ Best Time to Post</h3>
-        <p style={{ fontSize: 12, color: '#94a3b8', marginBottom: 16 }}>
-          Based on when you've published across all platforms. Darker = more posts.
-        </p>
-        {loadBestTime ? (
-          <div style={s.loadingRow}><div style={s.spinner} /> Loading…</div>
-        ) : bestTime ? (
-          <PostHeatmap
-            heatmap={bestTime.heatmap}
-            bestDay={bestTime.bestDay}
-            bestHour={bestTime.bestHour}
-            postsDetail={bestTime.postsDetail || []}
-          />
-        ) : (
-          <p style={{ color: '#94a3b8', fontSize: 13 }}>Could not load best time data.</p>
-        )}
+        <div style={{ ...s.card, marginBottom: 0 }}>
+          <h3 style={s.cardTitle}>⏰ Best Time to Post</h3>
+          <p style={{ fontSize: 12, color: '#94a3b8', marginBottom: 16 }}>
+            Based on when you've published across all platforms. Darker = more posts.
+          </p>
+          {loadBestTime ? (
+            <div style={s.loadingRow}><div style={s.spinner} /> Loading…</div>
+          ) : bestTime ? (
+            <PostHeatmap
+              heatmap={bestTime.heatmap}
+              bestDay={bestTime.bestDay}
+              bestHour={bestTime.bestHour}
+              postsDetail={bestTime.postsDetail || []}
+            />
+          ) : (
+            <p style={{ color: '#94a3b8', fontSize: 13 }}>Could not load best time data.</p>
+          )}
+        </div>
       </div>
 
       {/* ── POST TYPE PERFORMANCE ── */}
@@ -430,28 +433,28 @@ export default function DeepAnalytics() {
         {loadPerf ? (
           <div style={s.loadingRow}><div style={s.spinner} /> Loading…</div>
         ) : postPerf && Object.keys(postPerf.byType || {}).length > 0 ? (
-          <div style={{ display: 'flex', gap: 40, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-            <div>
+          <div style={s.perfRow}>
+            <div style={{ flex: '1 1 280px', minWidth: 0 }}>
               <p style={{ fontSize: 12, color: '#64748b', marginBottom: 12 }}>Posts by type</p>
               <BarChart data={postPerf.byType} color={platformConfig.color} />
             </div>
-            <div>
+            <div style={{ flex: '2 1 360px', minWidth: 0 }}>
               <p style={{ fontSize: 12, color: '#64748b', marginBottom: 12 }}>Posts by platform</p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {Object.entries(postPerf.byPlatform || {}).map(([plat, count]) => {
                   const pc = PLATFORMS.find(p => p.id === plat);
                   const max = Math.max(...Object.values(postPerf.byPlatform || {}));
                   return (
-                    <div key={plat} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontSize: 12, width: 90, color: '#475569', display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <div key={plat} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{ fontSize: 12, width: 100, flexShrink: 0, color: '#475569', display: 'flex', alignItems: 'center', gap: 5 }}>
                         {pc ? <PlatformIcon platform={pc} size={14} /> : null}
                         {pc?.label || plat}
                       </span>
-                      <div style={{ width: 120, height: 12, background: '#f1f5f9', borderRadius: 6, overflow: 'hidden' }}>
+                      <div style={{ flex: 1, height: 12, minWidth: 80, background: '#f1f5f9', borderRadius: 6, overflow: 'hidden' }}>
                         <div style={{ height: '100%', width: `${(count / max) * 100}%`,
                                       background: pc?.color || '#6366f1', borderRadius: 6 }} />
                       </div>
-                      <span style={{ fontSize: 12, color: '#64748b' }}>{count}</span>
+                      <span style={{ fontSize: 12, color: '#64748b', width: 28, flexShrink: 0, textAlign: 'right' }}>{count}</span>
                     </div>
                   );
                 })}
@@ -472,8 +475,30 @@ export default function DeepAnalytics() {
 /* ── Styles ── */
 const s = {
   wrap: {
-    maxWidth: 1400, margin: '0 auto', padding: '24px 28px',
+    width: '100%',
+    maxWidth: '100%',
+    margin: 0,
+    padding: '8px 4px 24px',
+    boxSizing: 'border-box',
     fontFamily: "'Inter', -apple-system, sans-serif",
+  },
+  topGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 520px), 1fr))',
+    gap: 20,
+    marginBottom: 20,
+    alignItems: 'stretch',
+  },
+  chartStretch: {
+    width: '100%',
+    minHeight: 200,
+  },
+  perfRow: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: 40,
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
   },
   header: { marginBottom: 20 },
   title:  { fontSize: 22, fontWeight: 700, color: '#1e293b', margin: 0 },

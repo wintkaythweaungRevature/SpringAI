@@ -344,7 +344,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
     setVariants(prev => ({ ...prev, [pid]: { ...prev[pid], caption: nextCaption } }));
   };
 
-  const useCaptionOption = (pid, optionIndex) => {
+  const selectCaptionOption = (pid, optionIndex) => {
     const options = captionOptions[pid] || [];
     const option = options[optionIndex];
     if (!option) return;
@@ -1589,7 +1589,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
                             <div style={{ fontSize: '12px', color: '#334155', lineHeight: 1.45, minHeight: '54px' }}>
                               {opt.text.length > 100 ? `${opt.text.slice(0, 100)}…` : opt.text}
                             </div>
-                            <button type="button" onClick={() => useCaptionOption(pid, idx)} style={{ marginTop: '8px', width: '100%', padding: '6px 8px', borderRadius: '8px', border: '1px solid #cbd5e1', background: selectedIdx === idx ? '#eef2ff' : '#fff', color: selectedIdx === idx ? '#4f46e5' : '#334155', fontWeight: 700, fontSize: '11px', cursor: 'pointer' }}>
+                            <button type="button" onClick={() => selectCaptionOption(pid, idx)} style={{ marginTop: '8px', width: '100%', padding: '6px 8px', borderRadius: '8px', border: '1px solid #cbd5e1', background: selectedIdx === idx ? '#eef2ff' : '#fff', color: selectedIdx === idx ? '#4f46e5' : '#334155', fontWeight: 700, fontSize: '11px', cursor: 'pointer' }}>
                               {selectedIdx === idx ? 'Selected' : 'Use this'}
                             </button>
                           </div>

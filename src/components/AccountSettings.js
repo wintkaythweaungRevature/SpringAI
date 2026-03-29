@@ -94,6 +94,26 @@ export default function AccountSettings() {
   }, [isMember, cancelAtPeriodEnd, apiBase, token, user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const tierKey = normalizeTierKey(subSnap?.plan, user?.membershipType);
+
+  /** Subscription pill — matches pricing card colors (solid fill + white text). */
+  const subscriptionBadgeStyle = (() => {
+    if (!isMember) return s.freeBadge;
+    const key = tierKey || (user?.membershipType === "MEMBER" ? "STARTER" : null);
+    const tier = key && TIER_CATALOG[key] ? TIER_CATALOG[key] : null;
+    if (!tier) {
+      return { ...s.memberBadge, background: "#6366f1", color: "#fff", border: "1px solid #6366f1" };
+    }
+    return {
+      padding: "3px 12px",
+      borderRadius: "20px",
+      fontSize: "12px",
+      fontWeight: "700",
+      background: tier.color,
+      color: "#ffffff",
+      border: `1px solid ${tier.color}`,
+      boxShadow: "0 1px 2px rgba(15, 23, 42, 0.06)",
+    };
+  })();
   const apiSaysMonthly = subSnap?.billingInterval === "MONTHLY";
   const showAnnualUpsell =
     isMember &&
@@ -248,7 +268,7 @@ export default function AccountSettings() {
         <div style={s.section}>
           <h3 style={s.sectionTitle}>Subscription</h3>
           <div style={s.badgeRow}>
-            <span style={isMember ? s.memberBadge : s.freeBadge}>
+            <span style={isMember ? subscriptionBadgeStyle : s.freeBadge}>
               {planBadgeLabel}
             </span>
             {isMember && cancelAtPeriodEnd && (
@@ -551,7 +571,7 @@ const s = {
   badgeRow: { display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" },
   memberBadge: {
     padding: "3px 12px", borderRadius: "20px",
-    background: "#22c55e", color: "#fff",
+    background: "#6366f1", color: "#fff", border: "1px solid #6366f1",
     fontSize: "12px", fontWeight: "700",
   },
   freeBadge: {

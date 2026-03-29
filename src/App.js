@@ -285,11 +285,25 @@ function App() {
                   <span style={s.topEmail} title={user.email}>{user.email}</span>
                   {(() => {
                     const mt = user?.membershipType;
+                    /** Same brand colors as PricingPage / UpgradeModal — white label on solid tier color. */
                     const planColors = { STARTER: '#6366f1', PRO: '#8b5cf6', GROWTH: '#0ea5e9', MEMBER: '#6366f1' };
                     const planLabel = { STARTER: 'Starter', PRO: 'Pro', GROWTH: 'Growth', MEMBER: 'Starter' };
                     if (!mt || mt === 'FREE') return null;
+                    const bg = planColors[mt] || '#6366f1';
                     return (
-                      <span style={{ ...s.memberBadge, background: planColors[mt] || '#22c55e' }}>
+                      <span
+                        style={{
+                          fontSize: '11.5px',
+                          fontWeight: '700',
+                          padding: '4px 11px',
+                          borderRadius: '20px',
+                          whiteSpace: 'nowrap',
+                          background: bg,
+                          color: '#ffffff',
+                          border: `1px solid ${bg}`,
+                          boxShadow: '0 1px 2px rgba(15, 23, 42, 0.08)',
+                        }}
+                      >
                         ✓ {planLabel[mt] || mt}
                       </span>
                     );
@@ -493,9 +507,9 @@ const s = {
     textOverflow: 'ellipsis', whiteSpace: 'nowrap',
   },
   memberBadge: {
-    fontSize: '11.5px', fontWeight: '700', color: '#16a34a',
-    background: '#f0fdf4',
-    border: '1px solid #bbf7d0',
+    fontSize: '11.5px', fontWeight: '700', color: '#ffffff',
+    background: '#6366f1',
+    border: '1px solid #6366f1',
     padding: '3px 10px', borderRadius: '20px', whiteSpace: 'nowrap',
   },
   logoutBtn: {

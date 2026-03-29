@@ -511,12 +511,11 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
             <p className="ls-plan-annual"><strong>$32/mo</strong> billed annually (<strong>$384/yr</strong>)</p>
             <ul className="ls-plan-features">
               <li>Everything in Starter</li>
-              <li><strong>All 8</strong> platforms · <strong>30</strong> videos / month</li>
+              <li><strong>All 8</strong> platforms · <strong>Unlimited</strong> videos to post</li>
               <li><strong>Unlimited</strong> scheduled posts</li>
-              <li>Deep analytics</li>
-              <li>AI Social Chat (RAG)</li>
-              <li>AI captions, thumbnail picker, link-in-bio</li>
-              <li><strong>1</strong> seat</li>
+              <li><strong>100 AI-generated images</strong> / month</li>
+              <li>Deep analytics &amp; Social AI Chat (RAG)</li>
+              <li>Messages &amp; Auto Reply</li>
             </ul>
             <button type="button" className="ls-btn-primary" onClick={() => onChoosePlan ? onChoosePlan('PRO') : onGetStarted()}>Choose Pro</button>
           </div>
@@ -548,15 +547,16 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
               </tr>
             </thead>
             <tbody>
-              <tr><td>Platforms</td><td>5</td><td>All 8</td><td>All 8</td></tr>
-              <tr><td>Videos / month</td><td>10</td><td>30</td><td>Unlimited</td></tr>
-              <tr><td>AI captions</td><td className="ls-ok">✓</td><td className="ls-ok">✓</td><td className="ls-ok">✓</td></tr>
-              <tr><td>Thumbnail picker</td><td className="ls-ok">✓</td><td className="ls-ok">✓</td><td className="ls-ok">✓</td></tr>
-              <tr><td>Link-in-bio</td><td className="ls-ok">✓</td><td className="ls-ok">✓</td><td className="ls-ok">✓</td></tr>
+              <tr><td>Platforms</td><td>3</td><td>All 8</td><td>All 8</td></tr>
+              <tr><td>Videos to post / month</td><td>100</td><td>Unlimited</td><td>Unlimited</td></tr>
+              <tr><td>Images to post / month</td><td>1,000</td><td>Unlimited</td><td>Unlimited</td></tr>
+              <tr><td>AI-generated images / mo</td><td className="ls-no">—</td><td>100</td><td>Unlimited</td></tr>
+              <tr><td>Scheduled posts</td><td>30/mo</td><td>Unlimited</td><td>Unlimited</td></tr>
+              <tr><td>AI captions &amp; hashtags</td><td className="ls-ok">✓</td><td className="ls-ok">✓</td><td className="ls-ok">✓</td></tr>
               <tr><td>Deep analytics</td><td className="ls-no">—</td><td className="ls-ok">✓</td><td className="ls-ok">✓</td></tr>
               <tr><td>AI Social Chat (RAG)</td><td className="ls-no">—</td><td className="ls-ok">✓</td><td className="ls-ok">✓</td></tr>
-              <tr><td>Team seats</td><td>1</td><td>1</td><td>3</td></tr>
-              <tr><td>Scheduled posts</td><td>30/mo</td><td>Unlimited</td><td>Unlimited</td></tr>
+              <tr><td>Messages &amp; Auto Reply</td><td className="ls-no">—</td><td className="ls-ok">✓</td><td className="ls-ok">✓</td></tr>
+              <tr><td>Video trimming</td><td className="ls-no">—</td><td className="ls-no">—</td><td className="ls-ok">✓</td></tr>
               <tr><td>Priority processing</td><td className="ls-no">—</td><td className="ls-no">—</td><td className="ls-ok">✓</td></tr>
               <tr><td>Annual (effective / mo)</td><td>$15 ($180/yr)</td><td>$32 ($384/yr)</td><td>$64 ($768/yr)</td></tr>
             </tbody>

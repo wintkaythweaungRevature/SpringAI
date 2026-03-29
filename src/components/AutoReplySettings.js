@@ -47,6 +47,8 @@ export default function AutoReplySettings() {
   const [logs, setLogs] = useState([]);
   const [logsLoading, setLogsLoading] = useState(false);
   const [showLogs, setShowLogs] = useState(false);
+  const [logDetail, setLogDetail] = useState(null); // full conversation modal
+  const [hoverLogId, setHoverLogId] = useState(null);
 
   const [globalError, setGlobalError] = useState('');
 
@@ -170,6 +172,13 @@ export default function AutoReplySettings() {
     if (!showLogs) loadLogs();
     setShowLogs(!showLogs);
   };
+
+  useEffect(() => {
+    if (!logDetail) return;
+    const onKey = (e) => { if (e.key === 'Escape') setLogDetail(null); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [logDetail]);
 
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
@@ -319,10 +328,13 @@ export default function AutoReplySettings() {
         )}
       </div>
 
-      {/* Activity Log */}
-      <div style={s.section}>
+      {/* Activity Log — full width; click row to open full conversation */}
+      <div style={s.sectionLog}>
         <div style={s.logHeader}>
-          <h3 style={s.sectionTitle}>Activity Log</h3>
+          <div>
+            <h3 style={s.sectionTitle}>Activity Log</h3>
+            <p style={s.logHint}>Comment and reply show in full below. Click a row for a larger focused view.</p>
+          </div>
           <button style={s.logToggleBtn} onClick={handleShowLogs}>
             {showLogs ? 'Hide' : 'Show recent replies'}
           </button>
@@ -338,28 +350,74 @@ export default function AutoReplySettings() {
                 <span>Platform</span><span>Author</span><span>Comment</span><span>Reply</span><span>Time</span><span>Status</span>
               </div>
               {logs.map(l => (
-                <div key={l.id} style={s.logRow}>
-                  <span style={{ textTransform: 'capitalize', fontWeight: 600 }}>{l.platform}</span>
-                  <span style={{ color: '#6366f1' }}>@{l.authorUsername || '—'}</span>
-                  <span style={s.logCell} title={l.commentText}>{truncate(l.commentText, 90)}</span>
-                  <span style={s.logCell} title={l.replyText}>{truncate(l.replyText, 100)}</span>
-                  <span style={{ color: '#94a3b8', fontSize: 14 }}>{formatTime(l.repliedAt)}</span>
-                  <span style={{ color: l.success ? '#22c55e' : '#ef4444', fontSize: 14 }}>
+                <button
+                  key={l.id}
+                  type="button"
+                  style={{
+                    ...s.logRowBtn,
+                    background: hoverLogId === l.id ? '#f8fafc' : 'transparent',
+                  }}
+                  onMouseEnter={() => setHoverLogId(l.id)}
+                  onMouseLeave={() => setHoverLogId(null)}
+                  onClick={() => setLogDetail(l)}
+                >
+                  <span style={s.logPlatformCell}>
+                    <PlatformIcon platform={resolvePlatformMeta(l.platform)} size={22} />
+                    <span style={s.logPlatformLabel}>{platformLabel(l.platform)}</span>
+                  </span>
+                  <span style={s.logColAuthor}>@{l.authorUsername || '—'}</span>
+                  <span style={s.logCellWrap}>{l.commentText || '—'}</span>
+                  <span style={s.logCellWrap}>{l.replyText || '—'}</span>
+                  <span style={s.logColTime}>{formatTime(l.repliedAt)}</span>
+                  <span style={{ ...s.logColStatus, color: l.success ? '#22c55e' : '#ef4444' }}>
                     {l.success ? '✓ Sent' : '✗ Failed'}
                   </span>
-                </div>
+                </button>
               ))}
             </div>
           )
         )}
       </div>
+
+      {logDetail && (
+        <div
+          style={s.modalOverlay}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="log-detail-title"
+          onClick={() => setLogDetail(null)}
+        >
+          <div style={s.modalPanel} onClick={e => e.stopPropagation()}>
+            <div style={s.modalPanelHeader}>
+              <h3 id="log-detail-title" style={s.modalTitle}>Conversation</h3>
+              <button type="button" style={s.modalClose} onClick={() => setLogDetail(null)} aria-label="Close">
+                ✕
+              </button>
+            </div>
+            <div style={s.modalMeta}>
+              <span style={s.modalPlatform}>
+                <PlatformIcon platform={resolvePlatformMeta(logDetail.platform)} size={24} />
+                <span style={{ fontWeight: 700 }}>{platformLabel(logDetail.platform)}</span>
+              </span>
+              <span style={{ color: '#6366f1' }}>@{logDetail.authorUsername || '—'}</span>
+              <span style={{ color: '#94a3b8' }}>{formatTime(logDetail.repliedAt)}</span>
+              <span style={{ color: logDetail.success ? '#22c55e' : '#ef4444', fontWeight: 600 }}>
+                {logDetail.success ? '✓ Sent' : '✗ Failed'}
+              </span>
+            </div>
+            <div style={s.modalBlock}>
+              <div style={s.modalLabel}>Their comment</div>
+              <div style={s.modalBody}>{logDetail.commentText || '—'}</div>
+            </div>
+            <div style={s.modalBlock}>
+              <div style={s.modalLabel}>Your AI reply</div>
+              <div style={s.modalBody}>{logDetail.replyText || '—'}</div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
-}
-
-function truncate(str, n) {
-  if (!str) return '—';
-  return str.length > n ? str.slice(0, n) + '…' : str;
 }
 
 function formatTime(iso) {
@@ -369,13 +427,35 @@ function formatTime(iso) {
   } catch { return iso; }
 }
 
+/** Map API platform string → PLATFORMS row for icons (handles casing / aliases). */
+function resolvePlatformMeta(raw) {
+  const p = resolvePlatform(raw);
+  if (p) return p;
+  return { id: 'unknown', label: raw || 'Unknown', color: '#64748b', emoji: '📱', logo: null };
+}
+
+function resolvePlatform(raw) {
+  if (raw == null || String(raw).trim() === '') return null;
+  let id = String(raw).trim().toLowerCase().replace(/\s+/g, '');
+  const aliases = { twitter: 'x', xtwitter: 'x' };
+  id = aliases[id] || id;
+  return PLATFORMS.find(x => x.id === id) || null;
+}
+
+function platformLabel(raw) {
+  const p = resolvePlatform(raw);
+  if (p) return p.label;
+  if (raw == null || String(raw).trim() === '') return '—';
+  return String(raw).replace(/_/g, ' ');
+}
+
 /* ─── Styles ──────────────────────────────────────────────────────────────── */
 const s = {
   page: {
-    maxWidth: 1240,
+    maxWidth: 'none',
     width: '100%',
-    margin: '0 auto',
-    padding: '28px 24px 40px',
+    margin: 0,
+    padding: '28px clamp(12px, 2vw, 28px) 40px',
     fontFamily: 'inherit',
     boxSizing: 'border-box',
   },
@@ -459,25 +539,81 @@ const s = {
   },
   replyLabel: { fontSize: 12, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5 },
   replyText: { margin: '8px 0 0', fontSize: 16, color: '#1e293b', lineHeight: 1.65 },
-  logHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  logHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, marginBottom: 16, flexWrap: 'wrap' },
+  logHint: { margin: '4px 0 0', fontSize: 14, color: '#94a3b8', lineHeight: 1.45, maxWidth: 560 },
   logToggleBtn: {
     background: '#f1f5f9', border: 'none', borderRadius: 10, padding: '8px 18px',
     cursor: 'pointer', fontSize: 14, fontWeight: 600, color: '#475569',
+    flexShrink: 0,
   },
-  logTable: { display: 'flex', flexDirection: 'column', gap: 4, overflowX: 'auto' },
+  sectionLog: {
+    background: '#fff', border: '1.5px solid #e2e8f0', borderRadius: 18,
+    padding: '28px clamp(16px, 2vw, 28px)', marginBottom: 28,
+    width: '100%', boxSizing: 'border-box',
+  },
+  logTable: { display: 'flex', flexDirection: 'column', gap: 4, overflowX: 'auto', width: '100%' },
   logHead: {
     display: 'grid',
-    gridTemplateColumns: 'minmax(100px, 0.9fr) minmax(120px, 1fr) minmax(180px, 1.4fr) minmax(180px, 1.4fr) minmax(130px, 0.9fr) minmax(88px, 0.6fr)',
+    gridTemplateColumns: 'minmax(92px, 0.7fr) minmax(110px, 0.85fr) minmax(220px, 1.6fr) minmax(220px, 1.6fr) minmax(118px, 0.75fr) minmax(76px, 0.5fr)',
     fontSize: 12, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase',
-    padding: '10px 4px', borderBottom: '1px solid #e2e8f0', gap: 12, flexShrink: 0,
-    minWidth: 900,
+    padding: '10px 4px', borderBottom: '1px solid #e2e8f0', gap: 14, flexShrink: 0,
+    minWidth: 0, alignItems: 'end',
   },
-  logRow: {
+  logRowBtn: {
     display: 'grid',
-    gridTemplateColumns: 'minmax(100px, 0.9fr) minmax(120px, 1fr) minmax(180px, 1.4fr) minmax(180px, 1.4fr) minmax(130px, 0.9fr) minmax(88px, 0.6fr)',
-    fontSize: 15, color: '#334155', padding: '12px 4px',
-    borderBottom: '1px solid #f1f5f9', gap: 12, alignItems: 'center',
-    minWidth: 900,
+    gridTemplateColumns: 'minmax(92px, 0.7fr) minmax(110px, 0.85fr) minmax(220px, 1.6fr) minmax(220px, 1.6fr) minmax(118px, 0.75fr) minmax(76px, 0.5fr)',
+    fontSize: 15, color: '#334155', padding: '14px 4px',
+    borderBottom: '1px solid #f1f5f9', gap: 14, alignItems: 'start',
+    minWidth: 0,
+    width: '100%',
+    border: 'none', borderRadius: 10, cursor: 'pointer',
+    fontFamily: 'inherit', textAlign: 'left', transition: 'background 0.15s',
+    outline: 'none',
   },
-  logCell: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+  logPlatformCell: {
+    display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, paddingTop: 2,
+  },
+  logPlatformLabel: { fontWeight: 600, fontSize: 14, color: '#334155', lineHeight: 1.3 },
+  logColAuthor: { color: '#6366f1', fontWeight: 500, wordBreak: 'break-word', paddingTop: 2 },
+  logColTime: { color: '#94a3b8', fontSize: 14, paddingTop: 2, whiteSpace: 'nowrap' },
+  logColStatus: { fontSize: 14, paddingTop: 2, whiteSpace: 'nowrap' },
+  logCellWrap: {
+    whiteSpace: 'pre-wrap',
+    wordBreak: 'break-word',
+    overflowWrap: 'anywhere',
+    lineHeight: 1.55,
+    fontSize: 15,
+    color: '#334155',
+    minWidth: 0,
+  },
+  modalOverlay: {
+    position: 'fixed', inset: 0, zIndex: 10050,
+    background: 'rgba(15, 23, 42, 0.45)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    padding: '24px 16px', boxSizing: 'border-box',
+  },
+  modalPanel: {
+    background: '#fff', borderRadius: 16, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
+    maxWidth: 'min(920px, 100%)', width: '100%', maxHeight: 'min(85vh, 900px)',
+    overflow: 'auto', padding: '24px 26px 28px',
+    boxSizing: 'border-box',
+  },
+  modalPanelHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, gap: 12 },
+  modalTitle: { margin: 0, fontSize: 22, fontWeight: 800, color: '#0f172a' },
+  modalClose: {
+    border: 'none', background: '#f1f5f9', color: '#475569', width: 40, height: 40,
+    borderRadius: 10, fontSize: 18, cursor: 'pointer', lineHeight: 1, flexShrink: 0,
+  },
+  modalMeta: {
+    display: 'flex', flexWrap: 'wrap', gap: '8px 16px', alignItems: 'center',
+    marginBottom: 22, fontSize: 14, color: '#334155',
+  },
+  modalPlatform: { display: 'inline-flex', alignItems: 'center', gap: 10 },
+  modalBlock: { marginBottom: 20 },
+  modalLabel: {
+    fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 8,
+  },
+  modalBody: {
+    fontSize: 16, lineHeight: 1.65, color: '#1e293b', whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+  },
 };

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import PlatformIcon from './PlatformIcon';
 
@@ -39,6 +39,36 @@ function timeAgo(iso) {
   const hrs = Math.floor(min / 60);
   if (hrs < 24)  return `${hrs}h ago`;
   return `${Math.floor(hrs / 24)}d ago`;
+}
+
+/** Normalize API reply objects (or strings) for display. */
+function normalizeReply(r) {
+  if (r == null) return null;
+  if (typeof r === 'string') return { text: r, time: null, fromMe: false, from: null };
+  return {
+    text: r.text || r.snippet || r.message || '',
+    time: r.time || r.timestamp || r.updatedTime || null,
+    fromMe: Boolean(r.fromMe ?? r.isFromPage ?? r.is_from_page ?? r.sender === 'page'),
+    from: r.from || r.author || null,
+  };
+}
+
+/** Normalize DM thread messages from API. */
+function normalizeThreadMessage(m) {
+  if (m == null) return null;
+  if (typeof m === 'string') return { text: m, time: null, fromMe: false, from: null };
+  return {
+    text: m.text || m.snippet || m.message || '',
+    time: m.timestamp || m.updatedTime || m.time || null,
+    fromMe: Boolean(m.fromMe ?? m.is_from_page ?? m.isFromPage),
+    from: m.from || m.sender || null,
+  };
+}
+
+function mergedCommentReplies(item, localExtra) {
+  const api = Array.isArray(item.replies) ? item.replies.map(normalizeReply).filter(Boolean) : [];
+  const local = localExtra[item.id] || [];
+  return [...api, ...local];
 }
 
 function TabBtn({ label, active, badge, onClick }) {
@@ -279,17 +309,19 @@ function ConversationItem({ item, selected, onClick }) {
   );
 }
 
-function CommentItem({ item, apiBase, token }) {
+function CommentItem({ item, apiBase, token, selected, onSelect, onReplySent, replyExtras }) {
   const p  = PLATFORM_META[item.platform] ?? PLATFORM_META.instagram;
   const sl = SOURCE_LABELS[item.source]   ?? { label: item.source, icon: '💭' };
 
   const [showReply,  setShowReply]  = useState(false);
   const [replyText,  setReplyText]  = useState('');
   const [sending,    setSending]    = useState(false);
-  const [sentReplies, setSentReplies] = useState(
-    item.replies && item.replies.length > 0 ? item.replies : []
-  );
   const [replyError, setReplyError] = useState('');
+
+  const sentReplies = useMemo(
+    () => mergedCommentReplies(item, replyExtras || {}),
+    [item, replyExtras]
+  );
 
   const sendReply = async () => {
     if (!replyText.trim()) return;
@@ -312,7 +344,8 @@ function CommentItem({ item, apiBase, token }) {
         const d = await res.json().catch(() => ({}));
         setReplyError(d.error || `Error ${res.status}`);
       } else {
-        setSentReplies(prev => [...prev, { text: textToSend, time: new Date().toISOString(), fromMe: true }]);
+        const row = { text: textToSend, time: new Date().toISOString(), fromMe: true };
+        onReplySent?.(item.id, row);
         setReplyText('');
         setShowReply(false);
       }
@@ -326,7 +359,19 @@ function CommentItem({ item, apiBase, token }) {
   const hasSent = sentReplies.length > 0;
 
   return (
-    <div style={{ padding: '13px 16px', borderBottom: '1px solid #f1f5f9', background: '#fff' }}>
+    <div
+      role={onSelect ? 'button' : undefined}
+      tabIndex={onSelect ? 0 : undefined}
+      onClick={onSelect ? () => onSelect() : undefined}
+      onKeyDown={onSelect ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(); } } : undefined}
+      style={{
+        padding: '13px 16px', borderBottom: '1px solid #f1f5f9',
+        background: selected ? '#eff6ff' : '#fff',
+        borderLeft: selected ? '3px solid #2563eb' : '3px solid transparent',
+        cursor: onSelect ? 'pointer' : 'default',
+        transition: 'background 0.1s',
+      }}
+    >
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
         <div style={{
           width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0,
@@ -362,25 +407,36 @@ function CommentItem({ item, apiBase, token }) {
 
           {/* Show sent replies as bubbles */}
           {sentReplies.map((r, i) => (
-            <div key={i} style={{ marginTop: '8px', display: 'flex', justifyContent: 'flex-end' }}>
+            <div
+              key={i}
+              style={{
+                marginTop: '8px',
+                display: 'flex',
+                justifyContent: r.fromMe ? 'flex-end' : 'flex-start',
+              }}
+              onClick={e => e.stopPropagation()}
+            >
               <div style={{
                 maxWidth: '85%',
-                background: p.color,
-                color: '#fff',
-                borderRadius: '12px 12px 2px 12px',
+                background: r.fromMe ? p.color : '#f1f5f9',
+                color: r.fromMe ? '#fff' : '#1e293b',
+                borderRadius: r.fromMe ? '12px 12px 2px 12px' : '12px 12px 12px 2px',
                 padding: '7px 12px',
                 fontSize: '12.5px',
                 lineHeight: 1.5,
               }}>
-                <div>{r.text}</div>
-                <div style={{ fontSize: '10px', opacity: 0.75, marginTop: '3px', textAlign: 'right' }}>
-                  You · {timeAgo(r.time)}
+                <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{r.text}</div>
+                <div style={{ fontSize: '10px', opacity: 0.75, marginTop: '3px', textAlign: r.fromMe ? 'right' : 'left' }}>
+                  {r.fromMe ? 'You' : (r.from || item.from || 'Them')} · {r.time ? timeAgo(r.time) : ''}
                 </div>
               </div>
             </div>
           ))}
 
-          <div style={{ marginTop: '6px', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+          <div
+            style={{ marginTop: '6px', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}
+            onClick={e => e.stopPropagation()}
+          >
             <span style={{ fontSize: '11px', color: '#94a3b8' }}>{sl.icon} {sl.label}</span>
             {item.likes > 0 && (
               <span style={{ fontSize: '11px', color: '#94a3b8' }}>❤️ {item.likes}</span>
@@ -400,7 +456,7 @@ function CommentItem({ item, apiBase, token }) {
 
           {/* Reply input */}
           {showReply && (
-            <div style={{ marginTop: '10px', display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+            <div style={{ marginTop: '10px', display: 'flex', gap: '8px', alignItems: 'flex-start' }} onClick={e => e.stopPropagation()}>
               <textarea
                 rows={2}
                 placeholder={`Reply to @${item.from || 'user'}…`}
@@ -437,6 +493,229 @@ function CommentItem({ item, apiBase, token }) {
   );
 }
 
+/** Right pane: full DM thread or comment + all replies (matches list selection). */
+function InboxDetailPanel({ item, kind, commentReplyExtras, onClose }) {
+  const p = PLATFORM_META[item.platform] ?? PLATFORM_META.instagram;
+  const sl = SOURCE_LABELS[item.source] ?? { label: item.source, icon: '💬' };
+  const isMetaDm = item.source === 'facebook_messenger' || item.source === 'instagram_dm';
+
+  const dmThread = useMemo(() => {
+    if (kind !== 'dm') return [];
+    const raw = item.messages || item.thread || item.messageHistory;
+    if (Array.isArray(raw) && raw.length) {
+      return raw.map(normalizeThreadMessage).filter(m => m && (m.text || '').trim());
+    }
+    const one = (item.snippet || item.text || '').trim();
+    if (!one) return [];
+    return [{ text: one, time: item.updatedTime || item.timestamp, fromMe: false, from: item.from }];
+  }, [kind, item]);
+
+  const { root: commentRoot, replies: commentReplies } = useMemo(() => {
+    if (kind !== 'comment') return { root: '', replies: [] };
+    return {
+      root: item.text || '',
+      replies: mergedCommentReplies(item, commentReplyExtras || {}),
+    };
+  }, [kind, item, commentReplyExtras]);
+
+  return (
+    <div
+      style={{
+        background: '#fff',
+        borderRadius: '14px',
+        boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+        border: '1px solid #e2e8f0',
+        minHeight: 0,
+        maxHeight: 'min(72vh, 880px)',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          gap: '12px',
+          padding: '16px 18px',
+          borderBottom: '1px solid #f1f5f9',
+          flexShrink: 0,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', minWidth: 0 }}>
+          <div
+            style={{
+              width: '44px',
+              height: '44px',
+              borderRadius: '12px',
+              background: `${p.color}18`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <PlatformIcon platform={p} size={26} />
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontWeight: 800, fontSize: '16px', color: '#0f172a', lineHeight: 1.3 }}>
+              {item.from || 'Unknown'}
+            </div>
+            <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
+              {sl.icon} {sl.label}
+            </div>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          style={{ background: '#f1f5f9', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '16px', color: '#64748b', width: '36px', height: '36px', flexShrink: 0, lineHeight: 1 }}
+          aria-label="Close"
+        >
+          ✕
+        </button>
+      </div>
+
+      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 18px', minHeight: 0 }}>
+        {kind === 'dm' && (
+          <>
+            {dmThread.map((m, i) => (
+              <div
+                key={i}
+                style={{
+                  display: 'flex',
+                  justifyContent: m.fromMe ? 'flex-end' : 'flex-start',
+                  marginBottom: '12px',
+                }}
+              >
+                <div
+                  style={{
+                    maxWidth: '92%',
+                    background: m.fromMe ? p.color : '#f1f5f9',
+                    color: m.fromMe ? '#fff' : '#1e293b',
+                    borderRadius: m.fromMe ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
+                    padding: '10px 14px',
+                    fontSize: '14px',
+                    lineHeight: 1.55,
+                  }}
+                >
+                  <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{m.text}</div>
+                  <div style={{ fontSize: '11px', opacity: 0.8, marginTop: '6px', textAlign: m.fromMe ? 'right' : 'left' }}>
+                    {m.fromMe ? 'You' : (m.from || item.from || 'Contact')}
+                    {m.time ? ` · ${timeAgo(typeof m.time === 'string' ? m.time : new Date(m.time).toISOString())}` : ''}
+                  </div>
+                </div>
+              </div>
+            ))}
+            {dmThread.length === 0 && (
+              <div style={{ color: '#94a3b8', fontSize: '14px' }}>(no message content)</div>
+            )}
+            {kind === 'dm' && dmThread.length > 0 && !(Array.isArray(item.messages) && item.messages.length > 0) && (
+              <p style={{ fontSize: '12px', color: '#94a3b8', marginTop: '14px', lineHeight: 1.55 }}>
+                Full back-and-forth history appears here when the API returns a message list. If you only see one line, open the app or Meta Business Suite for the complete thread.
+              </p>
+            )}
+          </>
+        )}
+
+        {kind === 'comment' && (
+          <>
+            <div style={{ marginBottom: '14px' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>
+                Their comment
+              </div>
+              <div
+                style={{
+                  background: '#f8fafc',
+                  borderRadius: '12px',
+                  padding: '12px 14px',
+                  fontSize: '14px',
+                  lineHeight: 1.6,
+                  color: '#1e293b',
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word',
+                }}
+              >
+                {commentRoot || '(no text)'}
+              </div>
+            </div>
+            {item.postCaption && (
+              <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '14px', padding: '10px 12px', background: '#fffbeb', borderRadius: '8px', border: '1px solid #fde68a' }}>
+                <strong>On post:</strong> {item.postCaption}
+              </div>
+            )}
+            {commentReplies.length > 0 && (
+              <div>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>
+                  Replies
+                </div>
+                {commentReplies.map((r, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      display: 'flex',
+                      justifyContent: r.fromMe ? 'flex-end' : 'flex-start',
+                      marginBottom: '10px',
+                    }}
+                  >
+                    <div
+                      style={{
+                        maxWidth: '92%',
+                        background: r.fromMe ? p.color : '#f1f5f9',
+                        color: r.fromMe ? '#fff' : '#1e293b',
+                        borderRadius: r.fromMe ? '12px 12px 4px 12px' : '12px 12px 12px 4px',
+                        padding: '10px 14px',
+                        fontSize: '13px',
+                        lineHeight: 1.55,
+                      }}
+                    >
+                      <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{r.text}</div>
+                      <div style={{ fontSize: '11px', opacity: 0.85, marginTop: '6px', textAlign: r.fromMe ? 'right' : 'left' }}>
+                        {r.fromMe ? 'You' : (r.from || item.from || 'Them')}
+                        {r.time ? ` · ${timeAgo(r.time)}` : ''}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <p style={{ fontSize: '12px', color: '#64748b', marginTop: '16px', lineHeight: 1.5 }}>
+              Use <strong>Reply</strong> in the list on the left to send another answer from here.
+            </p>
+          </>
+        )}
+      </div>
+
+      <div
+        style={{
+          borderTop: '1px solid #f1f5f9',
+          padding: '12px 18px 16px',
+          flexShrink: 0,
+          display: 'grid',
+          gridTemplateColumns: 'repeat(2, 1fr)',
+          gap: '8px',
+          fontSize: '12px',
+          color: '#64748b',
+        }}
+      >
+        <div><strong>Platform:</strong> {(PLATFORM_META[item.platform] ?? {}).label ?? item.platform}</div>
+        <div><strong>Type:</strong> {sl.label}</div>
+        <div><strong>From:</strong> {item.from || '—'}</div>
+        <div><strong>Time:</strong> {timeAgo(item.updatedTime || item.timestamp)}</div>
+        {item.likes > 0 && <div><strong>Likes:</strong> ❤️ {item.likes}</div>}
+        {item.unread > 0 && <div><strong>Unread:</strong> 🔴 {item.unread}</div>}
+      </div>
+
+      {kind === 'dm' && isMetaDm && (
+        <div style={{ margin: '0 18px 16px', padding: '12px', background: '#fffbeb', borderRadius: '8px', border: '1px solid #fde68a', fontSize: '12px', color: '#92400e' }}>
+          💡 To reply, open <strong>Meta Business Suite</strong> or the platform&apos;s native app. Direct replies via API require additional Meta permissions.
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ─────────────────────────────────────────────────────────── */
 export default function MessagesInbox() {
   const { apiBase, token } = useAuth();
@@ -447,7 +726,9 @@ export default function MessagesInbox() {
   const [error,     setError]     = useState(null);
   const [platformTab, setPlatformTab] = useState('all');   // all | instagram | facebook | youtube | linkedin
   const [typeTab,     setTypeTab]     = useState('all');   // all | messages | comments
-  const [selected,  setSelected]  = useState(null);
+  /** Separate DM vs comment so IDs never collide; fixes wrong pane when filtering comments. */
+  const [selection, setSelection]   = useState(null); // { kind: 'dm' | 'comment', id: string } | null
+  const [commentReplyExtras, setCommentReplyExtras] = useState({}); // commentId -> locally sent replies
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -466,6 +747,10 @@ export default function MessagesInbox() {
   }, [base, token]);
 
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    setSelection(null);
+  }, [platformTab, typeTab]);
 
   const conversations = data?.conversations ?? [];
   const comments      = data?.comments      ?? [];
@@ -496,14 +781,16 @@ export default function MessagesInbox() {
     if (!supported.includes(typeTab)) setTypeTab(supported[0]);
   };
 
-  const selectedItem = selected
-    ? [...conversations, ...comments].find(x => x.id === selected)
-    : null;
+  const selectedItem = useMemo(() => {
+    if (!selection) return null;
+    if (selection.kind === 'dm') return conversations.find(c => c.id === selection.id) ?? null;
+    return comments.find(c => c.id === selection.id) ?? null;
+  }, [selection, conversations, comments]);
 
   const filteredView = platformTab !== 'all' || typeTab !== 'all';
 
   return (
-    <div style={{ maxWidth: '1100px', margin: '0 auto', fontFamily: "'Inter',-apple-system,sans-serif" }}>
+    <div style={{ maxWidth: 'none', width: '100%', margin: 0, fontFamily: "'Inter',-apple-system,sans-serif" }}>
 
       {/* Toolbar (page title lives in app shell — subtitle only here) */}
       <div
@@ -689,11 +976,31 @@ export default function MessagesInbox() {
       )}
 
       {data && (
-        <div style={{ display: 'grid', gridTemplateColumns: selected ? '1fr 1fr' : '1fr', gap: '16px' }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: selection ? 'minmax(280px, 1fr) minmax(320px, 1.15fr)' : '1fr',
+            gap: '16px',
+            alignItems: 'stretch',
+            minHeight: 'min(72vh, 880px)',
+          }}
+        >
 
           {/* Left: List */}
-          <div style={{ background: '#fff', borderRadius: '14px', overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', border: '1px solid #e2e8f0' }}>
-
+          <div
+            style={{
+              background: '#fff',
+              borderRadius: '14px',
+              overflow: 'hidden',
+              boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+              border: '1px solid #e2e8f0',
+              minHeight: 0,
+              maxHeight: 'min(72vh, 880px)',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            <div style={{ overflowY: 'auto', flex: 1, minHeight: 0, WebkitOverflowScrolling: 'touch' }}>
             {/* Conversations */}
             {displayConvs.length > 0 && (
               <>
@@ -704,8 +1011,10 @@ export default function MessagesInbox() {
                   <ConversationItem
                     key={item.id}
                     item={item}
-                    selected={selected === item.id}
-                    onClick={() => setSelected(selected === item.id ? null : item.id)}
+                    selected={selection?.kind === 'dm' && selection.id === item.id}
+                    onClick={() => setSelection(
+                      sel => (sel?.kind === 'dm' && sel.id === item.id ? null : { kind: 'dm', id: item.id })
+                    )}
                   />
                 ))}
               </>
@@ -718,13 +1027,29 @@ export default function MessagesInbox() {
                   Comments ({displayComments.length})
                 </div>
                 {displayComments.map((item, i) => (
-                  <CommentItem key={`${item.source}-${i}`} item={item} apiBase={base} token={token} />
+                  <CommentItem
+                    key={item.id || `${item.source}-${item.timestamp}-${i}`}
+                    item={item}
+                    apiBase={base}
+                    token={token}
+                    selected={selection?.kind === 'comment' && selection.id === item.id}
+                    onSelect={() => setSelection(
+                      sel => (sel?.kind === 'comment' && sel.id === item.id ? null : { kind: 'comment', id: item.id })
+                    )}
+                    replyExtras={commentReplyExtras}
+                    onReplySent={(commentId, row) => {
+                      setCommentReplyExtras(prev => ({
+                        ...prev,
+                        [commentId]: [...(prev[commentId] || []), row],
+                      }));
+                    }}
+                  />
                 ))}
               </>
             )}
 
             {displayConvs.length === 0 && displayComments.length === 0 && (
-              <div style={{ padding: '44px 28px', textAlign: 'center', maxWidth: '400px', margin: '0 auto' }}>
+              <div style={{ padding: '44px 28px', textAlign: 'center', maxWidth: '400px', margin: '0 auto', flex: 1 }}>
                 <EmptyInboxIllustration />
                 <div style={{ fontWeight: 700, fontSize: '15px', color: '#0f172a', marginBottom: '8px' }}>
                   {filteredView ? 'No results for this filter' : 'Your inbox is empty'}
@@ -736,42 +1061,17 @@ export default function MessagesInbox() {
                 </div>
               </div>
             )}
+            </div>
           </div>
 
-          {/* Right: Detail panel */}
-          {selected && selectedItem && (
-            <div style={{ background: '#fff', borderRadius: '14px', padding: '20px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', border: '1px solid #e2e8f0' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                <div style={{ fontWeight: 700, fontSize: '15px', color: '#1e293b' }}>
-                  {(SOURCE_LABELS[selectedItem.source] ?? {}).icon} {selectedItem.from || 'Unknown'}
-                </div>
-                <button onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px', color: '#94a3b8' }}>✕</button>
-              </div>
-
-              <div style={{ background: '#f8fafc', borderRadius: '10px', padding: '14px', marginBottom: '14px' }}>
-                <div style={{ fontSize: '13px', color: '#374151', lineHeight: 1.6 }}>
-                  {selectedItem.snippet || selectedItem.text || '(no content)'}
-                </div>
-                {selectedItem.postCaption && (
-                  <div style={{ marginTop: '10px', fontSize: '12px', color: '#94a3b8', borderTop: '1px solid #e2e8f0', paddingTop: '10px' }}>
-                    📝 On post: {selectedItem.postCaption}
-                  </div>
-                )}
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '8px', fontSize: '12px', color: '#64748b' }}>
-                <div><strong>Platform:</strong> {(PLATFORM_META[selectedItem.platform] ?? {}).label ?? selectedItem.platform}</div>
-                <div><strong>Type:</strong> {(SOURCE_LABELS[selectedItem.source] ?? {}).label ?? selectedItem.source}</div>
-                <div><strong>From:</strong> {selectedItem.from || '—'}</div>
-                <div><strong>Time:</strong> {timeAgo(selectedItem.updatedTime || selectedItem.timestamp)}</div>
-                {selectedItem.likes > 0 && <div><strong>Likes:</strong> ❤️ {selectedItem.likes}</div>}
-                {selectedItem.unread > 0 && <div><strong>Unread:</strong> 🔴 {selectedItem.unread}</div>}
-              </div>
-
-              <div style={{ marginTop: '16px', padding: '12px', background: '#fffbeb', borderRadius: '8px', border: '1px solid #fde68a', fontSize: '12px', color: '#92400e' }}>
-                💡 To reply, open <strong>Meta Business Suite</strong> or the platform's native app. Direct replies via API require additional Meta permissions.
-              </div>
-            </div>
+          {/* Right: Detail — full thread (DM messages or comment + replies) */}
+          {selection && selectedItem && (
+            <InboxDetailPanel
+              item={selectedItem}
+              kind={selection.kind}
+              commentReplyExtras={commentReplyExtras}
+              onClose={() => setSelection(null)}
+            />
           )}
         </div>
       )}

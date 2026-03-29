@@ -28,7 +28,7 @@ export default function UpgradeModal({ reason, feature, onClose, suggestPlan }) 
     },
     {
       id: 'GROWTH', name: 'Growth', monthlyPrice: 79, yearlyPrice: 66, color: '#0ea5e9',
-      highlight: ['8 platforms', 'Unlimited videos', 'Priority processing', '3 team seats', 'All features'],
+      highlight: ['8 platforms', 'Unlimited videos', 'Priority processing', 'Video trimming', 'All features'],
     },
   ];
 

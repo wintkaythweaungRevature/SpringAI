@@ -467,7 +467,7 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
             <div className="ls-pricing-why-block">
               <h4>Growth — $79/mo</h4>
               <p>
-                Still <strong>below many enterprise schedulers</strong>, with <strong>team seats</strong> (as you roll them out) and
+                Still <strong>below many enterprise schedulers</strong>, with <strong>priority processing</strong> and
                 room for margin — roughly <strong>2 accounts</strong> can cover AWS plus profit at this tier.
               </p>
             </div>
@@ -494,7 +494,7 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
             <ul className="ls-plan-features">
               <li>Everything in Free</li>
               <li>Premium AI: DocuWizard, EchoScribe, Image Gen, Reply Enchanter, Resume Warlock</li>
-              <li>Video Publisher: <strong>5</strong> connected platforms</li>
+              <li>Video Publisher: <strong>3</strong> connected platforms</li>
               <li><strong>10</strong> videos / month · <strong>30</strong> scheduled posts / month</li>
               <li>AI captions, thumbnail picker, link-in-bio</li>
               <li className="ls-li-off">Deep analytics</li>
@@ -529,7 +529,7 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
               <li>Everything in Pro</li>
               <li><strong>Unlimited</strong> videos</li>
               <li><strong>Priority</strong> processing queue</li>
-              <li><strong>3</strong> team seats <span style={{ color: '#64748b', fontWeight: 400 }}>(when enabled)</span></li>
+              <li>✂️ <strong>Video trimming</strong> tool</li>
               <li>Deep analytics · AI Social Chat (RAG)</li>
             </ul>
             <button type="button" className="ls-btn-outline" onClick={() => onChoosePlan ? onChoosePlan('GROWTH') : onGetStarted()}>Choose Growth</button>

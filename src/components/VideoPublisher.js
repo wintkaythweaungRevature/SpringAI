@@ -9,9 +9,9 @@ import PostDetailModal from './PostDetailModal';
 const PLATFORMS = [
   { id: 'youtube',   label: 'YouTube',    emoji: '▶️',  color: '#FF0000', maxLen: 5000,  logo: 'youtube',   supports: ['video'] },
   { id: 'instagram', label: 'Instagram',  emoji: '📸',  color: '#E1306C', maxLen: 2200,  logo: 'instagram', supports: ['video', 'image'] },
-  { id: 'tiktok',    label: 'TikTok',     emoji: '🎵',  color: '#010101', maxLen: 2200,  logo: 'tiktok',    supports: ['video'] },
-  { id: 'linkedin',  label: 'LinkedIn',   emoji: '💼',  color: '#0A66C2', maxLen: 3000,  logo: 'linkedin',  supports: ['video', 'image', 'text'] },
   { id: 'facebook',  label: 'Facebook',   emoji: '👍',  color: '#1877F2', maxLen: 63206, logo: 'facebook',  supports: ['video', 'image', 'text'] },
+  { id: 'linkedin',  label: 'LinkedIn',   emoji: '💼',  color: '#0A66C2', maxLen: 3000,  logo: 'linkedin',  supports: ['video', 'image', 'text'] },
+  { id: 'tiktok',    label: 'TikTok',     emoji: '🎵',  color: '#010101', maxLen: 2200,  logo: 'tiktok',    supports: ['video'] },
   { id: 'x',         label: 'X (Twitter)',emoji: '🐦',  color: '#000000', maxLen: 280,   logo: 'x',         supports: ['video', 'image', 'text'] },
   { id: 'threads',   label: 'Threads',    emoji: '🧵',  color: '#101010', maxLen: 500,   logo: 'threads',   supports: ['video', 'image', 'text'] },
   { id: 'pinterest', label: 'Pinterest',  emoji: '📌',  color: '#E60023', maxLen: 500,   logo: 'pinterest', supports: ['image'] },

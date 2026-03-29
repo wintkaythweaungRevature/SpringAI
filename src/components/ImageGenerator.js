@@ -27,12 +27,33 @@ function ImageGenerator() {
       const headers = {};
       if (token) headers.Authorization = `Bearer ${token}`;
       const response = await fetch(url, { headers });
-      if (!response.ok) throw new Error(`Server error: ${response.status}`);
-      const data = await response.json();
-      if (data.url) setImageUrl(data.url);
+      let data = null;
+      try {
+        const text = await response.text();
+        data = text ? JSON.parse(text) : null;
+      } catch {
+        data = null;
+      }
+      if (!response.ok) {
+        const apiMsg = data && (data.error || data.message);
+        if (response.status === 401) {
+          setError(apiMsg || "Session expired or not logged in. Log out and sign in again, then retry.");
+          return;
+        }
+        if (response.status === 403) {
+          setError(
+            apiMsg ||
+              "Access denied (403). Your account may need an active membership, email verification, or the server may be blocking this request. Try logging out and back in, or contact support if you're already subscribed."
+          );
+          return;
+        }
+        setError(apiMsg || `Could not generate image (HTTP ${response.status}). Please try again.`);
+        return;
+      }
+      if (data && data.url) setImageUrl(data.url);
       else setError("Image URL not found in response.");
     } catch (err) {
-      setError("Failed to generate image. Please try again.");
+      setError(err.message?.includes("JSON") ? "Failed to generate image. Please try again." : (err.message || "Failed to generate image. Please try again."));
     } finally {
       setLoading(false);
     }

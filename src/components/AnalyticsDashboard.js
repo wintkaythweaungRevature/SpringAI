@@ -235,36 +235,57 @@ function PlatformTabBtn({ active, onClick, children, activeColor }) {
 }
 
 function DonutChart({ segments }) {
-  // CSS conic-gradient donut for content type breakdown
+  // CSS conic-gradient donut — legend always lists Video / Image / Text with %; ring uses non-zero slices only
   const total = segments.reduce((s, x) => s + x.value, 0);
   if (total === 0) return <div style={{ textAlign: 'center', color: '#94a3b8', fontSize: '13px', padding: '20px' }}>No data yet</div>;
 
+  const nonZero = segments.filter((s) => s.value > 0);
   let cumulative = 0;
-  const gradient = segments.map(seg => {
+  const gradient = nonZero.map((seg) => {
     const pct = (seg.value / total) * 100;
     const start = cumulative;
     cumulative += pct;
-    return `${seg.color} ${start.toFixed(1)}% ${cumulative.toFixed(1)}%`;
+    return `${seg.color} ${start.toFixed(2)}% ${cumulative.toFixed(2)}%`;
   }).join(', ');
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
-      <div style={{
-        width: '100px', height: '100px', borderRadius: '50%', flexShrink: 0,
-        background: `conic-gradient(${gradient})`,
-        boxShadow: 'inset 0 0 0 28px #fff',
-      }} />
+      <div
+        title="Content types (video, image, text posts)"
+        style={{
+          width: '100px', height: '100px', borderRadius: '50%', flexShrink: 0,
+          background: nonZero.length ? `conic-gradient(${gradient})` : '#e2e8f0',
+          boxShadow: 'inset 0 0 0 28px #fff',
+        }}
+      />
       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-        {segments.map(seg => (
-          <div key={seg.label} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{ width: '10px', height: '10px', borderRadius: '3px', background: seg.color, flexShrink: 0 }} />
-            <span style={{ fontSize: '12px', color: '#374151', fontWeight: 500 }}>{seg.label}</span>
-            <span style={{ fontSize: '12px', fontWeight: 700, color: '#1e293b' }}>
-              {Math.round((seg.value / total) * 100)}%
-            </span>
-            <span style={{ fontSize: '11px', color: '#94a3b8' }}>({seg.value})</span>
-          </div>
-        ))}
+        {segments.map((seg) => {
+          const pct = Math.round((seg.value / total) * 100);
+          const hint = `${seg.label}: ${seg.value} post${seg.value === 1 ? '' : 's'} (${pct}% of total)`;
+          return (
+            <div
+              key={seg.label}
+              title={hint}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '4px 6px',
+                margin: '-4px -6px',
+                borderRadius: '8px',
+                cursor: 'default',
+                transition: 'background 0.15s',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#f1f5f9'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+            >
+              <div style={{ width: '10px', height: '10px', borderRadius: '3px', background: seg.color, flexShrink: 0 }} />
+              <span style={{ fontSize: '12px', color: '#374151', fontWeight: 500 }}>{seg.label}</span>
+              <span style={{ fontSize: '12px', fontWeight: 700, color: '#1e293b' }}>{pct}%</span>
+              <span style={{ fontSize: '11px', color: '#94a3b8' }}>({seg.value})</span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -474,11 +495,21 @@ export default function AnalyticsDashboard() {
   const byPlatformFailed    = ownPosts.byPlatformFailed    ?? {};
   const maxCount   = Math.max(...Object.values(byPlatform).map(Number), 1);
 
+  const nVideo = Number(
+    byType.video ?? byType.VIDEO ?? byType.Video ?? 0,
+  );
+  const nImage = Number(
+    byType.image ?? byType.IMAGE ?? byType.Image ?? 0,
+  );
+  const nText = Number(
+    byType.text ?? byType.TEXT ?? byType.Text ?? 0,
+  );
+
   const typeSegments = [
-    { label: 'Video', value: Number(byType.video  ?? 0), color: '#6366f1' },
-    { label: 'Image', value: Number(byType.image  ?? 0), color: '#ec4899' },
-    { label: 'Text',  value: Number(byType.text   ?? 0), color: '#f59e0b' },
-  ].filter(s => s.value > 0);
+    { label: 'Video', value: nVideo, color: '#6366f1' },
+    { label: 'Image', value: nImage, color: '#ec4899' },
+    { label: 'Text', value: nText, color: '#f59e0b' },
+  ];
 
   const tabPlatforms = ['overview', ...connected];
 
@@ -623,13 +654,14 @@ export default function AnalyticsDashboard() {
                       { label: 'This month', value: ownPosts.thisMonth,   node: <IconCalendar color="#64748b" />, breakdown: byPlatformThisMonth },
                       { label: 'Failed',     value: ownPosts.totalFailed, node: <IconXCircle color="#dc2626" />,  breakdown: byPlatformFailed },
                     ].map(c => {
-                      const lines = Object.entries(c.breakdown ?? {})
-                        .sort((a, b) => Number(b[1]) - Number(a[1]))
-                        .map(([pid, cnt]) => {
+                      const entries = Object.entries(c.breakdown ?? {})
+                        .sort((a, b) => Number(b[1]) - Number(a[1]));
+                      const tip = entries.length > 0
+                        ? `${fmt(c.value ?? 0)} total\n${entries.map(([pid, cnt]) => {
                           const p = PLATFORMS.find(x => x.id === pid);
                           return `${p?.label ?? pid}: ${cnt}`;
-                        });
-                      const tip = lines.length > 0 ? `${fmt(c.value ?? 0)} total\n${lines.join('\n')}` : null;
+                        }).join('\n')}`
+                        : null;
                       return (
                         <div
                           key={c.label}
@@ -648,10 +680,39 @@ export default function AnalyticsDashboard() {
                           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>{c.node}</div>
                           <div style={{ fontSize: '17px', fontWeight: 800, color: '#0f172a' }}>{fmt(c.value ?? 0)}</div>
                           <div style={{ fontSize: '10px', fontWeight: 600, color: '#64748b', marginTop: '4px', letterSpacing: '0.02em' }}>{c.label}</div>
-                          {lines.length > 0 && (
-                            <div style={{ fontSize: '9px', color: '#94a3b8', marginTop: '5px', lineHeight: 1.6 }}>
-                              {lines.slice(0, 3).map(l => <div key={l}>{l}</div>)}
-                              {lines.length > 3 && <div>+{lines.length - 3} more</div>}
+                          {entries.length > 0 && (
+                            <div style={{ fontSize: '9px', color: '#64748b', marginTop: '8px', lineHeight: 1.65, textAlign: 'left' }}>
+                              {entries.slice(0, 4).map(([pid, cnt]) => {
+                                const p = PLATFORMS.find(x => x.id === pid);
+                                const rowTip = `${p?.label ?? pid}: ${cnt} post${Number(cnt) === 1 ? '' : 's'}`;
+                                return (
+                                  <div
+                                    key={`${c.label}-${pid}`}
+                                    title={rowTip}
+                                    style={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '6px',
+                                      padding: '3px 2px',
+                                      borderRadius: '6px',
+                                      marginBottom: '2px',
+                                    }}
+                                    onMouseEnter={(e) => { e.currentTarget.style.background = '#f8fafc'; }}
+                                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                                  >
+                                    <span style={{ width: 18, height: 18, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                      {p ? <PlatformIcon platform={p} size={16} /> : <span style={{ fontSize: '12px' }}>·</span>}
+                                    </span>
+                                    <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                      {p?.label ?? pid}
+                                    </span>
+                                    <span style={{ fontWeight: 700, color: '#475569', flexShrink: 0 }}>{cnt}</span>
+                                  </div>
+                                );
+                              })}
+                              {entries.length > 4 && (
+                                <div style={{ fontSize: '9px', color: '#94a3b8', marginTop: '2px' }}>+{entries.length - 4} more</div>
+                              )}
                             </div>
                           )}
                         </div>

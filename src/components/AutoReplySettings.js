@@ -194,7 +194,7 @@ export default function AutoReplySettings() {
               <div style={s.cardHeader}>
                 <div style={s.platformInfo}>
                   <div style={{ ...s.platformDot, background: p.color + '18' }}>
-                    <PlatformIcon platform={p} size={26} />
+                    <PlatformIcon platform={p} size={30} />
                   </div>
                   <div>
                     <div style={s.platformName}>{p.label}</div>
@@ -329,9 +329,9 @@ export default function AutoReplySettings() {
         </div>
         {showLogs && (
           logsLoading ? (
-            <p style={{ color: '#94a3b8', fontSize: 14 }}>Loading...</p>
+            <p style={{ color: '#94a3b8', fontSize: 16 }}>Loading...</p>
           ) : logs.length === 0 ? (
-            <p style={{ color: '#94a3b8', fontSize: 14 }}>No replies yet. Enable a platform above to get started.</p>
+            <p style={{ color: '#94a3b8', fontSize: 16 }}>No replies yet. Enable a platform above to get started.</p>
           ) : (
             <div style={s.logTable}>
               <div style={s.logHead}>
@@ -341,10 +341,10 @@ export default function AutoReplySettings() {
                 <div key={l.id} style={s.logRow}>
                   <span style={{ textTransform: 'capitalize', fontWeight: 600 }}>{l.platform}</span>
                   <span style={{ color: '#6366f1' }}>@{l.authorUsername || '—'}</span>
-                  <span style={s.logCell} title={l.commentText}>{truncate(l.commentText, 50)}</span>
-                  <span style={s.logCell} title={l.replyText}>{truncate(l.replyText, 60)}</span>
-                  <span style={{ color: '#94a3b8', fontSize: 12 }}>{formatTime(l.repliedAt)}</span>
-                  <span style={{ color: l.success ? '#22c55e' : '#ef4444', fontSize: 12 }}>
+                  <span style={s.logCell} title={l.commentText}>{truncate(l.commentText, 90)}</span>
+                  <span style={s.logCell} title={l.replyText}>{truncate(l.replyText, 100)}</span>
+                  <span style={{ color: '#94a3b8', fontSize: 14 }}>{formatTime(l.repliedAt)}</span>
+                  <span style={{ color: l.success ? '#22c55e' : '#ef4444', fontSize: 14 }}>
                     {l.success ? '✓ Sent' : '✗ Failed'}
                   </span>
                 </div>
@@ -371,27 +371,34 @@ function formatTime(iso) {
 
 /* ─── Styles ──────────────────────────────────────────────────────────────── */
 const s = {
-  page: { maxWidth: 860, margin: '0 auto', padding: '24px 16px', fontFamily: 'inherit' },
-  header: { marginBottom: 24 },
-  title: { margin: 0, fontSize: 24, fontWeight: 800, color: '#0f172a' },
-  subtitle: { margin: '4px 0 0', color: '#64748b', fontSize: 14 },
+  page: {
+    maxWidth: 1240,
+    width: '100%',
+    margin: '0 auto',
+    padding: '28px 24px 40px',
+    fontFamily: 'inherit',
+    boxSizing: 'border-box',
+  },
+  header: { marginBottom: 28 },
+  title: { margin: 0, fontSize: 30, fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em' },
+  subtitle: { margin: '8px 0 0', color: '#64748b', fontSize: 16, lineHeight: 1.55, maxWidth: 720 },
   errorBanner: {
     background: '#fef2f2', border: '1px solid #fca5a5', color: '#dc2626',
     borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 14,
   },
-  cards: { display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 32 },
+  cards: { display: 'flex', flexDirection: 'column', gap: 18, marginBottom: 36 },
   card: {
-    border: '2px solid #e2e8f0', borderRadius: 16, padding: '20px',
+    border: '2px solid #e2e8f0', borderRadius: 18, padding: '24px 26px',
     background: '#fff', transition: 'border-color 0.2s',
   },
   cardHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 },
   platformInfo: { display: 'flex', alignItems: 'flex-start', gap: 14 },
   platformDot: {
-    width: 44, height: 44, borderRadius: 12, display: 'flex', alignItems: 'center',
+    width: 52, height: 52, borderRadius: 14, display: 'flex', alignItems: 'center',
     justifyContent: 'center', flexShrink: 0, opacity: 0.9,
   },
-  platformName: { fontWeight: 700, fontSize: 16, color: '#1e293b', marginBottom: 2 },
-  platformNote: { fontSize: 12, color: '#94a3b8' },
+  platformName: { fontWeight: 700, fontSize: 18, color: '#1e293b', marginBottom: 4 },
+  platformNote: { fontSize: 14, color: '#64748b', lineHeight: 1.45, maxWidth: 520 },
   cardActions: { display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 },
   toggleBtn: {
     position: 'relative', width: 44, height: 24, borderRadius: 12,
@@ -402,70 +409,75 @@ const s = {
     background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.2)', transition: 'transform 0.2s',
   },
   settingsToggle: {
-    background: '#f1f5f9', border: 'none', borderRadius: 8, padding: '6px 12px',
-    cursor: 'pointer', fontSize: 12, color: '#475569', fontWeight: 600,
+    background: '#f1f5f9', border: 'none', borderRadius: 10, padding: '8px 14px',
+    cursor: 'pointer', fontSize: 14, color: '#475569', fontWeight: 600,
   },
   statusChip: {
-    display: 'inline-block', borderRadius: 99, padding: '3px 10px',
-    fontSize: 12, fontWeight: 600, marginTop: 10,
+    display: 'inline-block', borderRadius: 99, padding: '5px 12px',
+    fontSize: 13, fontWeight: 600, marginTop: 12,
   },
   settingsArea: {
     marginTop: 18, paddingTop: 18, borderTop: '1px solid #f1f5f9',
     display: 'flex', flexDirection: 'column', gap: 14,
   },
-  label: { fontSize: 13, fontWeight: 600, color: '#334155', marginBottom: 4, display: 'block' },
+  label: { fontSize: 14, fontWeight: 600, color: '#334155', marginBottom: 6, display: 'block' },
   textarea: {
-    width: '100%', border: '1.5px solid #e2e8f0', borderRadius: 8, padding: '10px',
-    fontSize: 13, fontFamily: 'inherit', resize: 'vertical', outline: 'none', boxSizing: 'border-box',
+    width: '100%', border: '1.5px solid #e2e8f0', borderRadius: 10, padding: '12px 14px',
+    fontSize: 14, fontFamily: 'inherit', resize: 'vertical', outline: 'none', boxSizing: 'border-box',
+    minHeight: 120,
   },
   row: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 },
   fieldGroup: { display: 'flex', flexDirection: 'column', gap: 4 },
   input: {
-    border: '1.5px solid #e2e8f0', borderRadius: 8, padding: '8px 10px',
-    fontSize: 13, outline: 'none', width: '100%', boxSizing: 'border-box',
+    border: '1.5px solid #e2e8f0', borderRadius: 10, padding: '11px 14px',
+    fontSize: 15, outline: 'none', width: '100%', boxSizing: 'border-box',
   },
-  hint: { fontSize: 11, color: '#94a3b8' },
-  checkRow: { display: 'flex', alignItems: 'center', cursor: 'pointer', fontSize: 13, color: '#334155' },
+  hint: { fontSize: 12, color: '#94a3b8' },
+  checkRow: { display: 'flex', alignItems: 'center', cursor: 'pointer', fontSize: 14, color: '#334155' },
   saveBtn: {
-    alignSelf: 'flex-start', border: 'none', borderRadius: 8, padding: '10px 22px',
-    color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer',
+    alignSelf: 'flex-start', border: 'none', borderRadius: 10, padding: '12px 26px',
+    color: '#fff', fontWeight: 700, fontSize: 15, cursor: 'pointer',
   },
   section: {
-    background: '#fff', border: '1.5px solid #e2e8f0', borderRadius: 16,
-    padding: 24, marginBottom: 24,
+    background: '#fff', border: '1.5px solid #e2e8f0', borderRadius: 18,
+    padding: '28px 30px', marginBottom: 28,
   },
-  sectionTitle: { margin: '0 0 4px', fontSize: 17, fontWeight: 700, color: '#1e293b' },
-  sectionSub: { margin: '0 0 16px', fontSize: 13, color: '#94a3b8' },
-  testRow: { display: 'flex', gap: 10, flexWrap: 'wrap' },
+  sectionTitle: { margin: '0 0 6px', fontSize: 21, fontWeight: 700, color: '#1e293b' },
+  sectionSub: { margin: '0 0 18px', fontSize: 15, color: '#64748b', lineHeight: 1.5 },
+  testRow: { display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'stretch' },
   select: {
-    border: '1.5px solid #e2e8f0', borderRadius: 8, padding: '8px 10px',
-    fontSize: 13, outline: 'none', background: '#fff',
+    border: '1.5px solid #e2e8f0', borderRadius: 10, padding: '11px 14px',
+    fontSize: 15, outline: 'none', background: '#fff', minWidth: 160,
   },
   testBtn: {
-    background: '#6366f1', border: 'none', borderRadius: 8, padding: '8px 18px',
-    color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer',
+    background: '#6366f1', border: 'none', borderRadius: 10, padding: '11px 24px',
+    color: '#fff', fontWeight: 700, fontSize: 15, cursor: 'pointer',
   },
   replyBox: {
-    marginTop: 14, background: '#f8fafc', border: '1.5px solid #e2e8f0',
-    borderRadius: 10, padding: '14px 16px',
+    marginTop: 18, background: '#f8fafc', border: '1.5px solid #e2e8f0',
+    borderRadius: 12, padding: '18px 20px',
   },
-  replyLabel: { fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5 },
-  replyText: { margin: '6px 0 0', fontSize: 14, color: '#1e293b', lineHeight: 1.6 },
-  logHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  replyLabel: { fontSize: 12, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5 },
+  replyText: { margin: '8px 0 0', fontSize: 16, color: '#1e293b', lineHeight: 1.65 },
+  logHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   logToggleBtn: {
-    background: '#f1f5f9', border: 'none', borderRadius: 8, padding: '6px 14px',
-    cursor: 'pointer', fontSize: 12, fontWeight: 600, color: '#475569',
+    background: '#f1f5f9', border: 'none', borderRadius: 10, padding: '8px 18px',
+    cursor: 'pointer', fontSize: 14, fontWeight: 600, color: '#475569',
   },
-  logTable: { display: 'flex', flexDirection: 'column', gap: 2 },
+  logTable: { display: 'flex', flexDirection: 'column', gap: 4, overflowX: 'auto' },
   logHead: {
-    display: 'grid', gridTemplateColumns: '80px 100px 1fr 1fr 120px 70px',
-    fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase',
-    padding: '6px 0', borderBottom: '1px solid #f1f5f9', gap: 8,
+    display: 'grid',
+    gridTemplateColumns: 'minmax(100px, 0.9fr) minmax(120px, 1fr) minmax(180px, 1.4fr) minmax(180px, 1.4fr) minmax(130px, 0.9fr) minmax(88px, 0.6fr)',
+    fontSize: 12, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase',
+    padding: '10px 4px', borderBottom: '1px solid #e2e8f0', gap: 12, flexShrink: 0,
+    minWidth: 900,
   },
   logRow: {
-    display: 'grid', gridTemplateColumns: '80px 100px 1fr 1fr 120px 70px',
-    fontSize: 13, color: '#334155', padding: '8px 0',
-    borderBottom: '1px solid #f8fafc', gap: 8, alignItems: 'center',
+    display: 'grid',
+    gridTemplateColumns: 'minmax(100px, 0.9fr) minmax(120px, 1fr) minmax(180px, 1.4fr) minmax(180px, 1.4fr) minmax(130px, 0.9fr) minmax(88px, 0.6fr)',
+    fontSize: 15, color: '#334155', padding: '12px 4px',
+    borderBottom: '1px solid #f1f5f9', gap: 12, alignItems: 'center',
+    minWidth: 900,
   },
   logCell: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
 };

@@ -374,18 +374,30 @@ public class StripeSubscriptionService {
         out.put("cancelAtPeriodEnd", false);
 
         String subId = user.getStripeSubscriptionId();
-        if (subId == null || subId.isEmpty()) {
-            return out;
+        if (subId != null && !subId.isEmpty()) {
+            try {
+                Subscription sub = retrieveSubscriptionExpanded(subId);
+                out.put("plan", resolvePlanTier(sub, user));
+                out.put("billingInterval", billingIntervalFromSubscription(sub));
+                out.put("cancelAtPeriodEnd", Boolean.TRUE.equals(sub.getCancelAtPeriodEnd()));
+            } catch (Exception e) {
+                out.put("plan", tierFromUserOnly(user));
+            }
         }
-        try {
-            Subscription sub = retrieveSubscriptionExpanded(subId);
-            out.put("plan", resolvePlanTier(sub, user));
-            out.put("billingInterval", billingIntervalFromSubscription(sub));
-            out.put("cancelAtPeriodEnd", Boolean.TRUE.equals(sub.getCancelAtPeriodEnd()));
-        } catch (Exception e) {
-            out.put("plan", tierFromUserOnly(user));
-        }
+        out.put("starterTrialEligible", isStarterTrialEligible(user));
         return out;
+    }
+
+    /**
+     * Only brand-new free users (no Stripe customer yet) may see Starter trial CTAs.
+     * Paying members and returning customers (trial finished, canceled, or checkout started) do not.
+     */
+    private boolean isStarterTrialEligible(User user) {
+        if (user.getMembershipType() != User.MembershipType.FREE) {
+            return false;
+        }
+        String cust = user.getStripeCustomerId();
+        return cust == null || cust.isBlank();
     }
 
     private Subscription retrieveSubscriptionExpanded(String subId) throws Exception {

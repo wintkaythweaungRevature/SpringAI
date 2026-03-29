@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 
 /**
@@ -11,11 +11,26 @@ import { useAuth } from '../context/AuthContext';
  *   suggestPlan {string} — 'PRO' | 'GROWTH' (optional; auto-selects a plan card)
  */
 export default function UpgradeModal({ reason, feature, onClose, suggestPlan }) {
-  const { apiBase, authHeaders, user, refetchUser } = useAuth();
+  const { apiBase, authHeaders, user, refetchUser, isSubscribed } = useAuth();
   const [yearly, setYearly] = useState(false);
   const [loading, setLoading] = useState(null);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+  const [starterTrialEligible, setStarterTrialEligible] = useState(null);
+
+  const showStarterTrialCopy = !isSubscribed && starterTrialEligible !== false;
+
+  useEffect(() => {
+    if (!user) return;
+    fetch(`${apiBase}/api/subscription/current`, { headers: authHeaders() })
+      .then((r) => r.json())
+      .then((d) => {
+        if (typeof d?.starterTrialEligible === 'boolean') {
+          setStarterTrialEligible(d.starterTrialEligible);
+        }
+      })
+      .catch(() => {});
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const plans = [
     {
@@ -146,7 +161,7 @@ export default function UpgradeModal({ reason, feature, onClose, suggestPlan }) 
                 >
                   {loading === plan.id
                     ? '...'
-                    : plan.id === 'STARTER'
+                    : plan.id === 'STARTER' && showStarterTrialCopy
                       ? (yearly ? 'Start trial — yearly' : 'Start Free Trial')
                       : (yearly ? `Get ${plan.name} — yearly` : `Get ${plan.name} — monthly`)}
                 </button>
@@ -155,7 +170,11 @@ export default function UpgradeModal({ reason, feature, onClose, suggestPlan }) 
           })}
         </div>
 
-        <p style={s.footNote}>Starter includes 7-day free trial · Cancel anytime · Secured by Stripe</p>
+        <p style={s.footNote}>
+          {showStarterTrialCopy
+            ? 'Starter includes 7-day free trial · Cancel anytime · Secured by Stripe'
+            : 'Billed through Stripe · Cancel anytime · Secured by Stripe'}
+        </p>
       </div>
     </div>
   );

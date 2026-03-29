@@ -70,18 +70,31 @@ const PLANS = [
 
 /* ─── PricingPage ────────────────────────────────────────────────────── */
 export default function PricingPage({ onClose }) {
-  const { apiBase, authHeaders, user, refetchUser } = useAuth();
+  const { apiBase, authHeaders, user, refetchUser, isSubscribed } = useAuth();
   const [yearly, setYearly] = useState(false);
   const [loading, setLoading] = useState(null); // plan ID being processed
   const [currentPlan, setCurrentPlan] = useState(null);
+  const [starterTrialEligible, setStarterTrialEligible] = useState(null);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
+  /** Logged-out: show trial marketing. Logged-in paid: never. Logged-in free: API says who still qualifies. */
+  const showStarterTrialCopy =
+    !user || (!isSubscribed && starterTrialEligible !== false);
+
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setStarterTrialEligible(null);
+      return;
+    }
     fetch(`${apiBase}/api/subscription/current`, { headers: authHeaders() })
-      .then(r => r.json())
-      .then(d => setCurrentPlan(d?.plan))
+      .then((r) => r.json())
+      .then((d) => {
+        setCurrentPlan(d?.plan);
+        if (typeof d?.starterTrialEligible === 'boolean') {
+          setStarterTrialEligible(d.starterTrialEligible);
+        }
+      })
       .catch(() => {});
   }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -89,7 +102,12 @@ export default function PricingPage({ onClose }) {
     if (!user) return;
     fetch(`${apiBase}/api/subscription/current`, { headers: authHeaders() })
       .then((r) => r.json())
-      .then((d) => setCurrentPlan(d?.plan))
+      .then((d) => {
+        setCurrentPlan(d?.plan);
+        if (typeof d?.starterTrialEligible === 'boolean') {
+          setStarterTrialEligible(d.starterTrialEligible);
+        }
+      })
       .catch(() => {});
   };
 
@@ -131,7 +149,13 @@ export default function PricingPage({ onClose }) {
         <div style={s.header}>
           <div>
             <h2 style={s.title}>Choose Your Plan</h2>
-            <p style={s.subtitle}>Starter includes 7-day free trial · Cancel anytime.</p>
+            <p style={s.subtitle}>
+              {showStarterTrialCopy
+                ? 'Starter includes 7-day free trial · Cancel anytime.'
+                : user
+                  ? 'Change your plan or billing cycle · Cancel anytime.'
+                  : 'Pick a plan that fits you · Cancel anytime.'}
+            </p>
           </div>
           {onClose && (
             <button style={s.closeBtn} onClick={onClose} aria-label="Close">✕</button>
@@ -232,7 +256,7 @@ export default function PricingPage({ onClose }) {
                   >
                     {loading === plan.id
                       ? 'Redirecting...'
-                      : plan.id === 'STARTER'
+                      : plan.id === 'STARTER' && showStarterTrialCopy
                         ? (yearly ? 'Start trial — yearly' : 'Start 7-Day Free Trial')
                         : (yearly ? `Get ${plan.name} — yearly` : `Get ${plan.name} — monthly`)}
                   </button>
@@ -243,7 +267,11 @@ export default function PricingPage({ onClose }) {
         </div>
 
         <p style={s.footer}>
-          7-day free trial · No charge until trial ends · Cancel anytime · Powered by <strong>Stripe</strong>
+          {showStarterTrialCopy ? (
+            <>7-day free trial · No charge until trial ends · Cancel anytime · Powered by <strong>Stripe</strong></>
+          ) : (
+            <>Billed through Stripe · Cancel anytime · Powered by <strong>Stripe</strong></>
+          )}
         </p>
       </div>
     </div>

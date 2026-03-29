@@ -83,12 +83,15 @@ function DayModal({ date, posts, onClose }) {
             No posts on this day
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {dayPosts.map((p, i) => {
               const pInfo = PLATFORM_MAP[p.platform?.toLowerCase()];
+              const isVideo = p.mediaType === 'video';
+              const hasMedia = !!p.mediaUrl;
               return (
                 <div key={i} style={{ ...ms.postCard, borderLeft: `3px solid ${platformColor(p.platform)}` }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                  {/* Header row */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                     {pInfo && <PlatformIcon platform={pInfo} size={16} />}
                     <span style={{ fontWeight: 700, fontSize: 13, color: platformColor(p.platform), textTransform: 'capitalize' }}>{p.platform}</span>
                     <span style={{ marginLeft: 'auto', fontSize: 11, color: '#94a3b8' }}>{fmtTime(p.createdAt || p.scheduledAt)}</span>
@@ -98,10 +101,31 @@ function DayModal({ date, posts, onClose }) {
                       color: p.status === 'SUCCESS' ? '#16a34a' : p.status === 'FAILED' ? '#dc2626' : '#d97706',
                     }}>{p.status || 'SCHEDULED'}</span>
                   </div>
+
+                  {/* Media thumbnail */}
+                  {hasMedia && (
+                    <div style={{ marginBottom: 10, borderRadius: 10, overflow: 'hidden', background: '#f1f5f9', lineHeight: 0 }}>
+                      {isVideo ? (
+                        <video
+                          src={p.mediaUrl}
+                          controls
+                          style={{ width: '100%', maxHeight: 260, objectFit: 'cover', borderRadius: 10 }}
+                        />
+                      ) : (
+                        <img
+                          src={p.mediaUrl}
+                          alt="post media"
+                          style={{ width: '100%', maxHeight: 260, objectFit: 'cover', borderRadius: 10 }}
+                        />
+                      )}
+                    </div>
+                  )}
+
+                  {/* Caption */}
                   <div style={{ fontSize: 13, color: '#334155', lineHeight: 1.5 }}>
-                    {p.caption || '(no caption)'}
+                    {p.caption || <em style={{ color: '#94a3b8' }}>(no caption)</em>}
                   </div>
-                  <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4, textTransform: 'capitalize' }}>
+                  <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 5, textTransform: 'capitalize' }}>
                     {p.mediaType || 'post'}
                   </div>
                 </div>
@@ -324,22 +348,41 @@ export default function ContentCalendar() {
                 <div style={s.upcomingList}>
                   {upcoming.map((p, i) => {
                     const pInfo = PLATFORM_MAP[p.platform?.toLowerCase()];
+                    const isVideo = p.mediaType === 'video';
                     return (
                       <div key={i} style={{ ...s.upcomingItem, borderLeft: `3px solid ${platformColor(p.platform)}` }}>
-                        <div style={s.upcomingTop}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            {pInfo && <PlatformIcon platform={pInfo} size={14} />}
-                            <span style={{ fontWeight: 700, fontSize: 12, color: platformColor(p.platform), textTransform: 'capitalize' }}>{p.platform}</span>
+                        <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                          {/* Thumbnail */}
+                          {p.mediaUrl && (
+                            <div style={{ width: 48, height: 48, borderRadius: 8, overflow: 'hidden', flexShrink: 0, background: '#f1f5f9', position: 'relative' }}>
+                              {isVideo ? (
+                                <video src={p.mediaUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} muted preload="metadata" />
+                              ) : (
+                                <img src={p.mediaUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              )}
+                              {isVideo && (
+                                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  background: 'rgba(0,0,0,0.35)', fontSize: 14, color: '#fff' }}>▶</div>
+                              )}
+                            </div>
+                          )}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={s.upcomingTop}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                {pInfo && <PlatformIcon platform={pInfo} size={14} />}
+                                <span style={{ fontWeight: 700, fontSize: 12, color: platformColor(p.platform), textTransform: 'capitalize' }}>{p.platform}</span>
+                              </div>
+                              <span style={{
+                                fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 99,
+                                background: p.status === 'SUCCESS' ? '#f0fdf4' : '#fef2f2',
+                                color: p.status === 'SUCCESS' ? '#16a34a' : '#dc2626',
+                              }}>{p.status}</span>
+                            </div>
+                            <div style={s.upcomingCaption}>{p.caption || '(no caption)'}</div>
+                            <div style={s.upcomingMeta}>
+                              {fmtDate(p.createdAt)} · {p.mediaType || 'post'}
+                            </div>
                           </div>
-                          <span style={{
-                            fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 99,
-                            background: p.status === 'SUCCESS' ? '#f0fdf4' : '#fef2f2',
-                            color: p.status === 'SUCCESS' ? '#16a34a' : '#dc2626',
-                          }}>{p.status}</span>
-                        </div>
-                        <div style={s.upcomingCaption}>{p.caption || '(no caption)'}</div>
-                        <div style={s.upcomingMeta}>
-                          {fmtDate(p.createdAt)} · {p.mediaType || 'post'}
                         </div>
                       </div>
                     );
@@ -371,9 +414,35 @@ export default function ContentCalendar() {
                       {/* Thumbnail area */}
                       <div style={{
                         ...s.feedThumb,
-                        background: `linear-gradient(135deg, ${platformColor(p.platform)}22, ${platformColor(p.platform)}44)`,
+                        background: p.mediaUrl
+                          ? '#000'
+                          : `linear-gradient(135deg, ${platformColor(p.platform)}22, ${platformColor(p.platform)}44)`,
+                        position: 'relative', overflow: 'hidden',
                       }}>
-                        <div style={{ fontSize: 32 }}>{isVideo ? '🎥' : p.mediaType === 'image' ? '🖼️' : '✍️'}</div>
+                        {p.mediaUrl ? (
+                          isVideo ? (
+                            <video
+                              src={p.mediaUrl}
+                              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                              muted
+                              preload="metadata"
+                            />
+                          ) : (
+                            <img
+                              src={p.mediaUrl}
+                              alt="post"
+                              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                            />
+                          )
+                        ) : (
+                          <div style={{ fontSize: 32 }}>{isVideo ? '🎥' : p.mediaType === 'image' ? '🖼️' : '✍️'}</div>
+                        )}
+                        {isVideo && p.mediaUrl && (
+                          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
+                            background: 'rgba(0,0,0,0.55)', borderRadius: '50%', width: 36, height: 36,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: 16, color: '#fff', pointerEvents: 'none' }}>▶</div>
+                        )}
                         {/* Platform badge */}
                         <div style={{ ...s.feedPlatformBadge, background: platformColor(p.platform) }}>
                           {pInfo && <PlatformIcon platform={pInfo} size={11} />}

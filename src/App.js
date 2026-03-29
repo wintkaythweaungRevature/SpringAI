@@ -275,8 +275,8 @@ function App() {
                   <span style={s.topEmail} title={user.email}>{user.email}</span>
                   {(() => {
                     const mt = user?.membershipType;
-                    const planColors = { STARTER: '#6366f1', PRO: '#8b5cf6', GROWTH: '#0ea5e9', MEMBER: '#22c55e' };
-                    const planLabel = { STARTER: 'Starter', PRO: 'Pro', GROWTH: 'Growth', MEMBER: 'Member' };
+                    const planColors = { STARTER: '#6366f1', PRO: '#8b5cf6', GROWTH: '#0ea5e9', MEMBER: '#6366f1' };
+                    const planLabel = { STARTER: 'Starter', PRO: 'Pro', GROWTH: 'Growth', MEMBER: 'Starter' };
                     if (!mt || mt === 'FREE') return null;
                     return (
                       <span style={{ ...s.memberBadge, background: planColors[mt] || '#22c55e' }}>

@@ -7,19 +7,31 @@ const TIER_CATALOG = {
     name: "Starter",
     monthlyPrice: 19,
     yearlyPrice: 15,
+    yearlyTotal: 180,
     tagline: "Social scheduling, AI captions & core publishing",
+    features: ["10 posts/day", "3 platforms", "AI captions & video publisher", "Analytics dashboard", "7-day free trial"],
+    badge: null,
+    color: "#6366f1",
   },
   PRO: {
     name: "Pro",
     monthlyPrice: 39,
     yearlyPrice: 32,
+    yearlyTotal: 384,
     tagline: "Deep analytics, Social AI & unlimited posts",
+    features: ["30 posts/day", "6 platforms", "Deep Trends & Social AI", "Messages & Auto Reply", "All Starter features"],
+    badge: "Most Popular",
+    color: "#8b5cf6",
   },
   GROWTH: {
     name: "Growth",
     monthlyPrice: 79,
     yearlyPrice: 66,
+    yearlyTotal: 792,
     tagline: "Priority processing & full platform limits",
+    features: ["Unlimited posts", "All platforms", "Video trimming tool", "Priority processing", "All Pro features"],
+    badge: "Best Value",
+    color: "#0ea5e9",
   },
 };
 
@@ -45,6 +57,7 @@ export default function AccountSettings() {
   const [deactivatePassword, setDeactivatePassword] = useState("");
   const [confirmCancelSub, setConfirmCancelSub] = useState(false);
   const [message, setMessage] = useState(null);
+  const [upgradeYearly, setUpgradeYearly] = useState(false);
 
   const isMember = isSubscribed;
   const planBadgeLabel = (() => {
@@ -180,6 +193,39 @@ export default function AccountSettings() {
     window.dispatchEvent(new CustomEvent("wintaibot:go", { detail: "pricing" }));
   };
 
+  const handleUpgradeTo = async (planId) => {
+    if (!apiBase) return;
+    setLoading(`upgrade-${planId}`);
+    try {
+      const res = await fetch(`${apiBase}/api/subscription/checkout`, {
+        method: "POST",
+        headers: { ...authHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: planId, billingInterval: upgradeYearly ? "YEARLY" : "MONTHLY" }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || data.message || "Checkout failed");
+      if (data.updated) {
+        showMessage(data.message || "Plan updated!", false);
+        if (typeof refetchUser === "function") await refetchUser();
+        return;
+      }
+      const url = data.url || data.checkoutUrl;
+      if (url) window.location.href = url;
+      else throw new Error("Checkout failed");
+    } catch (e) {
+      showMessage(e.message || "Could not start checkout", true);
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  // Plans to show in upgrade section
+  const upgradePlans = !isMember
+    ? ["STARTER", "PRO", "GROWTH"]
+    : tierKey === "STARTER"
+    ? ["PRO", "GROWTH"]
+    : null; // PRO/GROWTH users don't see upgrade section
+
   return (
     <div style={s.wrap}>
       <div style={s.card}>
@@ -229,16 +275,155 @@ export default function AccountSettings() {
             </div>
           )}
 
-          {!isMember && (
-            <div style={{ marginTop: 12 }}>
-              <p style={s.desc}>Upgrade to a paid plan (from $19/mo; annual billing available) to unlock Image Generator, Transcription, DocuWizard, Reply Enchanter, Resume Warlock, and Video Publisher limits per tier.</p>
-              <button onClick={handleUpgrade} disabled={!!loading} style={s.btnSuccess}>
-                {loading === "upgrade" ? "Redirecting..." : "Upgrade — see plans from $19/mo"}
-              </button>
+          {/* ── Inline upgrade section: Free → all plans, Starter → Pro/Growth ── */}
+          {upgradePlans && (
+            <div style={{ marginTop: 20 }}>
+              <p style={{ ...s.desc, marginBottom: 14 }}>
+                {!isMember
+                  ? "Choose a plan to unlock all features."
+                  : "Unlock more with Pro or Growth."}
+              </p>
+
+              {/* Monthly / Yearly toggle */}
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 18 }}>
+                <div style={{ display: "flex", border: "1.5px solid #e2e8f0", borderRadius: 10, overflow: "hidden", background: "#f8fafc" }}>
+                  <button
+                    type="button"
+                    onClick={() => setUpgradeYearly(false)}
+                    style={{
+                      padding: "7px 16px", border: "none", fontSize: 13, fontWeight: 600,
+                      cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s",
+                      background: !upgradeYearly ? "#fff" : "transparent",
+                      color: !upgradeYearly ? "#1e293b" : "#64748b",
+                      boxShadow: !upgradeYearly ? "0 1px 4px rgba(0,0,0,0.08)" : "none",
+                    }}
+                  >
+                    Monthly
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setUpgradeYearly(true)}
+                    style={{
+                      padding: "7px 16px", border: "none", fontSize: 13, fontWeight: 600,
+                      cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s",
+                      background: upgradeYearly ? "#fff" : "transparent",
+                      color: upgradeYearly ? "#6366f1" : "#64748b",
+                      boxShadow: upgradeYearly ? "0 1px 4px rgba(0,0,0,0.08)" : "none",
+                      display: "flex", alignItems: "center", gap: 6,
+                    }}
+                  >
+                    Yearly
+                    <span style={{
+                      background: "#dcfce7", color: "#15803d",
+                      fontSize: 10, fontWeight: 700, padding: "2px 6px",
+                      borderRadius: 20, whiteSpace: "nowrap",
+                    }}>
+                      Save ~18%
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Plan cards */}
+              <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                {upgradePlans.map((planKey) => {
+                  const plan = TIER_CATALOG[planKey];
+                  const isRecommended = planKey === "PRO";
+                  const price = upgradeYearly ? plan.yearlyPrice : plan.monthlyPrice;
+                  const savingsYr = plan.monthlyPrice * 12 - plan.yearlyTotal;
+                  const isLoadingThis = loading === `upgrade-${planKey}`;
+
+                  return (
+                    <div
+                      key={planKey}
+                      style={{
+                        flex: "1 1 200px", minWidth: 180,
+                        border: `2px solid ${isRecommended ? plan.color : "#e2e8f0"}`,
+                        borderRadius: 14, padding: "18px 16px",
+                        background: isRecommended ? `${plan.color}08` : "#fff",
+                        position: "relative", display: "flex", flexDirection: "column",
+                        boxShadow: isRecommended ? `0 4px 16px ${plan.color}22` : "none",
+                      }}
+                    >
+                      {/* Badge */}
+                      {plan.badge && (
+                        <span style={{
+                          position: "absolute", top: -11, left: "50%", transform: "translateX(-50%)",
+                          background: plan.color, color: "#fff",
+                          fontSize: 10, fontWeight: 800, padding: "3px 10px",
+                          borderRadius: 20, whiteSpace: "nowrap", letterSpacing: "0.03em",
+                        }}>
+                          {plan.badge}
+                        </span>
+                      )}
+
+                      {/* Plan name */}
+                      <div style={{ fontSize: 15, fontWeight: 800, color: "#0f172a", marginBottom: 10 }}>
+                        {plan.name}
+                      </div>
+
+                      {/* Price */}
+                      <div style={{ display: "flex", alignItems: "flex-end", gap: 3, marginBottom: 4 }}>
+                        <span style={{ fontSize: 32, fontWeight: 800, color: "#0f172a", lineHeight: 1 }}>${price}</span>
+                        <span style={{ fontSize: 13, color: "#64748b", paddingBottom: 3 }}>/mo</span>
+                      </div>
+
+                      {/* Billing note */}
+                      <div style={{ fontSize: 11, color: upgradeYearly ? "#15803d" : "#94a3b8", marginBottom: 14, fontWeight: upgradeYearly ? 600 : 400 }}>
+                        {upgradeYearly
+                          ? `Billed $${plan.yearlyTotal}/yr · save $${savingsYr}/yr`
+                          : "Billed monthly"}
+                      </div>
+
+                      {/* Features */}
+                      <ul style={{ margin: "0 0 16px", padding: 0, listStyle: "none", flex: 1 }}>
+                        {plan.features.map((f, i) => (
+                          <li key={i} style={{ fontSize: 12, color: "#475569", marginBottom: 5, display: "flex", gap: 6 }}>
+                            <span style={{ color: plan.color, fontWeight: 700, flexShrink: 0 }}>✓</span>
+                            {f}
+                          </li>
+                        ))}
+                      </ul>
+
+                      {/* CTA */}
+                      <button
+                        type="button"
+                        onClick={() => handleUpgradeTo(planKey)}
+                        disabled={!!loading}
+                        style={{
+                          width: "100%", padding: "10px 0", borderRadius: 9,
+                          border: "none", cursor: !!loading ? "not-allowed" : "pointer",
+                          background: isRecommended ? plan.color : "#0f172a",
+                          color: "#fff", fontSize: 13, fontWeight: 700,
+                          fontFamily: "inherit", opacity: !!loading ? 0.7 : 1,
+                          transition: "opacity 0.15s",
+                        }}
+                      >
+                        {isLoadingThis
+                          ? "Redirecting…"
+                          : planKey === "STARTER"
+                          ? "Start Free Trial"
+                          : `Upgrade to ${plan.name}`}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {upgradeYearly && (
+                <p style={{ fontSize: 11, color: "#94a3b8", marginTop: 10 }}>
+                  Annual plans billed as one payment · Cancel anytime · Powered by Stripe
+                </p>
+              )}
+              {!upgradeYearly && upgradePlans.includes("STARTER") && (
+                <p style={{ fontSize: 11, color: "#94a3b8", marginTop: 10 }}>
+                  Starter includes 7-day free trial · No charge until trial ends
+                </p>
+              )}
             </div>
           )}
 
-          {showAnnualUpsell && annualMeta && (
+          {showAnnualUpsell && annualMeta && !upgradePlans && (
             <div style={s.annualCard}>
               <div style={s.annualCardHeader}>
                 <span style={s.annualIcon} aria-hidden>◇</span>

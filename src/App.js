@@ -260,43 +260,37 @@ function App() {
         {/* Marketing Nav for logged-out visitors */}
         {!user && <MarketingNav />}
 
-        {/* Top Bar — hidden for logged-out landing page (marketing nav replaces it) */}
-        <header style={{ ...s.topBar, display: !user && activeTab === null ? 'none' : undefined }}>
-          {user && <button style={s.menuBtn} onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>}
+        {/* Top Bar — only shown when logged in (MarketingNav handles logged-out state) */}
+        {user && (
+          <header style={s.topBar}>
+            <button style={s.menuBtn} onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>
 
-          <div style={s.searchBox}>
-            <span style={{ opacity: 0.4, fontSize: '14px' }}>🔍</span>
-            <input style={s.searchInput} type="text" placeholder="Search..." />
-          </div>
+            <div style={{ flex: 1 }} />
 
-          <div style={s.topRight}>
-            {loading ? (
-              <span style={{ color: '#94a3b8', fontSize: '13px' }}>...</span>
-            ) : user ? (
-              <>
-                <span style={s.topEmail} title={user.email}>{user.email}</span>
-                {(() => {
-                  const mt = user?.membershipType;
-                  const planColors = { STARTER: '#6366f1', PRO: '#8b5cf6', GROWTH: '#0ea5e9', MEMBER: '#22c55e' };
-                  const planLabel = { STARTER: 'Starter', PRO: 'Pro', GROWTH: 'Growth', MEMBER: 'Member' };
-                  if (!mt || mt === 'FREE') return null;
-                  return (
-                    <span style={{ ...s.memberBadge, background: planColors[mt] || '#22c55e' }}>
-                      ✓ {planLabel[mt] || mt}
-                    </span>
-                  );
-                })()}
-                <button onClick={logout} style={s.logoutBtn}>Logout</button>
-                <div style={s.avatar}>{userInitials}</div>
-              </>
-            ) : (
-              <>
-                <button onClick={() => { setAuthMode('login'); setShowAuthModal(true); }} style={s.loginBtn}>Login</button>
-                <button onClick={() => { setAuthMode('signup'); setShowAuthModal(true); }} style={s.signupBtn}>Sign Up</button>
-              </>
-            )}
-          </div>
-        </header>
+            <div style={s.topRight}>
+              {loading ? (
+                <span style={{ color: '#94a3b8', fontSize: '13px' }}>...</span>
+              ) : (
+                <>
+                  <span style={s.topEmail} title={user.email}>{user.email}</span>
+                  {(() => {
+                    const mt = user?.membershipType;
+                    const planColors = { STARTER: '#6366f1', PRO: '#8b5cf6', GROWTH: '#0ea5e9', MEMBER: '#22c55e' };
+                    const planLabel = { STARTER: 'Starter', PRO: 'Pro', GROWTH: 'Growth', MEMBER: 'Member' };
+                    if (!mt || mt === 'FREE') return null;
+                    return (
+                      <span style={{ ...s.memberBadge, background: planColors[mt] || '#22c55e' }}>
+                        ✓ {planLabel[mt] || mt}
+                      </span>
+                    );
+                  })()}
+                  <button onClick={logout} style={s.logoutBtn}>Logout</button>
+                  <div style={s.avatar}>{userInitials}</div>
+                </>
+              )}
+            </div>
+          </header>
+        )}
 
         {/* Page title (account email / member badge stay in the top bar only) */}
         <div style={s.pageBar}>

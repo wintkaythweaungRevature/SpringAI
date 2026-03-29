@@ -35,6 +35,7 @@ import PricingPage from './components/PricingPage';
 import AutoReplySettings from './components/AutoReplySettings';
 import ProGate from './components/ProGate';
 import ContentCalendar from './components/ContentCalendar';
+import wintaibotMark from './assets/wintaibot-mark.svg';
 
 const PAGE_TITLES = {
   null: 'Dashboard',
@@ -143,7 +144,7 @@ function App() {
       {/* Logo */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
            onClick={() => go(null)}>
-        <span style={{ fontSize: '22px' }}>🤖</span>
+        <img src={wintaibotMark} alt="" width={34} height={34} style={{ display: 'block', flexShrink: 0 }} />
         <span style={{ color: '#fff', fontWeight: 800, fontSize: '17px', letterSpacing: '-0.01em' }}>Wintaibot</span>
       </div>
 
@@ -214,7 +215,9 @@ function App() {
 
         {/* Logo */}
         <div style={s.logoArea}>
-          <div style={s.logoIconBg}>🤖</div>
+          <div style={s.logoIconBg}>
+            <img src={wintaibotMark} alt="" width={34} height={34} style={{ display: 'block' }} />
+          </div>
           {sidebarOpen && <span style={s.logoText}>Wintaibot</span>}
         </div>
 
@@ -429,9 +432,8 @@ const s = {
   },
   logoIconBg: {
     width: '34px', height: '34px', borderRadius: '10px',
-    background: 'linear-gradient(135deg, #2563eb, #7c3aed)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: '18px', flexShrink: 0,
+    flexShrink: 0, overflow: 'hidden', lineHeight: 0,
   },
   logoText: {
     color: '#f1f5f9', fontSize: '16px', fontWeight: '800',

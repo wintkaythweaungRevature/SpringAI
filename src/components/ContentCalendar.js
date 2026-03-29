@@ -146,7 +146,7 @@ export default function ContentCalendar() {
       });
       if (!res.ok) throw new Error('Failed');
       const data = await res.json();
-      const activity = data?.ownPosts?.recentActivity || [];
+      const activity = data?.recentActivity || [];
       setPosts(activity);
     } catch {
       setPosts([]);

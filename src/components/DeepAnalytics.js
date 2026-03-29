@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import PlatformIcon from './PlatformIcon';
 
@@ -28,13 +28,13 @@ const HOUR_LABELS     = Array.from({ length: 24 }, (_, i) =>
 
 const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-// Section tabs (not platform tabs)
+// Section tabs (not platform tabs) — serial shown in UI
 const SECTION_TABS = [
-  { id: 'growth',     label: '👥 Follower Growth' },
-  { id: 'besttime',   label: '⏰ Best Time' },
-  { id: 'breakdown',  label: '📊 Breakdown' },
-  { id: 'calendar',   label: '📅 Calendar' },
-  { id: 'competitor', label: '🔍 Competitor' },
+  { id: 'growth',     serial: '1', label: '👥 Follower Growth' },
+  { id: 'besttime',   serial: '2', label: '⏰ Best Time' },
+  { id: 'breakdown',  serial: '3', label: '📊 Breakdown' },
+  { id: 'calendar',   serial: '4', label: '📅 Calendar' },
+  { id: 'competitor', serial: '5', label: '🔍 Competitor' },
 ];
 
 function formatHour12(hour) {
@@ -51,6 +51,26 @@ function fmtNum(n) {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000)     return `${(n / 1_000).toFixed(1)}K`;
   return n.toLocaleString();
+}
+
+function hexToRgb(hex) {
+  const h = (hex || '#6366f1').replace('#', '');
+  const full = h.length === 3 ? h.split('').map((c) => c + c).join('') : h;
+  const n = parseInt(full, 16);
+  if (Number.isNaN(n)) return { r: 99, g: 102, b: 241 };
+  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+}
+
+/** Lighter mixes of platform brand for the three type towers (video = full brand). */
+function typeTowerColors(platformHex) {
+  const { r, g, b } = hexToRgb(platformHex);
+  const mix = (t) => {
+    const R = Math.round(r + (255 - r) * t);
+    const G = Math.round(g + (255 - g) * t);
+    const B = Math.round(b + (255 - b) * t);
+    return `rgb(${R},${G},${B})`;
+  };
+  return { video: mix(0), image: mix(0.32), text: mix(0.58) };
 }
 
 /* ── SVG Line Chart ─────────────────────────────────────────── */
@@ -120,7 +140,7 @@ function LineChart({ data, color = '#6366f1', width = 500, height = 160 }) {
 }
 
 /* ── Heatmap ─────────────────────────────────────────────────── */
-function PostHeatmap({ heatmap, bestDay, bestHour, postsDetail = [] }) {
+function PostHeatmap({ heatmap, bestDay, bestHour, postsDetail = [], platformLabel = 'this platform' }) {
   const [selected, setSelected] = useState(null);
 
   if (!heatmap || heatmap.length === 0) {
@@ -181,7 +201,8 @@ function PostHeatmap({ heatmap, bestDay, bestHour, postsDetail = [] }) {
       </div>
 
       <div style={{ fontSize: 11, color: '#64748b', marginTop: 12 }}>
-        🏆 Top posting window: <strong>{bestDay}</strong> at <strong>{formatHour12(bestHour)}</strong>
+        Your busiest slot on <strong>{platformLabel}</strong>: <strong>{bestDay}</strong> at{' '}
+        <strong>{formatHour12(bestHour)}</strong> (by post count)
       </div>
 
       {selected && selectedPosts.length > 0 && (
@@ -195,12 +216,16 @@ function PostHeatmap({ heatmap, bestDay, bestHour, postsDetail = [] }) {
           </div>
           {selectedPosts.map((p, i) => {
             const platColor = PLATFORM_COLORS[p.platform?.toLowerCase()] || '#6366f1';
+            const rowPlat = PLATFORMS.find((x) => x.id === (p.platform || '').toLowerCase());
             const date = p.createdAt ? new Date(p.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
             return (
               <div key={i} style={{ padding: '14px 16px', borderBottom: i < selectedPosts.length - 1 ? '1px solid #f1f5f9' : 'none', background: '#fff' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                  <span style={{ background: platColor, color: '#fff', borderRadius: 20, padding: '3px 10px', fontSize: 11, fontWeight: 700, textTransform: 'capitalize' }}>{p.platform || 'Unknown'}</span>
-                  <span style={{ background: '#f1f5f9', color: '#64748b', borderRadius: 20, padding: '3px 10px', fontSize: 11, fontWeight: 600, textTransform: 'capitalize' }}>{p.mediaType}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    {rowPlat ? <PlatformIcon platform={rowPlat} size={22} /> : null}
+                    <span style={{ background: platColor, color: '#fff', borderRadius: 20, padding: '3px 10px', fontSize: 11, fontWeight: 700, textTransform: 'capitalize' }}>{rowPlat?.label || p.platform || 'Unknown'}</span>
+                  </span>
+                  <span style={{ background: '#f1f5f9', color: '#64748b', borderRadius: 20, padding: '3px 10px', fontSize: 11, fontWeight: 600, textTransform: 'capitalize' }}>{p.mediaType || 'Post'}</span>
                   <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 'auto' }}>{date}</span>
                 </div>
                 <p style={{ margin: 0, fontSize: 13, color: '#334155', lineHeight: 1.55, whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxHeight: 100, overflowY: 'auto' }}>
@@ -215,21 +240,252 @@ function PostHeatmap({ heatmap, bestDay, bestHour, postsDetail = [] }) {
   );
 }
 
-/* ── Bar chart ───────────────────────────────────────────────── */
-function BarChart({ data, color = '#6366f1' }) {
-  const max = Math.max(...Object.values(data).map(v => v.count || 0), 1);
+/* ── Three towers: video / image / text tinted by selected platform brand ── */
+function TypeTowersChart({ data, platformColor = '#6366f1' }) {
+  const normalized = {};
+  Object.entries(data || {}).forEach(([k, v]) => {
+    normalized[String(k).toLowerCase()] = v;
+  });
+  const towers = [
+    { key: 'video', label: 'Video' },
+    { key: 'image', label: 'Image' },
+    { key: 'text', label: 'Text' },
+  ];
+  const colors = typeTowerColors(platformColor);
+  const colorByKey = { video: colors.video, image: colors.image, text: colors.text };
+  const rows = towers.map((t) => ({
+    ...t,
+    count: normalized[t.key]?.count ?? 0,
+  }));
+  const max = Math.max(...rows.map((r) => r.count), 1);
+  const total = rows.reduce((s, r) => s + r.count, 0) || 1;
+
   return (
-    <div style={{ display: 'flex', gap: 20, alignItems: 'flex-end', height: 100 }}>
-      {Object.entries(data).map(([type, vals]) => {
-        const h = ((vals.count || 0) / max) * 80;
+    <div style={{ display: 'flex', gap: 28, alignItems: 'flex-end', height: 150, justifyContent: 'center', flexWrap: 'wrap' }}>
+      {rows.map((r) => {
+        const h = max ? (r.count / max) * 100 : 0;
+        const pct = Math.round((r.count / total) * 1000) / 10;
         return (
-          <div key={type} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-            <span style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>{vals.count}</span>
-            <div style={{ width: 40, height: h, background: color, borderRadius: '6px 6px 0 0' }} />
-            <span style={{ fontSize: 11, color: '#64748b', textTransform: 'capitalize' }}>{type}</span>
+          <div key={r.key} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, width: 76 }}>
+            <span style={{ fontSize: 12, color: '#64748b', fontWeight: 700 }}>{r.count}</span>
+            <div
+              title={`${r.label}: ${r.count} posts (${pct}% of types on view)`}
+              style={{
+                width: 58,
+                height: 110,
+                background: '#f1f5f9',
+                borderRadius: '12px 12px 10px 10px',
+                display: 'flex',
+                alignItems: 'flex-end',
+                justifyContent: 'center',
+                padding: 5,
+                boxSizing: 'border-box',
+                border: `1px solid ${colorByKey[r.key]}33`,
+              }}
+            >
+              <div
+                style={{
+                  width: '100%',
+                  height: Math.max(h, r.count > 0 ? 10 : 0),
+                  borderRadius: 10,
+                  background: colorByKey[r.key],
+                  boxShadow: `0 4px 12px ${colorByKey[r.key]}44`,
+                  transition: 'height 0.25s ease',
+                }}
+              />
+            </div>
+            <span style={{ fontSize: 11, color: '#475569', fontWeight: 700, textTransform: 'capitalize' }}>{r.label}</span>
+            <span style={{ fontSize: 11, color: colorByKey[r.key], fontWeight: 800 }}>{pct}%</span>
           </div>
         );
       })}
+    </div>
+  );
+}
+
+const SCHEDULED_ORANGE = '#f97316';
+const SCHEDULED_ORANGE_BORDER = '#ea580c';
+
+/* ── Under Best Time: this month published vs scheduled (compact) ── */
+function BestTimeMonthPostStrip({ authHeaders, platformId }) {
+  const today = new Date();
+  const y = today.getFullYear();
+  const m = today.getMonth() + 1;
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [hover, setHover] = useState(null);
+
+  useEffect(() => {
+    setLoading(true);
+    fetch(`${API}/api/analytics/calendar?year=${y}&month=${m}`, { headers: authHeaders() })
+      .then((r) => r.json())
+      .then(setData)
+      .catch(() => setData(null))
+      .finally(() => setLoading(false));
+  }, [y, m, authHeaders]);
+
+  const flatItems = useMemo(() => {
+    if (!data) return [];
+    const out = [];
+    (data.posts || []).forEach((p) => {
+      const pid = (p.platform || '').toLowerCase();
+      if (platformId && pid && pid !== platformId) return;
+      out.push({ ...p, _kind: 'post' });
+    });
+    (data.scheduled || []).forEach((j) => {
+      const pid = (j.platform || '').toLowerCase();
+      if (platformId && pid && pid !== platformId) return;
+      out.push({ ...j, _kind: 'scheduled' });
+    });
+    out.sort((a, b) => String(a.dateTime || a.date || '').localeCompare(String(b.dateTime || b.date || '')));
+    return out;
+  }, [data, platformId]);
+
+  const legendPublished = platformId
+    ? PLATFORMS.find((p) => p.id === platformId)?.color || '#6366f1'
+    : '#6366f1';
+
+  if (loading) {
+    return (
+      <div style={{ marginTop: 28, paddingTop: 22, borderTop: '1px solid #f1f5f9' }}>
+        <div style={{ color: '#94a3b8', fontSize: 13 }}>Loading this month&apos;s posts…</div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ marginTop: 28, paddingTop: 22, borderTop: '1px solid #f1f5f9', position: 'relative' }}>
+      <h4 style={{ margin: '0 0 6px', fontSize: 14, fontWeight: 700, color: '#1e293b' }}>
+        📅 This month: published vs scheduled
+      </h4>
+      <p style={{ margin: '0 0 14px', fontSize: 12, color: '#64748b', lineHeight: 1.55 }}>
+        <strong>Round</strong> markers = published (color matches platform). <strong>Square</strong> markers = scheduled or pending
+        (reschedule). Hover any marker for format (image / video / text), caption, status, and logo — same rules as the Calendar tab.
+      </p>
+      <div style={{ display: 'flex', gap: 16, marginBottom: 12, flexWrap: 'wrap', fontSize: 11, color: '#64748b' }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ width: 10, height: 10, borderRadius: '50%', background: legendPublished }} />
+          Published
+        </span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span
+            style={{
+              width: 10,
+              height: 10,
+              borderRadius: 2,
+              background: SCHEDULED_ORANGE,
+              border: `1px solid ${SCHEDULED_ORANGE_BORDER}`,
+            }}
+          />
+          Scheduled / pending
+        </span>
+      </div>
+      {flatItems.length === 0 ? (
+        <p style={{ color: '#94a3b8', fontSize: 13 }}>No posts this month for the selected platform filter.</p>
+      ) : (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+          {flatItems.map((item, i) => {
+            const pc = PLATFORMS.find((p) => p.id === (item.platform || '').toLowerCase());
+            const isSched = item._kind === 'scheduled';
+            const media = (item.mediaType || item.postType || 'post').toString();
+            return (
+              <button
+                key={`${item.jobId || item.id || ''}-${i}`}
+                type="button"
+                onMouseEnter={(e) => {
+                  const r = e.currentTarget.getBoundingClientRect();
+                  setHover({
+                    item,
+                    media,
+                    pc,
+                    isSched,
+                    left: r.left + r.width / 2,
+                    top: r.top,
+                  });
+                }}
+                onMouseLeave={() => setHover(null)}
+                style={{
+                  border: `2px solid ${isSched ? SCHEDULED_ORANGE_BORDER : pc?.color || '#10b981'}`,
+                  background: isSched ? '#fff7ed' : '#fff',
+                  borderRadius: isSched ? 6 : 99,
+                  width: isSched ? 14 : 13,
+                  height: isSched ? 14 : 13,
+                  padding: 0,
+                  cursor: 'default',
+                  boxSizing: 'border-box',
+                }}
+                aria-label={`${isSched ? 'Scheduled' : 'Published'} ${pc?.label || item.platform || ''}`}
+              />
+            );
+          })}
+        </div>
+      )}
+      {hover && typeof document !== 'undefined' && (
+        <div
+          style={{
+            position: 'fixed',
+            left: Math.max(12, Math.min(hover.left, window.innerWidth - 292)),
+            top: hover.top,
+            transform: 'translate(-50%, calc(-100% - 10px))',
+            zIndex: 20000,
+            width: 280,
+            background: '#fff',
+            border: '1px solid #e2e8f0',
+            borderRadius: 12,
+            boxShadow: '0 12px 40px rgba(15,23,42,0.18)',
+            padding: '12px 14px',
+            pointerEvents: 'none',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+            {hover.pc ? <PlatformIcon platform={hover.pc} size={28} /> : <span style={{ fontSize: 22 }}>📱</span>}
+            <div>
+              <div style={{ fontWeight: 800, fontSize: 13, color: '#0f172a' }}>
+                {hover.pc?.label || hover.item.platform || 'Platform'}
+              </div>
+              <div style={{ fontSize: 11, color: '#64748b' }}>
+                {hover.isSched ? 'Scheduled / pending' : 'Published'} ·{' '}
+                <strong style={{ color: '#334155' }}>
+                  {String(hover.media).replace(/^\w/, (c) => c.toUpperCase())}
+                </strong>{' '}
+                (format)
+              </div>
+            </div>
+          </div>
+          {(hover.item.dateTime || hover.item.date) && (
+            <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 6 }}>
+              {hover.item.dateTime
+                ? new Date(hover.item.dateTime).toLocaleString()
+                : hover.item.date}
+            </div>
+          )}
+          <div
+            style={{
+              fontSize: 12,
+              color: '#475569',
+              lineHeight: 1.5,
+              maxHeight: 120,
+              overflow: 'auto',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word',
+            }}
+          >
+            {hover.item.caption || <em style={{ color: '#94a3b8' }}>No caption</em>}
+          </div>
+          {hover.item.status && (
+            <div
+              style={{
+                marginTop: 8,
+                fontSize: 10,
+                fontWeight: 700,
+                color: hover.isSched ? '#c2410c' : '#16a34a',
+              }}
+            >
+              Status: {hover.item.status}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -245,6 +501,7 @@ function TrendsCalendar({ authHeaders }) {
   const [selectedDay, setSelectedDay] = useState(null);
   const [rescheduleJob, setRescheduleJob] = useState(null); // { job, newDate, newTime }
   const [reschMsg, setReschMsg] = useState('');
+  const [calTip, setCalTip] = useState(null); // hover on mini markers
 
   const loadCalendar = useCallback(() => {
     setLoading(true);
@@ -404,19 +661,66 @@ function TrendsCalendar({ authHeaders }) {
                     }}>{day}</div>
                     {calView === 'posts' && (
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-                        {posts.slice(0, 4).map((p, i) => (
-                          <div key={i} style={{
-                            width: 8, height: 8, borderRadius: '50%',
-                            background: PLATFORM_COLORS[p.platform] || '#10b981',
-                            title: p.platform,
-                          }} title={p.platform} />
-                        ))}
-                        {sched.slice(0, 3).map((j, i) => (
-                          <div key={`s${i}`} style={{
-                            width: 8, height: 8, borderRadius: 2,
-                            background: '#f97316',
-                          }} title={`Scheduled: ${j.platform}`} />
-                        ))}
+                        {posts.slice(0, 4).map((p, i) => {
+                          const pcDot = PLATFORMS.find((x) => x.id === (p.platform || '').toLowerCase());
+                          const media = (p.mediaType || p.postType || 'post').toString();
+                          return (
+                            <div
+                              key={i}
+                              role="presentation"
+                              onMouseEnter={(e) => {
+                                const r = e.currentTarget.getBoundingClientRect();
+                                setCalTip({
+                                  kind: 'post',
+                                  item: p,
+                                  pc: pcDot,
+                                  media,
+                                  left: r.left + r.width / 2,
+                                  top: r.top,
+                                });
+                              }}
+                              onMouseLeave={() => setCalTip(null)}
+                              style={{
+                                width: 9,
+                                height: 9,
+                                borderRadius: '50%',
+                                background: PLATFORM_COLORS[p.platform] || '#10b981',
+                                border: `1px solid ${(PLATFORM_COLORS[p.platform] || '#10b981')}99`,
+                                cursor: 'default',
+                              }}
+                            />
+                          );
+                        })}
+                        {sched.slice(0, 3).map((j, i) => {
+                          const pcDot = PLATFORMS.find((x) => x.id === (j.platform || '').toLowerCase());
+                          const media = (j.mediaType || j.postType || 'post').toString();
+                          return (
+                            <div
+                              key={`s${i}`}
+                              role="presentation"
+                              onMouseEnter={(e) => {
+                                const r = e.currentTarget.getBoundingClientRect();
+                                setCalTip({
+                                  kind: 'scheduled',
+                                  item: j,
+                                  pc: pcDot,
+                                  media,
+                                  left: r.left + r.width / 2,
+                                  top: r.top,
+                                });
+                              }}
+                              onMouseLeave={() => setCalTip(null)}
+                              style={{
+                                width: 9,
+                                height: 9,
+                                borderRadius: 2,
+                                background: SCHEDULED_ORANGE,
+                                border: `1px solid ${SCHEDULED_ORANGE_BORDER}`,
+                                cursor: 'default',
+                              }}
+                            />
+                          );
+                        })}
                         {(posts.length + sched.length) > 7 && (
                           <div style={{ fontSize: 9, color: '#94a3b8', lineHeight: '8px' }}>
                             +{posts.length + sched.length - 7}
@@ -442,7 +746,7 @@ function TrendsCalendar({ authHeaders }) {
                   Published post (colored by platform)
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#64748b' }}>
-                  <div style={{ width: 10, height: 10, borderRadius: 2, background: '#f97316' }} />
+                  <div style={{ width: 10, height: 10, borderRadius: 2, background: SCHEDULED_ORANGE, border: `1px solid ${SCHEDULED_ORANGE_BORDER}` }} />
                   Scheduled / pending
                 </div>
               </div>
@@ -463,21 +767,33 @@ function TrendsCalendar({ authHeaders }) {
               </div>
               {selItems.length === 0 ? (
                 <p style={{ fontSize: 12, color: '#94a3b8' }}>No posts on this day.</p>
-              ) : selItems.map((item, i) => (
+              ) : selItems.map((item, i) => {
+                const rowPc = PLATFORMS.find((x) => x.id === (item.platform || '').toLowerCase());
+                const rowMedia = (item.mediaType || item.postType || 'post').toString();
+                return (
                 <div key={i} style={{
                   background: '#fff', borderRadius: 10, border: '1px solid #e2e8f0',
                   padding: '10px 12px', marginBottom: 8,
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      {rowPc ? <PlatformIcon platform={rowPc} size={22} /> : null}
+                      <span style={{
+                        background: PLATFORM_COLORS[item.platform] || '#6366f1',
+                        color: '#fff', borderRadius: 20, padding: '3px 10px',
+                        fontSize: 10, fontWeight: 700, textTransform: 'capitalize',
+                      }}>{rowPc?.label || item.platform}</span>
+                    </span>
                     <span style={{
-                      background: PLATFORM_COLORS[item.platform] || '#6366f1',
-                      color: '#fff', borderRadius: 20, padding: '2px 8px',
-                      fontSize: 10, fontWeight: 700, textTransform: 'capitalize',
-                    }}>{item.platform}</span>
+                      background: '#f1f5f9',
+                      color: '#475569',
+                      borderRadius: 20, padding: '3px 10px', fontSize: 10, fontWeight: 700,
+                      textTransform: 'capitalize',
+                    }}>{rowMedia}</span>
                     <span style={{
                       background: item._kind === 'scheduled' ? '#fff7ed' : '#f0fdf4',
                       color: item._kind === 'scheduled' ? '#c2410c' : '#16a34a',
-                      borderRadius: 20, padding: '2px 8px', fontSize: 10, fontWeight: 600,
+                      borderRadius: 20, padding: '3px 10px', fontSize: 10, fontWeight: 600,
                     }}>
                       {item._kind === 'scheduled' ? `⏰ ${item.status}` : `✓ ${item.status}`}
                     </span>
@@ -534,9 +850,53 @@ function TrendsCalendar({ authHeaders }) {
                     )
                   )}
                 </div>
-              ))}
+              );
+              })}
             </div>
           )}
+        </div>
+      )}
+      {calTip && typeof document !== 'undefined' && (
+        <div
+          style={{
+            position: 'fixed',
+            left: Math.max(12, Math.min(calTip.left, window.innerWidth - 292)),
+            top: calTip.top,
+            transform: 'translate(-50%, calc(-100% - 8px))',
+            zIndex: 20000,
+            width: 280,
+            background: '#fff',
+            border: '1px solid #e2e8f0',
+            borderRadius: 12,
+            boxShadow: '0 12px 40px rgba(15,23,42,0.18)',
+            padding: '12px 14px',
+            pointerEvents: 'none',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+            {calTip.pc ? <PlatformIcon platform={calTip.pc} size={28} /> : <span style={{ fontSize: 22 }}>📱</span>}
+            <div>
+              <div style={{ fontWeight: 800, fontSize: 13, color: '#0f172a' }}>
+                {calTip.pc?.label || calTip.item.platform || 'Platform'}
+              </div>
+              <div style={{ fontSize: 11, color: '#64748b' }}>
+                {calTip.kind === 'scheduled' ? 'Scheduled / pending' : 'Published'} ·{' '}
+                <strong style={{ color: '#334155' }}>
+                  {String(calTip.media).replace(/^\w/, (c) => c.toUpperCase())}
+                </strong>
+              </div>
+            </div>
+          </div>
+          {(calTip.item.dateTime || calTip.item.date) && (
+            <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 6 }}>
+              {calTip.item.dateTime
+                ? new Date(calTip.item.dateTime).toLocaleString()
+                : calTip.item.date}
+            </div>
+          )}
+          <div style={{ fontSize: 12, color: '#475569', lineHeight: 1.5, maxHeight: 100, overflow: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+            {calTip.item.caption || <em style={{ color: '#94a3b8' }}>No caption</em>}
+          </div>
         </div>
       )}
     </div>
@@ -749,12 +1109,13 @@ export default function DeepAnalytics() {
 
   const fetchBestTime = useCallback(() => {
     setLoadBestTime(true);
-    fetch(`${API}/api/analytics/best-time`, { headers: authHeaders() })
+    const q = new URLSearchParams({ platform });
+    fetch(`${API}/api/analytics/best-time?${q}`, { headers: authHeaders() })
       .then(r => r.json())
       .then(setBestTime)
       .catch(() => setBestTime(null))
       .finally(() => setLoadBestTime(false));
-  }, [authHeaders]);
+  }, [platform, authHeaders]);
 
   const fetchPerformance = useCallback(() => {
     setLoadPerf(true);
@@ -766,7 +1127,8 @@ export default function DeepAnalytics() {
   }, [authHeaders]);
 
   useEffect(() => { fetchHistory(); }, [fetchHistory]);
-  useEffect(() => { fetchBestTime(); fetchPerformance(); }, [fetchBestTime, fetchPerformance]);
+  useEffect(() => { fetchBestTime(); }, [fetchBestTime]);
+  useEffect(() => { fetchPerformance(); }, [fetchPerformance]);
 
   const refreshSnapshot = async () => {
     setSnapping(true);
@@ -801,7 +1163,19 @@ export default function DeepAnalytics() {
             background: section === tab.id ? '#6366f1' : 'transparent',
             color: section === tab.id ? '#fff' : '#64748b',
             border: `1.5px solid ${section === tab.id ? '#6366f1' : '#e2e8f0'}`,
-          }}>{tab.label}</button>
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+          }}>
+            <span style={{
+              fontSize: 11,
+              fontWeight: 800,
+              opacity: section === tab.id ? 0.95 : 0.85,
+              minWidth: 18,
+              textAlign: 'center',
+            }}>{tab.serial}.</span>
+            <span>{tab.label}</span>
+          </button>
         ))}
       </div>
 
@@ -842,6 +1216,15 @@ export default function DeepAnalytics() {
             </div>
           </div>
           {snapMsg && <div style={s.snapMsg}>{snapMsg}</div>}
+          <div style={{
+            display: 'flex', flexWrap: 'wrap', gap: '10px 18px', marginBottom: 14,
+            fontSize: 11, color: '#64748b', lineHeight: 1.45,
+          }}>
+            <span><strong style={{ color: '#6366f1' }}>1.</strong> Pick {platformConfig.label}</span>
+            <span><strong style={{ color: '#6366f1' }}>2.</strong> Choose 7 / 30 / 90 days</span>
+            <span><strong style={{ color: '#6366f1' }}>3.</strong> Refresh Now to snapshot</span>
+            <span><strong style={{ color: '#6366f1' }}>4.</strong> Read the trend line</span>
+          </div>
           {loadHistory ? (
             <div style={s.loadingRow}><div style={s.spinner} /> Loading…</div>
           ) : (
@@ -878,9 +1261,13 @@ export default function DeepAnalytics() {
       {/* ── BEST TIME ── */}
       {section === 'besttime' && (
         <div style={s.card}>
-          <h3 style={s.cardTitle}>⏰ Best Time to Post</h3>
-          <p style={{ fontSize: 12, color: '#94a3b8', marginBottom: 16 }}>
-            Based on your posting history. Darker blocks = times you post most often. Click a block to see which posts you made.
+          <h3 style={s.cardTitle}>⏰ Your posting times — {platformConfig.label}</h3>
+          <p style={{ fontSize: 12, color: '#64748b', marginBottom: 8, lineHeight: 1.55 }}>
+            This heatmap is <strong>your</strong> activity on <strong>{platformConfig.label}</strong> (posts tracked in Wintaibot),
+            not the same as a general best-time recommendation for everyone on that network.
+          </p>
+          <p style={{ fontSize: 12, color: '#94a3b8', marginBottom: 16, lineHeight: 1.5 }}>
+            Darker cells = more of your posts went out at that day and hour. Click a cell with posts to see them listed.
           </p>
           {loadBestTime ? (
             <div style={s.loadingRow}><div style={s.spinner} /> Loading…</div>
@@ -890,9 +1277,13 @@ export default function DeepAnalytics() {
               bestDay={bestTime.bestDay}
               bestHour={bestTime.bestHour}
               postsDetail={bestTime.postsDetail || []}
+              platformLabel={platformConfig.label}
             />
           ) : (
             <p style={{ color: '#94a3b8', fontSize: 13 }}>Could not load best time data.</p>
+          )}
+          {!loadBestTime && (
+            <BestTimeMonthPostStrip authHeaders={authHeaders} platformId={platform} />
           )}
         </div>
       )}
@@ -905,9 +1296,11 @@ export default function DeepAnalytics() {
             <div style={s.loadingRow}><div style={s.spinner} /> Loading…</div>
           ) : postPerf && Object.keys(postPerf.byType || {}).length > 0 ? (
             <div style={s.perfRow}>
-              <div style={{ flex: '1 1 280px', minWidth: 0 }}>
-                <p style={{ fontSize: 12, color: '#64748b', marginBottom: 12 }}>Posts by type</p>
-                <BarChart data={postPerf.byType} color={platformConfig.color} />
+              <div style={{ flex: '1 1 300px', minWidth: 0 }}>
+                <p style={{ fontSize: 12, color: '#64748b', marginBottom: 8 }}>
+                  Posts by type — three towers use <strong style={{ color: platformConfig.color }}>{platformConfig.label}</strong> brand tints (video = strongest, text = lightest)
+                </p>
+                <TypeTowersChart data={postPerf.byType} platformColor={platformConfig.color} />
               </div>
               <div style={{ flex: '2 1 360px', minWidth: 0 }}>
                 <p style={{ fontSize: 12, color: '#64748b', marginBottom: 12 }}>Posts by platform</p>

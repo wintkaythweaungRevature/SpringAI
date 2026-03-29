@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 
 const API = process.env.REACT_APP_API_URL || 'https://api.wintaibot.com';
+const BRAND_LOGO_SRC = '/android-chrome-192x192.png';
 
 const SUGGESTED = [
   "What were my best posts last month?",
@@ -100,7 +101,10 @@ export default function SocialAIChat() {
       {/* ── HEADER ── */}
       <div style={s.header}>
         <div>
-          <h2 style={s.title}>🤖 Social AI</h2>
+          <h2 style={s.title}>
+            <img src={BRAND_LOGO_SRC} alt="Wintaibot logo" style={s.titleLogo} />
+            <span>Social AI</span>
+          </h2>
           <p style={s.sub}>Ask anything about your social media performance. AI answers using your actual post data.</p>
         </div>
         <button
@@ -133,7 +137,7 @@ export default function SocialAIChat() {
         {/* Welcome + suggested questions (shown when chat is empty) */}
         {messages.length === 0 && !indexing && (
           <div style={s.welcome}>
-            <div style={s.botIcon}>🤖</div>
+            <img src={BRAND_LOGO_SRC} alt="Wintaibot logo" style={s.welcomeLogo} />
             <p style={s.welcomeText}>
               Hey! I've analyzed your social media history. Ask me anything about your performance.
             </p>
@@ -148,7 +152,7 @@ export default function SocialAIChat() {
         {/* Messages */}
         {messages.map((msg, i) => (
           <div key={i} style={{ ...s.msgRow, justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
-            {msg.role === 'ai' && <div style={s.aiAvatar}>🤖</div>}
+            {msg.role === 'ai' && <img src={BRAND_LOGO_SRC} alt="AI" style={s.aiAvatarLogo} />}
             <div style={{ ...s.bubble, ...(msg.role === 'user' ? s.userBubble : s.aiBubble) }}>
               {msg.text.split('\n').map((line, li) => (
                 <span key={li}>{line}{li < msg.text.split('\n').length - 1 && <br />}</span>
@@ -161,7 +165,7 @@ export default function SocialAIChat() {
         {/* Typing indicator */}
         {thinking && (
           <div style={{ ...s.msgRow, justifyContent: 'flex-start' }}>
-            <div style={s.aiAvatar}>🤖</div>
+            <img src={BRAND_LOGO_SRC} alt="AI" style={s.aiAvatarLogo} />
             <div style={{ ...s.bubble, ...s.aiBubble, ...s.thinkingBubble }}>
               <span style={s.dot} />
               <span style={s.dot} />
@@ -217,7 +221,8 @@ const s = {
     justifyContent: 'space-between', gap: 12,
     marginBottom: 16, flexShrink: 0,
   },
-  title:  { fontSize: 22, fontWeight: 700, color: '#1e293b', margin: 0 },
+  title:  { fontSize: 22, fontWeight: 700, color: '#1e293b', margin: 0, display: 'inline-flex', alignItems: 'center', gap: 8 },
+  titleLogo: { width: 26, height: 26, borderRadius: 6, display: 'block', flexShrink: 0 },
   sub:    { fontSize: 13, color: '#64748b', marginTop: 4 },
   reindexBtn: {
     border: '1.5px solid #e2e8f0', background: '#f8fafc',
@@ -258,7 +263,7 @@ const s = {
     display: 'flex', flexDirection: 'column', alignItems: 'center',
     gap: 12, padding: '20px 0',
   },
-  botIcon: { fontSize: 48 },
+  welcomeLogo: { width: 48, height: 48, borderRadius: 10, display: 'block' },
   welcomeText: {
     fontSize: 14, color: '#475569', textAlign: 'center',
     maxWidth: 440, lineHeight: 1.6,
@@ -273,7 +278,7 @@ const s = {
   msgRow: {
     display: 'flex', alignItems: 'flex-end', gap: 8,
   },
-  aiAvatar:   { fontSize: 22, flexShrink: 0, marginBottom: 2 },
+  aiAvatarLogo: { width: 24, height: 24, borderRadius: 6, flexShrink: 0, marginBottom: 2, display: 'block' },
   userAvatar: { fontSize: 18, flexShrink: 0, marginBottom: 2 },
   bubble: {
     maxWidth: '78%', padding: '12px 16px',

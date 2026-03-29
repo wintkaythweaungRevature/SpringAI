@@ -1258,9 +1258,20 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
 
       {/* ── STEP: PROCESSING ── */}
       {step === 'processing' && (
-        <div style={{ ...s.centerCard, ...(isMobile ? { padding: '24px 16px', margin: '0 8px' } : {}) }}>
-          <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚙️</div>
-          <div style={s.processTitle}>AI is working on your video</div>
+        <div
+          style={{ ...s.centerCard, ...(isMobile ? { padding: '24px 16px', margin: '0 8px' } : {}) }}
+          role="status"
+          aria-live="polite"
+          aria-busy={processing}
+        >
+          <div style={{ fontSize: '40px', marginBottom: '12px' }} aria-hidden>⚙️</div>
+          <div style={s.processTitle}>Please wait — AI is generating captions for your video</div>
+          <p style={s.processSubtitle}>
+            We&apos;re uploading, transcribing audio, and generating captions and hashtags. This usually takes a little while — stay on this screen.
+          </p>
+          <p style={s.processSubtitleMuted}>
+            <strong>Want to add your own captions instead?</strong> In a few seconds you can skip AI and go straight to the editor with simple starter text you can replace.
+          </p>
           <div style={s.processLog}>
             {processLog.map((l, i) => (
               <div key={i} style={{ ...s.logLine, ...(i === processLog.length - 1 ? s.logLineCurrent : s.logLineDone) }}>
@@ -1273,13 +1284,18 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
             <div style={{ ...s.progressFill, width: `${Math.min((processLog.length / 7) * 100, 100)}%` }} />
           </div>
           {processing && canSkipProcessing && (
-            <button
-              type="button"
-              onClick={usePlaceholders}
-              style={{ marginTop: '16px', padding: '10px 20px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#f8fafc', color: '#64748b', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
-            >
-              ⏭️ Skip — use template captions
-            </button>
+            <div style={{ marginTop: '20px' }}>
+              <button
+                type="button"
+                onClick={usePlaceholders}
+                style={s.processSkipBtn}
+              >
+                ✏️ Write my own captions (skip AI)
+              </button>
+              <p style={s.processSkipHint}>
+                Opens the next step with template captions and hashtags — edit everything before you publish.
+              </p>
+            </div>
           )}
         </div>
       )}
@@ -1859,7 +1875,18 @@ const s = {
 
   /* Processing */
   centerCard:    { background: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '40px', textAlign: 'center', maxWidth: '560px', width: '100%', boxSizing: 'border-box', margin: '0 auto', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' },
-  processTitle:  { fontSize: '18px', fontWeight: 700, color: '#1e293b', marginBottom: '20px' },
+  processTitle:  { fontSize: '18px', fontWeight: 700, color: '#1e293b', marginBottom: '10px', lineHeight: 1.35 },
+  processSubtitle: {
+    fontSize: '14px', fontWeight: 500, color: '#475569', lineHeight: 1.55, margin: '0 auto 12px', maxWidth: '440px', textAlign: 'center',
+  },
+  processSubtitleMuted: {
+    fontSize: '13px', fontWeight: 500, color: '#64748b', lineHeight: 1.55, margin: '0 auto 18px', maxWidth: '440px', textAlign: 'center',
+  },
+  processSkipBtn: {
+    marginTop: '4px', padding: '11px 22px', borderRadius: '10px', border: '1.5px solid #cbd5e1', background: '#fff', color: '#334155',
+    fontSize: '14px', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 1px 3px rgba(15,23,42,0.06)',
+  },
+  processSkipHint: { fontSize: '12px', color: '#94a3b8', marginTop: '10px', marginBottom: 0, lineHeight: 1.45, maxWidth: '400px', marginLeft: 'auto', marginRight: 'auto' },
   processLog:    { textAlign: 'left', background: '#0f172a', borderRadius: '10px', padding: '16px', marginBottom: '16px', minHeight: '120px' },
   logLine:       { fontSize: '13px', fontFamily: 'monospace', padding: '3px 0', color: '#64748b' },
   logLineDone:   { color: '#4ade80' },

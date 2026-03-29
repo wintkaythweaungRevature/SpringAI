@@ -113,7 +113,7 @@ export default function PricingPage({ onClose }) {
         <div style={s.header}>
           <div>
             <h2 style={s.title}>Choose Your Plan</h2>
-            <p style={s.subtitle}>Upgrade anytime. Cancel anytime.</p>
+            <p style={s.subtitle}>7-day free trial on all plans · Cancel anytime.</p>
           </div>
           {onClose && (
             <button style={s.closeBtn} onClick={onClose} aria-label="Close">✕</button>
@@ -195,7 +195,7 @@ export default function PricingPage({ onClose }) {
                     onClick={() => handleSubscribe(plan.id)}
                     disabled={loading === plan.id}
                   >
-                    {loading === plan.id ? 'Redirecting...' : `Get ${plan.name}`}
+                    {loading === plan.id ? 'Redirecting...' : `Start 7-Day Free Trial`}
                   </button>
                 )}
               </div>
@@ -204,7 +204,7 @@ export default function PricingPage({ onClose }) {
         </div>
 
         <p style={s.footer}>
-          Upgrade anytime. Cancel anytime. Powered by <strong>Stripe</strong> — your payment info is never stored on our servers.
+          7-day free trial · No charge until trial ends · Cancel anytime · Powered by <strong>Stripe</strong>
         </p>
       </div>
     </div>

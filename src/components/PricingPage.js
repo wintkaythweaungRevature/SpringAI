@@ -113,7 +113,7 @@ export default function PricingPage({ onClose }) {
         <div style={s.header}>
           <div>
             <h2 style={s.title}>Choose Your Plan</h2>
-            <p style={s.subtitle}>7-day free trial on all plans · Cancel anytime.</p>
+            <p style={s.subtitle}>Starter includes 7-day free trial · Cancel anytime.</p>
           </div>
           {onClose && (
             <button style={s.closeBtn} onClick={onClose} aria-label="Close">✕</button>
@@ -195,7 +195,7 @@ export default function PricingPage({ onClose }) {
                     onClick={() => handleSubscribe(plan.id)}
                     disabled={loading === plan.id}
                   >
-                    {loading === plan.id ? 'Redirecting...' : `Start 7-Day Free Trial`}
+                    {loading === plan.id ? 'Redirecting...' : plan.id === 'STARTER' ? 'Start 7-Day Free Trial' : `Get ${plan.name}`}
                   </button>
                 )}
               </div>

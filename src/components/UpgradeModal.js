@@ -114,14 +114,14 @@ export default function UpgradeModal({ reason, feature, onClose, suggestPlan }) 
                   onClick={() => handleUpgrade(plan.id)}
                   disabled={loading === plan.id}
                 >
-                  {loading === plan.id ? '...' : `Start Free Trial`}
+                  {loading === plan.id ? '...' : plan.id === 'STARTER' ? 'Start Free Trial' : `Get ${plan.name}`}
                 </button>
               </div>
             );
           })}
         </div>
 
-        <p style={s.footNote}>7-day free trial · No charge until trial ends · Cancel anytime · Secured by Stripe</p>
+        <p style={s.footNote}>Starter includes 7-day free trial · Cancel anytime · Secured by Stripe</p>
       </div>
     </div>
   );

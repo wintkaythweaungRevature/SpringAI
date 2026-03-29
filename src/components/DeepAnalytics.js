@@ -19,6 +19,10 @@ const DAY_LABELS  = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 const HOUR_LABELS = Array.from({ length: 24 }, (_, i) =>
   i === 0 ? '12a' : i < 12 ? `${i}a` : i === 12 ? '12p' : `${i-12}p`);
 
+const MONTH_NAMES = ['January','February','March','April','May','June',
+                     'July','August','September','October','November','December'];
+const CAL_DAY_LABELS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
 /* ── SVG Line Chart ─────────────────────────────────────────── */
 function LineChart({ data, color = '#6366f1', width = 500, height = 160 }) {
   if (!data || data.length < 2) {
@@ -45,9 +49,7 @@ function LineChart({ data, color = '#6366f1', width = 500, height = 160 }) {
   const points = data.map((d, i) => `${x(i)},${y(d.followers)}`).join(' ');
   const area   = `${x(0)},${y(min) + H} ` + data.map((d, i) => `${x(i)},${y(d.followers)}`).join(' ') + ` ${x(data.length - 1)},${y(min) + H}`;
 
-  // Y axis labels
   const yTicks = [0, 0.25, 0.5, 0.75, 1].map(t => min + t * range);
-  // X axis labels (show ~5 dates)
   const step = Math.max(1, Math.floor(data.length / 5));
   const xLabels = data.filter((_, i) => i % step === 0 || i === data.length - 1);
 
@@ -59,7 +61,6 @@ function LineChart({ data, color = '#6366f1', width = 500, height = 160 }) {
           <stop offset="100%" stopColor={color} stopOpacity="0.03" />
         </linearGradient>
       </defs>
-      {/* Y gridlines */}
       {yTicks.map((v, i) => (
         <g key={i}>
           <line x1={pad.left} y1={y(v)} x2={pad.left + W} y2={y(v)}
@@ -70,21 +71,17 @@ function LineChart({ data, color = '#6366f1', width = 500, height = 160 }) {
           </text>
         </g>
       ))}
-      {/* Area fill */}
       <polygon points={area} fill="url(#areaGrad)" />
-      {/* Line */}
       <polyline points={points} fill="none" stroke={color} strokeWidth="2.5" strokeLinejoin="round" />
-      {/* Dots for each data point (only if few) */}
       {data.length <= 15 && data.map((d, i) => (
         <circle key={i} cx={x(i)} cy={y(d.followers)} r="3.5" fill={color} />
       ))}
-      {/* X axis labels */}
-      {xLabels.map((d, _) => {
+      {xLabels.map((d) => {
         const idx = data.indexOf(d);
         return (
           <text key={d.date} x={x(idx)} y={height - 4}
                 textAnchor="middle" fontSize="9" fill="#94a3b8">
-            {d.date.slice(5)} {/* MM-DD */}
+            {d.date.slice(5)}
           </text>
         );
       })}
@@ -103,14 +100,12 @@ function PostHeatmap({ heatmap, bestDay, bestHour }) {
   return (
     <div style={{ overflowX: 'auto' }}>
       <div style={{ display: 'grid', gridTemplateColumns: `44px repeat(24, 22px)`, gap: 2 }}>
-        {/* Header row */}
         <div />
         {HOUR_LABELS.map((h, i) => (
-          <div key={i} style={{ fontSize: 8, color: '#94a3b8', textAlign: 'center',
+          <div key={i} style={{ fontSize: 8, textAlign: 'center',
                                 fontWeight: i === bestHour ? 700 : 400,
                                 color: i === bestHour ? '#6366f1' : '#94a3b8' }}>{h}</div>
         ))}
-        {/* Data rows */}
         {DAY_LABELS.map((day, d) => (
           <React.Fragment key={d}>
             <div style={{ fontSize: 10, color: '#64748b', display: 'flex', alignItems: 'center',
@@ -163,6 +158,253 @@ function BarChart({ data, color = '#6366f1' }) {
   );
 }
 
+/* ── Post Calendar ───────────────────────────────────────────── */
+function PostCalendar({ posts }) {
+  const [calMonth, setCalMonth] = useState(() => {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth(), 1);
+  });
+  const [selectedDay, setSelectedDay] = useState(null);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const year  = calMonth.getFullYear();
+  const month = calMonth.getMonth();
+
+  const firstDow    = new Date(year, month, 1).getDay(); // 0=Sun
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  // Group posts by local date string "YYYY-MM-DD"
+  const postsByDay = {};
+  (posts || []).forEach(p => {
+    if (!p.date) return;
+    const d    = new Date(p.date);
+    const key  = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    if (!postsByDay[key]) postsByDay[key] = [];
+    postsByDay[key].push(p);
+  });
+
+  const prevMonth = () => setCalMonth(new Date(year, month - 1, 1));
+  const nextMonth = () => setCalMonth(new Date(year, month + 1, 1));
+
+  const getDotColor = (post) => {
+    if (post.status === 'SUCCESS')   return PLATFORMS.find(p => p.id === post.platform)?.color || '#10b981';
+    if (post.status === 'SCHEDULED') return '#f59e0b';
+    if (post.status === 'FAILED')    return '#ef4444';
+    return '#94a3b8';
+  };
+
+  const getStatusBadge = (status) => {
+    if (status === 'SUCCESS')   return { label: 'Published', bg: '#dcfce7', color: '#16a34a' };
+    if (status === 'SCHEDULED') return { label: 'Scheduled', bg: '#fef3c7', color: '#d97706' };
+    if (status === 'FAILED')    return { label: 'Failed',    bg: '#fee2e2', color: '#dc2626' };
+    return { label: status, bg: '#f1f5f9', color: '#64748b' };
+  };
+
+  const formatTime = (dateStr) => {
+    const d = new Date(dateStr);
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  // Build calendar cells: nulls for padding + day numbers
+  const cells = [
+    ...Array(firstDow).fill(null),
+    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+  ];
+
+  const selKey = selectedDay
+    ? `${selectedDay.getFullYear()}-${String(selectedDay.getMonth()+1).padStart(2,'0')}-${String(selectedDay.getDate()).padStart(2,'0')}`
+    : null;
+  const selPosts = selKey ? (postsByDay[selKey] || []) : [];
+
+  return (
+    <div>
+      {/* Month navigation */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+        <button onClick={prevMonth} style={cs.navBtn}>&#8249;</button>
+        <span style={{ fontSize: 15, fontWeight: 700, color: '#1e293b' }}>
+          {MONTH_NAMES[month]} {year}
+        </span>
+        <button onClick={nextMonth} style={cs.navBtn}>&#8250;</button>
+      </div>
+
+      {/* Day-of-week header */}
+      <div style={cs.grid}>
+        {CAL_DAY_LABELS.map(d => (
+          <div key={d} style={cs.dayHeader}>{d}</div>
+        ))}
+        {cells.map((day, idx) => {
+          if (!day) return <div key={`pad-${idx}`} />;
+
+          const cellDate = new Date(year, month, day);
+          cellDate.setHours(0,0,0,0);
+          const key     = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+          const dayPosts = postsByDay[key] || [];
+          const isToday  = cellDate.getTime() === today.getTime();
+          const isPast   = cellDate < today;
+          const isSel    = selKey === key;
+
+          return (
+            <div
+              key={key}
+              onClick={() => setSelectedDay(isSel ? null : cellDate)}
+              style={{
+                ...cs.cell,
+                background: isSel ? '#ede9fe' : isToday ? '#f0f9ff' : '#fff',
+                outline: isToday ? '2px solid #6366f1' : 'none',
+                outlineOffset: -2,
+                cursor: dayPosts.length > 0 ? 'pointer' : 'default',
+              }}
+            >
+              <span style={{
+                fontSize: 12,
+                fontWeight: isToday ? 700 : 400,
+                color: isToday ? '#6366f1' : isPast ? '#94a3b8' : '#1e293b',
+              }}>
+                {day}
+              </span>
+
+              {/* Post dots */}
+              {dayPosts.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 2, marginTop: 3, justifyContent: 'center' }}>
+                  {dayPosts.slice(0, 3).map((p, i) => (
+                    <div
+                      key={i}
+                      title={`${p.platform} · ${p.status}`}
+                      style={{
+                        width: 7, height: 7, borderRadius: '50%',
+                        background: getDotColor(p),
+                        flexShrink: 0,
+                      }}
+                    />
+                  ))}
+                  {dayPosts.length > 3 && (
+                    <span style={{ fontSize: 8, color: '#64748b', lineHeight: '7px' }}>
+                      +{dayPosts.length - 3}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Legend */}
+      <div style={{ display: 'flex', gap: 16, marginTop: 14, flexWrap: 'wrap' }}>
+        {[
+          { label: 'Published', color: '#10b981' },
+          { label: 'Scheduled', color: '#f59e0b' },
+          { label: 'Failed',    color: '#ef4444' },
+        ].map(item => (
+          <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#64748b' }}>
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: item.color }} />
+            {item.label}
+          </div>
+        ))}
+        <div style={{ fontSize: 11, color: '#94a3b8', marginLeft: 'auto' }}>
+          Click a day to see post details
+        </div>
+      </div>
+
+      {/* Day detail panel */}
+      {selectedDay && (
+        <div style={cs.detailPanel}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#1e293b' }}>
+              {selectedDay.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}
+            </span>
+            <button onClick={() => setSelectedDay(null)} style={cs.closeBtn}>✕</button>
+          </div>
+
+          {selPosts.length === 0 ? (
+            <p style={{ fontSize: 12, color: '#94a3b8', margin: 0 }}>No posts on this day.</p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {selPosts.map((p, i) => {
+                const badge  = getStatusBadge(p.status);
+                const platCfg = PLATFORMS.find(pl => pl.id === p.platform);
+                return (
+                  <div key={i} style={cs.postRow}>
+                    <div style={{
+                      width: 32, height: 32, borderRadius: 8,
+                      background: platCfg?.color || '#6366f1',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 14, flexShrink: 0,
+                    }}>
+                      {platCfg ? <PlatformIcon platform={platCfg} size={16} color="#fff" /> : '📄'}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: '#1e293b',
+                                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {p.caption || '(no caption)'}
+                      </div>
+                      <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>
+                        {platCfg?.label || p.platform} · {formatTime(p.date)}
+                        {p.mediaType && ` · ${p.mediaType}`}
+                      </div>
+                    </div>
+                    <span style={{
+                      fontSize: 10, fontWeight: 600, padding: '3px 8px', borderRadius: 20,
+                      background: badge.bg, color: badge.color, flexShrink: 0,
+                    }}>
+                      {badge.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* Calendar sub-styles */
+const cs = {
+  navBtn: {
+    background: '#f1f5f9', border: 'none', borderRadius: 8,
+    width: 32, height: 32, fontSize: 18, cursor: 'pointer',
+    color: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center',
+    fontWeight: 700, lineHeight: 1,
+  },
+  grid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(7, 1fr)',
+    gap: 4,
+  },
+  dayHeader: {
+    fontSize: 11, fontWeight: 600, color: '#94a3b8',
+    textAlign: 'center', padding: '4px 0 6px',
+  },
+  cell: {
+    minHeight: 52, borderRadius: 10,
+    border: '1px solid #f1f5f9',
+    display: 'flex', flexDirection: 'column', alignItems: 'center',
+    padding: '6px 2px 4px',
+    transition: 'background 0.12s',
+  },
+  detailPanel: {
+    marginTop: 16,
+    background: '#f8fafc',
+    border: '1px solid #e2e8f0',
+    borderRadius: 12,
+    padding: '16px',
+  },
+  postRow: {
+    display: 'flex', alignItems: 'center', gap: 10,
+    background: '#fff', borderRadius: 10,
+    padding: '10px 12px',
+    border: '1px solid #f1f5f9',
+  },
+  closeBtn: {
+    background: 'none', border: 'none', cursor: 'pointer',
+    fontSize: 13, color: '#94a3b8', padding: 4,
+  },
+};
+
 /* ── Main Component ──────────────────────────────────────────── */
 export default function DeepAnalytics() {
   const { authHeaders } = useAuth();
@@ -177,6 +419,8 @@ export default function DeepAnalytics() {
   const [loadPerf,     setLoadPerf]     = useState(true);
   const [snapping,     setSnapping]     = useState(false);
   const [snapMsg,      setSnapMsg]      = useState('');
+  const [calPosts,     setCalPosts]     = useState([]);
+  const [calLoading,   setCalLoading]   = useState(true);
 
   const fetchHistory = useCallback(() => {
     setLoadHistory(true);
@@ -205,8 +449,17 @@ export default function DeepAnalytics() {
       .finally(() => setLoadPerf(false));
   }, [authHeaders]);
 
+  const fetchCalendar = useCallback(() => {
+    setCalLoading(true);
+    fetch(`${API}/api/analytics/calendar`, { headers: authHeaders() })
+      .then(r => r.json())
+      .then(data => setCalPosts(Array.isArray(data) ? data : []))
+      .catch(() => setCalPosts([]))
+      .finally(() => setCalLoading(false));
+  }, [authHeaders]);
+
   useEffect(() => { fetchHistory(); }, [fetchHistory]);
-  useEffect(() => { fetchBestTime(); fetchPerformance(); }, [fetchBestTime, fetchPerformance]);
+  useEffect(() => { fetchBestTime(); fetchPerformance(); fetchCalendar(); }, [fetchBestTime, fetchPerformance, fetchCalendar]);
 
   const refreshSnapshot = async () => {
     setSnapping(true);
@@ -337,6 +590,30 @@ export default function DeepAnalytics() {
           />
         ) : (
           <p style={{ color: '#94a3b8', fontSize: 13 }}>Could not load best time data.</p>
+        )}
+      </div>
+
+      {/* ── POST SCHEDULE CALENDAR ── */}
+      <div style={s.card}>
+        <div style={s.cardHeader}>
+          <div>
+            <h3 style={s.cardTitle}>📅 Post Schedule</h3>
+            <p style={{ fontSize: 12, color: '#94a3b8', margin: '4px 0 0' }}>
+              All your published and upcoming scheduled posts at a glance.
+            </p>
+          </div>
+          <button
+            onClick={fetchCalendar}
+            style={{ ...s.refreshBtn, background: '#6366f1', fontSize: 11, padding: '5px 12px' }}
+            disabled={calLoading}
+          >
+            {calLoading ? '⏳' : '🔄'} Refresh
+          </button>
+        </div>
+        {calLoading ? (
+          <div style={s.loadingRow}><div style={s.spinner} /> Loading…</div>
+        ) : (
+          <PostCalendar posts={calPosts} />
         )}
       </div>
 

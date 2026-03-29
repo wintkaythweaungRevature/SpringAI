@@ -232,6 +232,12 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
   const [thumbnailUrl, setThumbnailUrl] = useState(null);
   const [thumbnailMode, setThumbnailMode] = useState('scrub'); // 'scrub' | 'ai'
   const [showTrimmer, setShowTrimmer] = useState(false); // Growth-only trim modal
+  const [captionOptions, setCaptionOptions] = useState({}); // { [pid]: [{id,label,text}] }
+  const [selectedOptionIdx, setSelectedOptionIdx] = useState({}); // { [pid]: number }
+  const [captionHistory, setCaptionHistory] = useState({}); // { [pid]: string[] }
+  const [showCaptionGuide, setShowCaptionGuide] = useState(() => {
+    try { return localStorage.getItem('wintaibot_caption_guide_seen') !== '1'; } catch (_) { return true; }
+  });
   const fileRef    = useRef();
   const imageRef   = useRef();
   const skippedRef = useRef(false);
@@ -295,6 +301,94 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
       })
       .catch(() => {});
   };
+
+  const createOptionsForPlatform = (pid, baseCaption = '') => {
+    const text = String(baseCaption || '').trim() || mockCaption(pid, video?.name);
+    return buildCaptionOptions(pid, text);
+  };
+
+  const seedCaptionStudio = (generated) => {
+    const nextOptions = {};
+    const nextSelected = {};
+    const nextHistory = {};
+    Object.entries(generated || {}).forEach(([pid, variant]) => {
+      const options = createOptionsForPlatform(pid, variant?.caption || '');
+      nextOptions[pid] = options;
+      nextSelected[pid] = 0;
+      nextHistory[pid] = [];
+    });
+    setCaptionOptions(nextOptions);
+    setSelectedOptionIdx(nextSelected);
+    setCaptionHistory(nextHistory);
+  };
+
+  const regenerateCaptionOptions = (pid, style = 'balanced', tone = 'casual') => {
+    const current = variants[pid]?.caption || '';
+    const options = buildCaptionOptions(pid, current || mockCaption(pid, video?.name), { style, tone });
+    setCaptionOptions(prev => ({ ...prev, [pid]: options }));
+    setSelectedOptionIdx(prev => ({ ...prev, [pid]: 0 }));
+  };
+
+  const pushCaptionHistory = (pid, previousCaption) => {
+    if (typeof previousCaption !== 'string' || !previousCaption.trim()) return;
+    setCaptionHistory(prev => ({
+      ...prev,
+      [pid]: [...(prev[pid] || []), previousCaption],
+    }));
+  };
+
+  const applyCaptionText = (pid, nextCaption, trackHistory = true) => {
+    if (!variants[pid]) return;
+    const prevCaption = variants[pid].caption || '';
+    if (trackHistory && prevCaption !== nextCaption) pushCaptionHistory(pid, prevCaption);
+    setVariants(prev => ({ ...prev, [pid]: { ...prev[pid], caption: nextCaption } }));
+  };
+
+  const useCaptionOption = (pid, optionIndex) => {
+    const options = captionOptions[pid] || [];
+    const option = options[optionIndex];
+    if (!option) return;
+    setSelectedOptionIdx(prev => ({ ...prev, [pid]: optionIndex }));
+    applyCaptionText(pid, option.text, true);
+  };
+
+  const undoCaptionEdit = (pid) => {
+    const stack = captionHistory[pid] || [];
+    if (stack.length === 0) return;
+    const previous = stack[stack.length - 1];
+    setCaptionHistory(prev => ({ ...prev, [pid]: stack.slice(0, -1) }));
+    setVariants(prev => ({ ...prev, [pid]: { ...prev[pid], caption: previous } }));
+  };
+
+  const resetCaptionToSelectedOption = (pid) => {
+    const idx = selectedOptionIdx[pid] ?? 0;
+    const option = (captionOptions[pid] || [])[idx];
+    if (!option) return;
+    applyCaptionText(pid, option.text, true);
+  };
+
+  const applyCaptionRewrite = (pid, action) => {
+    const current = variants[pid]?.caption || '';
+    if (!current.trim()) return;
+    const rewritten = rewriteCaption(current, action, pid);
+    applyCaptionText(pid, rewritten, true);
+  };
+
+  const dismissCaptionGuide = () => {
+    setShowCaptionGuide(false);
+    try { localStorage.setItem('wintaibot_caption_guide_seen', '1'); } catch (_) {}
+  };
+
+  useEffect(() => {
+    if (step !== 'review') return;
+    if (!activeVariant || !variants[activeVariant]) return;
+    if (!captionOptions[activeVariant] || captionOptions[activeVariant].length === 0) {
+      const options = createOptionsForPlatform(activeVariant, variants[activeVariant].caption || '');
+      setCaptionOptions(prev => ({ ...prev, [activeVariant]: options }));
+      setSelectedOptionIdx(prev => ({ ...prev, [activeVariant]: 0 }));
+      setCaptionHistory(prev => ({ ...prev, [activeVariant]: prev[activeVariant] || [] }));
+    }
+  }, [step, activeVariant, variants, captionOptions]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const connectPlatform = async (platformId) => {
     setConnectLoading(platformId);
@@ -414,6 +508,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
     }
     setVariants(generated);
     setActiveVariant(selectedPlatforms[0]);
+    seedCaptionStudio(generated);
     setProcessing(false);
     setStep('review');
     setProcessLog(prev => [...prev, '⏭️ Skipped — using template captions. Edit before publishing.']);
@@ -434,6 +529,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
     }
     setVariants(generated);
     setActiveVariant(selectedPlatforms[0]);
+    seedCaptionStudio(generated);
     setStep('review');
   };
 
@@ -517,6 +613,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
       if (!skippedRef.current) {
         setVariants(generated);
         setActiveVariant(selectedPlatforms[0]);
+        seedCaptionStudio(generated);
         log('✅ All variants ready!');
       }
     } catch (e) {
@@ -534,6 +631,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
       if (!skippedRef.current) {
         setVariants(generated);
         setActiveVariant(selectedPlatforms[0]);
+        seedCaptionStudio(generated);
       }
     } finally {
       clearTimeout(skipTimer);
@@ -1442,6 +1540,10 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
               const pid = activeVariant;
               const p = PLATFORMS.find(x => x.id === pid);
               const v = variants[pid];
+              const options = captionOptions[pid] || [];
+              const selectedIdx = selectedOptionIdx[pid] ?? 0;
+              const historyLen = (captionHistory[pid] || []).length;
+              const score = scoreCaption(v.caption || '', p.maxLen);
               return (
                 <div style={s.card}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
@@ -1452,16 +1554,68 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
                     </div>
                   </div>
 
+                  <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px', background: '#f8fafc', marginBottom: '14px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}>
+                      <div>
+                        <div style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b' }}>Caption Studio</div>
+                        <div style={{ fontSize: '11px', color: '#64748b' }}>Generate options, refine in one click, publish confidently.</div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                        <button type="button" onClick={() => regenerateCaptionOptions(pid, 'balanced', 'casual')} style={s.studioBtn}>
+                          Generate 3 options
+                        </button>
+                        <button type="button" onClick={() => regenerateCaptionOptions(pid, 'short', 'bold')} style={s.studioBtnSecondary}>
+                          Regenerate
+                        </button>
+                      </div>
+                    </div>
+
+                    {showCaptionGuide && (
+                      <div style={{ marginTop: '10px', padding: '10px', borderRadius: '10px', background: '#eef2ff', border: '1px solid #c7d2fe', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                        <div style={{ fontSize: '11px', color: '#4338ca' }}>
+                          <strong>Quick start:</strong> 1) Pick an option 2) Use rewrite actions 3) Check caption score.
+                        </div>
+                        <button type="button" onClick={dismissCaptionGuide} style={{ border: 'none', background: 'transparent', color: '#4338ca', fontWeight: 700, cursor: 'pointer', fontSize: '11px' }}>
+                          Got it
+                        </button>
+                      </div>
+                    )}
+
+                    {options.length > 0 && (
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '8px', marginTop: '10px' }}>
+                        {options.map((opt, idx) => (
+                          <div key={opt.id} style={{ border: `1.5px solid ${selectedIdx === idx ? '#6366f1' : '#e2e8f0'}`, borderRadius: '10px', padding: '10px', background: '#fff' }}>
+                            <div style={{ fontSize: '11px', fontWeight: 700, color: selectedIdx === idx ? '#4f46e5' : '#64748b', marginBottom: '6px' }}>{opt.label}</div>
+                            <div style={{ fontSize: '12px', color: '#334155', lineHeight: 1.45, minHeight: '54px' }}>
+                              {opt.text.length > 100 ? `${opt.text.slice(0, 100)}…` : opt.text}
+                            </div>
+                            <button type="button" onClick={() => useCaptionOption(pid, idx)} style={{ marginTop: '8px', width: '100%', padding: '6px 8px', borderRadius: '8px', border: '1px solid #cbd5e1', background: selectedIdx === idx ? '#eef2ff' : '#fff', color: selectedIdx === idx ? '#4f46e5' : '#334155', fontWeight: 700, fontSize: '11px', cursor: 'pointer' }}>
+                              {selectedIdx === idx ? 'Selected' : 'Use this'}
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px', marginTop: '12px' }}>
                     <span style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>Caption</span>
-                    <span style={{ fontSize: '11px', color: '#64748b', background: '#f1f5f9', borderRadius: '6px', padding: '2px 8px' }}>
-                      {CAPTION_FORMAT_HINTS[pid] || 'Edit caption below'}
-                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ fontSize: '11px', color: '#64748b', background: '#f1f5f9', borderRadius: '6px', padding: '2px 8px' }}>
+                        {CAPTION_FORMAT_HINTS[pid] || 'Edit caption below'}
+                      </span>
+                      <button type="button" disabled={historyLen === 0} onClick={() => undoCaptionEdit(pid)} style={{ ...s.miniActionBtn, ...(historyLen === 0 ? s.miniActionBtnDisabled : {}) }}>
+                        Undo
+                      </button>
+                      <button type="button" onClick={() => resetCaptionToSelectedOption(pid)} style={s.miniActionBtn}>
+                        Reset
+                      </button>
+                    </div>
                   </div>
                   <textarea
                     style={s.textarea}
                     value={v.caption}
-                    onChange={e => setVariants(prev => ({ ...prev, [pid]: { ...prev[pid], caption: e.target.value } }))}
+                    onChange={e => applyCaptionText(pid, e.target.value, false)}
                   />
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
                     <span style={{ fontSize: '11px', color: v.caption.length > p.maxLen * 0.9 ? '#ef4444' : '#94a3b8' }}>
@@ -1470,6 +1624,57 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
                     <span style={{ fontSize: '11px', color: v.caption.length > p.maxLen ? '#ef4444' : '#94a3b8' }}>
                       {v.caption.length} / {p.maxLen}
                     </span>
+                  </div>
+
+                  <div style={{ marginTop: '10px' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>Quick rewrites</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                      {[
+                        { id: 'shorten', label: 'Shorten' },
+                        { id: 'expand', label: 'Expand' },
+                        { id: 'punchier', label: 'Punchier' },
+                        { id: 'add-cta', label: 'Add CTA' },
+                        { id: 'professional', label: 'Professional' },
+                        { id: 'remove-emojis', label: 'Remove emojis' },
+                      ].map(action => (
+                        <button key={action.id} type="button" onClick={() => applyCaptionRewrite(pid, action.id)} style={s.quickActionBtn}>
+                          {action.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: '12px', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '10px', background: '#fafafa' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>Caption score</span>
+                      <span style={{
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        padding: '2px 8px',
+                        borderRadius: '999px',
+                        background: score.level === 'strong' ? '#dcfce7' : score.level === 'good' ? '#fef3c7' : '#fee2e2',
+                        color: score.level === 'strong' ? '#166534' : score.level === 'good' ? '#92400e' : '#991b1b',
+                      }}>
+                        {score.label}
+                      </span>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '6px' }}>
+                      {[
+                        ['Hook', score.hook],
+                        ['Clarity', score.clarity],
+                        ['CTA', score.cta],
+                        ['Length', score.lengthFit],
+                      ].map(([label, ok]) => (
+                        <div key={label} style={{ fontSize: '11px', color: ok ? '#166534' : '#64748b' }}>
+                          {ok ? '✅' : '◻️'} {label}
+                        </div>
+                      ))}
+                    </div>
+                    {score.tip && (
+                      <div style={{ marginTop: '7px', fontSize: '11px', color: '#64748b' }}>
+                        Tip: {score.tip}
+                      </div>
+                    )}
                   </div>
 
                   <div style={s.fieldLabel}>Hashtags</div>
@@ -1829,6 +2034,72 @@ function mockClipNote(platform) {
   return notes[platform] || '';
 }
 
+function buildCaptionOptions(platform, baseCaption, prefs = {}) {
+  const text = String(baseCaption || '').trim();
+  const compact = text.replace(/\s+/g, ' ').trim();
+  const shortVersion = compact.length > 110 ? `${compact.slice(0, 107).trim()}...` : compact;
+  const cta = compact.match(/\b(comment|share|follow|save|subscribe|click|learn|watch|try)\b/i)
+    ? compact
+    : `${compact}${compact.endsWith('?') ? '' : ' '}Follow for more tips!`;
+
+  const tone = prefs.tone || 'casual';
+  const styled = tone === 'professional'
+    ? compact.replace(/\bguys\b/gi, 'everyone').replace(/\bawesome\b/gi, 'valuable')
+    : compact;
+
+  return [
+    { id: `${platform}-short`, label: 'Short', text: shortVersion || mockCaption(platform) },
+    { id: `${platform}-balanced`, label: 'Balanced', text: styled || mockCaption(platform) },
+    { id: `${platform}-detailed`, label: 'Detailed', text: cta || mockCaption(platform) },
+  ];
+}
+
+function rewriteCaption(caption, action, platform) {
+  const text = String(caption || '').trim();
+  if (!text) return text;
+  switch (action) {
+    case 'shorten':
+      return text.length > 140 ? `${text.slice(0, 137).trim()}...` : text;
+    case 'expand':
+      return `${text}\n\n${platform === 'linkedin' ? 'What are your thoughts on this?' : 'Save this and share with someone who needs it.'}`;
+    case 'punchier':
+      return text.startsWith('🔥') ? text : `🔥 ${text}`;
+    case 'add-cta':
+      return /\b(comment|share|follow|save|subscribe|try|watch)\b/i.test(text)
+        ? text
+        : `${text}\n\n👉 Follow for more.`;
+    case 'professional':
+      return text
+        .replace(/\bgonna\b/gi, 'going to')
+        .replace(/\bguys\b/gi, 'everyone')
+        .replace(/\bawesome\b/gi, 'valuable');
+    case 'remove-emojis':
+      return text.replace(/[\u{1F300}-\u{1FAFF}]/gu, '').replace(/\s{2,}/g, ' ').trim();
+    default:
+      return text;
+  }
+}
+
+function scoreCaption(caption, maxLen) {
+  const text = String(caption || '').trim();
+  const hasHook = text.length > 0 && (text.includes('?') || /^[A-Z0-9🔥✨🎬]/.test(text));
+  const hasCta = /\b(comment|share|follow|save|subscribe|click|watch|learn|try)\b/i.test(text);
+  const lengthFit = text.length > 0 && text.length <= maxLen;
+  const clarity = text.split(/\s+/).filter(Boolean).length >= 6;
+
+  const score = [hasHook, hasCta, lengthFit, clarity].filter(Boolean).length;
+  const level = score >= 4 ? 'strong' : score >= 3 ? 'good' : 'needs_work';
+  const label = level === 'strong' ? 'Strong' : level === 'good' ? 'Good' : 'Needs work';
+
+  let tip = '';
+  if (!hasHook) tip = 'Start with a hook or question.';
+  else if (!hasCta) tip = 'Add a clear call-to-action.';
+  else if (!lengthFit) tip = 'Shorten to fit platform limit.';
+  else if (!clarity) tip = 'Use clearer, slightly longer wording.';
+
+  return { level, label, hook: hasHook, cta: hasCta, lengthFit, clarity, tip };
+}
+
 function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 /* ─── Styles ─────────────────────────────────────────────────── */
@@ -1872,6 +2143,11 @@ const s = {
   btnPrimary:  { width: '100%', padding: '12px', borderRadius: '10px', border: 'none', background: 'linear-gradient(135deg,#2563eb,#7c3aed)', color: '#fff', fontSize: '14px', fontWeight: 700, cursor: 'pointer', marginTop: '4px' },
   btnOutline:  { padding: '12px', borderRadius: '10px', border: '2px solid #e2e8f0', background: 'transparent', color: '#475569', fontSize: '14px', fontWeight: 700, cursor: 'pointer' },
   btnDisabled: { opacity: 0.45, cursor: 'not-allowed' },
+  studioBtn:   { padding: '7px 12px', borderRadius: '8px', border: 'none', background: '#4f46e5', color: '#fff', fontSize: '11px', fontWeight: 700, cursor: 'pointer' },
+  studioBtnSecondary: { padding: '7px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#fff', color: '#334155', fontSize: '11px', fontWeight: 700, cursor: 'pointer' },
+  miniActionBtn: { padding: '4px 8px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#fff', color: '#334155', fontSize: '11px', fontWeight: 600, cursor: 'pointer' },
+  miniActionBtnDisabled: { opacity: 0.45, cursor: 'not-allowed' },
+  quickActionBtn: { padding: '5px 10px', borderRadius: '999px', border: '1px solid #dbeafe', background: '#eff6ff', color: '#1d4ed8', fontSize: '11px', fontWeight: 700, cursor: 'pointer' },
 
   /* Processing */
   centerCard:    { background: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '40px', textAlign: 'center', maxWidth: '560px', width: '100%', boxSizing: 'border-box', margin: '0 auto', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' },

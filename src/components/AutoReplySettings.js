@@ -33,6 +33,7 @@ export default function AutoReplySettings() {
   // rules[platform] = { enabled, promptTemplate, maxRepliesPerDay, replyToFirstOnly, keywordFilter }
   const [rules, setRules] = useState({});
   const [saving, setSaving] = useState({});
+  const [saved, setSaved] = useState({});   // { [platform]: true } briefly after save
   const [expanded, setExpanded] = useState(null); // which platform card is expanded
 
   // Test reply UI
@@ -98,6 +99,9 @@ export default function AutoReplySettings() {
       if (!res.ok) {
         const d = await res.json();
         setGlobalError(d.error || 'Save failed.');
+      } else {
+        setSaved(s => ({ ...s, [platform]: true }));
+        setTimeout(() => setSaved(s => ({ ...s, [platform]: false })), 2500);
       }
     } catch {
       setGlobalError('Network error.');
@@ -263,13 +267,18 @@ export default function AutoReplySettings() {
                     <span style={{ marginLeft: 8 }}>Reply to first comment per post only (prevents floods)</span>
                   </label>
 
-                  <button
-                    style={{ ...s.saveBtn, background: p.color, opacity: saving[p.id] ? 0.6 : 1 }}
-                    onClick={() => saveRule(p.id)}
-                    disabled={saving[p.id]}
-                  >
-                    {saving[p.id] ? 'Saving...' : 'Save Settings'}
-                  </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <button
+                      style={{ ...s.saveBtn, background: p.color, opacity: saving[p.id] ? 0.6 : 1 }}
+                      onClick={() => saveRule(p.id)}
+                      disabled={saving[p.id]}
+                    >
+                      {saving[p.id] ? 'Saving…' : 'Save Settings'}
+                    </button>
+                    {saved[p.id] && (
+                      <span style={{ fontSize: 13, fontWeight: 600, color: '#16a34a' }}>✓ Saved!</span>
+                    )}
+                  </div>
                 </div>
               )}
             </div>

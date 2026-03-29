@@ -179,6 +179,9 @@ function App() {
   return (
     <div style={s.shell}>
 
+      {/* Marketing Nav — fixed at top for logged-out visitors, above everything */}
+      {!user && <MarketingNav />}
+
       {/* ═══════════════ SIDEBAR ═══════════════ */}
       {user && ((isMobile || isTablet) && sidebarOpen) && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 40 }} onClick={() => setSidebarOpen(false)} aria-hidden="true" />

@@ -701,6 +701,7 @@ export default function AnalyticsDashboard() {
                         setHiddenActivityIds(prev => {
                           const next = new Set(prev);
                           allIds.forEach(id => next.add(id));
+                          if (user?.id != null) saveHiddenActivityIds(user.id, next);
                           return next;
                         });
                       }}

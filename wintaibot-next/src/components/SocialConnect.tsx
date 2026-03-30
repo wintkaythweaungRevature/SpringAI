@@ -195,9 +195,13 @@ export default function SocialConnect() {
 
                 {p.id === 'facebook' && (
                   <div style={s.metaUriHint}>
-                    <span style={s.metaUriLabel}>Meta app — Valid OAuth Redirect URI</span>
+                    <span style={s.metaUriLabel}>Using your own Meta (Facebook) app?</span>
                     <code style={s.metaUriCode}>{base}/api/social/callback/facebook</code>
-                    <span style={s.metaUriSub}>Use your real API host if you self-host (same value as <code style={s.metaUriCodeInline}>NEXT_PUBLIC_API_BASE</code>).</span>
+                    <span style={s.metaUriSub}>
+                      In Meta for Developers → your app → <strong>Facebook Login</strong> → <strong>Settings</strong>, add this
+                      exact URL under <strong>Valid OAuth Redirect URIs</strong>. If your team uses a custom API domain, replace
+                      the host with that domain — otherwise use the URL above as shown.
+                    </span>
                   </div>
                 )}
               </div>
@@ -211,7 +215,7 @@ export default function SocialConnect() {
         <div style={s.infoTitle}>📋 How it works</div>
         <div style={s.infoGrid}>
           {[
-            ['1️⃣', 'Connect', 'Click Connect for each platform. You\'ll be redirected to authorize Wintaibot. For Facebook, register the redirect URI shown on the Facebook card in your Meta Developer app.'],
+            ['1️⃣', 'Connect', 'Click Connect for each platform. You\'ll be redirected to authorize Wintaibot. Facebook only needs the extra URL below if you configure your own app in Meta for Developers.'],
             ['2️⃣', 'Upload Video', 'Go to Video Publisher and upload your video.'],
             ['3️⃣', 'AI Generates', 'AI transcribes your video and writes captions + hashtags for each platform.'],
             ['4️⃣', 'Approve & Publish', 'Review content, approve, and publish to all connected platforms at once.'],
@@ -267,5 +271,4 @@ const s: Record<string, any> = {
     borderRadius: '6px', border: '1px solid #93c5fd', fontFamily: 'ui-monospace, monospace',
   },
   metaUriSub: { fontSize: '11px', color: '#64748b', lineHeight: 1.45 },
-  metaUriCodeInline: { fontSize: '10px', fontFamily: 'ui-monospace, monospace', background: '#f1f5f9', padding: '1px 4px', borderRadius: '4px' },
 };

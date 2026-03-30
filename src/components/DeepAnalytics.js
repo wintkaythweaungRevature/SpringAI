@@ -31,7 +31,7 @@ const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct'
 // Section tabs (not platform tabs) — serial shown in UI
 const SECTION_TABS = [
   { id: 'growth',     serial: '1', label: '👥 Follower Growth' },
-  { id: 'besttime',   serial: '2', label: '⏰ Best Time' },
+  { id: 'besttime',   serial: '2', label: '⏰ Best time to post' },
   { id: 'breakdown',  serial: '3', label: '📊 Breakdown' },
   { id: 'calendar',   serial: '4', label: '📅 Calendar' },
   { id: 'competitor', serial: '5', label: '🔍 Competitor' },
@@ -174,9 +174,255 @@ function LineChart({ data, color = '#6366f1', width = 500, height = 160 }) {
   );
 }
 
+/* ── Best time: normalize API + client fallbacks + guidance ───────── */
+
+function padHeatmapTo7x24(hm) {
+  if (!hm || !Array.isArray(hm) || hm.length === 0) {
+    return Array.from({ length: 7 }, () => Array(24).fill(0));
+  }
+  const rows = [];
+  for (let d = 0; d < 7; d++) {
+    const src = d < hm.length && Array.isArray(hm[d]) ? hm[d] : [];
+    const row = [];
+    for (let h = 0; h < 24; h++) {
+      row.push(Number(src[h]) || 0);
+    }
+    rows.push(row);
+  }
+  return rows;
+}
+
+function isHeatmapAllZeros(rows) {
+  return !rows || rows.every((r) => r.every((c) => !Number(c)));
+}
+
+/** When API heatmap is empty but postsDetail has timestamps, build Mon=0 … Sun=6 grid. */
+function buildHeatmapFromPostsDetail(postsDetail) {
+  const grid = Array.from({ length: 7 }, () => Array(24).fill(0));
+  let n = 0;
+  (postsDetail || []).forEach((p) => {
+    let d = p.dayIndex;
+    let h = p.hour;
+    if (d == null || h == null) {
+      const raw = p.createdAt || p.publishedAt || p.dateTime;
+      if (!raw) return;
+      const dt = new Date(raw);
+      if (Number.isNaN(dt.getTime())) return;
+      d = (dt.getDay() + 6) % 7;
+      h = dt.getHours();
+    } else {
+      d = Number(d);
+      h = Number(h);
+    }
+    if (d < 0 || d > 6 || h < 0 || h > 23) return;
+    grid[d][h] += 1;
+    n += 1;
+  });
+  return n > 0 ? grid : null;
+}
+
+function inferPeakFromHeatmap(heatmap) {
+  let bestD = 0;
+  let bestH = 0;
+  let bestC = -1;
+  for (let d = 0; d < 7; d++) {
+    for (let h = 0; h < 24; h++) {
+      const c = Number(heatmap[d]?.[h]) || 0;
+      if (c > bestC) {
+        bestC = c;
+        bestD = d;
+        bestH = h;
+      }
+    }
+  }
+  if (bestC <= 0) return null;
+  return { d: bestD, h: bestH, count: bestC };
+}
+
+function topSlotsFromHeatmap(heatmap, limit) {
+  const arr = [];
+  for (let d = 0; d < 7; d++) {
+    for (let h = 0; h < 24; h++) {
+      const c = Number(heatmap[d]?.[h]) || 0;
+      if (c > 0) arr.push({ d, h, c });
+    }
+  }
+  arr.sort((a, b) => b.c - a.c);
+  return arr.slice(0, limit);
+}
+
+/**
+ * Single source of truth for heatmap + best day/hour (fills gaps if API omits bestDay/bestHour).
+ */
+function resolveBestTimeView(api) {
+  if (!api || typeof api !== 'object') return null;
+  const rawPadded = padHeatmapTo7x24(api.heatmap);
+  let heatmap = rawPadded;
+  const postsDetail = api.postsDetail || [];
+  let inferredFromDetail = false;
+  if (isHeatmapAllZeros(heatmap)) {
+    const built = buildHeatmapFromPostsDetail(postsDetail);
+    if (built) {
+      heatmap = built;
+      inferredFromDetail = true;
+    }
+  }
+  if (isHeatmapAllZeros(heatmap)) return null;
+
+  const peak = inferPeakFromHeatmap(heatmap);
+  if (!peak) return null;
+
+  let bestDay = api.bestDay;
+  let bestHour =
+    api.bestHour != null && api.bestHour !== ''
+      ? Number(api.bestHour)
+      : null;
+  if (bestHour != null && Number.isNaN(bestHour)) bestHour = null;
+
+  let bestDayIndex = bestDay
+    ? DAY_LABELS.findIndex((dl) => String(bestDay).toLowerCase().startsWith(dl.toLowerCase()))
+    : -1;
+
+  if (bestHour == null) bestHour = peak.h;
+  if (bestDayIndex < 0) bestDayIndex = peak.d;
+  if (!bestDay) bestDay = DAY_FULL_LABELS[peak.d];
+
+  const totalPosts = heatmap.flat().reduce((a, b) => a + Number(b || 0), 0);
+  const topSlots = topSlotsFromHeatmap(heatmap, 5);
+
+  return {
+    heatmap,
+    bestDay,
+    bestHour,
+    bestDayIndex,
+    totalPosts,
+    topSlots,
+    peakCount: peak.count,
+    inferredFromDetail,
+  };
+}
+
+function BestTimeGuidancePanel({ resolved, platformLabel, platformColor }) {
+  const tz =
+    typeof Intl !== 'undefined'
+      ? Intl.DateTimeFormat().resolvedOptions().timeZone || 'your local time'
+      : 'your local time';
+  const extras = (resolved.topSlots || []).filter(
+    (s) => !(s.d === resolved.bestDayIndex && s.h === resolved.bestHour)
+  );
+
+  return (
+    <div
+      style={{
+        marginBottom: 20,
+        padding: '18px 20px',
+        borderRadius: 16,
+        border: `2px solid ${platformColor}40`,
+        background: `linear-gradient(135deg, ${platformColor}12, #fff 55%)`,
+        boxShadow: '0 4px 24px rgba(15,23,42,0.06)',
+      }}
+    >
+      <div style={{ fontSize: 11, fontWeight: 800, color: platformColor, letterSpacing: '0.06em', marginBottom: 8 }}>
+        SUGGESTED WINDOW
+      </div>
+      <p style={{ margin: '0 0 10px', fontSize: 18, fontWeight: 800, color: '#0f172a', lineHeight: 1.35 }}>
+        Aim for <span style={{ color: platformColor }}>{resolved.bestDay}</span> around{' '}
+        <span style={{ color: platformColor }}>{formatHour12(resolved.bestHour)}</span>
+        <span style={{ fontSize: 13, fontWeight: 600, color: '#64748b' }}> ({tz})</span>
+      </p>
+      <p style={{ margin: '0 0 14px', fontSize: 13, color: '#475569', lineHeight: 1.55 }}>
+        Based on <strong>{resolved.totalPosts}</strong> post{resolved.totalPosts !== 1 ? 's' : ''} we counted for{' '}
+        <strong>{platformLabel}</strong>
+        {resolved.inferredFromDetail
+          ? ' (timestamps from your post list — heatmap was empty in the API response).'
+          : ' (when you usually publish in Wintaibot).'}
+        {' '}This is <strong>your</strong> rhythm, not a guarantee of reach — use it as a starting point.
+      </p>
+      {extras.length > 0 && (
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 6 }}>Also strong</div>
+          <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12, color: '#475569', lineHeight: 1.6 }}>
+            {extras.slice(0, 3).map((s, i) => (
+              <li key={i}>
+                {DAY_FULL_LABELS[s.d]} · {formatHour12(s.h)} <span style={{ color: '#94a3b8' }}>({s.c} post{s.c !== 1 ? 's' : ''})</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      <div
+        style={{
+          fontSize: 12,
+          fontWeight: 700,
+          color: '#1e293b',
+          marginBottom: 8,
+          paddingTop: 12,
+          borderTop: '1px solid rgba(148,163,184,0.35)',
+        }}
+      >
+        How to use this
+      </div>
+      <ol style={{ margin: 0, paddingLeft: 20, fontSize: 12, color: '#475569', lineHeight: 1.65 }}>
+        <li>
+          Schedule the next post near this day &amp; hour using <strong>Video Publisher</strong> (left menu) or{' '}
+          <strong>Content Calendar</strong>.
+        </li>
+        <li>
+          Keep publishing for a few weeks, then check this heatmap again — patterns get clearer with more data.
+        </li>
+        <li>
+          Open <a href="#trends-calendar">Posts Calendar (section 4 below)</a> → <strong>My Posts</strong> to see scheduled
+          items on the grid.
+        </li>
+        <li>
+          Click any <strong>non-empty</strong> cell in the heatmap to see which posts fell in that slot.
+        </li>
+      </ol>
+    </div>
+  );
+}
+
+function BestTimeEmptyGuide({ platformLabel, platformColor }) {
+  return (
+    <div
+      style={{
+        padding: '20px 22px',
+        borderRadius: 14,
+        background: '#f8fafc',
+        border: '1.5px dashed #cbd5e1',
+        marginBottom: 8,
+      }}
+    >
+      <p style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 700, color: '#334155' }}>
+        No posting history yet for <span style={{ color: platformColor }}>{platformLabel}</span>
+      </p>
+      <p style={{ margin: '0 0 14px', fontSize: 13, color: '#64748b', lineHeight: 1.6 }}>
+        We build your personal “best time” from <strong>when your posts actually go out</strong>. Connect the account,
+        publish or schedule a few posts, then return here.
+      </p>
+      <ol style={{ margin: 0, paddingLeft: 20, fontSize: 12, color: '#475569', lineHeight: 1.65 }}>
+        <li>
+          <strong>Connected Accounts</strong> — make sure {platformLabel} is linked.
+        </li>
+        <li>
+          <strong>Video Publisher</strong> — publish or schedule content to {platformLabel}.
+        </li>
+        <li>
+          <strong>Refresh</strong> — come back to Trends → Best Time; the heatmap fills as we see more timestamps.
+        </li>
+      </ol>
+    </div>
+  );
+}
+
 /* ── Heatmap ─────────────────────────────────────────────────── */
-function PostHeatmap({ heatmap, bestDay, bestHour, postsDetail = [], platformLabel = 'this platform' }) {
+function PostHeatmap({ resolved, postsDetail = [], platformLabel = 'this platform' }) {
   const [selected, setSelected] = useState(null);
+
+  const heatmap = resolved?.heatmap;
+  const bestDay = resolved?.bestDay;
+  const bestHour = resolved?.bestHour;
+  const bestDayIndex = resolved?.bestDayIndex ?? -1;
 
   if (!heatmap || heatmap.length === 0) {
     return <p style={{ color: '#94a3b8', fontSize: 13 }}>No posts yet to analyze.</p>;
@@ -184,12 +430,19 @@ function PostHeatmap({ heatmap, bestDay, bestHour, postsDetail = [], platformLab
 
   const maxVal = Math.max(...heatmap.flat(), 1);
   const selectedPosts = selected
-    ? postsDetail.filter(p => p.dayIndex === selected.d && p.hour === selected.h)
+    ? postsDetail.filter((p) => {
+        if (p.dayIndex != null && p.hour != null) {
+          return Number(p.dayIndex) === selected.d && Number(p.hour) === selected.h;
+        }
+        const raw = p.createdAt || p.publishedAt || p.dateTime;
+        if (!raw) return false;
+        const dt = new Date(raw);
+        if (Number.isNaN(dt.getTime())) return false;
+        const d = (dt.getDay() + 6) % 7;
+        const h = dt.getHours();
+        return d === selected.d && h === selected.h;
+      })
     : [];
-
-  const bestDayIndex = DAY_LABELS.findIndex(dl =>
-    bestDay?.toLowerCase().startsWith(dl.toLowerCase())
-  );
 
   return (
     <div>
@@ -239,6 +492,13 @@ function PostHeatmap({ heatmap, bestDay, bestHour, postsDetail = [], platformLab
         Your busiest slot on <strong>{platformLabel}</strong>: <strong>{bestDay}</strong> at{' '}
         <strong>{formatHour12(bestHour)}</strong> (by post count)
       </div>
+
+      {selected && selectedPosts.length === 0 && (
+        <p style={{ fontSize: 12, color: '#94a3b8', marginTop: 12, lineHeight: 1.5 }}>
+          This cell has activity in the heatmap, but the API did not return individual posts for it. Try another cell or
+          refresh after more posts sync.
+        </p>
+      )}
 
       {selected && selectedPosts.length > 0 && (
         <div style={{ marginTop: 16, background: '#f8fafc', borderRadius: 14, border: '1.5px solid #e2e8f0', overflow: 'hidden' }}>
@@ -711,6 +971,35 @@ function normalizeCalendarBestTimeOverlay(payload) {
   return Array.isArray(raw) && raw.length > 0 ? raw : [];
 }
 
+/**
+ * YYYY-MM-DD in the user's local calendar for grid cells.
+ * Handles rows that only have scheduledAt / dateTime (common for jobs) without a plain date field.
+ */
+function calendarLocalDateKey(rec) {
+  if (!rec || typeof rec !== 'object') return null;
+  const dOnly = rec.date;
+  if (typeof dOnly === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dOnly.trim())) {
+    return dOnly.trim();
+  }
+  const raw =
+    rec.dateTime ||
+    rec.scheduledAt ||
+    rec.scheduledTime ||
+    rec.publishAt ||
+    rec.publishedAt ||
+    rec.createdAt ||
+    dOnly;
+  if (raw == null || String(raw).trim() === '') return null;
+  const s = String(raw).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const d = new Date(s);
+  if (Number.isNaN(d.getTime())) return null;
+  const y = d.getFullYear();
+  const m = d.getMonth() + 1;
+  const day = d.getDate();
+  return `${y}-${String(m).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
 function dayScoresFromHeatmapRows(heatmap) {
   return Array.from({ length: 7 }, (_, d) => {
     const row = heatmap?.[d];
@@ -719,18 +1008,14 @@ function dayScoresFromHeatmapRows(heatmap) {
   });
 }
 
-/** When API sends no overlay, infer weekday activity from post dates in this payload. */
-function dayScoresFromPostDates(posts) {
+/** When API sends no overlay, infer weekday activity from post + scheduled rows (local calendar dates). */
+function dayScoresFromPostDates(records) {
   const c = [0, 0, 0, 0, 0, 0, 0];
-  (posts || []).forEach((p) => {
-    const raw = p.dateTime || p.publishedAt || p.createdAt || p.date;
-    if (!raw) return;
-    let d;
-    if (typeof raw === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.trim())) {
-      d = new Date(`${raw.trim()}T12:00:00`);
-    } else {
-      d = new Date(raw);
-    }
+  (records || []).forEach((p) => {
+    const key = calendarLocalDateKey(p);
+    if (!key) return;
+    const [yy, mm, dd] = key.split('-').map(Number);
+    const d = new Date(yy, mm - 1, dd);
     if (Number.isNaN(d.getTime())) return;
     const dow = (d.getDay() + 6) % 7;
     c[dow] += 1;
@@ -778,18 +1063,18 @@ function TrendsCalendar({ authHeaders }) {
   // Shift so Mon=0
   const offset = (firstDayOfMonth + 6) % 7;
 
-  // Group posts + scheduled by date string "YYYY-M-D"
+  // Group posts + scheduled by local calendar key YYYY-MM-DD (not only p.date — jobs often use scheduledAt)
   const byDate = {};
   if (data) {
-    (data.posts || []).forEach(p => {
-      if (!p.date) return;
-      const key = p.date;
+    (data.posts || []).forEach((p) => {
+      const key = calendarLocalDateKey(p);
+      if (!key) return;
       if (!byDate[key]) byDate[key] = [];
       byDate[key].push({ ...p, _kind: 'post' });
     });
-    (data.scheduled || []).forEach(j => {
-      if (!j.date) return;
-      const key = j.date;
+    (data.scheduled || []).forEach((j) => {
+      const key = calendarLocalDateKey(j);
+      if (!key) return;
       if (!byDate[key]) byDate[key] = [];
       byDate[key].push({ ...j, _kind: 'scheduled' });
     });
@@ -801,7 +1086,7 @@ function TrendsCalendar({ authHeaders }) {
     let max = Math.max(...scores, 0);
     let source = 'heatmap';
     if (max === 0 && data) {
-      scores = dayScoresFromPostDates(data.posts);
+      scores = dayScoresFromPostDates([...(data.posts || []), ...(data.scheduled || [])]);
       max = Math.max(...scores, 0);
       source = max > 0 ? 'posts' : 'none';
     } else if (max > 0) {
@@ -858,6 +1143,25 @@ function TrendsCalendar({ authHeaders }) {
           }}>{label}</button>
         ))}
       </div>
+
+      {calView === 'besttime' && (
+        <div
+          style={{
+            marginBottom: 14,
+            padding: '10px 14px',
+            borderRadius: 10,
+            background: '#fffbeb',
+            border: '1px solid #fde68a',
+            fontSize: 12,
+            color: '#92400e',
+            lineHeight: 1.5,
+          }}
+        >
+          <strong>Best Times</strong> shows weekday activity shading only — it does{' '}
+          <strong>not</strong> list scheduled posts. Tap <strong>📌 My Posts</strong> above to see orange squares
+          (scheduled) and colored dots (published) on each day.
+        </div>
+      )}
 
       {/* Month nav */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
@@ -1042,9 +1346,9 @@ function TrendsCalendar({ authHeaders }) {
                     }}
                   >
                     <strong>No shading yet.</strong> The calendar response had no <code style={{ fontSize: 10 }}>bestTimeOverlay</code>{' '}
-                    (or it was all zeros), and there were no post dates we could use for this month. For the full{' '}
-                    <strong>hour-by-hour</strong> “best time” view, open <strong>2 · Best Time</strong> in Trends (above). Use{' '}
-                    <strong>My Posts</strong> here to see dots on days with scheduled or published items.
+                    (or it was all zeros), and we found no post or scheduled dates in this month&apos;s payload to infer
+                    weekdays from. For the full <strong>hour-by-hour</strong> “best time” view, open <strong>2 · Best Time</strong>{' '}
+                    in Trends (above). Use <strong>My Posts</strong> here to see scheduled and published markers on each day.
                   </div>
                 )}
                 {bestTimeCal.source === 'posts' && bestTimeCal.hasAny && (
@@ -1447,6 +1751,11 @@ export default function DeepAnalytics() {
 
   const platformConfig = PLATFORMS.find(p => p.id === platform) || PLATFORMS[0];
 
+  const bestTimeResolved = useMemo(() => {
+    if (!bestTime || typeof bestTime !== 'object') return null;
+    return resolveBestTimeView(bestTime);
+  }, [bestTime]);
+
   return (
     <div style={s.wrap}>
 
@@ -1570,20 +1879,28 @@ export default function DeepAnalytics() {
             not the same as a general best-time recommendation for everyone on that network.
           </p>
           <p style={{ fontSize: 12, color: '#94a3b8', marginBottom: 16, lineHeight: 1.5 }}>
-            Darker cells = more of your posts went out at that day and hour. Click a cell with posts to see them listed.
+            Darker cells = more of your posts went out at that day and hour (your local timezone). Click a cell with posts
+            to see them listed.
           </p>
           {loadBestTime ? (
             <div style={s.loadingRow}><div style={s.spinner} /> Loading…</div>
-          ) : bestTime ? (
-            <PostHeatmap
-              heatmap={bestTime.heatmap}
-              bestDay={bestTime.bestDay}
-              bestHour={bestTime.bestHour}
-              postsDetail={bestTime.postsDetail || []}
-              platformLabel={platformConfig.label}
-            />
-          ) : (
+          ) : !bestTime ? (
             <p style={{ color: '#94a3b8', fontSize: 13 }}>Could not load best time data.</p>
+          ) : !bestTimeResolved ? (
+            <BestTimeEmptyGuide platformLabel={platformConfig.label} platformColor={platformConfig.color} />
+          ) : (
+            <>
+              <BestTimeGuidancePanel
+                resolved={bestTimeResolved}
+                platformLabel={platformConfig.label}
+                platformColor={platformConfig.color}
+              />
+              <PostHeatmap
+                resolved={bestTimeResolved}
+                postsDetail={bestTime.postsDetail || []}
+                platformLabel={platformConfig.label}
+              />
+            </>
           )}
           {!loadBestTime && (
             <BestTimeMonthPostStrip authHeaders={authHeaders} platformId={platform} />

@@ -190,6 +190,14 @@ export default function SocialConnect() {
                     {isConnecting ? 'Opening...' : `Connect ${p.label}`}
                   </button>
                 )}
+
+                {p.id === 'facebook' && (
+                  <div style={s.metaUriHint}>
+                    <span style={s.metaUriLabel}>Meta app — Valid OAuth Redirect URI</span>
+                    <code style={s.metaUriCode}>{base}/api/social/callback/facebook</code>
+                    <span style={s.metaUriSub}>Use your real API host if you self-host (same value as <code style={s.metaUriCodeInline}>REACT_APP_API_BASE</code>).</span>
+                  </div>
+                )}
               </div>
             );
           })}
@@ -201,7 +209,7 @@ export default function SocialConnect() {
         <div style={s.infoTitle}>📋 How it works</div>
         <div style={s.infoGrid}>
           {[
-            ['1️⃣', 'Connect', 'Click Connect for each platform. You\'ll be redirected to authorize Wintaibot.'],
+            ['1️⃣', 'Connect', 'Click Connect for each platform. You\'ll be redirected to authorize Wintaibot. For Facebook, register the redirect URI shown on the Facebook card in your Meta Developer app.'],
             ['2️⃣', 'Upload Video', 'Go to Video Publisher and upload your video.'],
             ['3️⃣', 'AI Generates', 'AI transcribes your video and writes captions + hashtags for each platform.'],
             ['4️⃣', 'Approve & Publish', 'Review content, approve, and publish to all connected platforms at once.'],
@@ -246,4 +254,15 @@ const s = {
   infoTitle:   { fontSize: '14px', fontWeight: 700, color: '#1e293b', marginBottom: '16px' },
   infoGrid:    { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px' },
   infoStep:    { display: 'flex', gap: '10px', alignItems: 'flex-start' },
+  metaUriHint: {
+    marginTop: '4px', padding: '10px 12px', borderRadius: '10px', background: '#eff6ff', border: '1px solid #bfdbfe',
+    display: 'flex', flexDirection: 'column', gap: '6px',
+  },
+  metaUriLabel: { fontSize: '11px', fontWeight: 700, color: '#1e40af', textTransform: 'uppercase', letterSpacing: '0.04em' },
+  metaUriCode: {
+    fontSize: '11px', wordBreak: 'break-all', color: '#1e3a8a', background: '#fff', padding: '8px 10px',
+    borderRadius: '6px', border: '1px solid #93c5fd', fontFamily: 'ui-monospace, monospace',
+  },
+  metaUriSub: { fontSize: '11px', color: '#64748b', lineHeight: 1.45 },
+  metaUriCodeInline: { fontSize: '10px', fontFamily: 'ui-monospace, monospace', background: '#f1f5f9', padding: '1px 4px', borderRadius: '4px' },
 };

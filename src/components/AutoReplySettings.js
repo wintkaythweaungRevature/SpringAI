@@ -8,7 +8,7 @@ const PLATFORMS = [
   { id: 'instagram', label: 'Instagram', color: '#E1306C', emoji: '📸', logo: 'instagram',
     note: 'Replies to comments on your Instagram posts.' },
   { id: 'facebook',  label: 'Facebook',  color: '#1877F2', emoji: '👍', logo: 'facebook',
-    note: 'Replies to comments on your Facebook Page posts.' },
+    note: 'Replies to comments on your Facebook Page posts. Enable this rule, keep the Page connected with comment permissions, and rely on the server scheduler polling the Graph API—no public webhook URL is used for auto-reply in this product.' },
   { id: 'youtube',   label: 'YouTube',   color: '#FF0000', emoji: '▶️', logo: 'youtube',
     note: 'Replies to top-level comments on your YouTube videos.' },
   { id: 'tiktok',   label: 'TikTok',    color: '#010101', emoji: '🎵', logo: 'tiktok',
@@ -300,8 +300,8 @@ export default function AutoReplySettings() {
       <div style={s.header}>
         <h2 style={s.title}>AI Auto-Reply</h2>
         <p style={s.subtitle}>
-          Automatically reply to new comments on your posts using AI. Polls every 5 minutes.
-          Use <strong>Enable all</strong> to turn on every platform at once (connect each account in Social / Video Publisher first).
+          Automatically reply to new comments on your posts using AI. The backend polls about every 5 minutes (scheduled Graph API checks—not a customer-hosted webhook).
+          Use <strong>Enable all</strong> to turn on every platform at once (connect each account in Social / Video Publisher first; Facebook OAuth must use the API redirect URI shown under Connected Accounts).
         </p>
         <div style={s.bulkActions}>
           <button
@@ -712,16 +712,19 @@ function normalizeLogsResponse(data) {
 
 function resolvePlatform(raw) {
   if (raw == null || String(raw).trim() === '') return null;
-  let id = String(raw).trim().toLowerCase().replace(/\s+/g, '').replace(/-/g, '');
+  // Collapse hyphens/underscores so API values like meta_facebook → metafacebook (alias below).
+  let id = String(raw).trim().toLowerCase().replace(/\s+/g, '').replace(/[-_]/g, '');
   const aliases = {
     twitter: 'x',
     xtwitter: 'x',
     fb: 'facebook',
     fbpage: 'facebook',
-    facebookpage: 'facebook',
-    facebook_page: 'facebook',
+    facebookpage: 'facebook', // e.g. API "facebook_page" after [-_] strip
+    facebookpagecomments: 'facebook',
     pagefacebook: 'facebook',
     metafacebook: 'facebook',
+    metafb: 'facebook',
+    graphfacebook: 'facebook',
     ig: 'instagram',
     insta: 'instagram',
     instagrambusiness: 'instagram',

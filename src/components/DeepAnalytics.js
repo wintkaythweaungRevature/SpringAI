@@ -699,6 +699,45 @@ function BestTimeMonthPostStrip({ authHeaders, platformId }) {
   );
 }
 
+/** Calendar API may omit this; try common shapes / keys. */
+function normalizeCalendarBestTimeOverlay(payload) {
+  if (!payload || typeof payload !== 'object') return [];
+  const raw =
+    payload.bestTimeOverlay ||
+    payload.best_time_overlay ||
+    payload.bestTimeHeatmap ||
+    payload.dayHourHeatmap ||
+    payload.heatmap;
+  return Array.isArray(raw) && raw.length > 0 ? raw : [];
+}
+
+function dayScoresFromHeatmapRows(heatmap) {
+  return Array.from({ length: 7 }, (_, d) => {
+    const row = heatmap?.[d];
+    if (!Array.isArray(row)) return 0;
+    return row.reduce((a, b) => a + (Number(b) || 0), 0);
+  });
+}
+
+/** When API sends no overlay, infer weekday activity from post dates in this payload. */
+function dayScoresFromPostDates(posts) {
+  const c = [0, 0, 0, 0, 0, 0, 0];
+  (posts || []).forEach((p) => {
+    const raw = p.dateTime || p.publishedAt || p.createdAt || p.date;
+    if (!raw) return;
+    let d;
+    if (typeof raw === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.trim())) {
+      d = new Date(`${raw.trim()}T12:00:00`);
+    } else {
+      d = new Date(raw);
+    }
+    if (Number.isNaN(d.getTime())) return;
+    const dow = (d.getDay() + 6) % 7;
+    c[dow] += 1;
+  });
+  return c;
+}
+
 /* ── Trends Calendar ─────────────────────────────────────────── */
 function TrendsCalendar({ authHeaders }) {
   const today     = new Date();
@@ -756,14 +795,27 @@ function TrendsCalendar({ authHeaders }) {
     });
   }
 
-  // Best time overlay: for each day of week, find the best hour score
-  const heatmap = data?.bestTimeOverlay || [];
-  const heatmaxVal = heatmap.length > 0 ? Math.max(...heatmap.flat(), 1) : 1;
-  // Sum score per day-of-week (Mon=0 … Sun=6)
-  const dayScores = Array.from({ length: 7 }, (_, d) =>
-    heatmap[d] ? heatmap[d].reduce((a, b) => a + b, 0) : 0
-  );
-  const maxDayScore = Math.max(...dayScores, 1);
+  const bestTimeCal = useMemo(() => {
+    const hm = normalizeCalendarBestTimeOverlay(data);
+    let scores = dayScoresFromHeatmapRows(hm);
+    let max = Math.max(...scores, 0);
+    let source = 'heatmap';
+    if (max === 0 && data) {
+      scores = dayScoresFromPostDates(data.posts);
+      max = Math.max(...scores, 0);
+      source = max > 0 ? 'posts' : 'none';
+    } else if (max > 0) {
+      source = 'heatmap';
+    } else {
+      source = 'none';
+    }
+    return {
+      dayScores: scores,
+      maxDayScore: Math.max(max, 1),
+      hasAny: max > 0,
+      source,
+    };
+  }, [data]);
 
   // Find selected day's items
   const selKey = selectedDay ? `${year}-${String(month).padStart(2,'0')}-${String(selectedDay).padStart(2,'0')}` : null;
@@ -843,22 +895,35 @@ function TrendsCalendar({ authHeaders }) {
                 const isToday = day === today.getDate() && month === today.getMonth() + 1 && year === today.getFullYear();
                 const isSel   = day === selectedDay;
 
-                // Best time overlay: color cell by day-of-week score
+                // Best time: shade by weekday score (API heatmap or inferred from post dates)
                 const dow = (new Date(year, month - 1, day).getDay() + 6) % 7; // Mon=0
                 const score = calView === 'besttime'
-                  ? dayScores[dow] / maxDayScore
+                  ? bestTimeCal.dayScores[dow] / bestTimeCal.maxDayScore
                   : 0;
+                const maxS = Math.max(...bestTimeCal.dayScores, 0);
+                const isPeak =
+                  calView === 'besttime' && maxS > 0 && bestTimeCal.dayScores[dow] === maxS;
+                const isGood =
+                  calView === 'besttime' &&
+                  maxS > 0 &&
+                  !isPeak &&
+                  bestTimeCal.dayScores[dow] >= maxS * 0.5;
 
                 return (
                   <div
                     key={day}
                     onClick={() => setSelectedDay(isSel ? null : day)}
+                    title={
+                      calView === 'besttime' && bestTimeCal.hasAny
+                        ? `${['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][dow]} · relative activity ${Math.round(score * 100)}%`
+                        : undefined
+                    }
                     style={{
                       minHeight: 60, borderRadius: 8, padding: '6px 6px 4px',
                       cursor: 'pointer',
                       border: `1.5px solid ${isSel ? '#6366f1' : isToday ? '#818cf8' : '#e2e8f0'}`,
                       background: calView === 'besttime'
-                        ? `rgba(99,102,241,${0.04 + score * 0.45})`
+                        ? `rgba(99,102,241,${0.1 + score * 0.55})`
                         : isSel ? '#ede9fe' : isToday ? '#f5f3ff' : '#fff',
                       transition: 'background 0.15s',
                     }}
@@ -937,10 +1002,11 @@ function TrendsCalendar({ authHeaders }) {
                         )}
                       </div>
                     )}
-                    {calView === 'besttime' && score > 0.3 && (
-                      <div style={{ fontSize: 9, color: '#6366f1', fontWeight: 700 }}>
-                        {score > 0.8 ? '🔥 Peak' : score > 0.5 ? '✓ Good' : ''}
-                      </div>
+                    {calView === 'besttime' && isPeak && (
+                      <div style={{ fontSize: 9, color: '#4338ca', fontWeight: 800 }}>🔥 Peak</div>
+                    )}
+                    {calView === 'besttime' && isGood && (
+                      <div style={{ fontSize: 9, color: '#6366f1', fontWeight: 700 }}>✓ Good</div>
                     )}
                   </div>
                 );
@@ -961,9 +1027,35 @@ function TrendsCalendar({ authHeaders }) {
               </div>
             )}
             {calView === 'besttime' && (
-              <div style={{ display: 'flex', gap: 16, marginTop: 12, flexWrap: 'wrap', fontSize: 11, color: '#64748b' }}>
-                <span>Cell shade = engagement score for that day-of-week based on your posting history</span>
-                <span>🔥 Peak = top posting day, ✓ Good = above average</span>
+              <div style={{ marginTop: 12 }}>
+                {!loading && !bestTimeCal.hasAny && (
+                  <div
+                    style={{
+                      background: '#f5f3ff',
+                      border: '1px solid #c7d2fe',
+                      borderRadius: 10,
+                      padding: '12px 14px',
+                      fontSize: 12,
+                      color: '#4338ca',
+                      lineHeight: 1.5,
+                      marginBottom: 10,
+                    }}
+                  >
+                    <strong>No shading yet.</strong> The calendar response had no <code style={{ fontSize: 10 }}>bestTimeOverlay</code>{' '}
+                    (or it was all zeros), and there were no post dates we could use for this month. For the full{' '}
+                    <strong>hour-by-hour</strong> “best time” view, open <strong>2 · Best Time</strong> in Trends (above). Use{' '}
+                    <strong>My Posts</strong> here to see dots on days with scheduled or published items.
+                  </div>
+                )}
+                {bestTimeCal.source === 'posts' && bestTimeCal.hasAny && (
+                  <div style={{ fontSize: 11, color: '#64748b', marginBottom: 8, lineHeight: 1.45 }}>
+                    Shading is <strong>estimated</strong> from how many posts fall on each weekday in this calendar data (API did not send a heatmap).
+                  </div>
+                )}
+                <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 11, color: '#64748b' }}>
+                  <span>Darker purple = busier weekday (Mon–Sun pattern, same for each date in that column)</span>
+                  <span>🔥 Peak = your strongest weekday · ✓ Good = at least half of peak</span>
+                </div>
               </div>
             )}
           </div>

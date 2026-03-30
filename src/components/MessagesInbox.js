@@ -245,6 +245,15 @@ function EmptyInboxIllustration() {
   );
 }
 
+/** Space/Enter on list rows must not steal keys from inputs inside the row (e.g. reply textarea). */
+function isKeyboardEventFromEditable(target) {
+  if (!target || typeof target.tagName !== 'string') return false;
+  const tag = target.tagName.toLowerCase();
+  if (tag === 'textarea' || tag === 'input' || tag === 'select' || tag === 'button') return true;
+  if (target.isContentEditable) return true;
+  return false;
+}
+
 function ConversationItem({ item, selected, onClick }) {
   const p  = PLATFORM_META[item.platform] ?? PLATFORM_META.instagram;
   const sl = SOURCE_LABELS[item.source]   ?? { label: item.source, icon: '💬' };
@@ -370,7 +379,17 @@ function CommentItem({ item, apiBase, token, selected, onSelect, onReplySent, re
       role={onSelect ? 'button' : undefined}
       tabIndex={onSelect ? 0 : undefined}
       onClick={onSelect ? () => onSelect() : undefined}
-      onKeyDown={onSelect ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(); } } : undefined}
+      onKeyDown={
+        onSelect
+          ? (e) => {
+              if (isKeyboardEventFromEditable(e.target)) return;
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onSelect();
+              }
+            }
+          : undefined
+      }
       style={{
         padding: '13px 16px', borderBottom: '1px solid #f1f5f9',
         background: selected ? '#eff6ff' : '#fff',
@@ -469,7 +488,13 @@ function CommentItem({ item, apiBase, token, selected, onSelect, onReplySent, re
                 placeholder={`Reply to @${item.from || 'user'}…`}
                 value={replyText}
                 onChange={e => setReplyText(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendReply(); } }}
+                onKeyDown={(e) => {
+                  e.stopPropagation();
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendReply();
+                  }
+                }}
                 style={{
                   flex: 1, border: `1.5px solid ${p.color}55`, borderRadius: 8,
                   padding: '8px 10px', fontSize: 13, fontFamily: 'inherit',

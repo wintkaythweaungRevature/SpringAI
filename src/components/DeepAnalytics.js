@@ -968,13 +968,14 @@ function BestTimeMonthPostStrip({ authHeaders, platformId }) {
                 onMouseLeave={() => setHover(null)}
                 style={{
                   border: `2px solid ${isSched ? SCHEDULED_ORANGE_BORDER : pc?.color || '#10b981'}`,
-                  background: isSched ? '#fff7ed' : '#fff',
-                  borderRadius: isSched ? 6 : 99,
-                  width: isSched ? 14 : 13,
-                  height: isSched ? 14 : 13,
+                  background: isSched ? SCHEDULED_ORANGE : (pc?.color || '#10b981'),
+                  borderRadius: isSched ? 4 : 99,
+                  width: isSched ? 14 : 12,
+                  height: isSched ? 14 : 12,
                   padding: 0,
                   cursor: 'default',
                   boxSizing: 'border-box',
+                  flexShrink: 0,
                 }}
                 aria-label={`${isSched ? 'Scheduled' : 'Published'} ${pc?.label || item.platform || ''}`}
               />

@@ -80,22 +80,16 @@ function brandTowerTrackBg(platformHex) {
   return `rgb(${Math.round(r + (255 - r) * t)},${Math.round(g + (255 - g) * t)},${Math.round(b + (255 - b) * t)})`;
 }
 
-/* ── SVG Line Chart — dark theme with crosshair tooltip ─────── */
-function LineChart({ data, color = '#6366f1', width = 500, height = 200 }) {
-  const [hover, setHover] = useState(null); // { idx, clientX, clientY }
-  const svgRef = useRef(null);
-
+/* ── SVG Line Chart ─────────────────────────────────────────── */
+function LineChart({ data, color = '#6366f1', width = 500, height = 160 }) {
   if (!data || data.length === 0) {
     return (
-      <div style={{
-        height, display: 'flex', flexDirection: 'column', alignItems: 'center',
-        justifyContent: 'center', gap: 8, background: '#0e0e12', borderRadius: 14,
-        padding: '16px 20px', textAlign: 'center',
-      }}>
-        <span style={{ fontSize: 22, opacity: 0.25 }}>📈</span>
-        <div style={{ fontSize: 13, fontWeight: 700, color: '#e2e8f0' }}>Follower trend chart</div>
-        <div style={{ maxWidth: 360, lineHeight: 1.5, fontSize: 12, color: '#4b5563' }}>
-          No history yet. Snapshots save daily or when you hit <strong style={{ color: '#9ca3af' }}>Refresh Now</strong> — the line appears after two or more points.
+      <div style={{ height, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    gap: 8, color: '#64748b', fontSize: 13, background: '#f8fafc', borderRadius: 12, padding: '16px 20px', textAlign: 'center' }}>
+        <span style={{ fontSize: 22, opacity: 0.35 }}>📈</span>
+        <div><strong style={{ color: '#475569' }}>Follower trend chart</strong></div>
+        <div style={{ maxWidth: 360, lineHeight: 1.5 }}>
+          No history points yet. Snapshots are saved daily (3am UTC) or when you use <strong>Refresh Now</strong> — after two or more points, your line appears here.
         </div>
       </div>
     );
@@ -106,165 +100,77 @@ function LineChart({ data, color = '#6366f1', width = 500, height = 200 }) {
     const f = d0.followers ?? 0;
     return (
       <div style={{
-        height, display: 'flex', flexDirection: 'column', alignItems: 'center',
-        justifyContent: 'center', gap: 10, background: '#0e0e12', borderRadius: 14,
-        padding: '16px 20px', textAlign: 'center', border: `1px dashed ${color}44`,
+        height, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        gap: 10, background: '#f8fafc', borderRadius: 12, padding: '16px 20px', textAlign: 'center',
+        border: `1px dashed ${color}55`,
       }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: '#6b7280' }}>One snapshot so far</div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: '#475569' }}>One snapshot so far</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ width: 14, height: 14, borderRadius: '50%', background: color, boxShadow: `0 0 0 4px ${color}33` }} />
           <div style={{ textAlign: 'left' }}>
             <div style={{ fontSize: 20, fontWeight: 800, color }}>{f.toLocaleString()}</div>
-            <div style={{ fontSize: 11, color: '#6b7280' }}>followers · {d0.date || 'latest'}</div>
+            <div style={{ fontSize: 11, color: '#94a3b8' }}>followers · {d0.date || 'latest'}</div>
           </div>
         </div>
-        <div style={{ fontSize: 11, color: '#4b5563', maxWidth: 340, lineHeight: 1.5 }}>
-          Needs at least <strong style={{ color: '#9ca3af' }}>two</strong> snapshots to draw a line.
+        <div style={{ fontSize: 12, color: '#64748b', maxWidth: 340, lineHeight: 1.5 }}>
+          A line needs at least <strong>two</strong> days of snapshots. Run <strong>Refresh Now</strong> again tomorrow or wait for the next scheduled snapshot.
         </div>
       </div>
     );
   }
 
-  const vals  = data.map(d => d.followers);
-  const min   = Math.min(...vals);
-  const max   = Math.max(...vals);
+  const vals = data.map(d => d.followers);
+  const min  = Math.min(...vals);
+  const max  = Math.max(...vals);
   const range = max - min || 1;
 
-  const pad = { top: 24, right: 20, bottom: 36, left: 58 };
-  const W   = width  - pad.left - pad.right;
-  const H   = height - pad.top  - pad.bottom;
+  const pad = { top: 16, right: 12, bottom: 28, left: 48 };
+  const W = width - pad.left - pad.right;
+  const H = height - pad.top - pad.bottom;
 
-  const xp = (i) => pad.left + (i / (data.length - 1)) * W;
-  const yp = (v) => pad.top  + H - ((v - min) / range) * H;
+  const x = (i) => pad.left + (i / (data.length - 1)) * W;
+  const y = (v) => pad.top + H - ((v - min) / range) * H;
 
-  const linePath = data.map((d, i) => `${i === 0 ? 'M' : 'L'} ${xp(i)} ${yp(d.followers)}`).join(' ');
-  const areaPath = `M ${xp(0)} ${pad.top + H} ` +
-    data.map((d, i) => `L ${xp(i)} ${yp(d.followers)}`).join(' ') +
-    ` L ${xp(data.length - 1)} ${pad.top + H} Z`;
+  const points = data.map((d, i) => `${x(i)},${y(d.followers)}`).join(' ');
+  const area   = `${x(0)},${y(min) + H} ` + data.map((d, i) => `${x(i)},${y(d.followers)}`).join(' ') + ` ${x(data.length - 1)},${y(min) + H}`;
 
-  const yTicks = [0, 0.25, 0.5, 0.75, 1].map(t => Math.round(min + t * range));
-  const step   = Math.max(1, Math.floor(data.length / 6));
-  const xIdxs  = data.reduce((a, _, i) => {
-    if (i === 0 || i % step === 0 || i === data.length - 1) a.push(i);
-    return a;
-  }, []);
-
-  const gradId = `lcg${color.replace(/[^a-z0-9]/gi, '')}`;
-
-  const handleMouseMove = (e) => {
-    const svg = svgRef.current;
-    if (!svg) return;
-    const rect = svg.getBoundingClientRect();
-    const svgX = (e.clientX - rect.left) * (width / rect.width);
-    let closest = 0, dist = Infinity;
-    data.forEach((_, i) => { const d = Math.abs(xp(i) - svgX); if (d < dist) { dist = d; closest = i; } });
-    setHover({ idx: closest, clientX: e.clientX, clientY: e.clientY });
-  };
+  const yTicks  = [0, 0.25, 0.5, 0.75, 1].map(t => min + t * range);
+  const step    = Math.max(1, Math.floor(data.length / 5));
+  const xLabels = data.filter((_, i) => i % step === 0 || i === data.length - 1);
 
   return (
-    <div style={{ position: 'relative', background: '#0e0e12', borderRadius: 14 }}>
-      <svg
-        ref={svgRef}
-        width="100%"
-        viewBox={`0 0 ${width} ${height}`}
-        style={{ display: 'block', cursor: 'crosshair', borderRadius: 14 }}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={() => setHover(null)}
-      >
-        <defs>
-          <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%"   stopColor={color} stopOpacity="0.35" />
-            <stop offset="90%"  stopColor={color} stopOpacity="0.02" />
-          </linearGradient>
-        </defs>
-        <rect width={width} height={height} fill="#0e0e12" rx="14" />
-
-        {/* Horizontal grid lines */}
-        {yTicks.map((v, i) => (
-          <g key={i}>
-            <line x1={pad.left} y1={yp(v)} x2={pad.left + W} y2={yp(v)}
-                  stroke="rgba(255,255,255,0.07)" strokeWidth="1" strokeDasharray="4 4" />
-            <text x={pad.left - 8} y={yp(v) + 4} textAnchor="end" fontSize="10" fill="#555">
-              {v >= 1_000_000 ? `${(v/1_000_000).toFixed(1)}M` : v >= 1_000 ? `${(v/1_000).toFixed(1)}k` : v}
-            </text>
-          </g>
-        ))}
-
-        {/* Vertical grid lines */}
-        {xIdxs.map(i => (
-          <line key={i} x1={xp(i)} y1={pad.top} x2={xp(i)} y2={pad.top + H}
-                stroke="rgba(255,255,255,0.05)" strokeWidth="1" strokeDasharray="4 4" />
-        ))}
-
-        {/* Area + Line */}
-        <path d={areaPath} fill={`url(#${gradId})`} />
-        <path d={linePath} fill="none" stroke={color} strokeWidth="2.5"
-              strokeLinejoin="round" strokeLinecap="round" />
-
-        {/* Dots on small datasets */}
-        {data.length <= 15 && data.map((d, i) =>
-          hover?.idx !== i && (
-            <circle key={i} cx={xp(i)} cy={yp(d.followers)} r="3" fill={color} opacity="0.55" />
-          )
-        )}
-
-        {/* Hover crosshair */}
-        {hover && (
-          <>
-            <line x1={xp(hover.idx)} y1={pad.top} x2={xp(hover.idx)} y2={pad.top + H}
-                  stroke="rgba(255,255,255,0.3)" strokeWidth="1" />
-            <circle cx={xp(hover.idx)} cy={yp(data[hover.idx].followers)}
-                    r="9" fill={color} opacity="0.18" />
-            <circle cx={xp(hover.idx)} cy={yp(data[hover.idx].followers)}
-                    r="5" fill={color} />
-          </>
-        )}
-
-        {/* X-axis labels */}
-        {xIdxs.map(i => (
-          <text key={i} x={xp(i)} y={height - 8} textAnchor="middle" fontSize="9" fill="#555">
-            {data[i].date.slice(5)}
+    <svg width="100%" viewBox={`0 0 ${width} ${height}`} style={{ overflow: 'visible' }}>
+      <defs>
+        <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.25" />
+          <stop offset="100%" stopColor={color} stopOpacity="0.03" />
+        </linearGradient>
+      </defs>
+      {yTicks.map((v, i) => (
+        <g key={i}>
+          <line x1={pad.left} y1={y(v)} x2={pad.left + W} y2={y(v)}
+                stroke="#e2e8f0" strokeWidth="1" strokeDasharray="3,3" />
+          <text x={pad.left - 6} y={y(v) + 4} textAnchor="end"
+                fontSize="10" fill="#94a3b8">
+            {v >= 1000 ? `${(v/1000).toFixed(1)}k` : Math.round(v)}
           </text>
-        ))}
-      </svg>
-
-      {/* Tooltip */}
-      {hover && typeof window !== 'undefined' && (
-        <div style={{
-          position: 'fixed',
-          left: Math.min(hover.clientX + 16, window.innerWidth - 190),
-          top: Math.max(hover.clientY - 72, 8),
-          background: '#1c1c2e',
-          border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: 10,
-          padding: '10px 14px',
-          pointerEvents: 'none',
-          zIndex: 20000,
-          minWidth: 170,
-          boxShadow: '0 8px 32px rgba(0,0,0,0.65)',
-        }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#fff', marginBottom: 8 }}>
-            {(() => { try { return new Date(data[hover.idx].date + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }); } catch { return data[hover.idx].date; } })()}
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
-            <span style={{ fontSize: 12, color: '#9ca3af', flex: 1 }}>Followers</span>
-            <span style={{ fontSize: 13, fontWeight: 800, color: '#fff' }}>
-              {(data[hover.idx].followers ?? 0).toLocaleString()}
-            </span>
-          </div>
-          {Number(data[hover.idx].engagementRate) > 0 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 5 }}>
-              <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', flexShrink: 0 }} />
-              <span style={{ fontSize: 12, color: '#9ca3af', flex: 1 }}>Engagement</span>
-              <span style={{ fontSize: 13, fontWeight: 800, color: '#10b981' }}>
-                {data[hover.idx].engagementRate}%
-              </span>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
+        </g>
+      ))}
+      <polygon points={area} fill="url(#areaGrad)" />
+      <polyline points={points} fill="none" stroke={color} strokeWidth="2.5" strokeLinejoin="round" />
+      {data.length <= 15 && data.map((d, i) => (
+        <circle key={i} cx={x(i)} cy={y(d.followers)} r="3.5" fill={color} />
+      ))}
+      {xLabels.map((d) => {
+        const idx = data.indexOf(d);
+        return (
+          <text key={d.date} x={x(idx)} y={height - 4}
+                textAnchor="middle" fontSize="9" fill="#94a3b8">
+            {d.date.slice(5)}
+          </text>
+        );
+      })}
+    </svg>
   );
 }
 

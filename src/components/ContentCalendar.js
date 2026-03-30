@@ -267,6 +267,14 @@ export default function ContentCalendar() {
   const [filterPlatform, setFilterPlatform] = useState('all');
   const [retryingIds, setRetryingIds] = useState({});
   const [actionMsg, setActionMsg] = useState('');
+  const [hoverPreview, setHoverPreview] = useState(null); // { post, x, y }
+  const [composeForDate, setComposeForDate] = useState(null); // Date | null
+  const [composePlatform, setComposePlatform] = useState('facebook');
+  const [composeCaption, setComposeCaption] = useState('');
+  const [composeHashtags, setComposeHashtags] = useState('');
+  const [composeTime, setComposeTime] = useState('09:00');
+  const [composeSubmitting, setComposeSubmitting] = useState(false);
+  const [composeMsg, setComposeMsg] = useState('');
 
   const loadPosts = useCallback(async () => {
     if (!token) return;
@@ -311,6 +319,54 @@ export default function ContentCalendar() {
     } finally {
       setRetryingIds(prev => ({ ...prev, [sid]: false }));
       setTimeout(() => setActionMsg(''), 3500);
+    }
+  };
+
+  const openComposeForDay = (day) => {
+    setComposeForDate(day);
+    setComposePlatform(filterPlatform !== 'all' ? filterPlatform : 'facebook');
+    setComposeCaption('');
+    setComposeHashtags('');
+    setComposeTime('09:00');
+    setComposeMsg('');
+  };
+
+  const submitQuickPost = async () => {
+    if (!composeForDate || !token || !composeCaption.trim()) return;
+    setComposeSubmitting(true);
+    setComposeMsg('');
+    try {
+      const scheduledAt = new Date(
+        composeForDate.getFullYear(),
+        composeForDate.getMonth(),
+        composeForDate.getDate(),
+        Number(String(composeTime || '09:00').split(':')[0] || 9),
+        Number(String(composeTime || '09:00').split(':')[1] || 0),
+      ).toISOString();
+
+      const fd = new FormData();
+      fd.append('caption', composeCaption.trim());
+      fd.append('hashtags', composeHashtags.trim());
+      fd.append('scheduledAt', scheduledAt);
+
+      const res = await fetch(`${base}/api/social/post/${composePlatform}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Could not create post');
+
+      setComposeMsg('Post submitted successfully.');
+      await loadPosts();
+      setTimeout(() => {
+        setComposeForDate(null);
+        setComposeMsg('');
+      }, 600);
+    } catch (e) {
+      setComposeMsg(e.message || 'Could not create post');
+    } finally {
+      setComposeSubmitting(false);
     }
   };
 
@@ -455,15 +511,72 @@ export default function ContentCalendar() {
                       <div style={{ ...s.calDayNum, ...(isToday ? { color: '#fff', background: '#6366f1', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center' } : {}) }}>
                         {day.getDate()}
                       </div>
-                      {/* Platform color dots */}
-                      {dayPosts.length > 0 && (
+                      <button
+                        type="button"
+                        style={s.ideaBtn}
+                        title="Add idea for this date"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openComposeForDay(day);
+                        }}
+                      >
+                        💡 +
+                      </button>
+
+                      {dayPosts.length > 0 ? (
+                        <div style={s.dayPostList}>
+                          {dayPosts.slice(0, 3).map((p, i) => {
+                            const pInfo = PLATFORM_MAP[p.platform?.toLowerCase()];
+                            const preview = getPostPreview(p);
+                            const t = fmtTime(p.createdAt || p.scheduledAt);
+                            return (
+                              <button
+                                key={`${key}-${i}`}
+                                type="button"
+                                style={s.dayPostChip}
+                                onMouseEnter={(e) => {
+                                  const rect = e.currentTarget.getBoundingClientRect();
+                                  setHoverPreview({
+                                    post: p,
+                                    x: rect.left + rect.width / 2,
+                                    y: rect.top - 8,
+                                  });
+                                }}
+                                onMouseLeave={() => setHoverPreview(null)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setFeedDetailPost(p);
+                                }}
+                                title="View post details"
+                              >
+                                <span style={{ display: 'inline-flex', alignItems: 'center' }}>
+                                  {pInfo ? <PlatformIcon platform={pInfo} size={12} /> : '•'}
+                                </span>
+                                <span>{t || 'Post'}</span>
+                                {preview?.url && (
+                                  <img src={preview.url} alt="" style={s.dayChipThumb} />
+                                )}
+                              </button>
+                            );
+                          })}
+                          {dayPosts.length > 3 && (
+                            <button
+                              type="button"
+                              style={s.dayMoreBtn}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedDay(day);
+                              }}
+                            >
+                              View {dayPosts.length - 3} More
+                            </button>
+                          )}
+                        </div>
+                      ) : (
                         <div style={s.dotRow}>
                           {platformColors.map((c, i) => (
                             <div key={i} style={{ ...s.dot, background: c }} />
                           ))}
-                          {dayPosts.length > 4 && (
-                            <span style={s.moreBadge}>+{dayPosts.length - 4}</span>
-                          )}
                         </div>
                       )}
                     </div>
@@ -714,6 +827,107 @@ export default function ContentCalendar() {
           onClose={() => setFeedDetailPost(null)}
         />
       )}
+
+      {hoverPreview?.post && (
+        <div
+          style={{
+            ...s.hoverCard,
+            left: hoverPreview.x,
+            top: hoverPreview.y,
+          }}
+          onMouseEnter={() => setHoverPreview(hoverPreview)}
+          onMouseLeave={() => setHoverPreview(null)}
+        >
+          <div style={s.hoverHead}>
+            <span style={{ color: platformColor(hoverPreview.post.platform), fontWeight: 800, textTransform: 'capitalize' }}>
+              {hoverPreview.post.platform}
+            </span>
+            <span style={{ fontSize: 11, color: '#94a3b8' }}>{fmtDate(hoverPreview.post.createdAt || hoverPreview.post.scheduledAt)} {fmtTime(hoverPreview.post.createdAt || hoverPreview.post.scheduledAt)}</span>
+          </div>
+          <div style={s.hoverBody}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, color: '#1f2937', lineHeight: 1.45 }}>
+                {(hoverPreview.post.caption || '(no caption)').slice(0, 180)}
+              </div>
+              <div style={{ marginTop: 8, display: 'flex', gap: 12, fontSize: 11, color: '#64748b' }}>
+                <span>{hoverPreview.post.impressions ?? 0} Impressions</span>
+                <span>{hoverPreview.post.clicks ?? 0} Clicks</span>
+                <span>{hoverPreview.post.recentComments ?? hoverPreview.post.comments ?? 0} Comments</span>
+              </div>
+            </div>
+            {getPostPreview(hoverPreview.post)?.url && (
+              <img src={getPostPreview(hoverPreview.post).url} alt="" style={s.hoverThumb} />
+            )}
+          </div>
+          <div style={s.hoverFooter}>
+            <span style={{
+              fontSize: 11,
+              fontWeight: 700,
+              color: String(hoverPreview.post.status || '').toUpperCase() === 'SUCCESS' ? '#16a34a' : '#d97706',
+            }}>
+              {String(hoverPreview.post.status || 'PUBLISHED').toUpperCase()}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {composeForDate && (
+        <div style={ms.overlay} onClick={() => setComposeForDate(null)}>
+          <div style={{ ...ms.modal, maxWidth: 540 }} onClick={(e) => e.stopPropagation()}>
+            <div style={ms.header}>
+              <div style={ms.title}>💡 Add idea / quick post</div>
+              <button style={ms.closeBtn} onClick={() => setComposeForDate(null)}>✕</button>
+            </div>
+            <div style={{ fontSize: 12, color: '#64748b', marginBottom: 12 }}>
+              {composeForDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 140px', gap: 8, marginBottom: 10 }}>
+              <select
+                value={composePlatform}
+                onChange={(e) => setComposePlatform(e.target.value)}
+                style={s.composeField}
+              >
+                {PLATFORMS.map((p) => (
+                  <option key={p.id} value={p.id}>{p.label}</option>
+                ))}
+              </select>
+              <input type="time" value={composeTime} onChange={(e) => setComposeTime(e.target.value)} style={s.composeField} />
+            </div>
+
+            <textarea
+              placeholder="Write your post caption..."
+              value={composeCaption}
+              onChange={(e) => setComposeCaption(e.target.value)}
+              style={{ ...s.composeField, minHeight: 120, resize: 'vertical', paddingTop: 10 }}
+            />
+            <input
+              placeholder="#hashtags"
+              value={composeHashtags}
+              onChange={(e) => setComposeHashtags(e.target.value)}
+              style={{ ...s.composeField, marginTop: 8 }}
+            />
+            <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 6 }}>
+              This quick action sends a post request for the selected platform and date/time.
+            </div>
+            {composeMsg && (
+              <div style={{ marginTop: 10, fontSize: 12, color: composeMsg.toLowerCase().includes('could not') ? '#dc2626' : '#15803d' }}>
+                {composeMsg}
+              </div>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 14 }}>
+              <button style={s.composeCancelBtn} onClick={() => setComposeForDate(null)}>Cancel</button>
+              <button
+                style={{ ...s.composePostBtn, opacity: (!composeCaption.trim() || composeSubmitting) ? 0.6 : 1 }}
+                disabled={!composeCaption.trim() || composeSubmitting}
+                onClick={submitQuickPost}
+              >
+                {composeSubmitting ? 'Posting…' : 'Post'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -755,6 +969,92 @@ const s = {
   dotRow: { display: 'flex', gap: 3, flexWrap: 'wrap', marginTop: 4 },
   dot: { width: 8, height: 8, borderRadius: '50%', flexShrink: 0 },
   moreBadge: { fontSize: 9, color: '#94a3b8', fontWeight: 700 },
+  dayPostList: { display: 'flex', flexDirection: 'column', gap: 4, marginTop: 4 },
+  dayPostChip: {
+    border: '1px solid #e2e8f0',
+    background: '#f8fafc',
+    borderRadius: 8,
+    fontSize: 11,
+    color: '#334155',
+    padding: '3px 6px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    cursor: 'pointer',
+    textAlign: 'left',
+  },
+  dayChipThumb: { width: 18, height: 18, borderRadius: 4, marginLeft: 'auto', objectFit: 'cover', border: '1px solid #e2e8f0' },
+  dayMoreBtn: {
+    border: 'none',
+    background: 'transparent',
+    color: '#be123c',
+    fontSize: 11,
+    fontWeight: 700,
+    textAlign: 'left',
+    cursor: 'pointer',
+    padding: '1px 2px',
+  },
+  ideaBtn: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    border: '1px solid #fde68a',
+    background: '#fef3c7',
+    color: '#a16207',
+    borderRadius: 8,
+    fontSize: 11,
+    fontWeight: 700,
+    padding: '2px 6px',
+    cursor: 'pointer',
+    lineHeight: 1.2,
+  },
+  hoverCard: {
+    position: 'fixed',
+    zIndex: 2200,
+    transform: 'translate(-50%, -100%)',
+    width: 420,
+    background: '#fff',
+    border: '1px solid #e2e8f0',
+    borderRadius: 14,
+    boxShadow: '0 18px 50px rgba(15,23,42,0.22)',
+    padding: 14,
+    pointerEvents: 'auto',
+  },
+  hoverHead: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  hoverBody: { display: 'flex', gap: 10, alignItems: 'flex-start' },
+  hoverThumb: { width: 120, height: 96, borderRadius: 10, objectFit: 'cover', border: '1px solid #e2e8f0' },
+  hoverFooter: { marginTop: 8, borderTop: '1px solid #f1f5f9', paddingTop: 8, display: 'flex', justifyContent: 'flex-end' },
+  composeField: {
+    width: '100%',
+    boxSizing: 'border-box',
+    padding: '8px 10px',
+    borderRadius: 8,
+    border: '1.5px solid #e2e8f0',
+    fontSize: 13,
+    color: '#1f2937',
+    fontFamily: 'inherit',
+    outline: 'none',
+  },
+  composeCancelBtn: {
+    padding: '8px 12px',
+    borderRadius: 8,
+    border: '1px solid #cbd5e1',
+    background: '#fff',
+    color: '#334155',
+    fontSize: 12,
+    fontWeight: 700,
+    cursor: 'pointer',
+  },
+  composePostBtn: {
+    padding: '8px 14px',
+    borderRadius: 8,
+    border: 'none',
+    background: '#2563eb',
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 700,
+    cursor: 'pointer',
+  },
 
   legend: { display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 16, paddingTop: 14, borderTop: '1px solid #f1f5f9' },
   legendItem: { display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#64748b' },

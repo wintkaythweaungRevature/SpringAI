@@ -127,6 +127,19 @@ const techStack = [
   { label: "AWS EC2", url: "https://aws.amazon.com/ec2/" },
 ];
 
+const landingGallery = [
+  "c__Users_wintk_AppData_Roaming_Cursor_User_workspaceStorage_69bc542c894986623db97e4396cf2017_images_image-079a4005-12cf-4525-a9ea-c9074eea79eb.png",
+  "c__Users_wintk_AppData_Roaming_Cursor_User_workspaceStorage_69bc542c894986623db97e4396cf2017_images_image-2895b007-805a-4e55-a006-2e9a937b09b8.png",
+  "c__Users_wintk_AppData_Roaming_Cursor_User_workspaceStorage_69bc542c894986623db97e4396cf2017_images_image-53b995df-abdc-4bef-a7af-99a3d0979156.png",
+  "c__Users_wintk_AppData_Roaming_Cursor_User_workspaceStorage_69bc542c894986623db97e4396cf2017_images_image-c992bddf-ef70-47e2-b477-8f651555a515.png",
+  "c__Users_wintk_AppData_Roaming_Cursor_User_workspaceStorage_69bc542c894986623db97e4396cf2017_images_image-97713f70-08dd-4f0b-acb5-2e86a6ee386b.png",
+  "c__Users_wintk_AppData_Roaming_Cursor_User_workspaceStorage_69bc542c894986623db97e4396cf2017_images_image-b8738e01-43b6-43fa-b1fa-93c4b23e6e1c.png",
+  "c__Users_wintk_AppData_Roaming_Cursor_User_workspaceStorage_69bc542c894986623db97e4396cf2017_images_image-d045ea09-07d3-4bed-8941-86f68842612f.png",
+  "c__Users_wintk_AppData_Roaming_Cursor_User_workspaceStorage_69bc542c894986623db97e4396cf2017_images_image-d630803b-cde0-4e2a-84f3-de245cf6a469.png",
+  "c__Users_wintk_AppData_Roaming_Cursor_User_workspaceStorage_69bc542c894986623db97e4396cf2017_images_image-7092ebb3-d280-416d-98b9-ff58925ffe37.png",
+  "c__Users_wintk_AppData_Roaming_Cursor_User_workspaceStorage_69bc542c894986623db97e4396cf2017_images_image-0efb6809-0160-4e90-b47a-6c7def0d94e7.png",
+];
+
 /* ─── Component ─────────────────────────────────────────────── */
 
 export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideoPublisher }) {
@@ -209,6 +222,24 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
           Wintaibot is built the other way: <strong>you choose platforms and timing; we publish straight through</strong> when your content is ready.
           The goal is clarity — fewer interruptions, less &ldquo;notification anxiety,&rdquo; more time creating — not a workflow designed to ping you all day.
         </p>
+      </section>
+
+      <section className="ls-section ls-gallery" aria-labelledby="gallery-heading">
+        <h2 id="gallery-heading">Product Screenshots</h2>
+        <p className="ls-section-sub">
+          Real screens from Wintaibot: analytics, messages, auto-reply, publishing, trimming, trends, and Social AI.
+        </p>
+        <div className="ls-gallery-grid">
+          {landingGallery.map((fileName, idx) => (
+            <figure key={fileName} className="ls-gallery-item">
+              <img
+                src={`/landing-gallery/${fileName}`}
+                alt={`Wintaibot product screenshot ${idx + 1}`}
+                loading="lazy"
+              />
+            </figure>
+          ))}
+        </div>
       </section>
 
       {/* ── THREE ADVANTAGES: FIXER · THUMBNAILS · BRAIN AI ───── */}

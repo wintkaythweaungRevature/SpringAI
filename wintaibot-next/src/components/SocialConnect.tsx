@@ -193,17 +193,6 @@ export default function SocialConnect() {
                   </button>
                 )}
 
-                {p.id === 'facebook' && (
-                  <div style={s.metaUriHint}>
-                    <span style={s.metaUriLabel}>Using your own Meta (Facebook) app?</span>
-                    <code style={s.metaUriCode}>{base}/api/social/callback/facebook</code>
-                    <span style={s.metaUriSub}>
-                      In Meta for Developers → your app → <strong>Facebook Login</strong> → <strong>Settings</strong>, add this
-                      exact URL under <strong>Valid OAuth Redirect URIs</strong>. If your team uses a custom API domain, replace
-                      the host with that domain — otherwise use the URL above as shown.
-                    </span>
-                  </div>
-                )}
               </div>
             );
           })}

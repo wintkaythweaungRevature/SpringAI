@@ -775,6 +775,99 @@ function TypeTowersChart({ postPerf, platformColor = '#6366f1' }) {
 const SCHEDULED_ORANGE = '#f97316';
 const SCHEDULED_ORANGE_BORDER = '#ea580c';
 
+/* ── Per-platform best time summary cards ─────────────────────── */
+function PlatformBestTimeCards({ bestTime }) {
+  // Use byPlatform from API if present, else compute from postsDetail
+  const cards = useMemo(() => {
+    const DAY_FULL = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+
+    // From API-provided per-platform stats
+    const apiByPlat = bestTime?.byPlatform;
+    if (apiByPlat && typeof apiByPlat === 'object' && Object.keys(apiByPlat).length > 0) {
+      return Object.entries(apiByPlat)
+        .filter(([, v]) => v && Number(v.postCount) > 0)
+        .sort((a, b) => Number(b[1].postCount) - Number(a[1].postCount))
+        .map(([platId, v]) => {
+          const pc = PLATFORMS.find((p) => p.id === platId);
+          return {
+            id: platId,
+            label: pc?.label || platId,
+            color: pc?.color || '#64748b',
+            bestDay: v.bestDay || 'Monday',
+            bestHour: Number(v.bestHour) || 0,
+            postCount: Number(v.postCount),
+          };
+        });
+    }
+
+    // Fallback: compute from postsDetail
+    const detail = bestTime?.postsDetail || [];
+    if (detail.length === 0) return [];
+    const map = {};
+    detail.forEach((p) => {
+      const platId = (p.platform || 'unknown').toLowerCase();
+      if (!map[platId]) map[platId] = { counts: Array.from({length:7}, ()=>Array(24).fill(0)), total: 0 };
+      let d = p.dayIndex; let h = p.hour;
+      if (d == null || h == null) {
+        const raw = p.createdAt || p.dateTime;
+        if (!raw) return;
+        const dt = new Date(raw);
+        if (Number.isNaN(dt.getTime())) return;
+        d = (dt.getDay() + 6) % 7; h = dt.getHours();
+      }
+      d = Number(d); h = Number(h);
+      if (d >= 0 && d < 7 && h >= 0 && h < 24) {
+        map[platId].counts[d][h] += 1;
+        map[platId].total += 1;
+      }
+    });
+    return Object.entries(map)
+      .filter(([, v]) => v.total > 0)
+      .sort((a, b) => b[1].total - a[1].total)
+      .map(([platId, v]) => {
+        let bestD = 0, bestH = 0, best = -1;
+        for (let d = 0; d < 7; d++) for (let h = 0; h < 24; h++) if (v.counts[d][h] > best) { best = v.counts[d][h]; bestD = d; bestH = h; }
+        const pc = PLATFORMS.find((p) => p.id === platId);
+        return { id: platId, label: pc?.label || platId, color: pc?.color || '#64748b', bestDay: DAY_FULL[bestD], bestHour: bestH, postCount: v.total };
+      });
+  }, [bestTime]);
+
+  if (!cards || cards.length === 0) return null;
+
+  return (
+    <div style={{ marginTop: 24 }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 10 }}>
+        Best time by platform
+        <span style={{ fontSize: 11, fontWeight: 400, color: '#94a3b8', marginLeft: 8 }}>
+          (based on when you posted, not audience activity)
+        </span>
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+        {cards.map((c) => (
+          <div key={c.id} style={{
+            background: '#fff',
+            border: `1.5px solid ${c.color}44`,
+            borderRadius: 12,
+            padding: '10px 14px',
+            minWidth: 140,
+            flex: '1 1 140px',
+            maxWidth: 220,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 6 }}>
+              {(() => { const pc = PLATFORMS.find(p => p.id === c.id); return pc ? <PlatformIcon platform={pc} size={18} /> : null; })()}
+              <span style={{ fontSize: 12, fontWeight: 700, color: c.color }}>{c.label}</span>
+            </div>
+            <div style={{ fontSize: 13, fontWeight: 800, color: '#1e293b', marginBottom: 2 }}>
+              {c.bestDay.slice(0, 3)} · {formatHour12(c.bestHour)}
+            </div>
+            <div style={{ fontSize: 11, color: '#94a3b8' }}>{c.postCount} post{c.postCount !== 1 ? 's' : ''} tracked</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* ── Under Best Time: this month published vs scheduled (compact) ── */
 function BestTimeMonthPostStrip({ authHeaders, platformId }) {
   const today = new Date();
@@ -1900,6 +1993,7 @@ export default function DeepAnalytics() {
                 postsDetail={bestTime.postsDetail || []}
                 platformLabel={platformConfig.label}
               />
+              <PlatformBestTimeCards bestTime={bestTime} />
             </>
           )}
           {!loadBestTime && (

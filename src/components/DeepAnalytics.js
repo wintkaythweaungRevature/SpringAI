@@ -1603,6 +1603,38 @@ function TrendsCalendar({ authHeaders }) {
 }
 
 /* ── Competitor Analysis ─────────────────────────────────────── */
+
+/**
+ * Parse a raw YouTube input (URL, @handle, channel name, or accidentally-concatenated URLs)
+ * into a single clean search term for the backend.
+ */
+function parseYouTubeInput(raw) {
+  if (!raw) return '';
+  const trimmed = raw.trim();
+
+  // Split on "https://" to handle accidentally concatenated URLs; take the first segment
+  const urlParts = trimmed.split(/https?:\/\//);
+  const firstSegment = urlParts.length > 1
+    ? 'https://' + urlParts[1].split('https://')[0]  // keep only the first URL
+    : trimmed;
+
+  // Extract from YouTube URL
+  if (/youtube\.com/i.test(firstSegment)) {
+    // /@handle
+    const handleMatch = firstSegment.match(/\/@([A-Za-z0-9_\-.]+)/);
+    if (handleMatch) return '@' + handleMatch[1];
+    // /channel/UCxxxxxx
+    const channelMatch = firstSegment.match(/\/channel\/(UC[A-Za-z0-9_-]+)/);
+    if (channelMatch) return channelMatch[1];
+    // /c/name or /user/name
+    const nameMatch = firstSegment.match(/\/(?:c|user)\/([^/?]+)/);
+    if (nameMatch) return decodeURIComponent(nameMatch[1]);
+  }
+
+  // Already a @handle or channel ID
+  return firstSegment.trim();
+}
+
 function CompetitorTab({ authHeaders }) {
   const [query,       setQuery]       = useState('');
   const [searching,   setSearching]   = useState(false);
@@ -1612,11 +1644,16 @@ function CompetitorTab({ authHeaders }) {
   const [loadAnalysis,setLoadAnalysis]= useState(false);
   const [error,       setError]       = useState('');
 
+  // Cleaned query shown as a hint when user pastes a URL
+  const cleanedQuery = useMemo(() => parseYouTubeInput(query), [query]);
+  const isUrlInput   = /^https?:\/\//i.test(query.trim());
+
   const doSearch = async () => {
-    if (!query.trim()) return;
+    const q = cleanedQuery || query.trim();
+    if (!q) return;
     setSearching(true); setChannels(null); setSelectedCh(null); setAnalysis(null); setError('');
     try {
-      const res = await fetch(`${API}/api/analytics/competitors/youtube?query=${encodeURIComponent(query)}`,
+      const res = await fetch(`${API}/api/analytics/competitors/youtube?query=${encodeURIComponent(q)}`,
         { headers: authHeaders() });
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Search failed'); return; }
@@ -1651,17 +1688,19 @@ function CompetitorTab({ authHeaders }) {
       </p>
 
       {/* Search bar */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-        <input
-          value={query}
-          onChange={e => setQuery(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && doSearch()}
-          placeholder="Search channel (e.g. MrBeast, Tech With Tim…)"
-          style={{
-            flex: 1, padding: '10px 14px', border: '1.5px solid #e2e8f0',
-            borderRadius: 10, fontSize: 13, color: '#1e293b',
-          }}
-        />
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && doSearch()}
+            placeholder="Channel name, @handle, or paste a YouTube URL"
+            style={{
+              flex: 1, padding: '10px 14px',
+              border: `1.5px solid ${isUrlInput ? '#818cf8' : '#e2e8f0'}`,
+              borderRadius: 10, fontSize: 13, color: '#1e293b', outline: 'none',
+            }}
+          />
         <button onClick={doSearch} disabled={searching || !query.trim()} style={{
           padding: '10px 20px', background: '#6366f1', color: '#fff', border: 'none',
           borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer',
@@ -1669,13 +1708,26 @@ function CompetitorTab({ authHeaders }) {
         }}>
           {searching ? '⏳' : '🔍 Search'}
         </button>
+        </div>
+        {/* URL detected hint */}
+        {isUrlInput && cleanedQuery && (
+          <div style={{ marginTop: 6, fontSize: 12, color: '#6366f1', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span>🔗 YouTube URL detected — will search as:</span>
+            <strong>{cleanedQuery}</strong>
+          </div>
+        )}
+        {isUrlInput && !cleanedQuery && (
+          <div style={{ marginTop: 6, fontSize: 12, color: '#dc2626' }}>
+            Could not extract a channel name from this URL. Try pasting just the @handle or channel name.
+          </div>
+        )}
       </div>
 
       {error && <div style={{ background: '#fef2f2', color: '#dc2626', borderRadius: 8, padding: '10px 14px', fontSize: 13, marginBottom: 16 }}>{error}</div>}
 
       {/* Channel results */}
       {channels && channels.length === 0 && !searching && (
-        <p style={{ color: '#94a3b8', fontSize: 13 }}>No channels found. Try a different search term.</p>
+        <p style={{ color: '#94a3b8', fontSize: 13 }}>No channels found. Try a different search term or paste the full YouTube channel URL.</p>
       )}
       {channels && channels.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>

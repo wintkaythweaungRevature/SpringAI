@@ -717,15 +717,29 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
   };
 
   const scheduleVariant = async (variantId, platform, scheduledAt) => {
-    if (!variantId) return false;
+    if (!variantId) return { ok: false, error: 'Missing variant ID' };
     try {
       const res = await fetch(api(`/variants/${variantId}/schedule`), {
         method: 'POST',
         headers: { ...authHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ platform, scheduledAt }),
       });
-      return res.ok;
-    } catch (e) { return false; }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        return { ok: false, error: data.error || `Schedule failed (${res.status})` };
+      }
+      // Guardrail: scheduling should return confirmation fields from backend.
+      const hasConfirmation =
+        data?.jobId != null ||
+        data?.scheduledAt != null ||
+        String(data?.status || '').toUpperCase() === 'SCHEDULED';
+      if (!hasConfirmation) {
+        return { ok: false, error: 'Schedule endpoint returned no job confirmation' };
+      }
+      return { ok: true, data };
+    } catch (e) {
+      return { ok: false, error: e.message || 'Network error while scheduling' };
+    }
   };
 
   const scheduleAndPublishAll = async () => {
@@ -755,12 +769,12 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
       try {
         if (hasSchedule && variant.variantId) {
           // ── Schedule for later via backend variant (fast) ──
-          const ok = await scheduleVariant(variant.variantId, pid, scheduledAt);
-          if (ok) {
+          const result = await scheduleVariant(variant.variantId, pid, scheduledAt);
+          if (result.ok) {
             successPlatforms.push(pid);
             setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'done', error: null } }));
           } else {
-            setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'failed', error: 'Schedule failed' } }));
+            setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'failed', error: result.error || 'Schedule failed' } }));
           }
         } else if (variant.variantId) {
           // ── Async publish via variant (202 + poll) ──

@@ -772,8 +772,8 @@ function TypeTowersChart({ postPerf, platformColor = '#6366f1' }) {
   );
 }
 
-const SCHEDULED_ORANGE = '#f97316';
-const SCHEDULED_ORANGE_BORDER = '#ea580c';
+const SCHEDULED_ORANGE = '#facc15';
+const SCHEDULED_ORANGE_BORDER = '#eab308';
 
 /* ── Per-platform best time summary cards ─────────────────────── */
 function PlatformBestTimeCards({ bestTime }) {
@@ -1136,6 +1136,33 @@ function normalizeFallbackPost(p = {}) {
   };
 }
 
+function normalizeFallbackScheduled(j = {}) {
+  const rawTs =
+    j.scheduledAt ||
+    j.scheduledTime ||
+    j.runAt ||
+    j.executeAt ||
+    j.dateTime ||
+    j.createdAt ||
+    null;
+  return {
+    id: j.id ?? j.jobId ?? null,
+    jobId: j.jobId ?? j.id ?? null,
+    platform: String(j.platform || '').toLowerCase(),
+    caption: j.caption || j.message || '',
+    status: j.status || 'SCHEDULED',
+    mediaType: j.mediaType || j.postType || 'post',
+    dateTime: rawTs,
+    date: (() => {
+      const k = calendarLocalDateKey({ ...j, dateTime: rawTs, scheduledAt: rawTs });
+      return k || null;
+    })(),
+    scheduledAt: rawTs,
+    mediaUrl: j.mediaUrl || j.videoUrl || j.imageUrl || null,
+    thumbnailUrl: j.thumbnailUrl || j.thumbnail || null,
+  };
+}
+
 /* ── Trends Calendar ─────────────────────────────────────────── */
 function TrendsCalendar({ authHeaders }) {
   const today     = new Date();
@@ -1161,14 +1188,16 @@ function TrendsCalendar({ authHeaders }) {
       .catch(async () => {
         // Fallback: rebuild month view from overview + history when calendar API is unavailable.
         try {
-          const [overviewRes, historyRes] = await Promise.all([
+          const [overviewRes, historyRes, scheduleRes] = await Promise.all([
             fetch(`${API}/api/analytics/overview`, { headers }),
             fetch(`${API}/api/social/post/history?limit=400`, { headers }),
+            fetch(`${API}/api/video-content/schedule`, { headers }),
           ]);
           const overview = overviewRes.ok ? await overviewRes.json() : {};
           const history = historyRes.ok ? await historyRes.json() : [];
+          const scheduleRaw = scheduleRes.ok ? await scheduleRes.json() : [];
           const recent = Array.isArray(overview?.recentActivity) ? overview.recentActivity : [];
-          const merged = [...recent, ...(Array.isArray(history) ? history : [])]
+          const mergedPosts = [...recent, ...(Array.isArray(history) ? history : [])]
             .map(normalizeFallbackPost)
             .filter((p) => {
               const key = calendarLocalDateKey(p);
@@ -1176,9 +1205,17 @@ function TrendsCalendar({ authHeaders }) {
               const [yy, mm] = key.split('-').map(Number);
               return yy === year && mm === month;
             });
+          const mergedScheduled = (Array.isArray(scheduleRaw) ? scheduleRaw : [])
+            .map(normalizeFallbackScheduled)
+            .filter((j) => {
+              const key = calendarLocalDateKey(j);
+              if (!key) return false;
+              const [yy, mm] = key.split('-').map(Number);
+              return yy === year && mm === month;
+            });
           setData({
-            posts: merged,
-            scheduled: [],
+            posts: mergedPosts,
+            scheduled: mergedScheduled,
             bestTimeOverlay: [],
             _fallback: true,
           });
@@ -1343,7 +1380,6 @@ function TrendsCalendar({ authHeaders }) {
                 const posts   = items.filter(x => x._kind === 'post');
                 const sched   = items.filter(x => x._kind === 'scheduled');
                 const isToday = day === today.getDate() && month === today.getMonth() + 1 && year === today.getFullYear();
-                const isSel   = day === selectedDay;
 
                 // Best time: shade by weekday score (API heatmap or inferred from post dates)
                 const dow = (new Date(year, month - 1, day).getDay() + 6) % 7; // Mon=0
@@ -1362,7 +1398,7 @@ function TrendsCalendar({ authHeaders }) {
                 return (
                   <div
                     key={day}
-                    onClick={() => setSelectedDay(isSel ? null : day)}
+                    onClick={() => {}}
                     title={
                       calView === 'besttime' && bestTimeCal.hasAny
                         ? `${['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][dow]} · relative activity ${Math.round(score * 100)}%`
@@ -1370,17 +1406,17 @@ function TrendsCalendar({ authHeaders }) {
                     }
                     style={{
                       minHeight: 60, borderRadius: 8, padding: '6px 6px 4px',
-                      cursor: 'pointer',
-                      border: `1.5px solid ${isSel ? '#6366f1' : isToday ? '#818cf8' : '#e2e8f0'}`,
+                      cursor: 'default',
+                      border: `1.5px solid ${isToday ? '#818cf8' : '#e2e8f0'}`,
                       background: calView === 'besttime'
                         ? `rgba(99,102,241,${0.1 + score * 0.55})`
-                        : isSel ? '#ede9fe' : isToday ? '#f5f3ff' : '#fff',
+                        : isToday ? '#f5f3ff' : '#fff',
                       transition: 'background 0.15s',
                     }}
                   >
                     <div style={{
                       fontSize: 11, fontWeight: isToday ? 800 : 600,
-                      color: isToday ? '#6366f1' : isSel ? '#6366f1' : '#475569',
+                      color: isToday ? '#6366f1' : '#475569',
                       marginBottom: 4,
                     }}>{day}</div>
                     {calView === 'posts' && (

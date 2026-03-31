@@ -60,6 +60,9 @@ type AuthContextValue = {
   reactivateSubscription: () => Promise<unknown>;
   deactivateAccount: (password: string) => Promise<void>;
   reactivateAccount: (email: string, password: string) => Promise<void>;
+  forgotPassword: (email: string) => Promise<unknown>;
+  forgotUsername: (email: string) => Promise<unknown>;
+  resetPassword: (resetToken: string, newPassword: string) => Promise<unknown>;
   isSubscribed: boolean;
   isLoggedIn: boolean;
   emailVerified: boolean;
@@ -386,6 +389,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     logout();
   };
 
+  const forgotPassword = async (email: string) => {
+    const res = await fetch(`${apiBase}/api/auth/forgot-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || data.message || 'Failed to send reset email');
+    return data;
+  };
+
+  const forgotUsername = async (email: string) => {
+    const res = await fetch(`${apiBase}/api/auth/forgot-username`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || data.message || 'Failed to send username email');
+    return data;
+  };
+
+  const resetPassword = async (resetToken: string, newPassword: string) => {
+    const res = await fetch(`${apiBase}/api/auth/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: resetToken, newPassword }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || data.message || 'Password reset failed');
+    return data;
+  };
+
   const value: AuthContextValue = {
     user,
     token,
@@ -400,6 +436,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     reactivateSubscription,
     deactivateAccount,
     reactivateAccount,
+    forgotPassword,
+    forgotUsername,
+    resetPassword,
     isSubscribed: user?.membershipType === 'MEMBER',
     isLoggedIn: !!user,
     emailVerified: user?.emailVerified ?? true,

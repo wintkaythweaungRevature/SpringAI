@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 import './LandingSection.css';
 
 const features = [
@@ -66,18 +68,18 @@ const features = [
 const steps = [
   {
     num: '1',
-    title: 'Choose a Tool',
-    desc: 'Select from 8 AI-powered tools — chatbot, document analyzer, transcription, image generator, email writer, interview prep, recipe planner, or video publisher.',
+    title: 'Create and Prepare',
+    desc: 'Upload media, generate captions, and prepare platform-ready content from one workspace.',
   },
   {
     num: '2',
-    title: 'Paste, Upload, or Type',
-    desc: 'Input your text, upload a document, record audio, or describe what you need. Wintaibot accepts multiple input formats.',
+    title: 'Schedule and Publish',
+    desc: 'Post now or schedule by platform with full visibility across your content calendar.',
   },
   {
     num: '3',
-    title: 'Get Instant AI Results',
-    desc: 'Receive accurate, high-quality output in seconds. Copy, download, or use the result directly in your workflow.',
+    title: 'Analyze and Improve',
+    desc: 'Review best-time, calendar, and performance analytics, then optimize your next posts.',
   },
 ];
 
@@ -112,22 +114,56 @@ const techStack = [
 ];
 
 export default function LandingSection() {
+  const router = useRouter();
+  const { user, token, apiBase } = useAuth();
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [loadingPlan, setLoadingPlan] = useState('');
+
+  const handlePlanCheckout = async (plan: 'STARTER' | 'PRO' | 'GROWTH') => {
+    if (!user || !token) {
+      router.push('/chat');
+      return;
+    }
+    setLoadingPlan(plan);
+    try {
+      const base = apiBase || 'https://api.wintaibot.com';
+      const res = await fetch(`${base}/api/subscription/checkout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ plan, billingInterval: 'MONTHLY' }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || data.message || `Checkout failed (${res.status})`);
+      const url = data.url || data.checkoutUrl;
+      if (url) {
+        window.location.href = url;
+        return;
+      }
+      if (data.updated) {
+        router.push('/pricing');
+        return;
+      }
+      throw new Error('Checkout failed');
+    } catch (err) {
+      alert((err as Error).message || 'Checkout failed');
+    } finally {
+      setLoadingPlan('');
+    }
+  };
 
   return (
     <main className="ls-root" aria-label="Wintaibot – AI Platform">
       <section className="ls-hero" aria-labelledby="hero-heading">
-        <div className="ls-hero-badge">AI Assistant for PDFs, Documents &amp; Productivity</div>
+        <div className="ls-hero-badge">AI Social Media Publishing &amp; Analytics Platform</div>
         <h1 id="hero-heading" className="ls-hero-h1">
-          Analyze PDFs, Transcribe Audio,
+          Plan, Publish, and Optimize
           <br />
-          Publish Videos &amp; Automate Your Work with AI
+          Your Social Media Workflow with AI
         </h1>
         <p className="ls-hero-sub">
-          Wintaibot is an AI assistant that extracts data from PDFs and documents, transcribes
-          audio, generates images, writes email replies, prepares you for job interviews, publishes
-          videos to YouTube and socials with smart scheduling and viral trends, and answers any
-          question — all in one platform, no installs required.
+          Wintaibot helps creators and teams run social operations end to end: publish videos,
+          schedule content by platform, manage messages and replies, track deep analytics, and use
+          AI insights to decide what to post next.
         </p>
         <div className="ls-hero-actions">
           <Link href="/chat" className="ls-btn-primary">
@@ -146,22 +182,19 @@ export default function LandingSection() {
       <section className="ls-section ls-what" aria-labelledby="what-heading">
         <h2 id="what-heading">What Is Wintaibot?</h2>
         <p>
-          Wintaibot is an AI productivity platform built on <strong>Spring AI</strong> and{' '}
-          <strong>React</strong>. It combines eight specialized AI tools into a single, easy-to-use
-          dashboard — so you stop juggling multiple apps and subscriptions.
+          Wintaibot is an AI-powered social media operations platform built to help you execute
+          faster without losing control. It combines publishing, scheduling, analytics, inbox, and
+          reply automation into one system.
         </p>
         <p>
-          Whether you are a <strong>job seeker</strong> preparing for interviews, a{' '}
-          <strong>professional</strong> drowning in emails and documents, a{' '}
-          <strong>student</strong> who needs lecture transcriptions, a{' '}
-          <strong>creator</strong> publishing to YouTube and socials, or a{' '}
-          <strong>content team</strong> scheduling posts per platform — Wintaibot has a dedicated
-          tool built for your workflow.
+          Main focus: <strong>social publishing workflow</strong>. Upload once, generate better
+          captions, schedule per platform, monitor performance, and improve content decisions using
+          your real post data.
         </p>
         <div className="ls-stat-row">
           <div className="ls-stat">
-            <span className="ls-stat-num">8</span>
-            <span>AI Tools</span>
+            <span className="ls-stat-num">1</span>
+            <span>Unified Social Workflow</span>
           </div>
           <div className="ls-stat">
             <span className="ls-stat-num">Free</span>
@@ -172,8 +205,8 @@ export default function LandingSection() {
             <span>Paid plans / mo</span>
           </div>
           <div className="ls-stat">
-            <span className="ls-stat-num">0</span>
-            <span>Installs Required</span>
+            <span className="ls-stat-num">API</span>
+            <span>Integration-Based</span>
           </div>
         </div>
       </section>
@@ -181,8 +214,8 @@ export default function LandingSection() {
       <section className="ls-section" id="features" aria-labelledby="features-heading">
         <h2 id="features-heading">Everything You Need, Built In</h2>
         <p className="ls-section-sub">
-          No more switching between ChatGPT, Whisper, DALL·E, and a dozen other tools. Wintaibot
-          puts documents, audio, images, email, resumes, recipes, and video publishing in one place.
+          Wintaibot is built around social execution: content creation support, publish scheduling,
+          analytics visibility, and engagement workflows in one dashboard.
         </p>
         <div className="ls-features-grid" role="list">
           {features.map((f) => (
@@ -229,53 +262,48 @@ export default function LandingSection() {
       </section>
 
       <section className="ls-section" id="use-cases" aria-labelledby="usecases-heading">
-        <h2 id="usecases-heading">Who Uses Wintaibot?</h2>
+        <h2 id="usecases-heading">Who Wintaibot Is Built For</h2>
         <div className="ls-usecase-grid" role="list">
-          <article className="ls-usecase">
-            <h3>Job Seekers</h3>
-            <p>
-              Upload your resume to <strong>Resume Warlock</strong> and receive AI-tailored
-              interview questions. Practice answers, identify gaps in your experience, and walk into
-              every interview prepared and confident.
-            </p>
-          </article>
-          <article className="ls-usecase">
-            <h3>Business Professionals</h3>
-            <p>
-              Extract key data from invoices and reports with <strong>DocuWizard</strong>, draft
-              polished email responses in seconds with <strong>Reply Enchanter</strong>, and
-              transcribe client calls with <strong>EchoScribe</strong>.
-            </p>
-          </article>
-          <article className="ls-usecase">
-            <h3>Students &amp; Researchers</h3>
-            <p>
-              Transcribe lectures and podcasts with <strong>EchoScribe</strong>, then paste the
-              text into <strong>Ask AI</strong> for instant summaries, study notes, and explanations
-              of complex topics.
-            </p>
-          </article>
           <article className="ls-usecase">
             <h3>Content Creators &amp; Social Managers</h3>
             <p>
               Use <strong>Video Publisher</strong> to upload once and publish to YouTube, Instagram,
-              TikTok, and more. Get AI captions and hashtags per platform, schedule each post when
-              you want, and check viral trends and news to plan your next video.
+              TikTok, LinkedIn, and more with platform-ready captions and scheduling.
             </p>
           </article>
           <article className="ls-usecase">
-            <h3>Home Cooks</h3>
+            <h3>Creator Teams</h3>
             <p>
-              Open your fridge, list what you have, and let the <strong>Recipe Generator</strong>{' '}
-              suggest delicious meals with full instructions. Reduce food waste and discover new
-              cuisines every week.
+              Coordinate content across channels, track scheduled items in calendar view, and keep
+              posting consistency with one shared workflow.
             </p>
           </article>
           <article className="ls-usecase">
-            <h3>Teams &amp; Small Businesses</h3>
+            <h3>Brands &amp; Small Businesses</h3>
             <p>
-              Speed up document processing, automate repetitive email replies, and give every team
-              member access to AI tools without expensive per-seat pricing.
+              Combine scheduling, message handling, and analytics in one place to improve
+              performance without adding extra tools.
+            </p>
+          </article>
+          <article className="ls-usecase">
+            <h3>Agencies</h3>
+            <p>
+              Run multiple posting calendars and optimize with performance signals like best posting
+              windows and post-level outcomes.
+            </p>
+          </article>
+          <article className="ls-usecase">
+            <h3>Community-Led Products</h3>
+            <p>
+              Manage inbound comments and DMs with unified inbox + auto-reply rules while keeping
+              responses on brand.
+            </p>
+          </article>
+          <article className="ls-usecase">
+            <h3>Data-Driven Marketing Teams</h3>
+            <p>
+              Use analytics and Social AI insights to iterate quickly on formats, hooks, and posting
+              cadence.
             </p>
           </article>
         </div>
@@ -350,9 +378,9 @@ export default function LandingSection() {
                 <strong>1</strong> seat
               </li>
             </ul>
-            <Link href="/chat" className="ls-btn-outline">
-              Choose Starter
-            </Link>
+            <button type="button" className="ls-btn-outline" onClick={() => handlePlanCheckout('STARTER')} disabled={loadingPlan === 'STARTER'}>
+              {loadingPlan === 'STARTER' ? 'Redirecting...' : 'Choose Starter'}
+            </button>
           </article>
 
           <article className="ls-plan ls-plan--featured">
@@ -379,9 +407,9 @@ export default function LandingSection() {
                 <strong>1</strong> seat
               </li>
             </ul>
-            <Link href="/chat" className="ls-btn-primary">
-              Choose Pro
-            </Link>
+            <button type="button" className="ls-btn-primary" onClick={() => handlePlanCheckout('PRO')} disabled={loadingPlan === 'PRO'}>
+              {loadingPlan === 'PRO' ? 'Redirecting...' : 'Choose Pro'}
+            </button>
           </article>
 
           <article className="ls-plan">
@@ -405,9 +433,9 @@ export default function LandingSection() {
               </li>
               <li>Deep analytics · AI Social Chat (RAG)</li>
             </ul>
-            <Link href="/chat" className="ls-btn-outline">
-              Choose Growth
-            </Link>
+            <button type="button" className="ls-btn-outline" onClick={() => handlePlanCheckout('GROWTH')} disabled={loadingPlan === 'GROWTH'}>
+              {loadingPlan === 'GROWTH' ? 'Redirecting...' : 'Choose Growth'}
+            </button>
           </article>
         </div>
 
@@ -594,10 +622,10 @@ export default function LandingSection() {
       </section>
 
       <section className="ls-section ls-final-cta" aria-label="Get started with Wintaibot">
-        <h2>Ready to Save Hours Every Week?</h2>
+        <h2>Ready to Run Your Social Workflow in One Place?</h2>
         <p>
-          Join users who use Wintaibot to automate documents, emails, transcriptions, video
-          publishing to socials, and more. Start free — no credit card needed.
+          Publish faster, schedule with confidence, and optimize with real analytics and engagement
+          data. Start free — no credit card needed.
         </p>
         <Link href="/chat" className="ls-btn-primary ls-btn-lg">
           Get Started Free →

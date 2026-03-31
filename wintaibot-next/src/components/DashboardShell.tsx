@@ -20,6 +20,14 @@ const PAGE_TITLES: Record<string, string> = {
   '/account': 'Account',
   '/video-publisher': 'Video Publisher',
   '/social-connect': 'Connected Accounts',
+  '/bio': 'Link in Bio',
+  '/messages': 'Messages & Comments',
+  '/analytics': 'Analytics Dashboard',
+  '/auto-reply': 'Auto Reply',
+  '/trends': 'Trends',
+  '/social-ai': 'Social AI',
+  '/calendar': 'Content Calendar',
+  '/pricing': 'Pricing & Plans',
 };
 
 function NavItem({
@@ -68,12 +76,22 @@ export default function DashboardShell({ children }: { children: React.ReactNode
     else setSidebarOpen(true);
   }, [isMobile, isTablet]);
 
+  useEffect(() => {
+    if (loading || user) return;
+    const auth = new URLSearchParams(window.location.search).get('auth');
+    if (auth === 'login' || auth === 'signup') {
+      setAuthMode(auth);
+      setShowAuthModal(true);
+    }
+  }, [loading, user, pathname]);
+
   const pageTitle = PAGE_TITLES[pathname] ?? 'Dashboard';
   const userInitials = user?.email ? user.email.slice(0, 2).toUpperCase() : '??';
+  const showDashboardChrome = Boolean(user);
 
   return (
     <div style={s.shell}>
-      {((isMobile || isTablet) && sidebarOpen) && (
+      {showDashboardChrome && ((isMobile || isTablet) && sidebarOpen) && (
         <div
           style={{
             position: 'fixed',
@@ -85,7 +103,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
           aria-hidden="true"
         />
       )}
-      <aside
+      {showDashboardChrome && <aside
         style={{
           ...s.sidebar,
           ...(sidebarOpen ? {} : s.sidebarCollapsed),
@@ -142,19 +160,16 @@ export default function DashboardShell({ children }: { children: React.ReactNode
           />
 
           <div style={s.groupLabel}>Social Media</div>
+          <NavItem emoji="📊" label="Analytics" href="/analytics" active={pathname === '/analytics'} />
           <NavItem
-            emoji="📲"
-            label="Video Publisher"
-            href="/video-publisher"
-            active={pathname === '/video-publisher'}
-            hasArrow
+            emoji="💬"
+            label="Messages"
+            href="/messages"
+            active={pathname === '/messages'}
           />
-          <NavItem
-            emoji="🔗"
-            label="Connected Accounts"
-            href="/social-connect"
-            active={pathname === '/social-connect'}
-          />
+          <NavItem emoji="📈" label="Trends" href="/trends" active={pathname === '/trends'} />
+          <NavItem emoji="🧠" label="Social AI" href="/social-ai" active={pathname === '/social-ai'} />
+          <NavItem emoji="🗓️" label="Content Calendar" href="/calendar" active={pathname === '/calendar'} />
 
           <div style={s.groupLabel}>Writing Tools</div>
           <NavItem emoji="✉️" label="Reply Enchanter" href="/Content" active={pathname === '/Content'} />
@@ -164,6 +179,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
             <>
               <div style={s.groupLabel}>Settings</div>
               <NavItem emoji="⚙️" label="Account" href="/account" active={pathname === '/account'} hasArrow />
+              <NavItem emoji="💳" label="Pricing" href="/pricing" active={pathname === '/pricing'} />
             </>
           )}
         </nav>
@@ -179,10 +195,11 @@ export default function DashboardShell({ children }: { children: React.ReactNode
             )}
           </button>
         </div>
-      </aside>
+      </aside>}
 
       <main style={s.main}>
-        <header style={s.topBar}>
+        {showDashboardChrome ? (
+          <header style={s.topBar}>
           <button style={s.menuBtn} onClick={() => setSidebarOpen(!sidebarOpen)}>
             ☰
           </button>
@@ -193,12 +210,10 @@ export default function DashboardShell({ children }: { children: React.ReactNode
           </div>
 
           <div style={s.topRight}>
-            {loading ? (
-              <span style={{ color: '#94a3b8', fontSize: '13px' }}>...</span>
-            ) : user ? (
+            {loading ? <span style={{ color: '#94a3b8', fontSize: '13px' }}>...</span> : (
               <>
-                <span style={s.topEmail} title={user.email}>
-                  {user.email}
+                <span style={s.topEmail} title={user?.email || ''}>
+                  {user?.email || ''}
                 </span>
                 {user?.membershipType === 'MEMBER' && (
                   <span style={s.memberBadge}>✓ Member</span>
@@ -208,32 +223,25 @@ export default function DashboardShell({ children }: { children: React.ReactNode
                 </button>
                 <div style={s.avatar}>{userInitials}</div>
               </>
-            ) : (
-              <>
-                <button
-                  onClick={() => {
-                    setAuthMode('login');
-                    setShowAuthModal(true);
-                  }}
-                  style={s.loginBtn}
-                >
-                  Login
-                </button>
-                <button
-                  onClick={() => {
-                    setAuthMode('signup');
-                    setShowAuthModal(true);
-                  }}
-                  style={s.signupBtn}
-                >
-                  Sign Up
-                </button>
-              </>
             )}
           </div>
-        </header>
+          </header>
+        ) : (
+          <header style={s.publicTopBar}>
+            <Link href="/" style={s.publicBrand}>Wintaibot</Link>
+            <nav style={s.publicNav}>
+              <Link href="/features" style={s.publicNavLink}>Features</Link>
+              <Link href="/pricing" style={s.publicNavLink}>Pricing</Link>
+              <Link href="/docs" style={s.publicNavLink}>Docs</Link>
+            </nav>
+            <div style={s.publicActions}>
+              <button onClick={() => { setAuthMode('login'); setShowAuthModal(true); }} style={s.loginBtn}>Login</button>
+              <button onClick={() => { setAuthMode('signup'); setShowAuthModal(true); }} style={s.signupBtn}>Sign Up</button>
+            </div>
+          </header>
+        )}
 
-        <div style={s.pageBar}>
+        {showDashboardChrome && <div style={s.pageBar}>
           <h2 style={s.pageTitle}>{pageTitle}</h2>
           {user && (
             <div style={s.pageRight}>
@@ -241,12 +249,18 @@ export default function DashboardShell({ children }: { children: React.ReactNode
               {user?.membershipType === 'MEMBER' && (
                 <span style={s.pageMemberBadge}>✓ Member</span>
               )}
+              <Link href="/video-publisher" style={s.quickPageBtn} title="Open Video Publisher">
+                📲 Video Publisher
+              </Link>
+              <Link href="/bio" style={s.quickPageBtn} title="Open Link in Bio">
+                🔗 Link in Bio
+              </Link>
               <Link href="/account" style={s.settingsBtn} title="Account Settings">
                 ⚙️
               </Link>
             </div>
           )}
-        </div>
+        </div>}
 
         <div style={s.content}>{children}</div>
       </main>
@@ -428,6 +442,42 @@ const s: Record<string, any> = {
     flexWrap: 'wrap',
     minWidth: 0,
   },
+  publicTopBar: {
+    height: '64px',
+    flexShrink: 0,
+    background: '#ffffff',
+    borderBottom: '1px solid #e2e8f0',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '0 16px',
+    gap: '10px',
+    boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+    flexWrap: 'wrap',
+  },
+  publicBrand: {
+    color: '#0f172a',
+    fontWeight: '800',
+    fontSize: '18px',
+    textDecoration: 'none',
+  },
+  publicNav: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '14px',
+  },
+  publicNavLink: {
+    color: '#475569',
+    fontSize: '13px',
+    fontWeight: '600',
+    textDecoration: 'none',
+  },
+  publicActions: {
+    marginLeft: 'auto',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+  },
   menuBtn: {
     background: 'none',
     border: 'none',
@@ -494,6 +544,19 @@ const s: Record<string, any> = {
     fontWeight: '500',
     cursor: 'pointer',
     fontFamily: 'inherit',
+  },
+  quickTopBtn: {
+    padding: '6px 10px',
+    borderRadius: '8px',
+    border: '1px solid #e2e8f0',
+    background: '#fff',
+    color: '#334155',
+    fontSize: '12px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    textDecoration: 'none',
+    whiteSpace: 'nowrap',
   },
   loginBtn: {
     padding: '7px 16px',
@@ -568,6 +631,19 @@ const s: Record<string, any> = {
     lineHeight: 1,
     textDecoration: 'none',
     color: 'inherit',
+  },
+  quickPageBtn: {
+    background: '#ffffff',
+    border: '1px solid #e2e8f0',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '12px',
+    fontWeight: '700',
+    padding: '7px 10px',
+    lineHeight: 1,
+    textDecoration: 'none',
+    color: '#334155',
+    whiteSpace: 'nowrap',
   },
   content: {
     flex: 1,

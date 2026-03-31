@@ -498,7 +498,26 @@ export default function VideoPublisher() {
             </div>
 
             <div style={s.card}>
-              <div style={s.sectionTitle}>🔗 Connect your accounts</div>
+              <div style={{ ...s.sectionTitle, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                <span>🔗 Connect your accounts</span>
+                <button
+                  type="button"
+                  onClick={() => router.push('/social-connect')}
+                  style={{
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    background: '#fff',
+                    color: '#334155',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    padding: '6px 10px',
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  Manage Accounts
+                </button>
+              </div>
               {connectMessage && (
                 <div style={{ fontSize: '12px', color: connectMessage.includes('failed') ? '#b91c1c' : '#15803d', marginBottom: '10px', fontWeight: 500 }}>
                   {connectMessage}

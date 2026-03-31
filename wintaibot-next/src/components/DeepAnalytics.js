@@ -1183,29 +1183,43 @@ function normalizeFallbackPost(p = {}) {
 }
 
 function normalizeFallbackScheduled(j = {}) {
+  const nested = j.post || j.payload || j.data || {};
   const rawTs =
     j.scheduledAt ||
+    j.scheduled_at ||
     j.scheduledTime ||
+    j.scheduled_time ||
     j.runAt ||
+    j.run_at ||
     j.executeAt ||
+    j.execute_at ||
+    j.publishAt ||
+    j.publish_at ||
+    j.targetTime ||
+    j.target_time ||
     j.dateTime ||
+    nested.scheduledAt ||
+    nested.scheduled_at ||
+    nested.runAt ||
+    nested.publishAt ||
+    nested.dateTime ||
     j.createdAt ||
     null;
   return {
     id: j.id ?? j.jobId ?? null,
     jobId: j.jobId ?? j.id ?? null,
-    platform: String(j.platform || '').toLowerCase(),
-    caption: j.caption || j.message || '',
+    platform: String(j.platform || nested.platform || '').toLowerCase(),
+    caption: j.caption || j.message || nested.caption || nested.message || '',
     status: j.status || 'SCHEDULED',
-    mediaType: j.mediaType || j.postType || 'post',
+    mediaType: j.mediaType || j.postType || nested.mediaType || nested.postType || 'post',
     dateTime: rawTs,
     date: (() => {
       const k = calendarLocalDateKey({ ...j, dateTime: rawTs, scheduledAt: rawTs });
       return k || null;
     })(),
     scheduledAt: rawTs,
-    mediaUrl: j.mediaUrl || j.videoUrl || j.imageUrl || null,
-    thumbnailUrl: j.thumbnailUrl || j.thumbnail || null,
+    mediaUrl: j.mediaUrl || j.videoUrl || j.imageUrl || nested.mediaUrl || nested.videoUrl || nested.imageUrl || null,
+    thumbnailUrl: j.thumbnailUrl || j.thumbnail || nested.thumbnailUrl || nested.thumbnail || null,
   };
 }
 
@@ -1222,6 +1236,15 @@ function extractScheduledRows(payload) {
   ];
   for (const c of candidates) {
     if (Array.isArray(c)) return c;
+  }
+  // Fallback for uncommon payload shapes: search one nesting level for array values.
+  for (const v of Object.values(payload)) {
+    if (Array.isArray(v)) return v;
+    if (v && typeof v === 'object') {
+      for (const vv of Object.values(v)) {
+        if (Array.isArray(vv)) return vv;
+      }
+    }
   }
   return [];
 }
@@ -1275,8 +1298,18 @@ function TrendsCalendar({ authHeaders }) {
             .map(normalizeFallbackScheduled)
             .filter((j) => {
               const status = String(j.status || '').toUpperCase();
-              // Keep only future/pending style jobs in "scheduled" bucket.
-              return status === '' || status === 'SCHEDULED' || status === 'PENDING' || status === 'QUEUED';
+              const ts = j.scheduledAt ? new Date(j.scheduledAt).getTime() : NaN;
+              const isFuture = Number.isFinite(ts) && ts > Date.now();
+              const isScheduledStatus =
+                status === '' ||
+                status === 'SCHEDULED' ||
+                status === 'PENDING' ||
+                status === 'QUEUED' ||
+                status === 'READY' ||
+                status === 'WAITING' ||
+                status === 'FUTURE';
+              // Keep future jobs even if backend uses non-standard statuses.
+              return isScheduledStatus || isFuture;
             })
             .filter((j) => {
               const key = calendarLocalDateKey(j);

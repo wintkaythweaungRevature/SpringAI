@@ -242,6 +242,45 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
         </div>
       </section>
 
+      <section className="ls-section ls-seo-spotlight" aria-labelledby="seo-spotlight-heading">
+        <h2 id="seo-spotlight-heading">AI Social Media Scheduler for Video, Captions, and Analytics</h2>
+        <p className="ls-section-sub">
+          Wintaibot is an <strong>AI social media management platform</strong> built for creators and growing teams that want to
+          <strong> publish video to multiple platforms from one dashboard</strong>. Upload once, customize by network, schedule at the right
+          time, and track what performs best.
+        </p>
+        <div className="ls-seo-grid">
+          <article className="ls-seo-card">
+            <h3>Multi-platform video publishing</h3>
+            <p>
+              Plan and publish content for YouTube, Instagram, Facebook, TikTok, LinkedIn, X, Threads, and Pinterest in one workflow.
+              Reduce manual posting and keep your content calendar consistent.
+            </p>
+          </article>
+          <article className="ls-seo-card">
+            <h3>AI caption and hashtag assistant</h3>
+            <p>
+              Generate platform-ready caption drafts, quick rewrites, and hashtag suggestions. Keep your tone, edit fast, and publish
+              with fewer copy bottlenecks.
+            </p>
+          </article>
+          <article className="ls-seo-card">
+            <h3>Content calendar with post insights</h3>
+            <p>
+              Use a visual calendar to review scheduled and published posts, open day-level details, and monitor engagement signals like
+              impressions, comments, and posting cadence.
+            </p>
+          </article>
+          <article className="ls-seo-card">
+            <h3>Built-in AI workspace</h3>
+            <p>
+              Beyond scheduling, teams use Ask AI, DocuWizard, EchoScribe, image generation, and Social AI in the same account to speed up
+              production from idea to publish.
+            </p>
+          </article>
+        </div>
+      </section>
+
       {/* ── THREE ADVANTAGES: FIXER · THUMBNAILS · BRAIN AI ───── */}
       <section className="ls-section ls-video-edge" aria-labelledby="video-edge-heading">
         <h2 id="video-edge-heading">How we end format errors — and beat generic AI</h2>

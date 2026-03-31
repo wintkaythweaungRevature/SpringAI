@@ -33,6 +33,40 @@
   line-height: 1.65;
 }
 
+/* ── SEO Spotlight ─────────────────────────────────────────── */
+.ls-seo-spotlight .ls-section-sub {
+  max-width: 820px;
+}
+
+.ls-seo-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.ls-seo-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 18px;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.04);
+}
+
+.ls-seo-card h3 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.35;
+}
+
+.ls-seo-card p {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #475569;
+  line-height: 1.6;
+}
+
 /* ── Buttons ─────────────────────────────────────────────── */
 .ls-btn-primary {
   background: #1e3a8a;
@@ -1105,6 +1139,10 @@
 
 /* ── Responsive ──────────────────────────────────────────── */
 @media (max-width: 640px) {
+  .ls-seo-grid {
+    grid-template-columns: 1fr;
+  }
+
   .ls-hero {
     padding: 44px 20px;
     border-radius: 12px;

@@ -1117,6 +1117,25 @@ function dayScoresFromPostDates(records) {
   return c;
 }
 
+function normalizeFallbackPost(p = {}) {
+  return {
+    id: p.id ?? null,
+    platform: String(p.platform || '').toLowerCase(),
+    caption: p.caption || '',
+    status: p.status || 'SUCCESS',
+    mediaType: p.mediaType || p.postType || 'post',
+    dateTime: p.createdAt || p.scheduledAt || p.dateTime || null,
+    date: (() => {
+      const k = calendarLocalDateKey(p);
+      return k || null;
+    })(),
+    createdAt: p.createdAt || null,
+    scheduledAt: p.scheduledAt || null,
+    mediaUrl: p.mediaUrl || p.videoUrl || p.imageUrl || null,
+    thumbnailUrl: p.thumbnailUrl || p.thumbnail || null,
+  };
+}
+
 /* ── Trends Calendar ─────────────────────────────────────────── */
 function TrendsCalendar({ authHeaders }) {
   const today     = new Date();
@@ -1132,10 +1151,43 @@ function TrendsCalendar({ authHeaders }) {
 
   const loadCalendar = useCallback(() => {
     setLoading(true);
-    fetch(`${API}/api/analytics/calendar?year=${year}&month=${month}`, { headers: authHeaders() })
-      .then(r => r.json())
-      .then(d => { setData(d); setLoading(false); })
-      .catch(() => { setLoading(false); });
+    const headers = authHeaders();
+    fetch(`${API}/api/analytics/calendar?year=${year}&month=${month}`, { headers })
+      .then(async (r) => {
+        if (!r.ok) throw new Error(`calendar ${r.status}`);
+        return r.json();
+      })
+      .then((d) => { setData(d); setLoading(false); })
+      .catch(async () => {
+        // Fallback: rebuild month view from overview + history when calendar API is unavailable.
+        try {
+          const [overviewRes, historyRes] = await Promise.all([
+            fetch(`${API}/api/analytics/overview`, { headers }),
+            fetch(`${API}/api/social/post/history?limit=400`, { headers }),
+          ]);
+          const overview = overviewRes.ok ? await overviewRes.json() : {};
+          const history = historyRes.ok ? await historyRes.json() : [];
+          const recent = Array.isArray(overview?.recentActivity) ? overview.recentActivity : [];
+          const merged = [...recent, ...(Array.isArray(history) ? history : [])]
+            .map(normalizeFallbackPost)
+            .filter((p) => {
+              const key = calendarLocalDateKey(p);
+              if (!key) return false;
+              const [yy, mm] = key.split('-').map(Number);
+              return yy === year && mm === month;
+            });
+          setData({
+            posts: merged,
+            scheduled: [],
+            bestTimeOverlay: [],
+            _fallback: true,
+          });
+        } catch {
+          setData({ posts: [], scheduled: [], bestTimeOverlay: [], _fallback: true });
+        } finally {
+          setLoading(false);
+        }
+      });
   }, [year, month, authHeaders]);
 
   useEffect(() => { loadCalendar(); }, [loadCalendar]);

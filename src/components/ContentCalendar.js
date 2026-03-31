@@ -520,7 +520,7 @@ export default function ContentCalendar() {
                           openComposeForDay(day);
                         }}
                       >
-                        💡 +
+                        +
                       </button>
 
                       {dayPosts.length > 0 ? (
@@ -962,7 +962,7 @@ const s = {
 
   calGrid: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2 },
   calDayHeader: { textAlign: 'center', fontSize: 11, fontWeight: 700, color: '#94a3b8', padding: '6px 0', textTransform: 'uppercase', letterSpacing: '0.05em' },
-  calCell: { minHeight: 72, padding: '6px', borderRadius: 8, border: '1px solid transparent', transition: 'all 0.15s', position: 'relative' },
+  calCell: { minHeight: 72, padding: '6px', borderRadius: 8, border: '1px solid #e2e8f0', transition: 'all 0.15s', position: 'relative', background: '#fff' },
   calCellToday: { border: '1.5px solid #6366f133', background: '#f5f3ff' },
   calCellSelected: { background: '#ede9fe', border: '1.5px solid #6366f1' },
   calDayNum: { fontSize: 13, fontWeight: 600, color: '#334155', lineHeight: 1, marginBottom: 4 },
@@ -998,15 +998,18 @@ const s = {
     position: 'absolute',
     top: 6,
     right: 6,
-    border: '1px solid #fde68a',
-    background: '#fef3c7',
-    color: '#a16207',
-    borderRadius: 8,
-    fontSize: 11,
+    border: '1px solid #e2e8f0',
+    background: '#fff',
+    color: '#64748b',
+    borderRadius: 6,
+    fontSize: 10,
     fontWeight: 700,
-    padding: '2px 6px',
+    width: 18,
+    height: 18,
+    padding: 0,
     cursor: 'pointer',
-    lineHeight: 1.2,
+    lineHeight: '16px',
+    textAlign: 'center',
   },
   hoverCard: {
     position: 'fixed',

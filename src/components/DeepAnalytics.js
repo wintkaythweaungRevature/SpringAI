@@ -467,11 +467,45 @@ function PostHeatmap({ resolved, postsDetail = [], platformLabel = 'this platfor
                 const isSelected = selected?.d === d && selected?.h === h;
                 const isBest     = d === bestDayIndex && h === bestHour;
                 const bg = count > 0 ? `rgba(99,102,241,${0.12 + intensity * 0.88})` : '#f1f5f9';
+                const slotPosts = (postsDetail || []).filter((p) => {
+                  if (p.dayIndex != null && p.hour != null) {
+                    return Number(p.dayIndex) === d && Number(p.hour) === h;
+                  }
+                  const raw = p.createdAt || p.publishedAt || p.dateTime;
+                  if (!raw) return false;
+                  const dt = new Date(raw);
+                  if (Number.isNaN(dt.getTime())) return false;
+                  const dd = (dt.getDay() + 6) % 7;
+                  const hh = dt.getHours();
+                  return dd === d && hh === h;
+                });
+                const slotDateTimes = [...new Set(
+                  slotPosts
+                    .map((p) => p.createdAt || p.publishedAt || p.dateTime)
+                    .filter(Boolean)
+                    .map((raw) => {
+                      try {
+                        return new Date(raw).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+                      } catch {
+                        return String(raw);
+                      }
+                    })
+                )].slice(0, 2);
+                const slotPlatforms = [...new Set(
+                  slotPosts
+                    .map((p) => (p.platform || '').toString().trim())
+                    .filter(Boolean)
+                )].slice(0, 3);
+                const hoverParts = [
+                  `${DAY_FULL_LABELS[d]} ${formatHour12(h)} — ${count} post${count !== 1 ? 's' : ''}`,
+                  slotDateTimes.length ? `Date/Time: ${slotDateTimes.join(' | ')}` : '',
+                  slotPlatforms.length ? `Platforms: ${slotPlatforms.join(', ')}` : '',
+                ].filter(Boolean);
                 return (
                   <div
                     key={h}
                     onClick={() => count > 0 && setSelected(isSelected ? null : { d, h })}
-                    title={`${DAY_FULL_LABELS[d]} ${formatHour12(h)} — ${count} post${count !== 1 ? 's' : ''}`}
+                    title={hoverParts.join('\n')}
                     style={{
                       width: 32, height: 28, borderRadius: 5,
                       background: isSelected ? '#6366f1' : bg,
@@ -1163,6 +1197,23 @@ function normalizeFallbackScheduled(j = {}) {
   };
 }
 
+function extractScheduledRows(payload) {
+  if (Array.isArray(payload)) return payload;
+  if (!payload || typeof payload !== 'object') return [];
+  const candidates = [
+    payload.items,
+    payload.jobs,
+    payload.scheduled,
+    payload.data,
+    payload.results,
+    payload.content,
+  ];
+  for (const c of candidates) {
+    if (Array.isArray(c)) return c;
+  }
+  return [];
+}
+
 /* ── Trends Calendar ─────────────────────────────────────────── */
 function TrendsCalendar({ authHeaders }) {
   const today     = new Date();
@@ -1195,7 +1246,7 @@ function TrendsCalendar({ authHeaders }) {
           ]);
           const overview = overviewRes.ok ? await overviewRes.json() : {};
           const history = historyRes.ok ? await historyRes.json() : [];
-          const scheduleRaw = scheduleRes.ok ? await scheduleRes.json() : [];
+          const schedulePayload = scheduleRes.ok ? await scheduleRes.json() : [];
           const recent = Array.isArray(overview?.recentActivity) ? overview.recentActivity : [];
           const mergedPosts = [...recent, ...(Array.isArray(history) ? history : [])]
             .map(normalizeFallbackPost)
@@ -1205,8 +1256,13 @@ function TrendsCalendar({ authHeaders }) {
               const [yy, mm] = key.split('-').map(Number);
               return yy === year && mm === month;
             });
-          const mergedScheduled = (Array.isArray(scheduleRaw) ? scheduleRaw : [])
+          const mergedScheduled = extractScheduledRows(schedulePayload)
             .map(normalizeFallbackScheduled)
+            .filter((j) => {
+              const status = String(j.status || '').toUpperCase();
+              // Keep only future/pending style jobs in "scheduled" bucket.
+              return status === '' || status === 'SCHEDULED' || status === 'PENDING' || status === 'QUEUED';
+            })
             .filter((j) => {
               const key = calendarLocalDateKey(j);
               if (!key) return false;

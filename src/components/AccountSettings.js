@@ -114,21 +114,6 @@ export default function AccountSettings() {
       boxShadow: "0 1px 2px rgba(15, 23, 42, 0.06)",
     };
   })();
-  const apiSaysMonthly = subSnap?.billingInterval === "MONTHLY";
-  const showAnnualUpsell =
-    isMember &&
-    !cancelAtPeriodEnd &&
-    apiSaysMonthly &&
-    tierKey &&
-    TIER_CATALOG[tierKey];
-
-  const annualMeta = showAnnualUpsell ? TIER_CATALOG[tierKey] : null;
-  const savePct =
-    annualMeta &&
-    annualMeta.monthlyPrice > 0
-      ? Math.max(0, Math.round((1 - annualMeta.yearlyPrice / annualMeta.monthlyPrice) * 100))
-      : 0;
-
   const showMessage = (msg, isError = false) => {
     setMessage({ text: msg, error: isError });
     setTimeout(() => setMessage(null), 5000);
@@ -176,37 +161,6 @@ export default function AccountSettings() {
       logout();
     } catch (e) { showMessage(e.message || "Deactivation failed", true); }
     finally { setLoading(null); }
-  };
-
-  const handleSwitchToAnnual = async () => {
-    if (!tierKey || !apiBase) return;
-    setLoading("annual");
-    try {
-      const res = await fetch(`${apiBase}/api/subscription/checkout`, {
-        method: "POST",
-        headers: { ...authHeaders(), "Content-Type": "application/json" },
-        body: JSON.stringify({ plan: tierKey, billingInterval: "YEARLY" }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || data.message || "Checkout failed");
-      if (data.updated) {
-        showMessage(data.message || "Your plan was updated.", false);
-        if (typeof refetchUser === "function") await refetchUser();
-        const r2 = await fetch(`${apiBase}/api/subscription/current`, {
-          headers: { ...authHeaders(), Accept: "application/json" },
-        });
-        const d2 = r2.ok ? await r2.json() : null;
-        setSubSnap(d2 && typeof d2 === "object" ? d2 : null);
-        return;
-      }
-      const url = data.url || data.checkoutUrl;
-      if (url) window.location.href = url;
-      else throw new Error("Checkout failed");
-    } catch (e) {
-      showMessage(e.message || "Could not start checkout", true);
-    } finally {
-      setLoading(null);
-    }
   };
 
   const openChangePlan = () => {
@@ -443,40 +397,6 @@ export default function AccountSettings() {
             </div>
           )}
 
-          {showAnnualUpsell && annualMeta && !upgradePlans && (
-            <div style={s.annualCard}>
-              <div style={s.annualCardHeader}>
-                <span style={s.annualIcon} aria-hidden>◇</span>
-                <div>
-                  <div style={s.annualPlanTitle}>{annualMeta.name}</div>
-                  <p style={s.annualTagline}>{annualMeta.tagline}</p>
-                </div>
-              </div>
-              <div style={s.annualPriceRow}>
-                <span style={s.annualPriceBig}>${annualMeta.yearlyPrice}</span>
-                <div style={s.annualPriceSide}>
-                  <span>USD / month</span>
-                  <span style={s.annualBilledNote}>billed annually</span>
-                </div>
-              </div>
-              <div style={s.annualInfoBox}>
-                <span style={s.annualInfoIcon} aria-hidden>i</span>
-                <div>
-                  <strong style={s.annualInfoStrong}>You are on a monthly billing plan.</strong>
-                  <p style={s.annualInfoSub}>Pay annually to save {savePct}%.</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={handleSwitchToAnnual}
-                disabled={!!loading}
-                style={s.annualCta}
-              >
-                {loading === "annual" ? "Redirecting…" : `Get ${annualMeta.name} annual plan`}
-              </button>
-            </div>
-          )}
-
           {isMember && !cancelAtPeriodEnd && (
             <div style={{ marginTop: 12 }}>
               {!confirmCancelSub ? (
@@ -510,7 +430,10 @@ export default function AccountSettings() {
         {/* Billing */}
         <div style={s.section}>
           <h3 style={s.sectionTitle}>Billing &amp; Invoices</h3>
-          <p style={s.desc}>View invoice history, update payment method, or manage your subscription via Stripe.</p>
+          <p style={s.desc}>
+            View invoice history, update payment method, or manage your subscription in Stripe&apos;s billing portal.
+            W!ntAi does not store your bank account or full card details; only Stripe processes that information.
+          </p>
           <button onClick={handleBilling} disabled={!!loading} style={s.btnPrimary}>
             {loading === "billing" ? "Opening..." : "Manage Billing & Invoices"}
           </button>
@@ -619,66 +542,5 @@ const s = {
     border: "1px solid #e2e8f0", background: "#fff",
     color: "#475057", fontSize: "14px", fontWeight: "600",
     cursor: "pointer", fontFamily: "inherit",
-  },
-  annualCard: {
-    marginTop: "20px",
-    padding: "20px",
-    borderRadius: "12px",
-    border: "1px solid #e2e8f0",
-    background: "#fafafa",
-    maxWidth: "100%",
-  },
-  annualCardHeader: { display: "flex", gap: "12px", alignItems: "flex-start", marginBottom: "16px" },
-  annualIcon: {
-    fontSize: "22px",
-    lineHeight: 1,
-    color: "#64748b",
-    marginTop: "2px",
-    fontFamily: "Georgia, serif",
-  },
-  annualPlanTitle: { fontSize: "22px", fontWeight: "800", color: "#0f172a", letterSpacing: "-0.02em" },
-  annualTagline: { margin: "4px 0 0", fontSize: "14px", color: "#64748b", lineHeight: 1.45 },
-  annualPriceRow: { display: "flex", alignItems: "flex-start", gap: "10px", marginBottom: "16px" },
-  annualPriceBig: { fontSize: "40px", fontWeight: "800", color: "#0f172a", lineHeight: 1 },
-  annualPriceSide: { display: "flex", flexDirection: "column", fontSize: "13px", color: "#475569", paddingTop: "6px" },
-  annualBilledNote: { color: "#94a3b8", fontSize: "12px", marginTop: "2px" },
-  annualInfoBox: {
-    display: "flex",
-    gap: "12px",
-    alignItems: "flex-start",
-    padding: "12px 14px",
-    borderRadius: "10px",
-    border: "1px solid #e2e8f0",
-    background: "#f8fafc",
-    marginBottom: "16px",
-  },
-  annualInfoIcon: {
-    width: "22px",
-    height: "22px",
-    borderRadius: "999px",
-    border: "2px solid #94a3b8",
-    color: "#64748b",
-    fontSize: "12px",
-    fontWeight: "700",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-    fontStyle: "italic",
-    fontFamily: "Georgia, serif",
-  },
-  annualInfoStrong: { display: "block", fontSize: "14px", color: "#0f172a", marginBottom: "4px" },
-  annualInfoSub: { margin: 0, fontSize: "13px", color: "#64748b", lineHeight: 1.5 },
-  annualCta: {
-    width: "100%",
-    padding: "12px 18px",
-    borderRadius: "10px",
-    border: "2px solid #0f172a",
-    background: "#fff",
-    color: "#0f172a",
-    fontSize: "15px",
-    fontWeight: "700",
-    cursor: "pointer",
-    fontFamily: "inherit",
   },
 };

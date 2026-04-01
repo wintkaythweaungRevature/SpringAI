@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description:
     'Chat with a powerful AI assistant 24/7. Get answers, explanations, code help, writing assistance, and advice on any topic.',
   openGraph: {
-    title: 'Ask AI – Instant Answers | Wintaibot',
+    title: 'Ask AI – Instant Answers | W!ntAi',
     description: 'Chat with AI 24/7. Get answers, code help, writing assistance, and more. Free to use.',
   },
 };

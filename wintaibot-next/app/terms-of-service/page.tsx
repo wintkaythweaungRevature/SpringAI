@@ -3,7 +3,7 @@ import Link from 'next/link';
 
 export const metadata: Metadata = {
   title: 'Terms of Service',
-  description: 'Wintaibot Terms of Service. Terms and conditions for using our AI platform.',
+  description: 'W!ntAi Terms of Service. Terms and conditions for using our AI platform.',
 };
 
 const styles = {
@@ -46,7 +46,7 @@ export default function TermsOfServicePage() {
     <div style={styles.page}>
       <header style={styles.header}>
         <Link href="/" style={styles.logo}>
-          Wintaibot
+          W!ntAi
         </Link>
         <Link href="/" style={styles.back}>
           ← Back to home
@@ -57,7 +57,7 @@ export default function TermsOfServicePage() {
         <p style={styles.updated}>Last updated: February 2026</p>
 
         <p style={styles.p}>
-          Welcome to Wintaibot. By accessing or using https://www.wintaibot.com and our AI tools (the
+          Welcome to W!ntAi. By accessing or using https://www.wintaibot.com and our AI tools (the
           &quot;Service&quot;), you agree to be bound by these Terms of Service (&quot;Terms&quot;).
           If you do not agree, do not use the Service.
         </p>

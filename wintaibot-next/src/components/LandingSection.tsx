@@ -4,7 +4,28 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import PlatformIcon from '@/components/PlatformIcon';
 import './LandingSection.css';
+
+const SI = 'https://cdn.simpleicons.org';
+
+const infraStackLogos = [
+  { label: 'AWS', fullLabel: 'Amazon Web Services', slug: 'amazonwebservices', color: '232F3E', href: 'https://aws.amazon.com' },
+  { label: 'Cloudflare', fullLabel: 'Cloudflare', slug: 'cloudflare', color: 'F38020', href: 'https://www.cloudflare.com' },
+  { label: 'PostgreSQL', fullLabel: 'PostgreSQL', slug: 'postgresql', color: '4169E1', href: 'https://www.postgresql.org' },
+  { label: 'Java', fullLabel: 'OpenJDK / Java', slug: 'openjdk', color: '437291', href: 'https://openjdk.org' },
+];
+
+const landingPublishPlatforms = [
+  { id: 'youtube', label: 'YouTube', emoji: '▶️', color: '#FF0000', logo: 'youtube' },
+  { id: 'instagram', label: 'Instagram', emoji: '📸', color: '#E1306C', logo: 'instagram' },
+  { id: 'facebook', label: 'Facebook', emoji: '👍', color: '#1877F2', logo: 'facebook' },
+  { id: 'tiktok', label: 'TikTok', emoji: '🎵', color: '#010101', logo: 'tiktok' },
+  { id: 'linkedin', label: 'LinkedIn', emoji: '💼', color: '#0A66C2', logo: 'linkedin' },
+  { id: 'x', label: 'X', emoji: '🐦', color: '#000000', logo: 'x' },
+  { id: 'threads', label: 'Threads', emoji: '🧵', color: '#101010', logo: 'threads' },
+  { id: 'pinterest', label: 'Pinterest', emoji: '📌', color: '#E60023', logo: 'pinterest' },
+] as const;
 
 const features = [
   {
@@ -108,9 +129,11 @@ const techStack = [
   { label: 'Spring AI', url: 'https://spring.io/projects/spring-ai' },
   { label: 'React 19', url: 'https://react.dev' },
   { label: 'Java 21', url: 'https://openjdk.org' },
+  { label: 'PostgreSQL', url: 'https://postgresql.org' },
+  { label: 'AWS', url: 'https://aws.amazon.com' },
+  { label: 'Cloudflare', url: 'https://cloudflare.com' },
   { label: 'Stripe Payments', url: 'https://stripe.com' },
   { label: 'Docker', url: 'https://docker.com' },
-  { label: 'AWS EC2', url: 'https://aws.amazon.com/ec2/' },
 ];
 
 export default function LandingSection() {
@@ -152,7 +175,7 @@ export default function LandingSection() {
   };
 
   return (
-    <main className="ls-root" aria-label="Wintaibot – AI Platform">
+    <main className="ls-root" aria-label="W!ntAi – AI Platform">
       <section className="ls-hero" aria-labelledby="hero-heading">
         <div className="ls-hero-badge">AI Social Media Publishing &amp; Analytics Platform</div>
         <h1 id="hero-heading" className="ls-hero-h1">
@@ -161,7 +184,7 @@ export default function LandingSection() {
           Your Social Media Workflow with AI
         </h1>
         <p className="ls-hero-sub">
-          Wintaibot helps creators and teams run social operations end to end: publish videos,
+          W!ntAi helps creators and teams run social operations end to end: publish videos,
           schedule content by platform, manage messages and replies, track deep analytics, and use
           AI insights to decide what to post next.
         </p>
@@ -180,9 +203,9 @@ export default function LandingSection() {
       </section>
 
       <section className="ls-section ls-what" aria-labelledby="what-heading">
-        <h2 id="what-heading">What Is Wintaibot?</h2>
+        <h2 id="what-heading">What Is W!ntAi?</h2>
         <p>
-          Wintaibot is an AI-powered social media operations platform built to help you execute
+          W!ntAi is an AI-powered social media operations platform built to help you execute
           faster without losing control. It combines publishing, scheduling, analytics, inbox, and
           reply automation into one system.
         </p>
@@ -214,7 +237,7 @@ export default function LandingSection() {
       <section className="ls-section" id="features" aria-labelledby="features-heading">
         <h2 id="features-heading">Everything You Need, Built In</h2>
         <p className="ls-section-sub">
-          Wintaibot is built around social execution: content creation support, publish scheduling,
+          W!ntAi is built around social execution: content creation support, publish scheduling,
           analytics visibility, and engagement workflows in one dashboard.
         </p>
         <div className="ls-features-grid" role="list">
@@ -262,7 +285,7 @@ export default function LandingSection() {
       </section>
 
       <section className="ls-section" id="use-cases" aria-labelledby="usecases-heading">
-        <h2 id="usecases-heading">Who Wintaibot Is Built For</h2>
+        <h2 id="usecases-heading">Who W!ntAi Is Built For</h2>
         <div className="ls-usecase-grid" role="list">
           <article className="ls-usecase">
             <h3>Content Creators &amp; Social Managers</h3>
@@ -543,7 +566,7 @@ export default function LandingSection() {
       <section className="ls-section ls-authority" id="about" aria-labelledby="authority-heading">
         <h2 id="authority-heading">Built with Trusted Technology</h2>
         <p className="ls-section-sub">
-          Wintaibot is built on enterprise-grade open-source tools and hosted on AWS
+          W!ntAi is built on enterprise-grade open-source tools and hosted on AWS
           infrastructure — reliable, secure, and scalable.
         </p>
         <div className="ls-tech-row">
@@ -583,7 +606,7 @@ export default function LandingSection() {
         <h2 id="faq-heading">Frequently Asked Questions</h2>
         {[
           {
-            q: 'Is Wintaibot really free to use?',
+            q: 'Is W!ntAi really free to use?',
             a: 'Yes. The Ask AI chatbot and Recipe Generator are completely free with no credit card required. Premium tools unlock on Starter ($19/mo), Pro ($39/mo), or Growth ($79/mo), with annual discounts. See pricing for Video Publisher and analytics limits.',
           },
           {
@@ -600,7 +623,7 @@ export default function LandingSection() {
           },
           {
             q: 'Is my data secure?',
-            a: 'Files you upload are processed to generate your results and are not stored permanently. Payments are handled by Stripe — we never store your card details.',
+            a: 'Files you upload are processed to generate your results and are not stored permanently. Payments go through Stripe only: W!ntAi does not store your bank account information or full card details on our servers — Stripe handles billing and payment data using their secure, PCI-compliant systems.',
           },
           {
             q: 'What does Video Publisher do?',
@@ -621,7 +644,7 @@ export default function LandingSection() {
         ))}
       </section>
 
-      <section className="ls-section ls-final-cta" aria-label="Get started with Wintaibot">
+      <section className="ls-section ls-final-cta" aria-label="Get started with W!ntAi">
         <h2>Ready to Run Your Social Workflow in One Place?</h2>
         <p>
           Publish faster, schedule with confidence, and optimize with real analytics and engagement
@@ -633,8 +656,52 @@ export default function LandingSection() {
       </section>
 
       <footer className="ls-footer">
+        <div className="ls-footer-trust" aria-label="Production stack and social platforms">
+          <p className="ls-footer-trust-lead">
+            Built and hosted like a real SaaS product — not a blank page: Java &amp; Spring API, PostgreSQL,
+            AWS infrastructure, Cloudflare-style edge where used, and direct integrations to eight social
+            networks.
+          </p>
+          <div className="ls-footer-trust-rows">
+            <div className="ls-footer-trust-group">
+              <span className="ls-footer-trust-label">Infrastructure &amp; data</span>
+              <div className="ls-footer-trust-logos">
+                {infraStackLogos.map((item) => (
+                  <a
+                    key={item.slug}
+                    className="ls-footer-infra-logo"
+                    href={item.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={item.fullLabel}
+                  >
+                    <img
+                      src={`${SI}/${item.slug}/${item.color}`}
+                      alt=""
+                      width={40}
+                      height={40}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                    <span>{item.label}</span>
+                  </a>
+                ))}
+              </div>
+            </div>
+            <div className="ls-footer-trust-group">
+              <span className="ls-footer-trust-label">Publish destinations (8 platforms)</span>
+              <div className="ls-footer-trust-logos ls-footer-trust-platforms">
+                {landingPublishPlatforms.map((p) => (
+                  <div key={p.id} className="ls-footer-platform-slot" title={p.label}>
+                    <PlatformIcon platform={p} size={28} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
         <p>
-          © {new Date().getFullYear()} Wintaibot · Built by{' '}
+          © {new Date().getFullYear()} W!ntAi · Built by{' '}
           <a
             href="https://github.com/wintkaythweaungRevature"
             target="_blank"

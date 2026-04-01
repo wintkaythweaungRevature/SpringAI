@@ -2,7 +2,7 @@ import React from 'react';
 import { Helmet } from 'react-helmet';
 
 const DEFAULT = {
-  title: 'Wintaibot – AI Chatbot, PDF Extraction & Interview Prep',
+  title: 'W!ntAi – AI Chatbot, PDF Extraction & Interview Prep',
   description: 'AI platform for PDF data extraction, interview preparation, image generation, and smart flashcards.',
   image: 'https://wintaibot.com/android-chrome-512x512.png',
   url: 'https://wintaibot.com/',
@@ -13,7 +13,7 @@ const DEFAULT = {
  * For now, index.html handles static SEO. Import this when you have per-page meta.
  */
 export default function SEO({ title, description, image, url }) {
-  const metaTitle = title ? `${title} | Wintaibot` : DEFAULT.title;
+  const metaTitle = title ? `${title} | W!ntAi` : DEFAULT.title;
   const metaDesc = description || DEFAULT.description;
   const metaImage = image || DEFAULT.image;
   const metaUrl = url || DEFAULT.url;

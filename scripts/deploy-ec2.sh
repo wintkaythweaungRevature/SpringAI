@@ -1,5 +1,5 @@
 #!/bin/bash
-# Run this script on your EC2 instance (as root) to deploy Wintaibot.
+# Run this script on your EC2 instance (as root) to deploy W!ntAi.
 # Set DOCKER_USERNAME or replace wintkaythweaugn with your Docker Hub username.
 
 set -e

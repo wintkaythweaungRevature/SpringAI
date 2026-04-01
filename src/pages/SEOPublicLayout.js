@@ -6,24 +6,24 @@ import './SEOPublicLayout.css';
 
 const ROUTE_META = {
   '/': {
-    title: 'Wintaibot – AI Assistant for PDF Analysis, Documents & Productivity',
-    description: 'Wintaibot is an AI assistant that analyzes PDFs, extracts data from documents, transcribes audio, generates images, writes emails, and prepares you for interviews. Start free.',
+    title: 'W!ntAi – AI Assistant for PDF Analysis, Documents & Productivity',
+    description: 'W!ntAi is an AI assistant that analyzes PDFs, extracts data from documents, transcribes audio, generates images, writes emails, and prepares you for interviews. Start free.',
   },
   '/features': {
-    title: 'Features – 8 AI Tools in One Platform | Wintaibot',
+    title: 'Features – 8 AI Tools in One Platform | W!ntAi',
     description: 'DocuWizard, EchoScribe, AI Image Generator, Reply Enchanter, Resume Warlock, Video Publisher, Ask AI, Recipe Generator. All in one dashboard.',
   },
   '/pricing': {
-    title: 'Pricing – Free, Starter $19, Pro $39, Growth $79 | Wintaibot',
+    title: 'Pricing – Free, Starter $19, Pro $39, Growth $79 | W!ntAi',
     description: 'Start free. Paid plans from $19/mo ($15/mo annual) with video publisher limits; Pro $39 and Growth $79 with annual savings. Compare features and why we priced this way.',
   },
   '/use-cases': {
-    title: 'Who Uses Wintaibot – Job Seekers, Professionals, Creators | Wintaibot',
-    description: 'Job seekers, business professionals, students, content creators, and teams use Wintaibot to automate documents, emails, and more.',
+    title: 'Who Uses W!ntAi – Job Seekers, Professionals, Creators | W!ntAi',
+    description: 'Job seekers, business professionals, students, content creators, and teams use W!ntAi to automate documents, emails, and more.',
   },
   '/docs': {
-    title: 'Documentation & API | Wintaibot',
-    description: 'Wintaibot API documentation, Swagger UI, and integration guides.',
+    title: 'Documentation & API | W!ntAi',
+    description: 'W!ntAi API documentation, Swagger UI, and integration guides.',
   },
 };
 
@@ -53,8 +53,8 @@ export default function SEOPublicLayout({ onGetStarted, onOpenVideoPublisher }) 
       <header className="seo-nav" role="banner">
         <nav className="seo-nav-inner" aria-label="Main navigation">
           <a href="/" className="seo-nav-brand">
-            <img src="/android-chrome-192x192.png" alt="Wintaibot logo" className="seo-nav-brand-logo" />
-            <span>Wintaibot</span>
+            <img src="/android-chrome-192x192.png" alt="W!ntAi logo" className="seo-nav-brand-logo" />
+            <span>W!ntAi</span>
           </a>
           <div className="seo-nav-links">
             <a href="/">Home</a>

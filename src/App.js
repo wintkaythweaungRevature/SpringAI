@@ -154,8 +154,8 @@ function App() {
       {/* Logo */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
            onClick={() => go(null)}>
-        <img src={BRAND_LOGO_SRC} alt="Wintaibot logo" width={34} height={34} style={{ display: 'block', flexShrink: 0, borderRadius: '7px' }} />
-        <span style={{ color: '#fff', fontWeight: 800, fontSize: '17px', letterSpacing: '-0.01em' }}>Wintaibot</span>
+        <img src={BRAND_LOGO_SRC} alt="W!ntAi logo" width={34} height={34} style={{ display: 'block', flexShrink: 0, borderRadius: '7px' }} />
+        <span style={{ color: '#fff', fontWeight: 800, fontSize: '17px', letterSpacing: '-0.01em' }}>W!ntAi</span>
       </div>
 
       {/* Links */}
@@ -244,9 +244,9 @@ function App() {
         {/* Logo */}
         <div style={s.logoArea}>
           <div style={s.logoIconBg}>
-            <img src={BRAND_LOGO_SRC} alt="Wintaibot logo" width={34} height={34} style={{ display: 'block', borderRadius: '7px' }} />
+            <img src={BRAND_LOGO_SRC} alt="W!ntAi logo" width={34} height={34} style={{ display: 'block', borderRadius: '7px' }} />
           </div>
-          {sidebarOpen && <span style={s.logoText}>Wintaibot</span>}
+          {sidebarOpen && <span style={s.logoText}>W!ntAi</span>}
         </div>
 
         {/* Nav */}
@@ -263,11 +263,11 @@ function App() {
           <NavItem icon={<HiMicrophone size={17} />}              label="EchoScribe"  active={activeTab === 'transcription'} onClick={() => go('transcription')} />
 
           <div style={s.groupLabel}>Social Media</div>
+          <NavItem icon={<HiPhoto size={17} />}                    label="Content Calendar"   active={activeTab === 'calendar'}         onClick={() => go('calendar')} />
           <NavItem icon={<HiChartBar size={17} />}                 label="Analytics"          active={activeTab === 'analytics'}       onClick={() => go('analytics')} />
           <NavItem icon={<HiChatBubbleOvalLeft size={17} />}       label="Messages"           active={activeTab === 'messages'}         onClick={() => go('messages')} />
           <NavItem icon={<HiArrowTrendingUp size={17} />}          label="Trends"             active={activeTab === 'trends'}           onClick={() => go('trends')} />
           <NavItem icon={<HiCpuChip size={17} />}                  label="Social AI"          active={activeTab === 'social-ai'}        onClick={() => go('social-ai')} />
-          <NavItem icon={<HiPhoto size={17} />}                    label="Content Calendar"   active={activeTab === 'calendar'}         onClick={() => go('calendar')} />
 
           <div style={s.groupLabel}>Writing Tools</div>
           <NavItem icon={<HiChatBubbleLeftRight size={17} />} label="Reply Enchanter" active={activeTab === 'Content'} onClick={() => go('Content')} />
@@ -335,6 +335,15 @@ function App() {
                       </span>
                     );
                   })()}
+                  <button
+                    type="button"
+                    onClick={() => go('bio')}
+                    title="Open Link in Bio"
+                    aria-label="Open Link in Bio"
+                    style={s.headerQuickBtn}
+                  >
+                    🔗 Link in Bio
+                  </button>
                   <button onClick={logout} style={s.logoutBtn}>Logout</button>
                   <div style={s.avatar}>{userInitials}</div>
                 </>
@@ -373,14 +382,14 @@ function App() {
           {activeTab === 'account'          && <AskAIGate  featureName="Account"><AccountSettings /></AskAIGate>}
           {activeTab === 'video-publisher'  && <MemberGate featureName="Video Publisher"><VideoPublisher onNavigateToSocialConnect={() => go('social-connect')} /></MemberGate>}
           {activeTab === 'analytics'        && <MemberGate featureName="Analytics"><AnalyticsDashboard /></MemberGate>}
-          {activeTab === 'messages'         && <MemberGate featureName="Messages"><ProGate featureName="Messages"><MessagesInbox onOpenVideoPublisher={() => go('video-publisher')} onOpenConnectedAccounts={() => go('social-connect')} onOpenAutoReply={() => go('auto-reply')} /></ProGate></MemberGate>}
+          {activeTab === 'messages'         && <MemberGate featureName="Messages"><ProGate featureName="Messages"><MessagesInbox onOpenConnectedAccounts={() => go('social-connect')} onOpenAutoReply={() => go('auto-reply')} /></ProGate></MemberGate>}
           {activeTab === 'social-connect'   && <MemberGate featureName="Connected Accounts"><SocialConnect /></MemberGate>}
           {activeTab === 'bio'              && <MemberGate featureName="Link in Bio"><LinkInBioBuilder /></MemberGate>}
           {activeTab === 'trends'          && <MemberGate featureName="Trends"><ProGate featureName="Trends"><DeepAnalytics /></ProGate></MemberGate>}
           {activeTab === 'social-ai'       && <MemberGate featureName="Social AI"><ProGate featureName="Social AI"><SocialAIChat /></ProGate></MemberGate>}
           {activeTab === 'pricing'         && <PricingPage onClose={() => go(null)} />}
           {activeTab === 'auto-reply'      && <MemberGate featureName="Auto Reply"><ProGate featureName="Auto Reply"><AutoReplySettings /></ProGate></MemberGate>}
-          {activeTab === 'calendar'        && <MemberGate featureName="Content Calendar"><ContentCalendar /></MemberGate>}
+          {activeTab === 'calendar'        && <MemberGate featureName="Content Calendar"><ContentCalendar onOpenVideoPublisher={() => go('video-publisher')} /></MemberGate>}
         </div>
       </div>
 

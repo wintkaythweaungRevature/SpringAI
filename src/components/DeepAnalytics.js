@@ -335,7 +335,7 @@ function BestTimeGuidancePanel({ resolved, platformLabel, platformColor }) {
         <strong>{platformLabel}</strong>
         {resolved.inferredFromDetail
           ? ' (timestamps from your post list — heatmap was empty in the API response).'
-          : ' (when you usually publish in Wintaibot).'}
+          : ' (when you usually publish in W!ntAi).'}
         {' '}This is <strong>your</strong> rhythm, not a guarantee of reach — use it as a starting point.
       </p>
       {extras.length > 0 && (
@@ -2269,7 +2269,7 @@ export default function DeepAnalytics() {
         <div style={s.card}>
           <h3 style={s.cardTitle}>⏰ Your posting times — {platformConfig.label}</h3>
           <p style={{ fontSize: 12, color: '#64748b', marginBottom: 8, lineHeight: 1.55 }}>
-            This heatmap is <strong>your</strong> activity on <strong>{platformConfig.label}</strong> (posts tracked in Wintaibot),
+            This heatmap is <strong>your</strong> activity on <strong>{platformConfig.label}</strong> (posts tracked in W!ntAi),
             not the same as a general best-time recommendation for everyone on that network.
           </p>
           <p style={{ fontSize: 12, color: '#94a3b8', marginBottom: 16, lineHeight: 1.5 }}>

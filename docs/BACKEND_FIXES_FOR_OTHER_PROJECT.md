@@ -1,6 +1,6 @@
 # Backend Fixes to Apply to Your Separate Backend
 
-Apply these changes so your backend works with the Wintaibot frontend (www.wintaibot.com) and Instagram publish.
+Apply these changes so your backend works with the W!ntAi frontend (www.wintaibot.com) and Instagram publish.
 
 ---
 

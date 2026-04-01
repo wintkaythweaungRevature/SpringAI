@@ -154,7 +154,7 @@ public class VideoContentController {
         ));
         body.put("nextIdeas", List.of(
                 "5 AI tools that replace your whole team — trending format",
-                "Behind-the-scenes: How you built Wintaibot",
+                "Behind-the-scenes: How you built W!ntAi",
                 "React vs Vue debate — high engagement topic this week"
         ));
         body.put("metrics", List.of(

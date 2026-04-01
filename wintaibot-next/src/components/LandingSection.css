@@ -689,6 +689,99 @@
   font-size: 1rem;
 }
 
+/* Footer trust strip (AWS, Cloudflare, Postgres, Java + 8 platforms) */
+.ls-footer-trust {
+  padding: 28px 18px 32px;
+  margin: 0 0 28px;
+  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 70%);
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  text-align: center;
+}
+
+.ls-footer-trust-lead {
+  font-size: 0.8125rem;
+  color: #475569;
+  line-height: 1.65;
+  margin: 0 auto 22px;
+  max-width: 640px;
+}
+
+.ls-footer-trust-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+
+.ls-footer-trust-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.ls-footer-trust-label {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  margin-bottom: 14px;
+}
+
+.ls-footer-trust-logos {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 20px 28px;
+}
+
+.ls-footer-infra-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 76px;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.15s, opacity 0.15s;
+}
+
+.ls-footer-infra-logo:hover {
+  transform: translateY(-2px);
+  opacity: 0.92;
+}
+
+.ls-footer-infra-logo img {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  display: block;
+}
+
+.ls-footer-infra-logo span {
+  font-size: 0.7rem;
+  color: #475069;
+  font-weight: 700;
+}
+
+.ls-footer-trust-platforms {
+  align-items: center;
+}
+
+.ls-footer-platform-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
 .ls-footer {
   padding: 32px 0 40px;
   text-align: center;

@@ -308,6 +308,19 @@ export default function PricingPage({ onClose }: { onClose?: () => void }) {
             </>
           )}
         </p>
+        <p
+          style={{
+            ...s.footer,
+            marginTop: 10,
+            fontSize: 13,
+            color: '#64748b',
+            maxWidth: 520,
+            marginLeft: 'auto',
+            marginRight: 'auto',
+          }}
+        >
+          W!ntAi never stores your bank account or card numbers. Payment details are handled only by Stripe.
+        </p>
       </div>
     </div>
   );

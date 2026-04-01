@@ -39,7 +39,7 @@ export default function TermsOfService() {
   return (
     <div style={styles.page}>
       <header style={styles.header}>
-        <a href="/" style={styles.logo}>Wintaibot</a>
+        <a href="/" style={styles.logo}>W!ntAi</a>
         <a href="/" style={styles.back}>← Back to home</a>
       </header>
       <main style={styles.main}>
@@ -47,7 +47,7 @@ export default function TermsOfService() {
         <p style={styles.updated}>Last updated: February 2026</p>
 
         <p style={styles.p}>
-          Welcome to Wintaibot. By accessing or using https://www.wintaibot.com and our AI tools (the "Service"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree, do not use the Service.
+          Welcome to W!ntAi. By accessing or using https://www.wintaibot.com and our AI tools (the "Service"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree, do not use the Service.
         </p>
 
         <h2 style={styles.h2}>Eligibility and Account</h2>
@@ -57,7 +57,7 @@ export default function TermsOfService() {
 
         <h2 style={styles.h2}>Use of the Service</h2>
         <p style={styles.p}>
-          You may use Wintaibot only for lawful purposes and in accordance with these Terms. You agree not to:
+          You may use W!ntAi only for lawful purposes and in accordance with these Terms. You agree not to:
         </p>
         <ul style={styles.ul}>
           <li style={styles.li}>Use the Service in any way that violates laws or infringes others' rights</li>
@@ -77,7 +77,7 @@ export default function TermsOfService() {
 
         <h2 style={styles.h2}>Intellectual Property and Your Content</h2>
         <p style={styles.p}>
-          We grant you a limited, non-exclusive license to use the Service for your personal or internal business use. Wintaibot's name, logo, and the Service are our property. You retain ownership of content you upload or create. By using the Service, you grant us the rights necessary to operate the Service (e.g., to process your prompts and files through our AI tools and to store data as described in our Privacy Policy).
+          We grant you a limited, non-exclusive license to use the Service for your personal or internal business use. W!ntAi's name, logo, and the Service are our property. You retain ownership of content you upload or create. By using the Service, you grant us the rights necessary to operate the Service (e.g., to process your prompts and files through our AI tools and to store data as described in our Privacy Policy).
         </p>
 
         <h2 style={styles.h2}>AI Outputs and Disclaimers</h2>
@@ -92,12 +92,12 @@ export default function TermsOfService() {
 
         <h2 style={styles.h2}>Limitation of Liability</h2>
         <p style={styles.p}>
-          To the maximum extent permitted by law, Wintaibot and its operators shall not be liable for any indirect, incidental, special, consequential, or punitive damages, or for loss of profits, data, or use, arising from your use of the Service or these Terms. Our total liability shall not exceed the amount you paid us in the twelve (12) months preceding the claim.
+          To the maximum extent permitted by law, W!ntAi and its operators shall not be liable for any indirect, incidental, special, consequential, or punitive damages, or for loss of profits, data, or use, arising from your use of the Service or these Terms. Our total liability shall not exceed the amount you paid us in the twelve (12) months preceding the claim.
         </p>
 
         <h2 style={styles.h2}>Indemnification</h2>
         <p style={styles.p}>
-          You agree to indemnify and hold harmless Wintaibot and its affiliates, officers, and employees from any claims, damages, or expenses (including reasonable attorneys' fees) arising from your use of the Service, your content, or your breach of these Terms.
+          You agree to indemnify and hold harmless W!ntAi and its affiliates, officers, and employees from any claims, damages, or expenses (including reasonable attorneys' fees) arising from your use of the Service, your content, or your breach of these Terms.
         </p>
 
         <h2 style={styles.h2}>Changes to the Terms or Service</h2>
@@ -107,7 +107,7 @@ export default function TermsOfService() {
 
         <h2 style={styles.h2}>General</h2>
         <p style={styles.p}>
-          These Terms constitute the entire agreement between you and Wintaibot regarding the Service. If any provision is found unenforceable, the remaining provisions remain in effect. Our failure to enforce any right does not waive that right. These Terms are governed by the laws of the United States (and the State of Delaware, if applicable), without regard to conflict of law principles.
+          These Terms constitute the entire agreement between you and W!ntAi regarding the Service. If any provision is found unenforceable, the remaining provisions remain in effect. Our failure to enforce any right does not waive that right. These Terms are governed by the laws of the United States (and the State of Delaware, if applicable), without regard to conflict of law principles.
         </p>
 
         <h2 style={styles.h2}>Contact</h2>

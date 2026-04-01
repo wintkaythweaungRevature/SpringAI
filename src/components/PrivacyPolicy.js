@@ -39,7 +39,7 @@ export default function PrivacyPolicy() {
   return (
     <div style={styles.page}>
       <header style={styles.header}>
-        <a href="/" style={styles.logo}>Wintaibot</a>
+        <a href="/" style={styles.logo}>W!ntAi</a>
         <a href="/" style={styles.back}>← Back to home</a>
       </header>
       <main style={styles.main}>
@@ -47,12 +47,12 @@ export default function PrivacyPolicy() {
         <p style={styles.updated}>Last updated: February 2026</p>
 
         <p style={styles.p}>
-          Wintaibot ("we", "our", or "us") operates https://www.wintaibot.com (the "Site"). This page informs you of our policies regarding the collection, use, and disclosure of personal information when you use our service.
+          W!ntAi ("we", "our", or "us") operates https://www.wintaibot.com (the "Site"). This page informs you of our policies regarding the collection, use, and disclosure of personal information when you use our service.
         </p>
 
         <h2 style={styles.h2}>Information We Collect</h2>
         <p style={styles.p}>
-          When you use Wintaibot, we may collect:
+          When you use W!ntAi, we may collect:
         </p>
         <ul style={styles.ul}>
           <li style={styles.li}>Account information (email address, name) when you register</li>
@@ -63,7 +63,7 @@ export default function PrivacyPolicy() {
 
         <h2 style={styles.h2}>How We Use Your Information</h2>
         <p style={styles.p}>
-          We use the information we collect to provide, maintain, and improve Wintaibot; to process your account and subscription; to send you service-related communications; and to comply with legal obligations. We may use aggregated, non-personally identifiable data for analytics and product improvement.
+          We use the information we collect to provide, maintain, and improve W!ntAi; to process your account and subscription; to send you service-related communications; and to comply with legal obligations. We may use aggregated, non-personally identifiable data for analytics and product improvement.
         </p>
 
         <h2 style={styles.h2}>Data Sharing and Third Parties</h2>
@@ -93,7 +93,7 @@ export default function PrivacyPolicy() {
 
         <h2 style={styles.h2}>Children</h2>
         <p style={styles.p}>
-          Wintaibot is not directed at children under 13. We do not knowingly collect personal information from children under 13. If you believe we have collected such information, please contact us and we will delete it.
+          W!ntAi is not directed at children under 13. We do not knowingly collect personal information from children under 13. If you believe we have collected such information, please contact us and we will delete it.
         </p>
 
         <h2 style={styles.h2}>Changes to This Policy</h2>

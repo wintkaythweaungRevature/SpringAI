@@ -28,9 +28,9 @@ public class EmailService {
         SimpleMailMessage msg = new SimpleMailMessage();
         msg.setFrom(fromEmail);
         msg.setTo(toEmail);
-        msg.setSubject("Verify your email - Wintaibot");
+        msg.setSubject("Verify your email - W!ntAi");
         msg.setText(
-            "Welcome to Wintaibot!\n\n" +
+            "Welcome to W!ntAi!\n\n" +
             "Please verify your email address by clicking the link below:\n\n" +
             verifyUrl + "\n\n" +
             "This link expires in 24 hours.\n\n" +
@@ -44,9 +44,9 @@ public class EmailService {
         SimpleMailMessage msg = new SimpleMailMessage();
         msg.setFrom(fromEmail);
         msg.setTo(toEmail);
-        msg.setSubject("Reset your password - Wintaibot");
+        msg.setSubject("Reset your password - W!ntAi");
         msg.setText(
-            "You requested a password reset for your Wintaibot account.\n\n" +
+            "You requested a password reset for your W!ntAi account.\n\n" +
             "Click the link below to reset your password:\n\n" +
             resetUrl + "\n\n" +
             "This link expires in 1 hour.\n\n" +
@@ -59,9 +59,9 @@ public class EmailService {
         SimpleMailMessage msg = new SimpleMailMessage();
         msg.setFrom(fromEmail);
         msg.setTo(toEmail);
-        msg.setSubject("Your Wintaibot username");
+        msg.setSubject("Your W!ntAi username");
         msg.setText(
-            "You requested your Wintaibot username.\n\n" +
+            "You requested your W!ntAi username.\n\n" +
             "Your username is: " + username + "\n\n" +
             "You can log in at " + frontendUrl + " using your username or email address.\n\n" +
             "If you didn't request this, you can safely ignore this email."

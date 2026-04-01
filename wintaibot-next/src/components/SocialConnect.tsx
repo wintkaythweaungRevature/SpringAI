@@ -204,7 +204,7 @@ export default function SocialConnect() {
         <div style={s.infoTitle}>📋 How it works</div>
         <div style={s.infoGrid}>
           {[
-            ['1️⃣', 'Connect', 'Click Connect for each platform. You\'ll be redirected to authorize Wintaibot. Facebook only needs the extra URL below if you configure your own app in Meta for Developers.'],
+            ['1️⃣', 'Connect', 'Click Connect for each platform. You\'ll be redirected to authorize W!ntAi. Facebook only needs the extra URL below if you configure your own app in Meta for Developers.'],
             ['2️⃣', 'Upload Video', 'Go to Video Publisher and upload your video.'],
             ['3️⃣', 'AI Generates', 'AI transcribes your video and writes captions + hashtags for each platform.'],
             ['4️⃣', 'Approve & Publish', 'Review content, approve, and publish to all connected platforms at once.'],

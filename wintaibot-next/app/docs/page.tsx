@@ -2,16 +2,16 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Wintaibot Docs | Guides, APIs, and Best Practices',
+  title: 'W!ntAi Docs | Guides, APIs, and Best Practices',
   description:
-    'Explore Wintaibot documentation: quick start guides, feature docs, tool workflows, publishing setup, analytics playbooks, security, and troubleshooting.',
+    'Explore W!ntAi documentation: quick start guides, feature docs, tool workflows, publishing setup, analytics playbooks, security, and troubleshooting.',
   alternates: {
     canonical: 'https://wintaibot.com/docs',
   },
   openGraph: {
-    title: 'Wintaibot Docs | Guides, APIs, and Best Practices',
+    title: 'W!ntAi Docs | Guides, APIs, and Best Practices',
     description:
-      'Learn how to use Wintaibot tools from setup to advanced automation workflows.',
+      'Learn how to use W!ntAi tools from setup to advanced automation workflows.',
     url: 'https://wintaibot.com/docs',
     type: 'website',
   },
@@ -59,7 +59,7 @@ const sections = [
 const faqs = [
   {
     q: 'Do I need separate credentials for each platform?',
-    a: 'Yes. Each social network requires its own OAuth connection so Wintaibot can publish and read analytics on your behalf.',
+    a: 'Yes. Each social network requires its own OAuth connection so W!ntAi can publish and read analytics on your behalf.',
   },
   {
     q: 'Can I review AI output before it is posted?',
@@ -83,7 +83,7 @@ export default function DocsPage() {
           Documentation
         </p>
         <h1 style={{ fontSize: 'clamp(2rem, 6vw, 3rem)', margin: '0 0 14px' }}>
-          Build Faster With Wintaibot Docs
+          Build Faster With W!ntAi Docs
         </h1>
         <p style={{ maxWidth: 760, margin: '0 auto', color: '#475569', lineHeight: 1.7 }}>
           Find implementation guides, product references, and practical walkthroughs for

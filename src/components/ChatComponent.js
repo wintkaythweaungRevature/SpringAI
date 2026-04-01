@@ -71,7 +71,7 @@ function ChatComponent() {
         </div>
         <div>
           <h2 className="chat-header-title">Ask AI</h2>
-          <p className="chat-header-sub">Powered by Wintaibot</p>
+          <p className="chat-header-sub">Powered by W!ntAi</p>
         </div>
         {messages.length > 0 && (
           <button className="chat-clear-btn" onClick={() => setMessages([])} title="Clear chat">

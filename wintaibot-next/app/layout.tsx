@@ -15,11 +15,11 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: 'Wintaibot – AI Assistant for PDF Analysis, Documents & Productivity',
-    template: '%s | Wintaibot',
+    default: 'W!ntAi – AI Assistant for PDF Analysis, Documents & Productivity',
+    template: '%s | W!ntAi',
   },
   description:
-    'Wintaibot is an AI assistant that analyzes PDFs, extracts data from documents, transcribes audio, generates images, writes emails, and prepares you for interviews. Start free.',
+    'W!ntAi is an AI assistant that analyzes PDFs, extracts data from documents, transcribes audio, generates images, writes emails, and prepares you for interviews. Start free.',
   keywords: [
     'AI PDF analyzer',
     'PDF data extraction',
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     'email reply AI',
     'interview prep AI',
     'AI productivity tools',
-    'Wintaibot',
+    'W!ntAi',
   ],
   authors: [{ name: 'Wint Kay Thwe Aung', url: 'https://github.com/wintkaythweaungRevature' }],
   creator: 'Wint Kay Thwe Aung',
@@ -38,8 +38,8 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'en_US',
     url: SITE_URL,
-    siteName: 'Wintaibot',
-    title: 'Wintaibot – AI Assistant for PDF Analysis & Documents',
+    siteName: 'W!ntAi',
+    title: 'W!ntAi – AI Assistant for PDF Analysis & Documents',
     description:
       'Analyze PDFs, extract document data, transcribe audio, generate images, and automate email replies — all in one AI platform. Start free.',
     images: [
@@ -47,15 +47,15 @@ export const metadata: Metadata = {
         url: OG_IMAGE,
         width: 512,
         height: 512,
-        alt: 'Wintaibot',
+        alt: 'W!ntAi',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Wintaibot – AI Assistant for PDFs & Documents',
+    title: 'W!ntAi – AI Assistant for PDFs & Documents',
     description:
-      'Analyze PDFs, transcribe audio, generate images, prep for interviews, and automate email replies with Wintaibot AI. Free to start.',
+      'Analyze PDFs, transcribe audio, generate images, prep for interviews, and automate email replies with W!ntAi AI. Free to start.',
     images: [OG_IMAGE],
   },
   alternates: {
@@ -77,13 +77,13 @@ const structuredData = {
   softwareApplication: {
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
-    name: 'Wintaibot',
+    name: 'W!ntAi',
     url: SITE_URL,
     applicationCategory: 'ProductivityApplication',
     applicationSubCategory: 'AI Assistant',
     operatingSystem: 'Web',
     description:
-      'Wintaibot is an AI assistant that analyzes PDFs, extracts document data, transcribes audio, generates images, writes email replies, and prepares users for job interviews.',
+      'W!ntAi is an AI assistant that analyzes PDFs, extracts document data, transcribes audio, generates images, writes email replies, and prepares users for job interviews.',
     screenshot: OG_IMAGE,
     featureList: [
       'PDF data extraction and analysis',
@@ -137,7 +137,7 @@ const structuredData = {
   webSite: {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
-    name: 'Wintaibot',
+    name: 'W!ntAi',
     url: SITE_URL,
     description:
       'AI assistant for PDF analysis, document extraction, voice transcription, image generation, email writing, and interview preparation.',
@@ -150,7 +150,7 @@ const structuredData = {
   organization: {
     '@context': 'https://schema.org',
     '@type': 'Organization',
-    name: 'Wintaibot',
+    name: 'W!ntAi',
     url: SITE_URL,
     logo: OG_IMAGE,
     contactPoint: {
@@ -166,15 +166,15 @@ const structuredData = {
     mainEntity: [
       {
         '@type': 'Question',
-        name: 'What is Wintaibot?',
+        name: 'What is W!ntAi?',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'Wintaibot is an AI assistant platform that helps you analyze PDFs, extract document data, transcribe audio, generate images, write email replies, prepare for job interviews, and plan meals — all in one web-based dashboard.',
+          text: 'W!ntAi is an AI assistant platform that helps you analyze PDFs, extract document data, transcribe audio, generate images, write email replies, prepare for job interviews, and plan meals — all in one web-based dashboard.',
         },
       },
       {
         '@type': 'Question',
-        name: 'Is Wintaibot free?',
+        name: 'Is W!ntAi free?',
         acceptedAnswer: {
           '@type': 'Answer',
           text: 'Yes. The AI chatbot and recipe generator are completely free. Paid plans start at $19/month (Starter) with Pro ($39) and Growth ($79); annual discounts apply.',
@@ -182,15 +182,15 @@ const structuredData = {
       },
       {
         '@type': 'Question',
-        name: 'What file types does Wintaibot support for PDF analysis?',
+        name: 'What file types does W!ntAi support for PDF analysis?',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: "Wintaibot's DocuWizard supports PDF, Excel (.xlsx, .xls), and Word (.docx) files for data extraction and analysis.",
+          text: "W!ntAi's DocuWizard supports PDF, Excel (.xlsx, .xls), and Word (.docx) files for data extraction and analysis.",
         },
       },
       {
         '@type': 'Question',
-        name: 'Can I cancel my Wintaibot subscription?',
+        name: 'Can I cancel my W!ntAi subscription?',
         acceptedAnswer: {
           '@type': 'Answer',
           text: 'Yes, you can cancel your subscription at any time from Account Settings. You keep full access until the end of your current billing period.',

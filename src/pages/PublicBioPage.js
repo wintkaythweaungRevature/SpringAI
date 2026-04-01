@@ -58,7 +58,7 @@ export default function PublicBioPage() {
         </div>
 
         <p style={s.footer}>
-          Made with <a href="https://www.wintaibot.com" style={{ color, textDecoration: 'none', fontWeight: 600 }}>Wintaibot</a>
+          Made with <a href="https://www.wintaibot.com" style={{ color, textDecoration: 'none', fontWeight: 600 }}>W!ntAi</a>
         </p>
       </div>
     </div>

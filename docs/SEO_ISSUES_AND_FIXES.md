@@ -1,4 +1,4 @@
-# SEO Issues & Fixes for Wintaibot (React SPA)
+# SEO Issues & Fixes for W!ntAi (React SPA)
 
 ## Why Google Can't Understand Your Website
 

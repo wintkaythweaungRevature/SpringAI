@@ -11,7 +11,7 @@ export default function ToolLandingPage() {
     return (
       <div style={s.notFound}>
         <h1>Tool not found</h1>
-        <Link to="/" style={s.backLink}>← Back to Wintaibot</Link>
+        <Link to="/" style={s.backLink}>← Back to W!ntAi</Link>
       </div>
     );
   }
@@ -32,7 +32,7 @@ export default function ToolLandingPage() {
       <div style={s.page}>
         {/* Nav */}
         <nav style={s.nav}>
-          <Link to="/" style={s.logo}>Wintaibot</Link>
+          <Link to="/" style={s.logo}>W!ntAi</Link>
           <div style={s.navLinks}>
             <a href="/#features" style={s.navLink}>All Tools</a>
             <a href="/pricing" style={s.navLink}>Pricing</a>
@@ -121,13 +121,13 @@ export default function ToolLandingPage() {
 
         {/* Footer */}
         <footer style={s.footer}>
-          <Link to="/" style={s.logo}>Wintaibot</Link>
+          <Link to="/" style={s.logo}>W!ntAi</Link>
           <div style={s.footerLinks}>
             <Link to="/privacy-policy" style={s.footerLink}>Privacy</Link>
             <Link to="/terms-of-service" style={s.footerLink}>Terms</Link>
             <a href="mailto:contact@wintaibot.com" style={s.footerLink}>Contact</a>
           </div>
-          <p style={s.footerCopy}>© 2026 Wintaibot. All rights reserved.</p>
+          <p style={s.footerCopy}>© 2026 W!ntAi. All rights reserved.</p>
         </footer>
       </div>
     </>

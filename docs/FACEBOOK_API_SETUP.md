@@ -1,6 +1,6 @@
 # Facebook & Instagram API Setup
 
-This guide explains how to set up the **Meta (Facebook) Graph API** for publishing videos to Facebook Pages and Instagram from Wintaibot.
+This guide explains how to set up the **Meta (Facebook) Graph API** for publishing videos to Facebook Pages and Instagram from W!ntAi.
 
 ---
 
@@ -8,7 +8,7 @@ This guide explains how to set up the **Meta (Facebook) Graph API** for publishi
 
 1. Go to [developers.facebook.com](https://developers.facebook.com) and log in.
 2. Click **My Apps** → **Create App** → **Other** → **Business**.
-3. Name it (e.g. "Wintaibot") and create the app.
+3. Name it (e.g. "W!ntAi") and create the app.
 
 ---
 

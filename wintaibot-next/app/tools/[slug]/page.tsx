@@ -14,7 +14,7 @@ export async function generateMetadata({ params }: ToolPageProps): Promise<Metad
   const tool = getToolBySlug(params.slug);
   if (!tool) {
     return {
-      title: 'Tool Not Found | Wintaibot',
+      title: 'Tool Not Found | W!ntAi',
       description: 'The requested tool page could not be found.',
       robots: { index: false, follow: false },
     };
@@ -57,7 +57,7 @@ export default function ToolSlugPage({ params }: ToolPageProps) {
     <main style={s.page}>
       <nav style={s.nav}>
         <Link href="/" style={s.logo}>
-          Wintaibot
+          W!ntAi
         </Link>
         <div style={s.navLinks}>
           <Link href="/tools" style={s.navLink}>

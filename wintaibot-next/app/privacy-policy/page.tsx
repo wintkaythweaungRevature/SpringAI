@@ -3,7 +3,7 @@ import Link from 'next/link';
 
 export const metadata: Metadata = {
   title: 'Privacy Policy',
-  description: 'Wintaibot Privacy Policy. How we collect, use, and protect your data.',
+  description: 'W!ntAi Privacy Policy. How we collect, use, and protect your data.',
 };
 
 const styles = {
@@ -46,7 +46,7 @@ export default function PrivacyPolicyPage() {
     <div style={styles.page}>
       <header style={styles.header}>
         <Link href="/" style={styles.logo}>
-          Wintaibot
+          W!ntAi
         </Link>
         <Link href="/" style={styles.back}>
           ← Back to home
@@ -57,14 +57,14 @@ export default function PrivacyPolicyPage() {
         <p style={styles.updated}>Last updated: February 2026</p>
 
         <p style={styles.p}>
-          Wintaibot (&quot;we&quot;, &quot;our&quot;, or &quot;us&quot;) operates
+          W!ntAi (&quot;we&quot;, &quot;our&quot;, or &quot;us&quot;) operates
           https://www.wintaibot.com (the &quot;Site&quot;). This page informs you of our policies
           regarding the collection, use, and disclosure of personal information when you use our
           service.
         </p>
 
         <h2 style={styles.h2}>Information We Collect</h2>
-        <p style={styles.p}>When you use Wintaibot, we may collect:</p>
+        <p style={styles.p}>When you use W!ntAi, we may collect:</p>
         <ul style={styles.ul}>
           <li style={styles.li}>Account information (email address, name) when you register</li>
           <li style={styles.li}>
@@ -82,7 +82,7 @@ export default function PrivacyPolicyPage() {
 
         <h2 style={styles.h2}>How We Use Your Information</h2>
         <p style={styles.p}>
-          We use the information we collect to provide, maintain, and improve Wintaibot; to process
+          We use the information we collect to provide, maintain, and improve W!ntAi; to process
           your account and subscription; to send you service-related communications; and to comply
           with legal obligations.
         </p>

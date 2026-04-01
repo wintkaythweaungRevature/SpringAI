@@ -102,7 +102,7 @@ export default function SocialAIChat() {
       <div style={s.header}>
         <div>
           <h2 style={s.title}>
-            <img src={BRAND_LOGO_SRC} alt="Wintaibot logo" style={s.titleLogo} />
+            <img src={BRAND_LOGO_SRC} alt="W!ntAi logo" style={s.titleLogo} />
             <span>Social AI</span>
           </h2>
           <p style={s.sub}>Ask anything about your social media performance. AI answers using your actual post data.</p>
@@ -137,7 +137,7 @@ export default function SocialAIChat() {
         {/* Welcome + suggested questions (shown when chat is empty) */}
         {messages.length === 0 && !indexing && (
           <div style={s.welcome}>
-            <img src={BRAND_LOGO_SRC} alt="Wintaibot logo" style={s.welcomeLogo} />
+            <img src={BRAND_LOGO_SRC} alt="W!ntAi logo" style={s.welcomeLogo} />
             <p style={s.welcomeText}>
               Hey! I've analyzed your social media history. Ask me anything about your performance.
             </p>

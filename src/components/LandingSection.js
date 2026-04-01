@@ -1,6 +1,30 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import PlatformIcon from "./PlatformIcon";
 import "./LandingSection.css";
+
+/** Simple Icons CDN — same source as PlatformIcon (production- recognizable marks). */
+const SI = "https://cdn.simpleicons.org";
+
+/** Real infrastructure we describe on the marketing footer strip (AWS, edge, DB, runtime). */
+const infraStackLogos = [
+  { label: "AWS", fullLabel: "Amazon Web Services", slug: "amazonwebservices", color: "232F3E", href: "https://aws.amazon.com" },
+  { label: "Cloudflare", fullLabel: "Cloudflare", slug: "cloudflare", color: "F38020", href: "https://www.cloudflare.com" },
+  { label: "PostgreSQL", fullLabel: "PostgreSQL", slug: "postgresql", color: "4169E1", href: "https://www.postgresql.org" },
+  { label: "Java", fullLabel: "OpenJDK / Java", slug: "openjdk", color: "437291", href: "https://openjdk.org" },
+];
+
+/** Eight publish destinations supported in-app (Video Publisher / social). */
+const landingPublishPlatforms = [
+  { id: "youtube", label: "YouTube", color: "#FF0000", logo: "youtube" },
+  { id: "instagram", label: "Instagram", color: "#E1306C", logo: "instagram" },
+  { id: "facebook", label: "Facebook", color: "#1877F2", logo: "facebook" },
+  { id: "tiktok", label: "TikTok", color: "#010101", logo: "tiktok" },
+  { id: "linkedin", label: "LinkedIn", color: "#0A66C2", logo: "linkedin" },
+  { id: "x", label: "X", color: "#000000", logo: "x" },
+  { id: "threads", label: "Threads", color: "#101010", logo: "threads" },
+  { id: "pinterest", label: "Pinterest", color: "#E60023", logo: "pinterest" },
+];
 
 /* ─── Data ─────────────────────────────────────────────────── */
 
@@ -88,7 +112,7 @@ const steps = [
   {
     num: "2",
     title: "Paste, Upload, or Type",
-    desc: "Input your text, upload a document, record audio, or describe what you need. Wintaibot accepts multiple input formats.",
+    desc: "Input your text, upload a document, record audio, or describe what you need. W!ntAi accepts multiple input formats.",
   },
   {
     num: "3",
@@ -122,9 +146,11 @@ const techStack = [
   { label: "Spring AI", url: "https://spring.io/projects/spring-ai" },
   { label: "React 19", url: "https://react.dev" },
   { label: "Java 21", url: "https://openjdk.org" },
+  { label: "PostgreSQL", url: "https://postgresql.org" },
+  { label: "AWS", url: "https://aws.amazon.com" },
+  { label: "Cloudflare", url: "https://cloudflare.com" },
   { label: "Stripe Payments", url: "https://stripe.com" },
   { label: "Docker", url: "https://docker.com" },
-  { label: "AWS EC2", url: "https://aws.amazon.com/ec2/" },
 ];
 
 const landingGallery = [
@@ -146,7 +172,7 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
   const [openFaq, setOpenFaq] = useState(null);
 
   return (
-    <main className="ls-root" aria-label="Wintaibot — social media video publishing and AI tools">
+    <main className="ls-root" aria-label="W!ntAi — social media video publishing and AI tools">
 
       {/* ── HERO (SEO: one H1 — video publishing + social managers) ── */}
       <section className="ls-hero" aria-labelledby="hero-heading">
@@ -159,7 +185,7 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
             If You Can Record It,<br /><span className="ls-hero-h1-accent">We Can Post It.</span>
           </h1>
           <p className="ls-hero-tagline">
-            Upload once — Wintaibot adapts aspect ratio, framing, and quality for <strong>each network you choose</strong> (Instagram, YouTube Shorts, TikTok, Reels, and more).
+            Upload once — W!ntAi adapts aspect ratio, framing, and quality for <strong>each network you choose</strong> (Instagram, YouTube Shorts, TikTok, Reels, and more).
             Add <strong>AI thumbnails</strong> and <strong>editable captions</strong>, then <strong>schedule</strong> or publish directly — plus inbox, auto-reply, and analytics in the same workspace.
           </p>
           <ul className="ls-hero-chips" aria-label="Product highlights">
@@ -185,7 +211,7 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
       <section className="ls-section ls-what" aria-labelledby="what-heading">
         <h2 id="what-heading">One workspace for social video — and the rest of your work</h2>
         <p className="ls-what-lead">
-          <strong>Wintaibot</strong> is an <strong>AI platform for social media managers</strong> who publish <strong>video across Instagram, YouTube, TikTok,</strong> and other networks — without export gymnastics.
+          <strong>W!ntAi</strong> is an <strong>AI platform for social media managers</strong> who publish <strong>video across Instagram, YouTube, TikTok,</strong> and other networks — without export gymnastics.
           The same account includes <strong>documents, transcription, email, and interview tools</strong> so teams do not pay for five different subscriptions.
         </p>
         <ul className="ls-what-bullets" aria-label="What you get">
@@ -212,14 +238,14 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
         <h2 id="social-hub-heading">Schedule posts, read messages, automate replies — one login</h2>
         <p className="ls-section-sub ls-social-hub-intro">
           Creators shouldn&apos;t live in three tabs just to post, read messages, and answer fans.
-          In Wintaibot you <strong>schedule posts</strong> per platform, open <strong>Messages</strong> for DMs and comments,
+          In W!ntAi you <strong>schedule posts</strong> per platform, open <strong>Messages</strong> for DMs and comments,
           and configure <strong>Auto Reply</strong> with <strong>AI on or off</strong> — your rules, your tone, your choice to automate or stay hands-on.
           Pair that with <strong>Analytics</strong>, <strong>Trends</strong>, and <strong>Social AI</strong> to generate ideas and analyze what actually worked.
         </p>
         <p className="ls-social-hub-direct">
           <strong>Direct publishing — we don&apos;t run your day on notifications.</strong>{" "}
           Some apps feel like a full-time job of unlocking steps on your phone: wait for the buzz, tap through prompts, repeat.
-          Wintaibot is built the other way: <strong>you choose platforms and timing; we publish straight through</strong> when your content is ready.
+          W!ntAi is built the other way: <strong>you choose platforms and timing; we publish straight through</strong> when your content is ready.
           The goal is clarity — fewer interruptions, less &ldquo;notification anxiety,&rdquo; more time creating — not a workflow designed to ping you all day.
         </p>
       </section>
@@ -227,7 +253,7 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
       <section className="ls-section ls-gallery" aria-labelledby="gallery-heading">
         <h2 id="gallery-heading">Product Screenshots</h2>
         <p className="ls-section-sub">
-          Real screens from Wintaibot: analytics, messages, auto-reply, publishing, trimming, trends, and Social AI.
+          Real screens from W!ntAi: analytics, messages, auto-reply, publishing, trimming, trends, and Social AI.
         </p>
         <div className="ls-gallery-slider" aria-label="Moving product screenshot slideshow">
           <div className="ls-gallery-track">
@@ -235,7 +261,7 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
               <figure key={`${fileName}-${idx}`} className="ls-gallery-item">
                 <img
                   src={`/landing-gallery/${fileName}`}
-                  alt={`Wintaibot product screenshot ${(idx % landingGallery.length) + 1}`}
+                  alt={`W!ntAi product screenshot ${(idx % landingGallery.length) + 1}`}
                   loading="lazy"
                 />
               </figure>
@@ -247,7 +273,7 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
       <section className="ls-section ls-seo-spotlight" aria-labelledby="seo-spotlight-heading">
         <h2 id="seo-spotlight-heading">AI Social Media Scheduler for Video, Captions, and Analytics</h2>
         <p className="ls-section-sub">
-          Wintaibot is an <strong>AI social media management platform</strong> built for creators and growing teams that want to
+          W!ntAi is an <strong>AI social media management platform</strong> built for creators and growing teams that want to
           <strong> publish video to multiple platforms from one dashboard</strong>. Upload once, customize by network, schedule at the right
           time, and track what performs best.
         </p>
@@ -296,7 +322,7 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
             <span className="ls-video-edge-li-title">Auto-optimization per destination</span>
             <span className="ls-video-edge-li-body">
               Other tools often stop at &ldquo;wrong ratio&rdquo; or &ldquo;wrong resolution&rdquo; and send <em>you</em> back to an editor.
-              Wintaibot uses <strong>video variants</strong>: for <strong>each platform you select</strong>, we work toward the right shape, framing, and quality — crop, pad, upscale in the pipeline when needed — so the feeling is &ldquo;I uploaded once; Instagram <em>and</em> TikTok are already covered.&rdquo;
+              W!ntAi uses <strong>video variants</strong>: for <strong>each platform you select</strong>, we work toward the right shape, framing, and quality — crop, pad, upscale in the pipeline when needed — so the feeling is &ldquo;I uploaded once; Instagram <em>and</em> TikTok are already covered.&rdquo;
             </span>
           </li>
           <li>
@@ -312,7 +338,7 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
             <span className="ls-video-edge-li-kicker">The brain</span>
             <span className="ls-video-edge-li-title">Contextual strategy (your data, not generic text)</span>
             <span className="ls-video-edge-li-body">
-              Plain AI only writes text. Wintaibot&apos;s <strong>Social AI</strong> is built on your indexed posts (RAG): ask what format drove engagement last month,
+              Plain AI only writes text. W!ntAi&apos;s <strong>Social AI</strong> is built on your indexed posts (RAG): ask what format drove engagement last month,
               mirror a winning pattern in the next caption, or brainstorm ideas grounded in <strong>your</strong> history — a personal assistant that actually knows your brand.
             </span>
           </li>
@@ -321,18 +347,18 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
 
       {/* ── VS BUFFER / METRICOOL ───────────────────────────── */}
       <section className="ls-section ls-vs" aria-labelledby="vs-heading">
-        <h2 id="vs-heading">How Wintaibot compares to Buffer &amp; Metricool</h2>
+        <h2 id="vs-heading">How W!ntAi compares to Buffer &amp; Metricool</h2>
         <p className="ls-section-sub">
-          Buffer and Metricool are great schedulers. Wintaibot is the only one where <strong>AI does the actual work</strong> — writing, replying, picking thumbnails, and adapting your video per platform automatically.
+          Buffer and Metricool are great schedulers. W!ntAi is the only one where <strong>AI does the actual work</strong> — writing, replying, picking thumbnails, and adapting your video per platform automatically.
         </p>
         <div className="ls-vs-table-wrap">
-          <table className="ls-vs-table" aria-label="Feature comparison: Wintaibot vs Buffer vs Metricool">
+          <table className="ls-vs-table" aria-label="Feature comparison: W!ntAi vs Buffer vs Metricool">
             <thead>
               <tr>
                 <th scope="col">Feature</th>
                 <th scope="col">Buffer</th>
                 <th scope="col">Metricool</th>
-                <th scope="col" className="ls-vs-us">Wintaibot</th>
+                <th scope="col" className="ls-vs-us">W!ntAi</th>
               </tr>
             </thead>
             <tbody>
@@ -464,12 +490,12 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
 
       {/* ── USE CASES ───────────────────────────────────────── */}
       <section className="ls-section" id="use-cases" aria-labelledby="usecases-heading">
-        <h2 id="usecases-heading">Who Uses Wintaibot?</h2>
+        <h2 id="usecases-heading">Who Uses W!ntAi?</h2>
         <div className="ls-usecase-grid">
           <div className="ls-usecase ls-usecase--featured">
             <h3>Social media managers &amp; video creators</h3>
             <p>
-              <strong>If you can record it, we can post it:</strong> use <strong>Video Publisher</strong> to upload once, <strong>pick your platforms</strong>, and let Wintaibot <strong>adapt format for each network</strong> — then refine <strong>AI captions and hashtags</strong>, <strong>schedule</strong> or publish directly, and use <strong>Analytics</strong>, <strong>Trends</strong>, and <strong>Social AI</strong> for ideas. <strong>AI Image Generator</strong> and <strong>Ask AI</strong> help with thumbnails and scripts.
+              <strong>If you can record it, we can post it:</strong> use <strong>Video Publisher</strong> to upload once, <strong>pick your platforms</strong>, and let W!ntAi <strong>adapt format for each network</strong> — then refine <strong>AI captions and hashtags</strong>, <strong>schedule</strong> or publish directly, and use <strong>Analytics</strong>, <strong>Trends</strong>, and <strong>Social AI</strong> for ideas. <strong>AI Image Generator</strong> and <strong>Ask AI</strong> help with thumbnails and scripts.
             </p>
           </div>
           <div className="ls-usecase">
@@ -655,8 +681,8 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
       <section className="ls-section ls-authority" id="about" aria-labelledby="authority-heading">
         <h2 id="authority-heading">Built with Trusted Technology</h2>
         <p className="ls-section-sub">
-          Wintaibot is built on enterprise-grade open-source tools and hosted on
-          AWS infrastructure — reliable, secure, and scalable.
+          W!ntAi is built on enterprise-grade open-source tools: Java &amp; Spring on AWS, PostgreSQL
+          for durable data, Stripe for billing, and Cloudflare-class delivery in front of the API where configured — the same stack summarized with logos at the bottom of this page.
         </p>
         <div className="ls-tech-row">
           {techStack.map((t) => (
@@ -696,7 +722,7 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
         <h2 id="faq-heading">Frequently Asked Questions</h2>
         {[
           {
-            q: "Is Wintaibot really free to use?",
+            q: "Is W!ntAi really free to use?",
             a: "Yes. The Ask AI chatbot and Recipe Generator are completely free with no credit card required. Premium tools unlock on paid plans: Starter ($19/mo), Pro ($39/mo), or Growth ($79/mo), with annual discounts. See pricing for Video Publisher and analytics limits.",
           },
           {
@@ -713,11 +739,11 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
           },
           {
             q: "Is my data secure?",
-            a: "Files you upload are processed to generate your results and are not stored permanently. Payments are handled by Stripe — we never store your card details.",
+            a: "Files you upload are processed to generate your results and are not stored permanently. Payments go through Stripe only: W!ntAi does not store your bank account information or full card details on our servers — Stripe handles billing and payment data using their secure, PCI-compliant systems.",
           },
           {
             q: "What does Video Publisher do?",
-            a: "Upload once, choose your platforms — Wintaibot adapts the video for each destination (format and framing) so you are not fixing files by hand. You get AI captions and hashtags per platform, can schedule each at a different time, and see trends to plan your next content.",
+            a: "Upload once, choose your platforms — W!ntAi adapts the video for each destination (format and framing) so you are not fixing files by hand. You get AI captions and hashtags per platform, can schedule each at a different time, and see trends to plan your next content.",
           },
         ].map((item, i) => (
           <div className="ls-faq-item" key={i}>
@@ -737,7 +763,7 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
       </section>
 
       {/* ── FINAL CTA ───────────────────────────────────────── */}
-      <section className="ls-section ls-final-cta" aria-label="Get started with Wintaibot">
+      <section className="ls-section ls-final-cta" aria-label="Get started with W!ntAi">
         <h2>Ready to post video everywhere — without format headaches?</h2>
         <p>
           Start free, then scale to <strong>Starter, Pro, or Growth</strong> for full <strong>video publishing</strong>, scheduling, and AI workflows.
@@ -750,8 +776,52 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
 
       {/* ── FOOTER ──────────────────────────────────────────── */}
       <footer className="ls-footer">
+        <div className="ls-footer-trust" aria-label="Production stack and social platforms">
+          <p className="ls-footer-trust-lead">
+            Built and hosted like a real SaaS product — not a blank page: Java &amp; Spring API, PostgreSQL,
+            AWS infrastructure, Cloudflare-style edge where used, and direct integrations to eight social networks
+            (same surfaces you see in the app screenshots above).
+          </p>
+          <div className="ls-footer-trust-rows">
+            <div className="ls-footer-trust-group">
+              <span className="ls-footer-trust-label">Infrastructure &amp; data</span>
+              <div className="ls-footer-trust-logos">
+                {infraStackLogos.map((item) => (
+                  <a
+                    key={item.slug}
+                    className="ls-footer-infra-logo"
+                    href={item.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={item.fullLabel}
+                  >
+                    <img
+                      src={`${SI}/${item.slug}/${item.color}`}
+                      alt=""
+                      width={40}
+                      height={40}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                    <span>{item.label}</span>
+                  </a>
+                ))}
+              </div>
+            </div>
+            <div className="ls-footer-trust-group">
+              <span className="ls-footer-trust-label">Publish destinations (8 platforms)</span>
+              <div className="ls-footer-trust-logos ls-footer-trust-platforms">
+                {landingPublishPlatforms.map((p) => (
+                  <div key={p.id} className="ls-footer-platform-slot" title={p.label}>
+                    <PlatformIcon platform={p} size={28} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
         <p>
-          © {new Date().getFullYear()} Wintaibot · Built by{" "}
+          © {new Date().getFullYear()} W!ntAi · Built by{" "}
           <a href="https://github.com/wintkaythweaungRevature" target="_blank" rel="noopener noreferrer">
             Wint Kay Thwe Aung
           </a>

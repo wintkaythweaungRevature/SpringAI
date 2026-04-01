@@ -49,7 +49,7 @@ public class JwtService {
 
     /**
      * Extracts userId from token. Supports both formats:
-     * - sub=userId (Wintaibot native)
+     * - sub=userId (W!ntAi native)
      * - sub=email + userId claim (e.g. SpringAIDemo / other issuers)
      * @return userId or null if subject/claims are not a valid numeric userId
      */

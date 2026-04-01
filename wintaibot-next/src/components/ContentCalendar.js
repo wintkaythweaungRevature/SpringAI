@@ -352,24 +352,31 @@ export default function ContentCalendar() {
     setComposeSubmitting(true);
     setComposeMsg('');
     try {
-      const scheduledAt = new Date(
+      const when = new Date(
         composeForDate.getFullYear(),
         composeForDate.getMonth(),
         composeForDate.getDate(),
         Number(String(composeTime || '09:00').split(':')[0] || 9),
         Number(String(composeTime || '09:00').split(':')[1] || 0),
-      ).toISOString();
+      );
+      const scheduledAt = when.toISOString();
+      /** Future posts must use the scheduler endpoint; plain /post/{id} often publishes immediately. */
+      const useSchedule = when.getTime() > Date.now() + 60_000;
 
       const fd = new FormData();
       fd.append('caption', composeCaption.trim());
       fd.append('hashtags', composeHashtags.trim());
-      fd.append('scheduledAt', scheduledAt);
+      fd.append('postType', 'text');
+      if (useSchedule) fd.append('scheduledAt', scheduledAt);
 
-      const res = await fetch(`${base}/api/social/post/${composePlatform}`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: fd,
-      });
+      const res = await fetch(
+        useSchedule ? `${base}/api/social/post/schedule/${composePlatform}` : `${base}/api/social/post/${composePlatform}`,
+        {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: fd,
+        },
+      );
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Could not create post');
 

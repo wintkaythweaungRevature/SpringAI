@@ -50,7 +50,7 @@ export default function Login({ onSuccess, onSwitchToSignup, onForgotPassword })
           </svg>
         </div>
         <h2 className="auth-form-title">Welcome back</h2>
-        <p className="auth-form-sub">Sign in to your Wintaibot account</p>
+        <p className="auth-form-sub">Sign in to your W!ntAi account</p>
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="auth-field">

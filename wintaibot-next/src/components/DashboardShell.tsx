@@ -127,7 +127,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
           <div style={s.logoIconBg}>🤖</div>
           {sidebarOpen && (
             <Link href="/" style={s.logoText}>
-              Wintaibot
+              W!ntAi
             </Link>
           )}
         </div>
@@ -228,7 +228,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
           </header>
         ) : (
           <header style={s.publicTopBar}>
-            <Link href="/" style={s.publicBrand}>Wintaibot</Link>
+            <Link href="/" style={s.publicBrand}>W!ntAi</Link>
             <nav style={s.publicNav}>
               <Link href="/features" style={s.publicNavLink}>Features</Link>
               <Link href="/pricing" style={s.publicNavLink}>Pricing</Link>

@@ -334,7 +334,7 @@ public class SocialController {
                 "h2{color:#1e293b;margin:0 0 12px}.p{color:#64748b;font-size:14px;line-height:1.6}" +
                 ".ok{color:#16a34a;font-weight:700;margin-top:16px}</style></head><body>" +
                 "<div class=\"box\"><h2>✓ " + (status != null ? "Connected to " + platformName : "OAuth") + "</h2>" +
-                "<p class=\"p\">You can close this window and return to Wintaibot.</p>" +
+                "<p class=\"p\">You can close this window and return to W!ntAi.</p>" +
                 "<p class=\"ok\">" + (status != null ? "Connection saved." : "Setup complete.") + "</p></div>" +
                 "<script>setTimeout(function(){window.close()},2000)</script></body></html>";
         return ResponseEntity.ok(html);

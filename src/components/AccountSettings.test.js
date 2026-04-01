@@ -116,7 +116,7 @@ describe('AccountSettings', () => {
     expect(screen.getByText('Member')).toBeInTheDocument();
   });
 
-  test('shows annual upsell when subscription is monthly on a paid tier', async () => {
+  test('does not show monthly-to-annual upsell card for monthly Pro user', async () => {
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -131,9 +131,10 @@ describe('AccountSettings', () => {
     });
     render(<AccountSettings />);
     await waitFor(() => {
-      expect(screen.getByText(/you are on a monthly billing plan/i)).toBeInTheDocument();
+      expect(global.fetch).toHaveBeenCalled();
     });
-    expect(screen.getByRole('button', { name: /get pro annual plan/i })).toBeInTheDocument();
+    expect(screen.queryByText(/you are on a monthly billing plan/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /get pro annual plan/i })).not.toBeInTheDocument();
   });
 
   test('shows Cancel Subscription button for active member', () => {

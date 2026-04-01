@@ -1,4 +1,4 @@
-# Backend API Specification for Wintaibot Frontend
+# Backend API Specification for W!ntAi Frontend
 
 What your backend must implement to work with the frontend at www.wintaibot.com.
 

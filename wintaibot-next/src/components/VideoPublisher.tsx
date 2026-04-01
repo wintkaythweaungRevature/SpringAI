@@ -609,7 +609,7 @@ export default function VideoPublisher() {
                 📅 Schedule per platform (SEO & advertising)
               </div>
               <p style={{ fontSize: '11px', color: '#64748b', marginBottom: '12px' }}>
-                Set when to post on each social account. Leave &quot;Publish now&quot; for immediate posting.
+                Uncheck <strong>Publish immediately</strong> and pick a date/time to schedule. If you leave it on immediate, the post goes live as soon as you click the button — the time shown is not used until you turn scheduling on.
               </p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
                 {[
@@ -643,11 +643,16 @@ export default function VideoPublisher() {
                   const p = PLATFORMS.find(x => x.id === pid);
                   if (!p) return null;
                   const hasSchedule = scheduledTimes[pid] && String(scheduledTimes[pid]).trim() !== '';
-                  const defaultVal = (() => {
-                    const d = new Date();
+                  const localDatetimeLocal = (d: Date) => {
                     const pad = (n: number) => String(n).padStart(2, '0');
                     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-                  })();
+                  };
+                  const defaultScheduleStart = () => {
+                    const d = new Date();
+                    d.setDate(d.getDate() + 1);
+                    d.setHours(9, 0, 0, 0);
+                    return localDatetimeLocal(d);
+                  };
                   return (
                     <div key={pid} style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                       <PlatformIcon platform={p} size={20} />
@@ -660,21 +665,24 @@ export default function VideoPublisher() {
                             if (e.target.checked) {
                               setScheduledTimes(prev => ({ ...prev, [pid]: null }));
                             } else {
-                              const d = new Date();
-                              d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-                              setScheduledTimes(prev => ({ ...prev, [pid]: d.toISOString().slice(0, 16) }));
+                              setScheduledTimes(prev => ({ ...prev, [pid]: defaultScheduleStart() }));
                             }
                           }}
                         />
-                        Now
+                        Publish immediately
                       </label>
-                      <input
-                        type="datetime-local"
-                        value={scheduledTimes[pid] || defaultVal}
-                        onChange={e => setScheduledTimes(prev => ({ ...prev, [pid]: e.target.value || null }))}
-                        disabled={!hasSchedule}
-                        style={{ flex: 1, minWidth: '140px', padding: '6px 8px', borderRadius: '6px', border: '1.5px solid #e2e8f0', fontSize: '12px', opacity: hasSchedule ? 1 : 0.6 }}
-                      />
+                      {!hasSchedule ? (
+                        <span style={{ flex: 1, minWidth: '140px', fontSize: '11px', color: '#94a3b8', fontStyle: 'italic' }}>
+                          (no schedule — publishes immediately)
+                        </span>
+                      ) : (
+                        <input
+                          type="datetime-local"
+                          value={scheduledTimes[pid] || ''}
+                          onChange={e => setScheduledTimes(prev => ({ ...prev, [pid]: e.target.value || null }))}
+                          style={{ flex: 1, minWidth: '140px', padding: '6px 8px', borderRadius: '6px', border: '1.5px solid #e2e8f0', fontSize: '12px' }}
+                        />
+                      )}
                     </div>
                   );
                 })}
@@ -818,7 +826,7 @@ export default function VideoPublisher() {
               <div style={s.sectionTitle}>💡 Next Content Ideas (AI Generated)</div>
               {[
                 '🎬 "5 AI tools that replace your whole team" — trending format',
-                '📱 Behind-the-scenes: How you built Wintaibot',
+                '📱 Behind-the-scenes: How you built W!ntAi',
                 '🔥 React vs Vue debate — high engagement topic this week',
               ].map((idea, i) => (
                 <div key={i} style={s.ideaRow}>

@@ -330,7 +330,8 @@ export default function AccountSettings() {
         <div style={s.section}>
           <h3 style={s.sectionTitle}>Billing &amp; Invoices</h3>
           <p style={s.desc}>
-            View invoice history, update payment method, or manage your subscription via Stripe.
+            View invoice history, update payment method, or manage your subscription in Stripe&apos;s billing portal.
+            W!ntAi does not store your bank account or full card details; only Stripe processes that information.
           </p>
           <button onClick={handleBilling} disabled={!!loading} style={s.btnPrimary}>
             {loading === 'billing' ? 'Opening...' : 'Manage Billing & Invoices'}

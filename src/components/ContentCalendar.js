@@ -252,7 +252,7 @@ const ms = {
 };
 
 /* ─────────────────────────────────────────────────────────────────────────── */
-export default function ContentCalendar() {
+export default function ContentCalendar({ onOpenVideoPublisher }) {
   const { apiBase, token } = useAuth();
   const base = apiBase || 'https://api.wintaibot.com';
 
@@ -336,24 +336,31 @@ export default function ContentCalendar() {
     setComposeSubmitting(true);
     setComposeMsg('');
     try {
-      const scheduledAt = new Date(
+      const when = new Date(
         composeForDate.getFullYear(),
         composeForDate.getMonth(),
         composeForDate.getDate(),
         Number(String(composeTime || '09:00').split(':')[0] || 9),
         Number(String(composeTime || '09:00').split(':')[1] || 0),
-      ).toISOString();
+      );
+      const scheduledAt = when.toISOString();
+      /** Future posts must use the scheduler endpoint; plain /post/{id} often publishes immediately. */
+      const useSchedule = when.getTime() > Date.now() + 60_000;
 
       const fd = new FormData();
       fd.append('caption', composeCaption.trim());
       fd.append('hashtags', composeHashtags.trim());
-      fd.append('scheduledAt', scheduledAt);
+      fd.append('postType', 'text');
+      if (useSchedule) fd.append('scheduledAt', scheduledAt);
 
-      const res = await fetch(`${base}/api/social/post/${composePlatform}`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: fd,
-      });
+      const res = await fetch(
+        useSchedule ? `${base}/api/social/post/schedule/${composePlatform}` : `${base}/api/social/post/${composePlatform}`,
+        {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: fd,
+        },
+      );
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Could not create post');
 
@@ -508,9 +515,27 @@ export default function ContentCalendar() {
                       }}
                       onClick={() => setSelectedDay(isSelected ? null : day)}
                     >
-                      <div style={{ ...s.calDayNum, ...(isToday ? { color: '#fff', background: '#6366f1', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center' } : {}) }}>
+                      <button
+                        type="button"
+                        title="Open Video Publisher"
+                        style={{
+                          ...s.calDayNum,
+                          ...(isToday ? { color: '#fff', background: '#6366f1', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center' } : {}),
+                          border: 'none',
+                          background: isToday ? '#6366f1' : 'transparent',
+                          color: isToday ? '#fff' : undefined,
+                          cursor: typeof onOpenVideoPublisher === 'function' ? 'pointer' : 'default',
+                          padding: 0,
+                          font: 'inherit',
+                          textAlign: 'center',
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (typeof onOpenVideoPublisher === 'function') onOpenVideoPublisher();
+                        }}
+                      >
                         {day.getDate()}
-                      </div>
+                      </button>
                       <button
                         type="button"
                         style={s.ideaBtn}

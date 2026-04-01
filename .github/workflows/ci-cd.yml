@@ -36,24 +36,27 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/spring-ai-react:latest
 
-      # ── Deploy to EC2 ─────────────────────────────────────────
+      # ── Deploy to EC2 (optional) ──────────────────────────────
       # Backend image is built and pushed by the WintSpringAIBackEnd repo's workflow.
-      # Required secrets: EC2_HOST (public IP or DNS), EC2_SSH_KEY (private key).
-      # If you see "dial tcp ***:22: i/o timeout": open port 22 in EC2 Security Group
-      # (Inbound rules → SSH from 0.0.0.0/0 or https://api.github.com/meta for GitHub IPs).
-      - name: Check deploy secrets
+      # If EC2_HOST / EC2_SSH_KEY are unset, we still succeed — image is on Docker Hub; deploy manually.
+      # If you see "dial tcp ***:22: i/o timeout": open port 22 in EC2 Security Group.
+      - name: Decide whether to deploy
+        id: deploy_gate
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
         run: |
-          if [ -z "${{ secrets.EC2_HOST }}" ]; then
-            echo "::error::EC2_HOST secret is not set. Add it in repo Settings → Secrets and variables → Actions to enable deploy."
-            exit 1
-          fi
-          if [ -z "${{ secrets.EC2_SSH_KEY }}" ]; then
-            echo "::error::EC2_SSH_KEY secret is not set. Add your EC2 SSH private key in repo Settings → Secrets and variables → Actions."
-            exit 1
+          if [ -n "$EC2_HOST" ] && [ -n "$EC2_SSH_KEY" ]; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+            echo "Deploy step will run (EC2 secrets are set)."
+          else
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Skipping EC2 deploy — set EC2_HOST and EC2_SSH_KEY in repo Settings → Secrets and variables → Actions to auto-deploy. Docker image was still pushed."
           fi
 
       # If deploy fails (SSH timeout, etc.), check repo Settings → Secrets. Run scripts/redeploy-backend.sh on EC2 manually.
       - name: Deploy to EC2
+        if: steps.deploy_gate.outputs.ok == 'true'
         uses: appleboy/ssh-action@v1
         continue-on-error: true
         with:

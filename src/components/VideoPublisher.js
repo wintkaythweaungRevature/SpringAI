@@ -1110,7 +1110,6 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
                   placeholder="Write your post here... AI will adapt it for each platform you selected."
                   rows={6}
                   style={{
-         y
                     width: '100%', boxSizing: 'border-box', padding: '14px 16px', borderRadius: '10px',
                     border: '1.5px solid #e2e8f0', fontSize: '14px', fontFamily: 'inherit',
                     resize: 'vertical', outline: 'none', lineHeight: 1.6,

@@ -284,13 +284,6 @@ export default function ContentCalendar() {
   const [retryingIds, setRetryingIds] = useState({});
   const [actionMsg, setActionMsg] = useState('');
   const [hoverPreview, setHoverPreview] = useState(null); // { post, x, y }
-  const [composeForDate, setComposeForDate] = useState(null); // Date | null
-  const [composePlatform, setComposePlatform] = useState('facebook');
-  const [composeCaption, setComposeCaption] = useState('');
-  const [composeHashtags, setComposeHashtags] = useState('');
-  const [composeTime, setComposeTime] = useState('09:00');
-  const [composeSubmitting, setComposeSubmitting] = useState(false);
-  const [composeMsg, setComposeMsg] = useState('');
 
   const loadPosts = useCallback(async () => {
     if (!token) return;
@@ -335,61 +328,6 @@ export default function ContentCalendar() {
     } finally {
       setRetryingIds(prev => ({ ...prev, [sid]: false }));
       setTimeout(() => setActionMsg(''), 3500);
-    }
-  };
-
-  const openComposeForDay = (day) => {
-    setComposeForDate(day);
-    setComposePlatform(filterPlatform !== 'all' ? filterPlatform : 'facebook');
-    setComposeCaption('');
-    setComposeHashtags('');
-    setComposeTime('09:00');
-    setComposeMsg('');
-  };
-
-  const submitQuickPost = async () => {
-    if (!composeForDate || !token || !composeCaption.trim()) return;
-    setComposeSubmitting(true);
-    setComposeMsg('');
-    try {
-      const when = new Date(
-        composeForDate.getFullYear(),
-        composeForDate.getMonth(),
-        composeForDate.getDate(),
-        Number(String(composeTime || '09:00').split(':')[0] || 9),
-        Number(String(composeTime || '09:00').split(':')[1] || 0),
-      );
-      const scheduledAt = when.toISOString();
-      /** Future posts must use the scheduler endpoint; plain /post/{id} often publishes immediately. */
-      const useSchedule = when.getTime() > Date.now() + 60_000;
-
-      const fd = new FormData();
-      fd.append('caption', composeCaption.trim());
-      fd.append('hashtags', composeHashtags.trim());
-      fd.append('postType', 'text');
-      if (useSchedule) fd.append('scheduledAt', scheduledAt);
-
-      const res = await fetch(
-        useSchedule ? `${base}/api/social/post/schedule/${composePlatform}` : `${base}/api/social/post/${composePlatform}`,
-        {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
-          body: fd,
-        },
-      );
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || 'Could not create post');
-
-      setComposeMsg('Post submitted successfully.');
-      await loadPosts();
-      setTimeout(() => {
-        setComposeForDate(null);
-        setComposeMsg('');
-      }, 600);
-    } catch (e) {
-      setComposeMsg(e.message || 'Could not create post');
-    } finally {
-      setComposeSubmitting(false);
     }
   };
 
@@ -531,20 +469,9 @@ export default function ContentCalendar() {
                       }}
                       onClick={() => setSelectedDay(isSelected ? null : day)}
                     >
-                      <div style={{ ...s.calDayNum, ...(isToday ? { color: '#fff', background: '#6366f1', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center' } : {}) }}>
+                      <div style={{ ...s.calDayNum, ...(isToday ? { color: '#fff', background: '#6366f1', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center' } : {}) }}                      >
                         {day.getDate()}
                       </div>
-                      <button
-                        type="button"
-                        style={s.ideaBtn}
-                        title="Add idea for this date"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openComposeForDay(day);
-                        }}
-                      >
-                        +
-                      </button>
 
                       {dayPosts.length > 0 ? (
                         <div style={s.dayPostList}>
@@ -893,64 +820,6 @@ export default function ContentCalendar() {
           </div>
         </div>
       )}
-
-      {composeForDate && (
-        <div style={ms.overlay} onClick={() => setComposeForDate(null)}>
-          <div style={{ ...ms.modal, maxWidth: 540 }} onClick={(e) => e.stopPropagation()}>
-            <div style={ms.header}>
-              <div style={ms.title}>💡 Add idea / quick post</div>
-              <button style={ms.closeBtn} onClick={() => setComposeForDate(null)}>✕</button>
-            </div>
-            <div style={{ fontSize: 12, color: '#64748b', marginBottom: 12 }}>
-              {composeForDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 140px', gap: 8, marginBottom: 10 }}>
-              <select
-                value={composePlatform}
-                onChange={(e) => setComposePlatform(e.target.value)}
-                style={s.composeField}
-              >
-                {PLATFORMS.map((p) => (
-                  <option key={p.id} value={p.id}>{p.label}</option>
-                ))}
-              </select>
-              <input type="time" value={composeTime} onChange={(e) => setComposeTime(e.target.value)} style={s.composeField} />
-            </div>
-
-            <textarea
-              placeholder="Write your post caption..."
-              value={composeCaption}
-              onChange={(e) => setComposeCaption(e.target.value)}
-              style={{ ...s.composeField, minHeight: 120, resize: 'vertical', paddingTop: 10 }}
-            />
-            <input
-              placeholder="#hashtags"
-              value={composeHashtags}
-              onChange={(e) => setComposeHashtags(e.target.value)}
-              style={{ ...s.composeField, marginTop: 8 }}
-            />
-            <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 6 }}>
-              This quick action sends a post request for the selected platform and date/time.
-            </div>
-            {composeMsg && (
-              <div style={{ marginTop: 10, fontSize: 12, color: composeMsg.toLowerCase().includes('could not') ? '#dc2626' : '#15803d' }}>
-                {composeMsg}
-              </div>
-            )}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 14 }}>
-              <button style={s.composeCancelBtn} onClick={() => setComposeForDate(null)}>Cancel</button>
-              <button
-                style={{ ...s.composePostBtn, opacity: (!composeCaption.trim() || composeSubmitting) ? 0.6 : 1 }}
-                disabled={!composeCaption.trim() || composeSubmitting}
-                onClick={submitQuickPost}
-              >
-                {composeSubmitting ? 'Posting…' : 'Post'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -1017,23 +886,6 @@ const s = {
     cursor: 'pointer',
     padding: '1px 2px',
   },
-  ideaBtn: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    border: '1px solid #e2e8f0',
-    background: '#fff',
-    color: '#64748b',
-    borderRadius: 6,
-    fontSize: 10,
-    fontWeight: 700,
-    width: 18,
-    height: 18,
-    padding: 0,
-    cursor: 'pointer',
-    lineHeight: '16px',
-    textAlign: 'center',
-  },
   hoverCard: {
     position: 'fixed',
     zIndex: 2200,
@@ -1050,37 +902,6 @@ const s = {
   hoverBody: { display: 'flex', gap: 10, alignItems: 'flex-start' },
   hoverThumb: { width: 120, height: 96, borderRadius: 10, objectFit: 'cover', border: '1px solid #e2e8f0' },
   hoverFooter: { marginTop: 8, borderTop: '1px solid #f1f5f9', paddingTop: 8, display: 'flex', justifyContent: 'flex-end' },
-  composeField: {
-    width: '100%',
-    boxSizing: 'border-box',
-    padding: '8px 10px',
-    borderRadius: 8,
-    border: '1.5px solid #e2e8f0',
-    fontSize: 13,
-    color: '#1f2937',
-    fontFamily: 'inherit',
-    outline: 'none',
-  },
-  composeCancelBtn: {
-    padding: '8px 12px',
-    borderRadius: 8,
-    border: '1px solid #cbd5e1',
-    background: '#fff',
-    color: '#334155',
-    fontSize: 12,
-    fontWeight: 700,
-    cursor: 'pointer',
-  },
-  composePostBtn: {
-    padding: '8px 14px',
-    borderRadius: 8,
-    border: 'none',
-    background: '#2563eb',
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: 700,
-    cursor: 'pointer',
-  },
 
   legend: { display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 16, paddingTop: 14, borderTop: '1px solid #f1f5f9' },
   legendItem: { display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#64748b' },

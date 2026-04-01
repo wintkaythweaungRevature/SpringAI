@@ -749,7 +749,7 @@ function InboxDetailPanel({ item, kind, commentReplyExtras, onClose }) {
 }
 
 /* ─────────────────────────────────────────────────────────── */
-export default function MessagesInbox({ onOpenVideoPublisher, onOpenConnectedAccounts }) {
+export default function MessagesInbox({ onOpenVideoPublisher, onOpenConnectedAccounts, onOpenAutoReply }) {
   const { apiBase, token } = useAuth();
   const base = apiBase || 'https://api.wintaibot.com';
 
@@ -908,6 +908,30 @@ export default function MessagesInbox({ onOpenVideoPublisher, onOpenConnectedAcc
             >
               <span aria-hidden>🔗</span>
               Connected Accounts
+            </button>
+          )}
+          {typeof onOpenAutoReply === 'function' && (
+            <button
+              type="button"
+              onClick={onOpenAutoReply}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 12px',
+                borderRadius: '8px',
+                border: '1px solid #e2e8f0',
+                background: '#fff',
+                color: '#334155',
+                fontWeight: 600,
+                fontSize: '13px',
+                cursor: 'pointer',
+                boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+                flexShrink: 0,
+              }}
+            >
+              <span aria-hidden>🤖</span>
+              Auto Reply
             </button>
           )}
           <button

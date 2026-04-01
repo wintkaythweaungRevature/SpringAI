@@ -5,8 +5,7 @@ import { useMediaQuery } from './hooks/useMediaQuery';
 // Icons — react-icons/hi2 (Heroicons v2, solid style)
 import { HiHome, HiChatBubbleLeftRight, HiPhoto, HiSparkles } from 'react-icons/hi2';
 import { HiDocumentText, HiMicrophone } from 'react-icons/hi2';
-import { HiChartBar, HiChatBubbleOvalLeft, HiArrowPathRoundedSquare,
-         HiArrowTrendingUp, HiCpuChip } from 'react-icons/hi2';
+import { HiChartBar, HiChatBubbleOvalLeft, HiArrowTrendingUp, HiCpuChip } from 'react-icons/hi2';
 import { HiPencilSquare, HiDocumentMagnifyingGlass } from 'react-icons/hi2';
 import { HiCog6Tooth, HiCreditCard } from 'react-icons/hi2';
 import ImageGenerator from './components/ImageGenerator';
@@ -266,7 +265,6 @@ function App() {
           <div style={s.groupLabel}>Social Media</div>
           <NavItem icon={<HiChartBar size={17} />}                 label="Analytics"          active={activeTab === 'analytics'}       onClick={() => go('analytics')} />
           <NavItem icon={<HiChatBubbleOvalLeft size={17} />}       label="Messages"           active={activeTab === 'messages'}         onClick={() => go('messages')} />
-          <NavItem icon={<HiArrowPathRoundedSquare size={17} />}   label="Auto Reply"         active={activeTab === 'auto-reply'}       onClick={() => go('auto-reply')} />
           <NavItem icon={<HiArrowTrendingUp size={17} />}          label="Trends"             active={activeTab === 'trends'}           onClick={() => go('trends')} />
           <NavItem icon={<HiCpuChip size={17} />}                  label="Social AI"          active={activeTab === 'social-ai'}        onClick={() => go('social-ai')} />
           <NavItem icon={<HiPhoto size={17} />}                    label="Content Calendar"   active={activeTab === 'calendar'}         onClick={() => go('calendar')} />
@@ -375,7 +373,7 @@ function App() {
           {activeTab === 'account'          && <AskAIGate  featureName="Account"><AccountSettings /></AskAIGate>}
           {activeTab === 'video-publisher'  && <MemberGate featureName="Video Publisher"><VideoPublisher onNavigateToSocialConnect={() => go('social-connect')} /></MemberGate>}
           {activeTab === 'analytics'        && <MemberGate featureName="Analytics"><AnalyticsDashboard /></MemberGate>}
-          {activeTab === 'messages'         && <MemberGate featureName="Messages"><ProGate featureName="Messages"><MessagesInbox onOpenVideoPublisher={() => go('video-publisher')} onOpenConnectedAccounts={() => go('social-connect')} /></ProGate></MemberGate>}
+          {activeTab === 'messages'         && <MemberGate featureName="Messages"><ProGate featureName="Messages"><MessagesInbox onOpenVideoPublisher={() => go('video-publisher')} onOpenConnectedAccounts={() => go('social-connect')} onOpenAutoReply={() => go('auto-reply')} /></ProGate></MemberGate>}
           {activeTab === 'social-connect'   && <MemberGate featureName="Connected Accounts"><SocialConnect /></MemberGate>}
           {activeTab === 'bio'              && <MemberGate featureName="Link in Bio"><LinkInBioBuilder /></MemberGate>}
           {activeTab === 'trends'          && <MemberGate featureName="Trends"><ProGate featureName="Trends"><DeepAnalytics /></ProGate></MemberGate>}

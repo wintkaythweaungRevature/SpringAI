@@ -45,7 +45,7 @@ const PAGE_TITLES = {
   'analyzer': 'DocuWizard',
   'transcription': 'EchoScribe',
   'Content': 'Reply Enchanter',
-  'Resume': 'Resume Worlock',
+  'Resume': 'Career Alchemist',
   'account': 'Account',
   'video-publisher': 'Video Publisher',
   'social-connect': 'Connected Accounts',
@@ -253,29 +253,34 @@ function App() {
         <nav style={s.nav}>
           <NavItem icon={<HiHome size={17} />} label="Dashboard" active={activeTab === null} onClick={() => go(null)} />
 
-          <div style={s.groupLabel}>AI Tools</div>
+          <div style={s.navDivider} role="separator" aria-hidden="true" />
+          <div style={s.groupLabel}>Smart Hub</div>
           <NavItem icon={<HiChatBubbleLeftRight size={17} />} label="Ask AI"           active={activeTab === 'chat'}             onClick={() => go('chat')}             hasArrow />
           <NavItem icon={<HiPhoto size={17} />}               label="Image Generator"  active={activeTab === 'image-generator'}  onClick={() => go('image-generator')} />
           <NavItem icon={<HiSparkles size={17} />}            label="Recipe Generator" active={activeTab === 'recipe-generator'} onClick={() => go('recipe-generator')} />
 
-          <div style={s.groupLabel}>Documents</div>
+          <div style={s.navDivider} role="separator" aria-hidden="true" />
+          <div style={s.groupLabel}>Digital Vault</div>
           <NavItem icon={<HiDocumentMagnifyingGlass size={17} />} label="DocuWizard" active={activeTab === 'analyzer'}     onClick={() => go('analyzer')} />
           <NavItem icon={<HiMicrophone size={17} />}              label="EchoScribe"  active={activeTab === 'transcription'} onClick={() => go('transcription')} />
 
-          <div style={s.groupLabel}>Social Media</div>
+          <div style={s.navDivider} role="separator" aria-hidden="true" />
+          <div style={s.groupLabel}>Social HQ</div>
           <NavItem icon={<HiPhoto size={17} />}                    label="Content Calendar"   active={activeTab === 'calendar'}         onClick={() => go('calendar')} />
           <NavItem icon={<HiChartBar size={17} />}                 label="Analytics"          active={activeTab === 'analytics'}       onClick={() => go('analytics')} />
           <NavItem icon={<HiChatBubbleOvalLeft size={17} />}       label="Messages"           active={activeTab === 'messages'}         onClick={() => go('messages')} />
           <NavItem icon={<HiArrowTrendingUp size={17} />}          label="Trends"             active={activeTab === 'trends'}           onClick={() => go('trends')} />
           <NavItem icon={<HiCpuChip size={17} />}                  label="Social AI"          active={activeTab === 'social-ai'}        onClick={() => go('social-ai')} />
 
-          <div style={s.groupLabel}>Writing Tools</div>
+          <div style={s.navDivider} role="separator" aria-hidden="true" />
+          <div style={s.groupLabel}>The Forge</div>
           <NavItem icon={<HiChatBubbleLeftRight size={17} />} label="Reply Enchanter" active={activeTab === 'Content'} onClick={() => go('Content')} />
-          <NavItem icon={<HiDocumentText size={17} />}        label="Resume Worlock"  active={activeTab === 'Resume'}  onClick={() => go('Resume')} />
+          <NavItem icon={<HiDocumentText size={17} />}        label="Career Alchemist"  active={activeTab === 'Resume'}  onClick={() => go('Resume')} />
 
           {user && (
             <>
-              <div style={s.groupLabel}>Settings</div>
+              <div style={s.navDividerStrong} role="separator" aria-hidden="true" />
+              <div style={s.groupLabelFooter}>Settings</div>
               <NavItem icon={<HiCog6Tooth size={17} />} label="Account" active={activeTab === 'account'} onClick={() => go('account')} hasArrow />
               <NavItem icon={<HiCreditCard size={17} />} label="Pricing" active={activeTab === 'pricing'} onClick={() => go('pricing')} />
             </>
@@ -378,7 +383,7 @@ function App() {
           {activeTab === 'recipe-generator' && <AskAIGate  featureName="Recipe Generator"><ReceipeGenerator /></AskAIGate>}
           {activeTab === 'transcription'    && <MemberGate featureName="EchoScribe"><ProGate featureName="EchoScribe"><Transcription /></ProGate></MemberGate>}
           {activeTab === 'Content'          && <MemberGate featureName="Reply Enchanter"><Content /></MemberGate>}
-          {activeTab === 'Resume'           && <MemberGate featureName="Resume Worlock"><Resume /></MemberGate>}
+          {activeTab === 'Resume'           && <MemberGate featureName="Career Alchemist"><Resume /></MemberGate>}
           {activeTab === 'account'          && <AskAIGate  featureName="Account"><AccountSettings /></AskAIGate>}
           {activeTab === 'video-publisher'  && <MemberGate featureName="Video Publisher"><VideoPublisher onNavigateToSocialConnect={() => go('social-connect')} /></MemberGate>}
           {activeTab === 'analytics'        && <MemberGate featureName="Analytics"><AnalyticsDashboard /></MemberGate>}
@@ -487,8 +492,28 @@ const s = {
     fontSize: '10.5px', fontWeight: '700',
     color: 'rgba(255,255,255,0.32)',
     textTransform: 'uppercase', letterSpacing: '1px',
-    padding: '16px 12px 6px',
+    padding: '10px 12px 6px',
     whiteSpace: 'nowrap',
+  },
+  groupLabelFooter: {
+    fontSize: '10px', fontWeight: '700',
+    color: 'rgba(255,255,255,0.24)',
+    textTransform: 'uppercase', letterSpacing: '1.2px',
+    padding: '4px 12px 6px',
+    whiteSpace: 'nowrap',
+  },
+  navDivider: {
+    height: 0,
+    border: 'none',
+    borderTop: '1px solid rgba(255,255,255,0.07)',
+    margin: '8px 14px 2px',
+  },
+  navDividerStrong: {
+    height: 0,
+    border: 'none',
+    borderTop: '1px solid rgba(148,163,184,0.38)',
+    margin: '14px 10px 6px',
+    boxShadow: '0 1px 0 rgba(255,255,255,0.05)',
   },
   sidebarFooter: {
     padding: '10px 8px 16px',

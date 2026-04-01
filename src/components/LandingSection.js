@@ -26,6 +26,56 @@ const landingPublishPlatforms = [
   { id: "pinterest", label: "Pinterest", color: "#E60023", logo: "pinterest" },
 ];
 
+/** Icons for landing “showcase” graphic (Simple Icons CDN). */
+const VP_SHOWCASE_PLATFORMS = [
+  { slug: "youtube", color: "FF0000" },
+  { slug: "tiktok", color: "000000" },
+  { slug: "facebook", color: "1877F2" },
+  { slug: "instagram", color: "E4405F" },
+];
+
+/**
+ * Visual story: one video → beams → platform marks (showcase, not a wall of text).
+ * variant: hero (dark glass on hero) | card (feature tile) | compact (inline section)
+ */
+function VideoPublishShowcaseGraphic({ variant = "hero" }) {
+  const v = variant === "card" ? "card" : variant === "compact" ? "compact" : "hero";
+  const imgSize = v === "hero" ? 40 : v === "compact" ? 34 : 32;
+  return (
+    <figure
+      className={`ls-vp-showcase ls-vp-showcase--${v}`}
+      aria-label="One video publishing to YouTube, TikTok, Facebook, and Instagram"
+    >
+      <div className="ls-vp-showcase__col ls-vp-showcase__col--src">
+        <div className="ls-vp-showcase__screen">
+          <div className="ls-vp-showcase__glow" aria-hidden="true" />
+          <span className="ls-vp-showcase__play" aria-hidden="true">▶</span>
+        </div>
+        {v !== "card" && <span className="ls-vp-showcase__label">One upload</span>}
+      </div>
+      <div className="ls-vp-showcase__beam" aria-hidden="true">
+        <span className="ls-vp-showcase__particle" />
+        <span className="ls-vp-showcase__particle ls-vp-showcase__particle--d1" />
+        <span className="ls-vp-showcase__particle ls-vp-showcase__particle--d2" />
+      </div>
+      <div className="ls-vp-showcase__targets">
+        {VP_SHOWCASE_PLATFORMS.map((p) => (
+          <div key={p.slug} className="ls-vp-showcase__target">
+            <img
+              src={`${SI}/${p.slug}/${p.color}`}
+              alt=""
+              width={imgSize}
+              height={imgSize}
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
+        ))}
+      </div>
+    </figure>
+  );
+}
+
 /* ─── Data ─────────────────────────────────────────────────── */
 
 const features = [
@@ -89,7 +139,7 @@ const features = [
     icon: "🎬",
     title: "Video Publisher – One Video, Every Platform",
     description:
-      "Upload once, choose your destinations — we handle format and framing for each platform so you are not re-editing in another app. Pick your Shorts/Reels thumbnail (or let AI suggest the strongest frame), then review AI-generated captions and hashtags per network — edit anything before you schedule. Direct publishing to each network on your schedule, without a notification-heavy gatekeeping flow. Per-platform timing plus signals to plan what to post next.",
+      "One upload — right format, framing, and captions per network. Thumbnail picker, AI frames, schedule or publish.",
     badge: "Member",
     slug: "video-publisher",
   },
@@ -175,56 +225,56 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
     <main className="ls-root" aria-label="W!ntAi — social media video publishing and AI tools">
 
       {/* ── HERO (SEO: one H1 — video publishing + social managers) ── */}
-      <section className="ls-hero" aria-labelledby="hero-heading">
-        <div className="ls-hero-inner">
-          <div className="ls-hero-badge">
-            Multi-platform video publishing · Social media managers &amp; creators
+      <section className="ls-hero ls-hero--showcase" aria-labelledby="hero-heading">
+        <div className="ls-hero-inner ls-hero-inner--split">
+          <div className="ls-hero-copy">
+            <div className="ls-hero-badge">
+              Multi-platform video publishing · Social media managers &amp; creators
+            </div>
+            <p className="ls-hero-kicker">The end of format errors</p>
+            <h1 id="hero-heading" className="ls-hero-h1">
+              If You Can Record It,<br /><span className="ls-hero-h1-accent">We Can Post It.</span>
+            </h1>
+            <p className="ls-hero-tagline">
+              <strong>One upload</strong> — we adapt ratio, framing, and quality for each network you pick; AI thumbnails and captions you can edit; schedule or publish from one workspace.
+            </p>
+            <ul className="ls-hero-chips" aria-label="Product highlights">
+              <li>No manual re-edits per platform</li>
+              <li>Thumbnail picker + AI frames</li>
+              <li>Schedule &amp; direct publishing</li>
+              <li>Brand-aware Social AI (RAG)</li>
+            </ul>
+            <div className="ls-hero-actions">
+              <button type="button" className="ls-btn-primary" onClick={onGetStarted}>
+                Try Free — No Credit Card
+              </button>
+              <a className="ls-btn-ghost" href="/features">See all tools →</a>
+            </div>
+            <p className="ls-hero-note">
+              <strong>Free:</strong> Ask AI &amp; Recipe Generator.{" "}
+              <strong>Paid:</strong> Starter <strong>$19/mo</strong> · Pro <strong>$39/mo</strong> · Growth <strong>$79/mo</strong> — no per-channel fees, no install.
+            </p>
           </div>
-          <p className="ls-hero-kicker">The end of format errors</p>
-          <h1 id="hero-heading" className="ls-hero-h1">
-            If You Can Record It,<br /><span className="ls-hero-h1-accent">We Can Post It.</span>
-          </h1>
-          <p className="ls-hero-tagline">
-            Upload once — W!ntAi adapts aspect ratio, framing, and quality for <strong>each network you choose</strong> (Instagram, YouTube Shorts, TikTok, Reels, and more).
-            Add <strong>AI thumbnails</strong> and <strong>editable captions</strong>, then <strong>schedule</strong> or publish directly — plus inbox, auto-reply, and analytics in the same workspace.
-          </p>
-          <ul className="ls-hero-chips" aria-label="Product highlights">
-            <li>No manual re-edits per platform</li>
-            <li>Thumbnail picker + AI frames</li>
-            <li>Schedule &amp; direct publishing</li>
-            <li>Brand-aware Social AI (RAG)</li>
-          </ul>
-          <div className="ls-hero-actions">
-            <button type="button" className="ls-btn-primary" onClick={onGetStarted}>
-              Try Free — No Credit Card
-            </button>
-            <a className="ls-btn-ghost" href="/features">See all tools →</a>
+          <div className="ls-hero-visual">
+            <VideoPublishShowcaseGraphic variant="hero" />
           </div>
-          <p className="ls-hero-note">
-            <strong>Free:</strong> Ask AI &amp; Recipe Generator.{" "}
-            <strong>Paid:</strong> Starter <strong>$19/mo</strong> · Pro <strong>$39/mo</strong> · Growth <strong>$79/mo</strong> — no per-channel fees, no install.
-          </p>
         </div>
       </section>
 
       {/* ── WHAT IS WINTAIBOT ───────────────────────────────── */}
       <section className="ls-section ls-what" aria-labelledby="what-heading">
         <h2 id="what-heading">One workspace for social video — and the rest of your work</h2>
-        <p className="ls-what-lead">
-          <strong>W!ntAi</strong> is an <strong>AI platform for social media managers</strong> who publish <strong>video across Instagram, YouTube, TikTok,</strong> and other networks — without export gymnastics.
-          The same account includes <strong>documents, transcription, email, and interview tools</strong> so teams do not pay for five different subscriptions.
-        </p>
+        <div className="ls-what-showcase">
+          <p className="ls-what-short">
+            <strong>W!ntAi</strong> is built for teams who publish <strong>video everywhere</strong> without re-exporting — same login for docs, transcription, email, and interview prep (no stack of five subscriptions).
+          </p>
+          <VideoPublishShowcaseGraphic variant="compact" />
+        </div>
         <ul className="ls-what-bullets" aria-label="What you get">
-          <li><strong>Video variants:</strong> correct format per platform you select — not one file forced everywhere</li>
-          <li><strong>Thumbnails &amp; copy:</strong> pick frames or use AI; captions and hashtags are always editable</li>
-          <li><strong>Ops in one place:</strong> schedule posts, Messages (DMs &amp; comments), optional AI auto-reply</li>
-          <li><strong>Strategy:</strong> Analytics, Trends, and Social AI grounded in your real post history</li>
-          <li><strong>Calm publishing:</strong> direct-to-network flow — fewer notification-driven steps</li>
+          <li><strong>Per-platform video</strong> — right shape and framing for each network you choose</li>
+          <li><strong>Thumbnails &amp; copy</strong> — pick frames or AI; always editable before publish</li>
+          <li><strong>One dashboard</strong> — schedule, inbox, auto-reply, analytics, Social AI on your data</li>
         </ul>
-        <p>
-          <strong>Creators and social managers</strong> live in Video Publisher and analytics; <strong>professionals</strong> use DocuWizard and Reply Enchanter;
-          <strong>job seekers</strong> use Resume Warlock; <strong>students</strong> use EchoScribe and Ask AI — all in one dashboard.
-        </p>
         <div className="ls-stat-row">
           <div className="ls-stat"><span className="ls-stat-num">8</span><span>AI Tools</span></div>
           <div className="ls-stat"><span className="ls-stat-num">Free</span><span>To Start</span></div>
@@ -251,9 +301,9 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
       </section>
 
       <section className="ls-section ls-gallery" aria-labelledby="gallery-heading">
-        <h2 id="gallery-heading">Product Screenshots</h2>
-        <p className="ls-section-sub">
-          Real screens from W!ntAi: analytics, messages, auto-reply, publishing, trimming, trends, and Social AI.
+        <h2 id="gallery-heading">Showcase</h2>
+        <p className="ls-section-sub ls-section-sub--tight">
+          Real screens — analytics, inbox, auto-reply, publish flow, calendar, and Social AI.
         </p>
         <div className="ls-gallery-slider" aria-label="Moving product screenshot slideshow">
           <div className="ls-gallery-track">
@@ -345,102 +395,11 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
         </ul>
       </section>
 
-      {/* ── VS BUFFER / METRICOOL ───────────────────────────── */}
-      <section className="ls-section ls-vs" aria-labelledby="vs-heading">
-        <h2 id="vs-heading">How W!ntAi compares to Buffer &amp; Metricool</h2>
-        <p className="ls-section-sub">
-          Buffer and Metricool are great schedulers. W!ntAi is the only one where <strong>AI does the actual work</strong> — writing, replying, picking thumbnails, and adapting your video per platform automatically.
-        </p>
-        <div className="ls-vs-table-wrap">
-          <table className="ls-vs-table" aria-label="Feature comparison: W!ntAi vs Buffer vs Metricool">
-            <thead>
-              <tr>
-                <th scope="col">Feature</th>
-                <th scope="col">Buffer</th>
-                <th scope="col">Metricool</th>
-                <th scope="col" className="ls-vs-us">W!ntAi</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>AI writes captions &amp; hashtags per platform</td>
-                <td className="ls-vs-no">❌</td>
-                <td className="ls-vs-no">❌</td>
-                <td className="ls-vs-yes">✅</td>
-              </tr>
-              <tr>
-                <td>AI auto-replies to comments 24/7 (Instagram, Facebook, YouTube)</td>
-                <td className="ls-vs-no">❌</td>
-                <td className="ls-vs-no">❌</td>
-                <td className="ls-vs-yes">✅</td>
-              </tr>
-              <tr>
-                <td>Multi-platform video — auto-fixes format per destination</td>
-                <td className="ls-vs-no">❌</td>
-                <td className="ls-vs-no">❌</td>
-                <td className="ls-vs-yes">✅</td>
-              </tr>
-              <tr>
-                <td>AI thumbnail picker (scrub or AI-suggested frames)</td>
-                <td className="ls-vs-no">❌</td>
-                <td className="ls-vs-no">❌</td>
-                <td className="ls-vs-yes">✅</td>
-              </tr>
-              <tr>
-                <td>AI scans your video &amp; pinpoints the strongest frame — "second 20 is your best thumbnail"</td>
-                <td className="ls-vs-no">❌</td>
-                <td className="ls-vs-no">❌</td>
-                <td className="ls-vs-yes">✅</td>
-              </tr>
-              <tr>
-                <td>Social AI grounded in YOUR post history (RAG)</td>
-                <td className="ls-vs-no">❌</td>
-                <td className="ls-vs-no">❌</td>
-                <td className="ls-vs-yes">✅</td>
-              </tr>
-              <tr>
-                <td>Best time to post (AI analysis)</td>
-                <td className="ls-vs-no">❌</td>
-                <td className="ls-vs-yes">✅</td>
-                <td className="ls-vs-yes">✅</td>
-              </tr>
-              <tr>
-                <td>Link-in-bio page</td>
-                <td className="ls-vs-yes">✅</td>
-                <td className="ls-vs-no">❌</td>
-                <td className="ls-vs-yes">✅</td>
-              </tr>
-              <tr>
-                <td>Document &amp; PDF analysis</td>
-                <td className="ls-vs-no">❌</td>
-                <td className="ls-vs-no">❌</td>
-                <td className="ls-vs-yes">✅</td>
-              </tr>
-              <tr>
-                <td>Audio transcription</td>
-                <td className="ls-vs-no">❌</td>
-                <td className="ls-vs-no">❌</td>
-                <td className="ls-vs-yes">✅</td>
-              </tr>
-              <tr>
-                <td>Per-channel pricing</td>
-                <td className="ls-vs-warn">⚠️ $6/channel</td>
-                <td className="ls-vs-warn">⚠️ $20/brand</td>
-                <td className="ls-vs-yes">✅ Flat subscription</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <p className="ls-vs-note">
-          Buffer and Metricool data based on publicly available information as of 2026. Feature availability may vary by plan.
-        </p>
-      </section>
-
       {/* ── FEATURES ────────────────────────────────────────── */}
       <section className="ls-section" id="features" aria-labelledby="features-heading">
-        <h2 id="features-heading">Tools for video publishing, documents, and daily work</h2>
-        <p className="ls-section-sub">
-          Social media teams get <strong>multi-platform video scheduling</strong>, captions, and analytics next to <strong>DocuWizard</strong>, <strong>EchoScribe</strong>, <strong>Ask AI</strong>, and more — one subscription, fewer tabs.
+        <h2 id="features-heading">Product showcase</h2>
+        <p className="ls-section-sub ls-section-sub--tight">
+          Video, documents, voice, and AI tools — <strong>one subscription</strong>, fewer tabs.
         </p>
         <div className="ls-features-grid" role="list">
           {features.map((f) => (
@@ -450,6 +409,7 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
               style={{ textDecoration: 'none', color: 'inherit', display: 'contents' }}
             >
               <article className="ls-feature-card ls-feature-card--linked" role="listitem">
+                {f.slug === "video-publisher" && <VideoPublishShowcaseGraphic variant="card" />}
                 <div className="ls-feature-top">
                   <span className="ls-feature-icon" aria-hidden="true">{f.icon}</span>
                   <span className={`ls-badge ls-badge--${f.badge.toLowerCase()}`}>{f.badge}</span>

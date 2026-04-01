@@ -16,7 +16,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/analyzer': 'DocuWizard',
   '/transcription': 'EchoScribe',
   '/Content': 'Reply Enchanter',
-  '/Resume': 'Resume Worlock',
+  '/Resume': 'Career Alchemist',
   '/account': 'Account',
   '/video-publisher': 'Video Publisher',
   '/social-connect': 'Connected Accounts',
@@ -135,7 +135,8 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         <nav style={s.nav}>
           <NavItem emoji="🏠" label="Dashboard" href="/" active={pathname === '/'} />
 
-          <div style={s.groupLabel}>AI Tools</div>
+          <div style={s.navDivider} role="separator" aria-hidden="true" />
+          <div style={s.groupLabel}>Smart Hub</div>
           <NavItem emoji="💬" label="Ask AI" href="/chat" active={pathname === '/chat'} hasArrow />
           <NavItem
             emoji="🖼️"
@@ -150,7 +151,8 @@ export default function DashboardShell({ children }: { children: React.ReactNode
             active={pathname === '/recipe-generator'}
           />
 
-          <div style={s.groupLabel}>Documents</div>
+          <div style={s.navDivider} role="separator" aria-hidden="true" />
+          <div style={s.groupLabel}>Digital Vault</div>
           <NavItem emoji="🧙‍♂️" label="DocuWizard" href="/analyzer" active={pathname === '/analyzer'} />
           <NavItem
             emoji="🎙️"
@@ -159,7 +161,8 @@ export default function DashboardShell({ children }: { children: React.ReactNode
             active={pathname === '/transcription'}
           />
 
-          <div style={s.groupLabel}>Social Media</div>
+          <div style={s.navDivider} role="separator" aria-hidden="true" />
+          <div style={s.groupLabel}>Social HQ</div>
           <NavItem emoji="📊" label="Analytics" href="/analytics" active={pathname === '/analytics'} />
           <NavItem
             emoji="💬"
@@ -171,13 +174,15 @@ export default function DashboardShell({ children }: { children: React.ReactNode
           <NavItem emoji="🧠" label="Social AI" href="/social-ai" active={pathname === '/social-ai'} />
           <NavItem emoji="🗓️" label="Content Calendar" href="/calendar" active={pathname === '/calendar'} />
 
-          <div style={s.groupLabel}>Writing Tools</div>
+          <div style={s.navDivider} role="separator" aria-hidden="true" />
+          <div style={s.groupLabel}>The Forge</div>
           <NavItem emoji="✉️" label="Reply Enchanter" href="/Content" active={pathname === '/Content'} />
-          <NavItem emoji="📝" label="Resume Worlock" href="/Resume" active={pathname === '/Resume'} />
+          <NavItem emoji="⚗️" label="Career Alchemist" href="/Resume" active={pathname === '/Resume'} />
 
           {user && (
             <>
-              <div style={s.groupLabel}>Settings</div>
+              <div style={s.navDividerStrong} role="separator" aria-hidden="true" />
+              <div style={s.groupLabelFooter}>Settings</div>
               <NavItem emoji="⚙️" label="Account" href="/account" active={pathname === '/account'} hasArrow />
               <NavItem emoji="💳" label="Pricing" href="/pricing" active={pathname === '/pricing'} />
             </>
@@ -398,8 +403,30 @@ const s: Record<string, any> = {
     color: 'rgba(255,255,255,0.32)',
     textTransform: 'uppercase',
     letterSpacing: '1px',
-    padding: '16px 12px 6px',
+    padding: '10px 12px 6px',
     whiteSpace: 'nowrap',
+  },
+  groupLabelFooter: {
+    fontSize: '10px',
+    fontWeight: '700',
+    color: 'rgba(255,255,255,0.24)',
+    textTransform: 'uppercase',
+    letterSpacing: '1.2px',
+    padding: '4px 12px 6px',
+    whiteSpace: 'nowrap',
+  },
+  navDivider: {
+    height: 0,
+    border: 'none',
+    borderTop: '1px solid rgba(255,255,255,0.07)',
+    margin: '8px 14px 2px',
+  },
+  navDividerStrong: {
+    height: 0,
+    border: 'none',
+    borderTop: '1px solid rgba(148,163,184,0.38)',
+    margin: '14px 10px 6px',
+    boxShadow: '0 1px 0 rgba(255,255,255,0.05)',
   },
   sidebarFooter: {
     padding: '10px 8px 16px',

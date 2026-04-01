@@ -27,6 +27,53 @@ const landingPublishPlatforms = [
   { id: 'pinterest', label: 'Pinterest', emoji: '📌', color: '#E60023', logo: 'pinterest' },
 ] as const;
 
+const VP_SHOWCASE_PLATFORMS = [
+  { slug: 'youtube', color: 'FF0000' },
+  { slug: 'tiktok', color: '000000' },
+  { slug: 'facebook', color: '1877F2' },
+  { slug: 'instagram', color: 'E4405F' },
+] as const;
+
+function VideoPublishShowcaseGraphic({ variant = 'hero' }: { variant?: 'hero' | 'card' | 'compact' }) {
+  const v = variant === 'card' ? 'card' : variant === 'compact' ? 'compact' : 'hero';
+  const imgSize = v === 'hero' ? 40 : v === 'compact' ? 34 : 32;
+  return (
+    <figure
+      className={`ls-vp-showcase ls-vp-showcase--${v}`}
+      aria-label="One video publishing to YouTube, TikTok, Facebook, and Instagram"
+    >
+      <div className="ls-vp-showcase__col ls-vp-showcase__col--src">
+        <div className="ls-vp-showcase__screen">
+          <div className="ls-vp-showcase__glow" aria-hidden="true" />
+          <span className="ls-vp-showcase__play" aria-hidden="true">
+            ▶
+          </span>
+        </div>
+        {v !== 'card' && <span className="ls-vp-showcase__label">One upload</span>}
+      </div>
+      <div className="ls-vp-showcase__beam" aria-hidden="true">
+        <span className="ls-vp-showcase__particle" />
+        <span className="ls-vp-showcase__particle ls-vp-showcase__particle--d1" />
+        <span className="ls-vp-showcase__particle ls-vp-showcase__particle--d2" />
+      </div>
+      <div className="ls-vp-showcase__targets">
+        {VP_SHOWCASE_PLATFORMS.map((p) => (
+          <div key={p.slug} className="ls-vp-showcase__target">
+            <img
+              src={`${SI}/${p.slug}/${p.color}`}
+              alt=""
+              width={imgSize}
+              height={imgSize}
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
+        ))}
+      </div>
+    </figure>
+  );
+}
+
 const features = [
   {
     icon: '🤖',
@@ -176,30 +223,35 @@ export default function LandingSection() {
 
   return (
     <main className="ls-root" aria-label="W!ntAi – AI Platform">
-      <section className="ls-hero" aria-labelledby="hero-heading">
-        <div className="ls-hero-badge">AI Social Media Publishing &amp; Analytics Platform</div>
-        <h1 id="hero-heading" className="ls-hero-h1">
-          Plan, Publish, and Optimize
-          <br />
-          Your Social Media Workflow with AI
-        </h1>
-        <p className="ls-hero-sub">
-          W!ntAi helps creators and teams run social operations end to end: publish videos,
-          schedule content by platform, manage messages and replies, track deep analytics, and use
-          AI insights to decide what to post next.
-        </p>
-        <div className="ls-hero-actions">
-          <Link href="/chat" className="ls-btn-primary">
-            Try Free — No Credit Card
-          </Link>
-          <Link href="/#features" className="ls-btn-ghost">
-            See All Features →
-          </Link>
+      <section className="ls-hero ls-hero--showcase" aria-labelledby="hero-heading">
+        <div className="ls-hero-inner ls-hero-inner--split">
+          <div className="ls-hero-copy">
+            <div className="ls-hero-badge">AI Social Media Publishing &amp; Analytics Platform</div>
+            <h1 id="hero-heading" className="ls-hero-h1">
+              Plan, Publish, and Optimize
+              <br />
+              Your Social Media Workflow with AI
+            </h1>
+            <p className="ls-hero-sub">
+              <strong>One workspace</strong> for video, scheduling, inbox, analytics, and AI — so you spend less time in tabs and more time creating.
+            </p>
+            <div className="ls-hero-actions">
+              <Link href="/chat" className="ls-btn-primary">
+                Try Free — No Credit Card
+              </Link>
+              <Link href="/#features" className="ls-btn-ghost">
+                See showcase →
+              </Link>
+            </div>
+            <p className="ls-hero-note">
+              Free tier includes <strong>Ask AI</strong> and <strong>Recipe Generator</strong>. Paid
+              plans from <strong>$19/month</strong> (or <strong>$15/mo</strong> billed annually).
+            </p>
+          </div>
+          <div className="ls-hero-visual">
+            <VideoPublishShowcaseGraphic variant="hero" />
+          </div>
         </div>
-        <p className="ls-hero-note">
-          Free tier includes <strong>Ask AI</strong> and <strong>Recipe Generator</strong>. Paid
-          plans from <strong>$19/month</strong> (or <strong>$15/mo</strong> billed annually).
-        </p>
       </section>
 
       <section className="ls-section ls-what" aria-labelledby="what-heading">
@@ -235,14 +287,14 @@ export default function LandingSection() {
       </section>
 
       <section className="ls-section" id="features" aria-labelledby="features-heading">
-        <h2 id="features-heading">Everything You Need, Built In</h2>
-        <p className="ls-section-sub">
-          W!ntAi is built around social execution: content creation support, publish scheduling,
-          analytics visibility, and engagement workflows in one dashboard.
+        <h2 id="features-heading">Product showcase</h2>
+        <p className="ls-section-sub ls-section-sub--tight">
+          Video, documents, voice, and AI tools — <strong>one subscription</strong>, fewer tabs.
         </p>
         <div className="ls-features-grid" role="list">
           {features.map((f) => (
             <article className="ls-feature-card" key={f.title} role="listitem">
+              {f.title.startsWith('Video Publisher') && <VideoPublishShowcaseGraphic variant="card" />}
               <div className="ls-feature-top">
                 <span className="ls-feature-icon" aria-hidden="true">
                   {f.icon}

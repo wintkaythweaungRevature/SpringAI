@@ -267,7 +267,7 @@ export default function AccountSettings() {
             <div style={{ marginTop: 12 }}>
               <p style={s.desc}>
                 Upgrade (from $19/month; annual options) to unlock Image Generator, Transcription,
-                DocuWizard, Reply Enchanter, and Resume Worlock.
+                DocuWizard, Reply Enchanter, and Career Alchemist.
               </p>
               <button onClick={handleUpgrade} disabled={!!loading} style={s.btnSuccess}>
                 {loading === 'upgrade' ? 'Redirecting...' : 'Upgrade — plans from $19/mo'}

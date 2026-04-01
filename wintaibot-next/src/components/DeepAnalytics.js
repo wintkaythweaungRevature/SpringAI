@@ -1249,6 +1249,48 @@ function extractScheduledRows(payload) {
   return [];
 }
 
+const YEARLY_DOW_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
+/** Weekday activity for one month (same rules as monthly Best Times). */
+function monthDowScoresFromCalendarPayload(d) {
+  const hm = normalizeCalendarBestTimeOverlay(d);
+  let scores = dayScoresFromHeatmapRows(hm);
+  const maxH = Math.max(...scores, 0);
+  if (maxH === 0 && d) {
+    scores = dayScoresFromPostDates([...(d.posts || []), ...(d.scheduled || [])]);
+  }
+  const max = Math.max(...scores, 0);
+  return { scores, max: Math.max(max, 1), hasAny: max > 0 };
+}
+
+/** Per-day and weekday aggregates for yearly calendar cards. */
+function aggregateYearMonthStats(year, month1Based, d) {
+  const posts = Array.isArray(d?.posts) ? d.posts : [];
+  const scheduled = Array.isArray(d?.scheduled) ? d.scheduled : [];
+  const all = [...posts, ...scheduled];
+  const daysInMonth = new Date(year, month1Based, 0).getDate();
+  const dayIntensity = Array(daysInMonth).fill(0);
+  const prefix = `${year}-${String(month1Based).padStart(2, '0')}-`;
+  all.forEach((rec) => {
+    const key = calendarLocalDateKey(rec);
+    if (!key || !key.startsWith(prefix)) return;
+    const dd = parseInt(key.slice(8, 10), 10);
+    if (dd >= 1 && dd <= daysInMonth) dayIntensity[dd - 1] += 1;
+  });
+  const maxDayIntensity = Math.max(...dayIntensity, 0);
+  const { scores: dowScores, max: dowMax, hasAny: dowHasAny } = monthDowScoresFromCalendarPayload(d);
+  return {
+    posts: posts.length,
+    scheduled: scheduled.length,
+    total: posts.length + scheduled.length,
+    dayIntensity,
+    maxDayIntensity: Math.max(maxDayIntensity, 1),
+    dowScores,
+    dowMax,
+    dowHasAny,
+  };
+}
+
 /* ── Trends Calendar ─────────────────────────────────────────── */
 function TrendsCalendar({ authHeaders }) {
   const today     = new Date();
@@ -1342,13 +1384,11 @@ function TrendsCalendar({ authHeaders }) {
         monthNums.map(async (m) => {
           try {
             const r = await fetch(`${API}/api/analytics/calendar?year=${year}&month=${m}`, { headers });
-            if (!r.ok) return [m, { posts: 0, scheduled: 0 }];
+            if (!r.ok) return [m, aggregateYearMonthStats(year, m, {})];
             const d = await r.json();
-            const postsCount = Array.isArray(d?.posts) ? d.posts.length : 0;
-            const schedCount = Array.isArray(d?.scheduled) ? d.scheduled.length : 0;
-            return [m, { posts: postsCount, scheduled: schedCount }];
+            return [m, aggregateYearMonthStats(year, m, d)];
           } catch {
-            return [m, { posts: 0, scheduled: 0 }];
+            return [m, aggregateYearMonthStats(year, m, {})];
           }
         })
       );
@@ -1372,6 +1412,36 @@ function TrendsCalendar({ authHeaders }) {
     else setMonth(m => m + 1);
     setSelectedDay(null);
   };
+
+  const prevRange = () => {
+    if (rangeView === 'yearly') {
+      setYear((y) => y - 1);
+      setSelectedDay(null);
+    } else {
+      prevMonth();
+    }
+  };
+  const nextRange = () => {
+    if (rangeView === 'yearly') {
+      setYear((y) => y + 1);
+      setSelectedDay(null);
+    } else {
+      nextMonth();
+    }
+  };
+
+  const yearTotals = useMemo(() => {
+    let pub = 0;
+    let sch = 0;
+    for (let m = 1; m <= 12; m += 1) {
+      const s = yearSummary[m];
+      if (s) {
+        pub += s.posts || 0;
+        sch += s.scheduled || 0;
+      }
+    }
+    return { pub, sch, total: pub + sch };
+  }, [yearSummary]);
 
   // Build calendar grid
   const firstDayOfMonth = new Date(year, month - 1, 1).getDay(); // 0=Sun
@@ -1475,7 +1545,8 @@ function TrendsCalendar({ authHeaders }) {
         >
           <strong>Best Times</strong> shows weekday activity shading only — it does{' '}
           <strong>not</strong> list scheduled posts. Tap <strong>📌 My Posts</strong> above to see yellow squares
-          (scheduled) and colored dots (published) on each day.
+          (scheduled) and colored dots (published) on each day. In <strong>Yearly</strong> view, each month card shows a
+          small weekday bar chart for that month.
         </div>
       )}
 
@@ -1510,11 +1581,11 @@ function TrendsCalendar({ authHeaders }) {
           >Yearly</button>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <button onClick={prevMonth} style={s.navBtn}>‹</button>
+          <button type="button" onClick={prevRange} style={s.navBtn} aria-label={rangeView === 'yearly' ? 'Previous year' : 'Previous month'}>‹</button>
           <span style={{ fontWeight: 700, fontSize: 15, color: '#1e293b', minWidth: 130, textAlign: 'center' }}>
             {rangeView === 'monthly' ? `${MONTH_NAMES[month - 1]} ${year}` : year}
           </span>
-          <button onClick={nextMonth} style={s.navBtn}>›</button>
+          <button type="button" onClick={nextRange} style={s.navBtn} aria-label={rangeView === 'yearly' ? 'Next year' : 'Next month'}>›</button>
         </div>
       </div>
 
@@ -1526,10 +1597,46 @@ function TrendsCalendar({ authHeaders }) {
           padding: 14,
           display: 'grid',
           gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-          gap: 10,
+          gap: 12,
         }}>
+          <div style={{ gridColumn: '1 / -1' }}>
+            <div style={{
+              padding: '12px 14px',
+              background: '#f8fafc',
+              borderRadius: 12,
+              border: '1px solid #e2e8f0',
+              marginBottom: 4,
+            }}>
+              <div style={{ fontWeight: 800, fontSize: 14, color: '#1e293b' }}>{year} at a glance</div>
+              <div style={{ fontSize: 12, color: '#64748b', marginTop: 6, lineHeight: 1.5 }}>
+                {yearSummaryLoading ? (
+                  'Loading all months…'
+                ) : (
+                  <>
+                    <strong style={{ color: '#15803d' }}>{yearTotals.pub}</strong> published
+                    {' · '}
+                    <strong style={{ color: '#a16207' }}>{yearTotals.sch}</strong> scheduled
+                    {yearTotals.total === 0 && (
+                      <span> — activity appears here once you publish or schedule from Video Publisher.</span>
+                    )}
+                  </>
+                )}
+              </div>
+              {calView === 'besttime' && (
+                <div style={{ fontSize: 11, color: '#57534e', marginTop: 8, lineHeight: 1.45 }}>
+                  <strong>Best Times (yearly):</strong> each card shows <strong>weekday volume</strong> for that month (bar height = relative posts). Open a month for the full heatmap.
+                </div>
+              )}
+              {calView === 'posts' && (
+                <div style={{ fontSize: 11, color: '#57534e', marginTop: 8, lineHeight: 1.45 }}>
+                  <strong>My Posts (yearly):</strong> each row of blocks is <strong>day 1 → last day</strong> of the month; darker indigo = more posts that day. Bars below are published vs scheduled share.
+                </div>
+              )}
+            </div>
+          </div>
           {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => {
-            const stats = yearSummary[m] || { posts: 0, scheduled: 0 };
+            const raw = yearSummary[m];
+            const stats = raw && Array.isArray(raw.dayIntensity) ? raw : aggregateYearMonthStats(year, m, {});
             return (
               <button
                 key={m}
@@ -1538,20 +1645,105 @@ function TrendsCalendar({ authHeaders }) {
                 style={{
                   border: `1.5px solid ${m === month ? '#6366f1' : '#e2e8f0'}`,
                   background: m === month ? '#f5f3ff' : '#fff',
-                  borderRadius: 10,
-                  padding: '10px 12px',
+                  borderRadius: 12,
+                  padding: '10px 10px 8px',
                   textAlign: 'left',
                   cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  minHeight: 120,
                 }}
               >
-                <div style={{ fontSize: 12, fontWeight: 800, color: '#1e293b', marginBottom: 6 }}>{MONTH_NAMES[m - 1]}</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <span style={{ fontSize: 13, fontWeight: 800, color: '#1e293b' }}>{MONTH_NAMES[m - 1]}</span>
+                  {stats.total > 0 && (
+                    <span style={{
+                      fontSize: 10,
+                      fontWeight: 700,
+                      color: '#4338ca',
+                      background: '#eef2ff',
+                      padding: '2px 7px',
+                      borderRadius: 99,
+                    }}>
+                      {stats.total}
+                    </span>
+                  )}
+                </div>
                 {yearSummaryLoading ? (
-                  <div style={{ fontSize: 11, color: '#94a3b8' }}>Loading…</div>
+                  <div style={{ flex: 1, background: '#f1f5f9', borderRadius: 8, minHeight: 48 }} />
+                ) : calView === 'posts' ? (
+                  <>
+                    <div style={{ display: 'flex', gap: 1, height: 24, alignItems: 'flex-end', marginBottom: 8 }}>
+                      {stats.dayIntensity.map((cnt, di) => {
+                        const hPct = stats.maxDayIntensity > 0 && cnt > 0
+                          ? Math.max(15, (cnt / stats.maxDayIntensity) * 100)
+                          : cnt > 0 ? 40 : 8;
+                        const alpha = stats.maxDayIntensity > 0 && cnt > 0
+                          ? 0.28 + (cnt / stats.maxDayIntensity) * 0.72
+                          : 0.14;
+                        return (
+                          <div
+                            key={di}
+                            title={`${MONTH_NAMES[m - 1]} ${di + 1}: ${cnt} ${cnt === 1 ? 'item' : 'items'}`}
+                            style={{
+                              flex: 1,
+                              minWidth: 0,
+                              height: `${hPct}%`,
+                              minHeight: cnt > 0 ? 3 : 2,
+                              background: cnt > 0 ? `rgba(99,102,241,${alpha})` : '#f1f5f9',
+                              borderRadius: 1,
+                            }}
+                          />
+                        );
+                      })}
+                    </div>
+                    <div style={{ display: 'flex', height: 5, borderRadius: 3, overflow: 'hidden', marginBottom: 6, background: '#f1f5f9' }}>
+                      {stats.total > 0 ? (
+                        <>
+                          <div style={{ width: `${(stats.posts / stats.total) * 100}%`, background: '#10b981' }} title="Published share" />
+                          <div style={{ width: `${(stats.scheduled / stats.total) * 100}%`, background: '#ca8a04' }} title="Scheduled share" />
+                        </>
+                      ) : null}
+                    </div>
+                    <div style={{ fontSize: 10, color: '#64748b', display: 'flex', gap: 10, marginTop: 'auto' }}>
+                      <span>Pub <strong style={{ color: '#334155' }}>{stats.posts}</strong></span>
+                      <span>Sched <strong style={{ color: '#a16207' }}>{stats.scheduled}</strong></span>
+                    </div>
+                  </>
                 ) : (
-                  <div style={{ fontSize: 11, color: '#64748b', lineHeight: 1.5 }}>
-                    <div>Published: <strong style={{ color: '#334155' }}>{stats.posts}</strong></div>
-                    <div>Scheduled: <strong style={{ color: '#a16207' }}>{stats.scheduled}</strong></div>
-                  </div>
+                  <>
+                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 40, marginBottom: 4 }}>
+                      {stats.dowScores.map((sc, di) => {
+                        const barPx = stats.dowMax > 0 && sc > 0
+                          ? 4 + Math.round((sc / stats.dowMax) * 30)
+                          : 3;
+                        return (
+                          <div
+                            key={di}
+                            style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, minWidth: 0 }}
+                            title={`${['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][di]}: ${sc}`}
+                          >
+                            <div style={{
+                              width: '100%',
+                              height: barPx,
+                              minHeight: 3,
+                              background: sc > 0 ? 'linear-gradient(180deg,#4f46e5,#818cf8)' : '#f1f5f9',
+                              borderRadius: 2,
+                            }} />
+                            <span style={{ fontSize: 8, color: '#94a3b8', fontWeight: 700 }}>{YEARLY_DOW_LABELS[di]}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {!stats.dowHasAny && (
+                      <div style={{ fontSize: 10, color: '#94a3b8', marginBottom: 4 }}>No weekday data this month</div>
+                    )}
+                    <div style={{ fontSize: 10, color: '#64748b', marginTop: 'auto' }}>
+                      Pub <strong style={{ color: '#334155' }}>{stats.posts}</strong>
+                      {' · '}
+                      Sched <strong style={{ color: '#a16207' }}>{stats.scheduled}</strong>
+                    </div>
+                  </>
                 )}
               </button>
             );

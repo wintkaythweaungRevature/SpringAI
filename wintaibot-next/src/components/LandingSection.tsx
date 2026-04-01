@@ -155,18 +155,21 @@ const testimonials = [
   {
     name: 'Sarah K.',
     role: 'HR Manager',
+    avatar: 'https://api.dicebear.com/7.x/notionists/svg?seed=sarahK&backgroundColor=e0e7ff',
     quote:
       'Resume Warlock helped me prep candidates before interviews. The AI-generated questions were spot-on for each resume. We cut interview prep time by half.',
   },
   {
     name: 'James T.',
     role: 'Freelance Developer',
+    avatar: 'https://api.dicebear.com/7.x/notionists/svg?seed=jamesT&backgroundColor=c7d2fe',
     quote:
       "I use Ask AI and Reply Enchanter every day. It's like having an assistant who never sleeps. The email drafts are professional and save me 30 minutes daily.",
   },
   {
     name: 'Mei L.',
     role: 'Graduate Student',
+    avatar: 'https://api.dicebear.com/7.x/notionists/svg?seed=meiL&backgroundColor=fce7f3',
     quote:
       'EchoScribe transcribes my lectures perfectly. I paste the transcript into Ask AI to get summaries and study notes. It\'s transformed how I study.',
   },
@@ -608,7 +611,19 @@ export default function LandingSection() {
             <blockquote className="ls-testimonial" key={t.name}>
               <p className="ls-testimonial-quote">&quot;{t.quote}&quot;</p>
               <footer className="ls-testimonial-author">
-                <strong>{t.name}</strong> · {t.role}
+                <img
+                  className="ls-testimonial-avatar"
+                  src={t.avatar}
+                  alt=""
+                  width={52}
+                  height={52}
+                  loading="lazy"
+                  decoding="async"
+                />
+                <div className="ls-testimonial-author-meta">
+                  <strong>{t.name}</strong>
+                  <span className="ls-testimonial-role">{t.role}</span>
+                </div>
               </footer>
             </blockquote>
           ))}

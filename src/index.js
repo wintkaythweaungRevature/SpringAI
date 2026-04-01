@@ -39,6 +39,8 @@ function Root() {
         <Route path="/features" element={<SEOPublicLayout />} />
         <Route path="/pricing" element={<SEOPublicLayout />} />
         <Route path="/use-cases" element={<SEOPublicLayout />} />
+        <Route path="/blog" element={<SEOPublicLayout />} />
+        <Route path="/tutorial" element={<SEOPublicLayout />} />
         <Route path="/docs" element={<SEOPublicLayout />} />
         <Route path="/tools/:slug" element={<ToolLandingPage />} />
         <Route path="/u/:slug" element={<PublicBioPage />} />

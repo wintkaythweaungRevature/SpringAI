@@ -30,6 +30,14 @@ const PAGE_TITLES: Record<string, string> = {
   '/pricing': 'Pricing & Plans',
 };
 
+const SIDEBAR_GROUPS = {
+  smartHub: 'Smart Hub',
+  digitalVault: 'Digital Vault',
+  socialHq: 'Social HQ',
+  theForge: 'The Forge',
+  settings: 'Settings',
+} as const;
+
 function NavItem({
   emoji,
   label,
@@ -136,7 +144,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
           <NavItem emoji="🏠" label="Dashboard" href="/" active={pathname === '/'} />
 
           <div style={s.navDivider} role="separator" aria-hidden="true" />
-          <div style={s.groupLabel}>Smart Hub</div>
+          <div style={s.groupLabel}>{SIDEBAR_GROUPS.smartHub}</div>
           <NavItem emoji="💬" label="Ask AI" href="/chat" active={pathname === '/chat'} hasArrow />
           <NavItem
             emoji="🖼️"
@@ -152,7 +160,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
           />
 
           <div style={s.navDivider} role="separator" aria-hidden="true" />
-          <div style={s.groupLabel}>Digital Vault</div>
+          <div style={s.groupLabel}>{SIDEBAR_GROUPS.digitalVault}</div>
           <NavItem emoji="🧙‍♂️" label="DocuWizard" href="/analyzer" active={pathname === '/analyzer'} />
           <NavItem
             emoji="🎙️"
@@ -162,7 +170,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
           />
 
           <div style={s.navDivider} role="separator" aria-hidden="true" />
-          <div style={s.groupLabel}>Social HQ</div>
+          <div style={s.groupLabel}>{SIDEBAR_GROUPS.socialHq}</div>
           <NavItem emoji="📊" label="Analytics" href="/analytics" active={pathname === '/analytics'} />
           <NavItem
             emoji="💬"
@@ -175,17 +183,17 @@ export default function DashboardShell({ children }: { children: React.ReactNode
           <NavItem emoji="🗓️" label="Content Calendar" href="/calendar" active={pathname === '/calendar'} />
 
           <div style={s.navDivider} role="separator" aria-hidden="true" />
-          <div style={s.groupLabel}>The Forge</div>
+          <div style={s.groupLabel}>{SIDEBAR_GROUPS.theForge}</div>
           <NavItem emoji="✉️" label="Reply Enchanter" href="/Content" active={pathname === '/Content'} />
           <NavItem emoji="⚗️" label="Career Alchemist" href="/Resume" active={pathname === '/Resume'} />
 
           {user && (
-            <>
+            <div style={s.navFooterBlock}>
               <div style={s.navDividerStrong} role="separator" aria-hidden="true" />
-              <div style={s.groupLabelFooter}>Settings</div>
+              <div style={s.groupLabelFooter}>{SIDEBAR_GROUPS.settings}</div>
               <NavItem emoji="⚙️" label="Account" href="/account" active={pathname === '/account'} hasArrow />
               <NavItem emoji="💳" label="Pricing" href="/pricing" active={pathname === '/pricing'} />
-            </>
+            </div>
           )}
         </nav>
 
@@ -398,20 +406,20 @@ const s: Record<string, any> = {
     scrollbarWidth: 'none',
   },
   groupLabel: {
-    fontSize: '10.5px',
-    fontWeight: '700',
-    color: 'rgba(255,255,255,0.32)',
-    textTransform: 'uppercase',
-    letterSpacing: '1px',
+    fontSize: '11px',
+    fontWeight: '800',
+    color: 'rgba(255,255,255,0.5)',
+    textTransform: 'none',
+    letterSpacing: '0.02em',
     padding: '10px 12px 6px',
     whiteSpace: 'nowrap',
   },
   groupLabelFooter: {
-    fontSize: '10px',
-    fontWeight: '700',
-    color: 'rgba(255,255,255,0.24)',
-    textTransform: 'uppercase',
-    letterSpacing: '1.2px',
+    fontSize: '10.5px',
+    fontWeight: '800',
+    color: 'rgba(255,255,255,0.38)',
+    textTransform: 'none',
+    letterSpacing: '0.06em',
     padding: '4px 12px 6px',
     whiteSpace: 'nowrap',
   },
@@ -424,9 +432,18 @@ const s: Record<string, any> = {
   navDividerStrong: {
     height: 0,
     border: 'none',
-    borderTop: '1px solid rgba(148,163,184,0.38)',
-    margin: '14px 10px 6px',
-    boxShadow: '0 1px 0 rgba(255,255,255,0.05)',
+    borderTop: '1px solid rgba(148,163,184,0.55)',
+    margin: '0 0 8px',
+    boxShadow: '0 1px 0 rgba(255,255,255,0.08)',
+  },
+  navFooterBlock: {
+    marginTop: 10,
+    marginLeft: 2,
+    marginRight: 2,
+    padding: '8px 6px 6px',
+    borderRadius: 12,
+    background: 'rgba(0,0,0,0.22)',
+    border: '1px solid rgba(255,255,255,0.07)',
   },
   sidebarFooter: {
     padding: '10px 8px 16px',

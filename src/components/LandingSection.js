@@ -175,18 +175,21 @@ const testimonials = [
   {
     name: "Sarah K.",
     role: "HR Manager",
+    avatar: "https://api.dicebear.com/7.x/notionists/svg?seed=sarahK&backgroundColor=e0e7ff",
     quote:
       "Resume Warlock helped me prep candidates before interviews. The AI-generated questions were spot-on for each resume. We cut interview prep time by half.",
   },
   {
     name: "James T.",
     role: "Freelance Developer",
+    avatar: "https://api.dicebear.com/7.x/notionists/svg?seed=jamesT&backgroundColor=c7d2fe",
     quote:
       "I use Ask AI and Reply Enchanter every day. It's like having an assistant who never sleeps. The email drafts are professional and save me 30 minutes daily.",
   },
   {
     name: "Mei L.",
     role: "Graduate Student",
+    avatar: "https://api.dicebear.com/7.x/notionists/svg?seed=meiL&backgroundColor=fce7f3",
     quote:
       "EchoScribe transcribes my lectures perfectly. I paste the transcript into Ask AI to get summaries and study notes. It's transformed how I study.",
   },
@@ -205,8 +208,6 @@ const techStack = [
 
 const landingGallery = [
   "c__Users_wintk_AppData_Roaming_Cursor_User_workspaceStorage_69bc542c894986623db97e4396cf2017_images_image-079a4005-12cf-4525-a9ea-c9074eea79eb.png",
-  "c__Users_wintk_AppData_Roaming_Cursor_User_workspaceStorage_69bc542c894986623db97e4396cf2017_images_image-2895b007-805a-4e55-a006-2e9a937b09b8.png",
-  "c__Users_wintk_AppData_Roaming_Cursor_User_workspaceStorage_69bc542c894986623db97e4396cf2017_images_image-53b995df-abdc-4bef-a7af-99a3d0979156.png",
   "c__Users_wintk_AppData_Roaming_Cursor_User_workspaceStorage_69bc542c894986623db97e4396cf2017_images_image-c992bddf-ef70-47e2-b477-8f651555a515.png",
   "c__Users_wintk_AppData_Roaming_Cursor_User_workspaceStorage_69bc542c894986623db97e4396cf2017_images_image-97713f70-08dd-4f0b-acb5-2e86a6ee386b.png",
   "c__Users_wintk_AppData_Roaming_Cursor_User_workspaceStorage_69bc542c894986623db97e4396cf2017_images_image-b8738e01-43b6-43fa-b1fa-93c4b23e6e1c.png",
@@ -630,10 +631,46 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
             <blockquote className="ls-testimonial" key={t.name}>
               <p className="ls-testimonial-quote">"{t.quote}"</p>
               <footer className="ls-testimonial-author">
-                <strong>{t.name}</strong> · {t.role}
+                <img
+                  className="ls-testimonial-avatar"
+                  src={t.avatar}
+                  alt=""
+                  width={52}
+                  height={52}
+                  loading="lazy"
+                  decoding="async"
+                />
+                <div className="ls-testimonial-author-meta">
+                  <strong>{t.name}</strong>
+                  <span className="ls-testimonial-role">{t.role}</span>
+                </div>
               </footer>
             </blockquote>
           ))}
+        </div>
+      </section>
+
+      {/* ── RESOURCES: BLOG & TUTORIAL ──────────────────────── */}
+      <section className="ls-section ls-resources" id="resources" aria-labelledby="resources-heading">
+        <h2 id="resources-heading">Resources</h2>
+        <p className="ls-section-sub">
+          Articles and walkthroughs to help you publish smarter and get more from W!ntAi.
+        </p>
+        <div className="ls-resources-grid">
+          <article className="ls-resource-card" id="blog" aria-labelledby="blog-heading">
+            <h3 id="blog-heading">Blog</h3>
+            <p>
+              Product updates, creator tips, and how we think about AI, video, and social workflows.
+            </p>
+            <a className="ls-resource-link" href="/blog">View Blog →</a>
+          </article>
+          <article className="ls-resource-card" id="tutorial" aria-labelledby="tutorial-heading">
+            <h3 id="tutorial-heading">Tutorial</h3>
+            <p>
+              Step-by-step guides for Video Publisher, scheduling, analytics, messages, and more.
+            </p>
+            <a className="ls-resource-link" href="/tutorial">View Tutorials →</a>
+          </article>
         </div>
       </section>
 
@@ -791,7 +828,11 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
         <nav className="ls-footer-nav" aria-label="Footer navigation">
           <a href="/features">Features</a>
           <a href="/pricing">Pricing</a>
-          <a href="/use-cases">Use Cases</a>
+          <span className="ls-footer-nav-group" role="group" aria-label="Resources">
+            <span className="ls-footer-nav-label">Resources</span>
+            <a href="/blog">Blog</a>
+            <a href="/tutorial">Tutorial</a>
+          </span>
           <a href="/#about">About</a>
           <a href="/#faq">FAQ</a>
           <a href="https://github.com/wintkaythweaungRevature" target="_blank" rel="noopener noreferrer">GitHub</a>

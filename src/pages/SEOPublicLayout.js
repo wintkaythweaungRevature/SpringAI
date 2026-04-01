@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import LandingSection from '../components/LandingSection';
@@ -21,6 +21,14 @@ const ROUTE_META = {
     title: 'Who Uses W!ntAi – Job Seekers, Professionals, Creators | W!ntAi',
     description: 'Job seekers, business professionals, students, content creators, and teams use W!ntAi to automate documents, emails, and more.',
   },
+  '/blog': {
+    title: 'Blog – Guides & Updates | W!ntAi',
+    description: 'Product updates, creator tips, and articles from the W!ntAi team.',
+  },
+  '/tutorial': {
+    title: 'Tutorials – How to Use W!ntAi | W!ntAi',
+    description: 'Step-by-step tutorials for Video Publisher, scheduling, analytics, and more.',
+  },
   '/docs': {
     title: 'Documentation & API | W!ntAi',
     description: 'W!ntAi API documentation, Swagger UI, and integration guides.',
@@ -30,6 +38,7 @@ const ROUTE_META = {
 export default function SEOPublicLayout({ onGetStarted, onOpenVideoPublisher }) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  const [resourcesOpen, setResourcesOpen] = useState(false);
   const handleGetStarted = () => (onGetStarted ? onGetStarted() : navigate('/?auth=signup'));
   const handleLogin = () => navigate('/?auth=login');
   const meta = ROUTE_META[pathname] || ROUTE_META['/'];
@@ -60,7 +69,27 @@ export default function SEOPublicLayout({ onGetStarted, onOpenVideoPublisher }) 
             <a href="/">Home</a>
             <a href="/features">Features</a>
             <a href="/pricing">Pricing</a>
-            <a href="/use-cases">Use Cases</a>
+            <div
+              className="seo-nav-dropdown"
+              onMouseEnter={() => setResourcesOpen(true)}
+              onMouseLeave={() => setResourcesOpen(false)}
+            >
+              <button
+                type="button"
+                className="seo-nav-dropdown-trigger"
+                aria-expanded={resourcesOpen}
+                aria-haspopup="true"
+                onClick={() => setResourcesOpen((o) => !o)}
+              >
+                Resources <span aria-hidden="true">▾</span>
+              </button>
+              {resourcesOpen && (
+                <div className="seo-nav-dropdown-menu" role="menu">
+                  <a href="/blog" role="menuitem" onClick={() => setResourcesOpen(false)}>Blog</a>
+                  <a href="/tutorial" role="menuitem" onClick={() => setResourcesOpen(false)}>Tutorial</a>
+                </div>
+              )}
+            </div>
             <a href="/docs">Docs</a>
             <a href="/?auth=login" className="seo-nav-login" onClick={(e) => { e.preventDefault(); handleLogin(); }}>Login</a>
             <a href="/" className="seo-nav-cta" onClick={(e) => { e.preventDefault(); handleGetStarted(); }}>Get Started Free →</a>

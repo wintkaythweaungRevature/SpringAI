@@ -37,6 +37,15 @@ import ContentCalendar from './components/ContentCalendar';
 
 const BRAND_LOGO_SRC = '/android-chrome-192x192.png';
 
+/** Sidebar section titles — single source of truth for the logged-in nav. */
+const SIDEBAR_GROUPS = {
+  smartHub: 'Smart Hub',
+  digitalVault: 'Digital Vault',
+  socialHq: 'Social HQ',
+  theForge: 'The Forge',
+  settings: 'Settings',
+};
+
 const PAGE_TITLES = {
   null: 'Dashboard',
   'chat': 'Ask AI',
@@ -76,6 +85,160 @@ function NavItem({ icon, label, active, onClick, hasArrow }) {
       <span style={nav.label}>{label}</span>
       {hasArrow && <span style={nav.arrow}>›</span>}
     </button>
+  );
+}
+
+const marketingNavLinkBtn = {
+  background: 'none',
+  border: 'none',
+  cursor: 'pointer',
+  color: 'rgba(255,255,255,0.78)',
+  fontSize: '14px',
+  fontWeight: 500,
+  padding: '0',
+  fontFamily: 'inherit',
+  transition: 'color 0.15s',
+};
+
+function MarketingNav({ go, onLogin, onSignup }) {
+  const [resourcesOpen, setResourcesOpen] = useState(false);
+
+  return (
+    <nav
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 1000,
+        background: '#0f172a',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '0 32px',
+        height: '58px',
+        boxShadow: '0 1px 0 rgba(255,255,255,0.06)',
+      }}
+    >
+      <div
+        style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+        onClick={() => go(null)}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(null); } }}
+        role="button"
+        tabIndex={0}
+      >
+        <img src={BRAND_LOGO_SRC} alt="W!ntAi logo" width={34} height={34} style={{ display: 'block', flexShrink: 0, borderRadius: '7px' }} />
+        <span style={{ color: '#fff', fontWeight: 800, fontSize: '17px', letterSpacing: '-0.01em' }}>W!ntAi</span>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: '28px' }}>
+        {[
+          { label: 'Home', action: () => go(null) },
+          { label: 'Features', action: () => go(null) },
+          { label: 'Pricing', action: () => go('pricing') },
+        ].map(({ label, action }) => (
+          <button
+            key={label}
+            type="button"
+            onClick={action}
+            style={marketingNavLinkBtn}
+            onMouseEnter={(e) => { e.target.style.color = '#fff'; }}
+            onMouseLeave={(e) => { e.target.style.color = 'rgba(255,255,255,0.78)'; }}
+          >
+            {label}
+          </button>
+        ))}
+        <div
+          style={{ position: 'relative' }}
+          onMouseEnter={() => setResourcesOpen(true)}
+          onMouseLeave={() => setResourcesOpen(false)}
+        >
+          <button
+            type="button"
+            style={marketingNavLinkBtn}
+            aria-expanded={resourcesOpen}
+            aria-haspopup="true"
+            onClick={() => setResourcesOpen((o) => !o)}
+            onMouseEnter={(e) => { e.target.style.color = '#fff'; }}
+            onMouseLeave={(e) => { if (!resourcesOpen) e.target.style.color = 'rgba(255,255,255,0.78)'; }}
+          >
+            Resources <span style={{ opacity: 0.65 }} aria-hidden="true">▾</span>
+          </button>
+          {resourcesOpen && (
+            <div
+              role="menu"
+              style={{
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                marginTop: 8,
+                background: '#1e293b',
+                border: '1px solid rgba(148,163,184,0.25)',
+                borderRadius: 8,
+                padding: '8px 0',
+                minWidth: 168,
+                boxShadow: '0 12px 24px rgba(0,0,0,0.35)',
+              }}
+            >
+              <a
+                href="/blog"
+                role="menuitem"
+                style={{ display: 'block', padding: '10px 16px', color: 'rgba(255,255,255,0.92)', fontSize: '14px', fontWeight: 500, textDecoration: 'none' }}
+                onClick={() => setResourcesOpen(false)}
+              >
+                Blog
+              </a>
+              <a
+                href="/tutorial"
+                role="menuitem"
+                style={{ display: 'block', padding: '10px 16px', color: 'rgba(255,255,255,0.92)', fontSize: '14px', fontWeight: 500, textDecoration: 'none' }}
+                onClick={() => setResourcesOpen(false)}
+              >
+                Tutorial
+              </a>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <button
+          type="button"
+          onClick={onLogin}
+          style={{
+            background: 'transparent',
+            color: '#e2e8f0',
+            border: '1px solid rgba(148,163,184,0.6)',
+            borderRadius: '8px',
+            padding: '9px 16px',
+            fontWeight: 700,
+            fontSize: '14px',
+            cursor: 'pointer',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          Login
+        </button>
+        <button
+          type="button"
+          onClick={onSignup}
+          style={{
+            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '8px',
+            padding: '9px 20px',
+            fontWeight: 700,
+            fontSize: '14px',
+            cursor: 'pointer',
+            whiteSpace: 'nowrap',
+            boxShadow: '0 2px 12px rgba(99,102,241,0.4)',
+          }}
+        >
+          Get Started Free →
+        </button>
+      </div>
+    </nav>
   );
 }
 
@@ -143,82 +306,19 @@ function App() {
     ? (user.firstName[0] + user.lastName[0]).toUpperCase()
     : (user?.email ? user.email.slice(0, 2).toUpperCase() : '??');
 
-  // Marketing navbar — shown only when not logged in
-  const MarketingNav = () => (
-    <nav style={{
-      position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000,
-      background: '#0f172a', display: 'flex', alignItems: 'center',
-      justifyContent: 'space-between', padding: '0 32px', height: '58px',
-      boxShadow: '0 1px 0 rgba(255,255,255,0.06)',
-    }}>
-      {/* Logo */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
-           onClick={() => go(null)}>
-        <img src={BRAND_LOGO_SRC} alt="W!ntAi logo" width={34} height={34} style={{ display: 'block', flexShrink: 0, borderRadius: '7px' }} />
-        <span style={{ color: '#fff', fontWeight: 800, fontSize: '17px', letterSpacing: '-0.01em' }}>W!ntAi</span>
-      </div>
+  const openLogin = () => { setAuthMode('login'); setShowAuthModal(true); };
+  const openSignup = () => { setAuthMode('signup'); setShowAuthModal(true); };
 
-      {/* Links */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '28px' }}>
-        {[
-          { label: 'Home',      action: () => go(null) },
-          { label: 'Features',  action: () => go(null) },
-          { label: 'Pricing',   action: () => go('pricing') },
-          { label: 'Use Cases', action: () => go(null) },
-        ].map(({ label, action }) => (
-          <button key={label} onClick={action} style={{
-            background: 'none', border: 'none', cursor: 'pointer',
-            color: 'rgba(255,255,255,0.78)', fontSize: '14px', fontWeight: 500,
-            padding: '0', fontFamily: 'inherit',
-            transition: 'color 0.15s',
-          }}
-          onMouseEnter={e => e.target.style.color = '#fff'}
-          onMouseLeave={e => e.target.style.color = 'rgba(255,255,255,0.78)'}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {/* Auth actions */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <button
-          onClick={() => { setAuthMode('login'); setShowAuthModal(true); }}
-          style={{
-            background: 'transparent',
-            color: '#e2e8f0',
-            border: '1px solid rgba(148,163,184,0.6)',
-            borderRadius: '8px',
-            padding: '9px 16px',
-            fontWeight: 700,
-            fontSize: '14px',
-            cursor: 'pointer',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          Login
-        </button>
-        <button
-          onClick={() => { setAuthMode('signup'); setShowAuthModal(true); }}
-          style={{
-            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-            color: '#fff', border: 'none', borderRadius: '8px',
-            padding: '9px 20px', fontWeight: 700, fontSize: '14px',
-            cursor: 'pointer', whiteSpace: 'nowrap',
-            boxShadow: '0 2px 12px rgba(99,102,241,0.4)',
-          }}
-        >
-          Get Started Free →
-        </button>
-      </div>
-    </nav>
-  );
+  const isMarketingHome = !user && activeTab === null;
 
   return (
-    <div style={s.shell}>
+    <div style={{
+      ...s.shell,
+      ...(isMarketingHome ? { background: '#060a14' } : {}),
+    }}>
 
       {/* Marketing Nav — fixed at top for logged-out visitors, above everything */}
-      {!user && <MarketingNav />}
+      {!user && <MarketingNav go={go} onLogin={openLogin} onSignup={openSignup} />}
 
       {/* ═══════════════ SIDEBAR ═══════════════ */}
       {user && ((isMobile || isTablet) && sidebarOpen) && (
@@ -254,18 +354,18 @@ function App() {
           <NavItem icon={<HiHome size={17} />} label="Dashboard" active={activeTab === null} onClick={() => go(null)} />
 
           <div style={s.navDivider} role="separator" aria-hidden="true" />
-          <div style={s.groupLabel}>Smart Hub</div>
+          <div style={s.groupLabel}>{SIDEBAR_GROUPS.smartHub}</div>
           <NavItem icon={<HiChatBubbleLeftRight size={17} />} label="Ask AI"           active={activeTab === 'chat'}             onClick={() => go('chat')}             hasArrow />
           <NavItem icon={<HiPhoto size={17} />}               label="Image Generator"  active={activeTab === 'image-generator'}  onClick={() => go('image-generator')} />
           <NavItem icon={<HiSparkles size={17} />}            label="Recipe Generator" active={activeTab === 'recipe-generator'} onClick={() => go('recipe-generator')} />
 
           <div style={s.navDivider} role="separator" aria-hidden="true" />
-          <div style={s.groupLabel}>Digital Vault</div>
+          <div style={s.groupLabel}>{SIDEBAR_GROUPS.digitalVault}</div>
           <NavItem icon={<HiDocumentMagnifyingGlass size={17} />} label="DocuWizard" active={activeTab === 'analyzer'}     onClick={() => go('analyzer')} />
           <NavItem icon={<HiMicrophone size={17} />}              label="EchoScribe"  active={activeTab === 'transcription'} onClick={() => go('transcription')} />
 
           <div style={s.navDivider} role="separator" aria-hidden="true" />
-          <div style={s.groupLabel}>Social HQ</div>
+          <div style={s.groupLabel}>{SIDEBAR_GROUPS.socialHq}</div>
           <NavItem icon={<HiPhoto size={17} />}                    label="Content Calendar"   active={activeTab === 'calendar'}         onClick={() => go('calendar')} />
           <NavItem icon={<HiChartBar size={17} />}                 label="Analytics"          active={activeTab === 'analytics'}       onClick={() => go('analytics')} />
           <NavItem icon={<HiChatBubbleOvalLeft size={17} />}       label="Messages"           active={activeTab === 'messages'}         onClick={() => go('messages')} />
@@ -273,17 +373,17 @@ function App() {
           <NavItem icon={<HiCpuChip size={17} />}                  label="Social AI"          active={activeTab === 'social-ai'}        onClick={() => go('social-ai')} />
 
           <div style={s.navDivider} role="separator" aria-hidden="true" />
-          <div style={s.groupLabel}>The Forge</div>
+          <div style={s.groupLabel}>{SIDEBAR_GROUPS.theForge}</div>
           <NavItem icon={<HiChatBubbleLeftRight size={17} />} label="Reply Enchanter" active={activeTab === 'Content'} onClick={() => go('Content')} />
           <NavItem icon={<HiDocumentText size={17} />}        label="Career Alchemist"  active={activeTab === 'Resume'}  onClick={() => go('Resume')} />
 
           {user && (
-            <>
+            <div style={s.navFooterBlock}>
               <div style={s.navDividerStrong} role="separator" aria-hidden="true" />
-              <div style={s.groupLabelFooter}>Settings</div>
+              <div style={s.groupLabelFooter}>{SIDEBAR_GROUPS.settings}</div>
               <NavItem icon={<HiCog6Tooth size={17} />} label="Account" active={activeTab === 'account'} onClick={() => go('account')} hasArrow />
               <NavItem icon={<HiCreditCard size={17} />} label="Pricing" active={activeTab === 'pricing'} onClick={() => go('pricing')} />
-            </>
+            </div>
           )}
         </nav>
 
@@ -300,7 +400,7 @@ function App() {
       <div style={s.main}>
 
         {/* Marketing Nav for logged-out visitors */}
-        {!user && <MarketingNav />}
+        {!user && <MarketingNav go={go} onLogin={openLogin} onSignup={openSignup} />}
 
         {/* Top Bar — only shown when logged in (MarketingNav handles logged-out state) */}
         {user && (
@@ -373,7 +473,11 @@ function App() {
         </div>
 
         {/* Content */}
-        <div style={{ ...s.content, paddingTop: !user ? '58px' : undefined }}>
+        <div style={{
+          ...s.content,
+          paddingTop: !user ? '58px' : undefined,
+          ...(isMarketingHome ? { background: '#060a14' } : {}),
+        }}>
           {!activeTab && (
             <LandingSection onGetStarted={() => go('chat')} onChoosePlan={handleChoosePlan} />
           )}
@@ -489,16 +593,18 @@ const s = {
     scrollbarWidth: 'none',
   },
   groupLabel: {
-    fontSize: '10.5px', fontWeight: '700',
-    color: 'rgba(255,255,255,0.32)',
-    textTransform: 'uppercase', letterSpacing: '1px',
+    fontSize: '11px', fontWeight: '800',
+    color: 'rgba(255,255,255,0.5)',
+    textTransform: 'none',
+    letterSpacing: '0.02em',
     padding: '10px 12px 6px',
     whiteSpace: 'nowrap',
   },
   groupLabelFooter: {
-    fontSize: '10px', fontWeight: '700',
-    color: 'rgba(255,255,255,0.24)',
-    textTransform: 'uppercase', letterSpacing: '1.2px',
+    fontSize: '10.5px', fontWeight: '800',
+    color: 'rgba(255,255,255,0.38)',
+    textTransform: 'none',
+    letterSpacing: '0.06em',
     padding: '4px 12px 6px',
     whiteSpace: 'nowrap',
   },
@@ -511,9 +617,19 @@ const s = {
   navDividerStrong: {
     height: 0,
     border: 'none',
-    borderTop: '1px solid rgba(148,163,184,0.38)',
-    margin: '14px 10px 6px',
-    boxShadow: '0 1px 0 rgba(255,255,255,0.05)',
+    borderTop: '1px solid rgba(148,163,184,0.55)',
+    margin: '0 0 8px',
+    boxShadow: '0 1px 0 rgba(255,255,255,0.08)',
+  },
+  /** Settings + Pricing: visually separated from tool sections (divider + inset panel). */
+  navFooterBlock: {
+    marginTop: 10,
+    marginLeft: 2,
+    marginRight: 2,
+    padding: '8px 6px 6px',
+    borderRadius: 12,
+    background: 'rgba(0,0,0,0.22)',
+    border: '1px solid rgba(255,255,255,0.07)',
   },
   sidebarFooter: {
     padding: '10px 8px 16px',

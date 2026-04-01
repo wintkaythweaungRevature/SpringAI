@@ -716,13 +716,20 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
     } catch (_) {}
   };
 
-  const scheduleVariant = async (variantId, platform, scheduledAt) => {
-    if (!variantId) return { ok: false, error: 'Missing variant ID' };
+  const scheduleSocialPost = async ({ platform, scheduledAt, variant }) => {
+    if (!platform || !scheduledAt) return { ok: false, error: 'Missing schedule fields' };
     try {
-      const res = await fetch(api(`/variants/${variantId}/schedule`), {
+      const fd = new FormData();
+      fd.append('scheduledAt', scheduledAt);
+      fd.append('caption', variant?.caption || '');
+      fd.append('hashtags', variant?.hashtags?.join ? variant.hashtags.join(' ') : (variant?.hashtags || ''));
+      fd.append('postType', postType || 'video');
+      if (variant?.variantId) fd.append('variantId', String(variant.variantId));
+
+      const res = await fetch(`${base}/api/social/post/schedule/${platform}`, {
         method: 'POST',
-        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ platform, scheduledAt }),
+        headers: authHeaders(),
+        body: fd,
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -767,9 +774,9 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
       setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'publishing', error: null } }));
 
       try {
-        if (hasSchedule && variant.variantId) {
-          // ── Schedule for later via backend variant (fast) ──
-          const result = await scheduleVariant(variant.variantId, pid, scheduledAt);
+        if (hasSchedule) {
+          // ── Schedule for later via social post scheduler ──
+          const result = await scheduleSocialPost({ platform: pid, scheduledAt, variant });
           if (result.ok) {
             successPlatforms.push(pid);
             setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'done', error: null } }));

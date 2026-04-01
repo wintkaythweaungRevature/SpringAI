@@ -229,16 +229,18 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
         <p className="ls-section-sub">
           Real screens from Wintaibot: analytics, messages, auto-reply, publishing, trimming, trends, and Social AI.
         </p>
-        <div className="ls-gallery-grid">
-          {landingGallery.map((fileName, idx) => (
-            <figure key={fileName} className="ls-gallery-item">
-              <img
-                src={`/landing-gallery/${fileName}`}
-                alt={`Wintaibot product screenshot ${idx + 1}`}
-                loading="lazy"
-              />
-            </figure>
-          ))}
+        <div className="ls-gallery-slider" aria-label="Moving product screenshot slideshow">
+          <div className="ls-gallery-track">
+            {[...landingGallery, ...landingGallery].map((fileName, idx) => (
+              <figure key={`${fileName}-${idx}`} className="ls-gallery-item">
+                <img
+                  src={`/landing-gallery/${fileName}`}
+                  alt={`Wintaibot product screenshot ${(idx % landingGallery.length) + 1}`}
+                  loading="lazy"
+                />
+              </figure>
+            ))}
+          </div>
         </div>
       </section>
 

@@ -749,7 +749,7 @@ function InboxDetailPanel({ item, kind, commentReplyExtras, onClose }) {
 }
 
 /* ─────────────────────────────────────────────────────────── */
-export default function MessagesInbox() {
+export default function MessagesInbox({ onOpenVideoPublisher, onOpenConnectedAccounts }) {
   const { apiBase, token } = useAuth();
   const base = apiBase || 'https://api.wintaibot.com';
 
@@ -861,29 +861,79 @@ export default function MessagesInbox() {
             </span>
           )}
         </div>
-        <button
-          type="button"
-          onClick={load}
-          disabled={loading}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '8px 14px',
-            borderRadius: '8px',
-            border: '1px solid #e2e8f0',
-            background: '#fff',
-            color: '#334155',
-            fontWeight: 600,
-            fontSize: '13px',
-            cursor: loading ? 'wait' : 'pointer',
-            boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
-            flexShrink: 0,
-          }}
-        >
-          <RefreshIcon />
-          {loading ? 'Refreshing…' : 'Refresh'}
-        </button>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          {typeof onOpenVideoPublisher === 'function' && (
+            <button
+              type="button"
+              onClick={onOpenVideoPublisher}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 12px',
+                borderRadius: '8px',
+                border: '1px solid #e2e8f0',
+                background: '#fff',
+                color: '#334155',
+                fontWeight: 600,
+                fontSize: '13px',
+                cursor: 'pointer',
+                boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+                flexShrink: 0,
+              }}
+            >
+              <span aria-hidden>🎬</span>
+              Video Publisher
+            </button>
+          )}
+          {typeof onOpenConnectedAccounts === 'function' && (
+            <button
+              type="button"
+              onClick={onOpenConnectedAccounts}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 12px',
+                borderRadius: '8px',
+                border: '1px solid #e2e8f0',
+                background: '#fff',
+                color: '#334155',
+                fontWeight: 600,
+                fontSize: '13px',
+                cursor: 'pointer',
+                boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+                flexShrink: 0,
+              }}
+            >
+              <span aria-hidden>🔗</span>
+              Connected Accounts
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={load}
+            disabled={loading}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '8px 14px',
+              borderRadius: '8px',
+              border: '1px solid #e2e8f0',
+              background: '#fff',
+              color: '#334155',
+              fontWeight: 600,
+              fontSize: '13px',
+              cursor: loading ? 'wait' : 'pointer',
+              boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+              flexShrink: 0,
+            }}
+          >
+            <RefreshIcon />
+            {loading ? 'Refreshing…' : 'Refresh'}
+          </button>
+        </div>
       </div>
 
       {error && (

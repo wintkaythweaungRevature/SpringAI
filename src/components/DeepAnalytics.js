@@ -806,8 +806,10 @@ function TypeTowersChart({ postPerf, platformColor = '#6366f1' }) {
   );
 }
 
-const SCHEDULED_ORANGE = '#facc15';
-const SCHEDULED_ORANGE_BORDER = '#eab308';
+const SCHEDULED_YELLOW = '#facc15';
+const SCHEDULED_YELLOW_BORDER = '#eab308';
+const SCHEDULED_SELECTED_ORANGE = '#f97316';
+const SCHEDULED_SELECTED_ORANGE_BORDER = '#ea580c';
 
 /* ── Per-platform best time summary cards ─────────────────────── */
 function PlatformBestTimeCards({ bestTime }) {
@@ -969,8 +971,8 @@ function BestTimeMonthPostStrip({ authHeaders, platformId }) {
               width: 10,
               height: 10,
               borderRadius: 2,
-              background: SCHEDULED_ORANGE,
-              border: `1px solid ${SCHEDULED_ORANGE_BORDER}`,
+              background: SCHEDULED_YELLOW,
+              border: `1px solid ${SCHEDULED_YELLOW_BORDER}`,
             }}
           />
           Scheduled / pending
@@ -1001,8 +1003,8 @@ function BestTimeMonthPostStrip({ authHeaders, platformId }) {
                 }}
                 onMouseLeave={() => setHover(null)}
                 style={{
-                  border: `2px solid ${isSched ? SCHEDULED_ORANGE_BORDER : pc?.color || '#10b981'}`,
-                  background: isSched ? SCHEDULED_ORANGE : (pc?.color || '#10b981'),
+                  border: `2px solid ${isSched ? SCHEDULED_YELLOW_BORDER : pc?.color || '#10b981'}`,
+                  background: isSched ? SCHEDULED_YELLOW : (pc?.color || '#10b981'),
                   borderRadius: isSched ? 4 : 99,
                   width: isSched ? 14 : 12,
                   height: isSched ? 14 : 12,
@@ -1226,6 +1228,9 @@ function TrendsCalendar({ authHeaders }) {
   const [rescheduleJob, setRescheduleJob] = useState(null); // { job, newDate, newTime }
   const [reschMsg, setReschMsg] = useState('');
   const [calTip, setCalTip] = useState(null); // hover on mini markers
+  const [rangeView, setRangeView] = useState('monthly'); // 'monthly' | 'yearly'
+  const [yearSummary, setYearSummary] = useState({});
+  const [yearSummaryLoading, setYearSummaryLoading] = useState(false);
 
   const loadCalendar = useCallback(() => {
     setLoading(true);
@@ -1284,6 +1289,35 @@ function TrendsCalendar({ authHeaders }) {
   }, [year, month, authHeaders]);
 
   useEffect(() => { loadCalendar(); }, [loadCalendar]);
+
+  const loadYearSummary = useCallback(async () => {
+    setYearSummaryLoading(true);
+    const headers = authHeaders();
+    try {
+      const monthNums = Array.from({ length: 12 }, (_, i) => i + 1);
+      const results = await Promise.all(
+        monthNums.map(async (m) => {
+          try {
+            const r = await fetch(`${API}/api/analytics/calendar?year=${year}&month=${m}`, { headers });
+            if (!r.ok) return [m, { posts: 0, scheduled: 0 }];
+            const d = await r.json();
+            const postsCount = Array.isArray(d?.posts) ? d.posts.length : 0;
+            const schedCount = Array.isArray(d?.scheduled) ? d.scheduled.length : 0;
+            return [m, { posts: postsCount, scheduled: schedCount }];
+          } catch {
+            return [m, { posts: 0, scheduled: 0 }];
+          }
+        })
+      );
+      setYearSummary(Object.fromEntries(results));
+    } finally {
+      setYearSummaryLoading(false);
+    }
+  }, [authHeaders, year]);
+
+  useEffect(() => {
+    if (rangeView === 'yearly') loadYearSummary();
+  }, [rangeView, loadYearSummary]);
 
   const prevMonth = () => {
     if (month === 1) { setYear(y => y - 1); setMonth(12); }
@@ -1397,21 +1431,90 @@ function TrendsCalendar({ authHeaders }) {
           }}
         >
           <strong>Best Times</strong> shows weekday activity shading only — it does{' '}
-          <strong>not</strong> list scheduled posts. Tap <strong>📌 My Posts</strong> above to see orange squares
+          <strong>not</strong> list scheduled posts. Tap <strong>📌 My Posts</strong> above to see yellow squares
           (scheduled) and colored dots (published) on each day.
         </div>
       )}
 
-      {/* Month nav */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
-        <button onClick={prevMonth} style={s.navBtn}>‹</button>
-        <span style={{ fontWeight: 700, fontSize: 15, color: '#1e293b', minWidth: 130, textAlign: 'center' }}>
-          {MONTH_NAMES[month - 1]} {year}
-        </span>
-        <button onClick={nextMonth} style={s.navBtn}>›</button>
+      {/* Range toggle + month nav */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            onClick={() => setRangeView('monthly')}
+            style={{
+              padding: '6px 12px',
+              borderRadius: 18,
+              border: `1.5px solid ${rangeView === 'monthly' ? '#6366f1' : '#e2e8f0'}`,
+              background: rangeView === 'monthly' ? '#6366f1' : '#fff',
+              color: rangeView === 'monthly' ? '#fff' : '#64748b',
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >Monthly</button>
+          <button
+            onClick={() => setRangeView('yearly')}
+            style={{
+              padding: '6px 12px',
+              borderRadius: 18,
+              border: `1.5px solid ${rangeView === 'yearly' ? '#6366f1' : '#e2e8f0'}`,
+              background: rangeView === 'yearly' ? '#6366f1' : '#fff',
+              color: rangeView === 'yearly' ? '#fff' : '#64748b',
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >Yearly</button>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <button onClick={prevMonth} style={s.navBtn}>‹</button>
+          <span style={{ fontWeight: 700, fontSize: 15, color: '#1e293b', minWidth: 130, textAlign: 'center' }}>
+            {rangeView === 'monthly' ? `${MONTH_NAMES[month - 1]} ${year}` : year}
+          </span>
+          <button onClick={nextMonth} style={s.navBtn}>›</button>
+        </div>
       </div>
 
-      {loading ? (
+      {rangeView === 'yearly' ? (
+        <div style={{
+          background: '#fff',
+          border: '1.5px solid #e2e8f0',
+          borderRadius: 14,
+          padding: 14,
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+          gap: 10,
+        }}>
+          {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => {
+            const stats = yearSummary[m] || { posts: 0, scheduled: 0 };
+            return (
+              <button
+                key={m}
+                type="button"
+                onClick={() => { setMonth(m); setRangeView('monthly'); setSelectedDay(null); }}
+                style={{
+                  border: `1.5px solid ${m === month ? '#6366f1' : '#e2e8f0'}`,
+                  background: m === month ? '#f5f3ff' : '#fff',
+                  borderRadius: 10,
+                  padding: '10px 12px',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                }}
+              >
+                <div style={{ fontSize: 12, fontWeight: 800, color: '#1e293b', marginBottom: 6 }}>{MONTH_NAMES[m - 1]}</div>
+                {yearSummaryLoading ? (
+                  <div style={{ fontSize: 11, color: '#94a3b8' }}>Loading…</div>
+                ) : (
+                  <div style={{ fontSize: 11, color: '#64748b', lineHeight: 1.5 }}>
+                    <div>Published: <strong style={{ color: '#334155' }}>{stats.posts}</strong></div>
+                    <div>Scheduled: <strong style={{ color: '#a16207' }}>{stats.scheduled}</strong></div>
+                  </div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      ) : loading ? (
         <div style={s.loadingRow}><div style={s.spinner} /> Loading…</div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 20, alignItems: 'start' }}>
@@ -1436,6 +1539,7 @@ function TrendsCalendar({ authHeaders }) {
                 const posts   = items.filter(x => x._kind === 'post');
                 const sched   = items.filter(x => x._kind === 'scheduled');
                 const isToday = day === today.getDate() && month === today.getMonth() + 1 && year === today.getFullYear();
+                const isSel   = day === selectedDay;
 
                 // Best time: shade by weekday score (API heatmap or inferred from post dates)
                 const dow = (new Date(year, month - 1, day).getDay() + 6) % 7; // Mon=0
@@ -1454,7 +1558,7 @@ function TrendsCalendar({ authHeaders }) {
                 return (
                   <div
                     key={day}
-                    onClick={() => {}}
+                    onClick={() => setSelectedDay(isSel ? null : day)}
                     title={
                       calView === 'besttime' && bestTimeCal.hasAny
                         ? `${['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][dow]} · relative activity ${Math.round(score * 100)}%`
@@ -1462,17 +1566,17 @@ function TrendsCalendar({ authHeaders }) {
                     }
                     style={{
                       minHeight: 60, borderRadius: 8, padding: '6px 6px 4px',
-                      cursor: 'default',
-                      border: `1.5px solid ${isToday ? '#818cf8' : '#e2e8f0'}`,
+                      cursor: 'pointer',
+                      border: `1.5px solid ${isSel ? '#6366f1' : isToday ? '#818cf8' : '#e2e8f0'}`,
                       background: calView === 'besttime'
                         ? `rgba(99,102,241,${0.1 + score * 0.55})`
-                        : isToday ? '#f5f3ff' : '#fff',
+                        : isSel ? '#ede9fe' : isToday ? '#f5f3ff' : '#fff',
                       transition: 'background 0.15s',
                     }}
                   >
                     <div style={{
                       fontSize: 11, fontWeight: isToday ? 800 : 600,
-                      color: isToday ? '#6366f1' : '#475569',
+                      color: isToday || isSel ? '#6366f1' : '#475569',
                       marginBottom: 4,
                     }}>{day}</div>
                     {calView === 'posts' && (
@@ -1530,8 +1634,8 @@ function TrendsCalendar({ authHeaders }) {
                                 width: 9,
                                 height: 9,
                                 borderRadius: 2,
-                                background: SCHEDULED_ORANGE,
-                                border: `1px solid ${SCHEDULED_ORANGE_BORDER}`,
+                                background: isSel ? SCHEDULED_SELECTED_ORANGE : SCHEDULED_YELLOW,
+                                border: `1px solid ${isSel ? SCHEDULED_SELECTED_ORANGE_BORDER : SCHEDULED_YELLOW_BORDER}`,
                                 cursor: 'default',
                               }}
                             />
@@ -1563,8 +1667,8 @@ function TrendsCalendar({ authHeaders }) {
                   Published post (colored by platform)
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#64748b' }}>
-                  <div style={{ width: 10, height: 10, borderRadius: 2, background: SCHEDULED_ORANGE, border: `1px solid ${SCHEDULED_ORANGE_BORDER}` }} />
-                  Scheduled / pending
+                  <div style={{ width: 10, height: 10, borderRadius: 2, background: SCHEDULED_YELLOW, border: `1px solid ${SCHEDULED_YELLOW_BORDER}` }} />
+                  Scheduled / pending (selected day turns orange)
                 </div>
               </div>
             )}

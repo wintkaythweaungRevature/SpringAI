@@ -5,8 +5,8 @@ import { useMediaQuery } from './hooks/useMediaQuery';
 // Icons — react-icons/hi2 (Heroicons v2, solid style)
 import { HiHome, HiChatBubbleLeftRight, HiPhoto, HiSparkles } from 'react-icons/hi2';
 import { HiDocumentText, HiMicrophone } from 'react-icons/hi2';
-import { HiVideoCamera, HiChartBar, HiChatBubbleOvalLeft, HiArrowPathRoundedSquare,
-         HiLink, HiGlobeAlt, HiArrowTrendingUp, HiCpuChip } from 'react-icons/hi2';
+import { HiChartBar, HiChatBubbleOvalLeft, HiArrowPathRoundedSquare,
+         HiArrowTrendingUp, HiCpuChip } from 'react-icons/hi2';
 import { HiPencilSquare, HiDocumentMagnifyingGlass } from 'react-icons/hi2';
 import { HiCog6Tooth, HiCreditCard } from 'react-icons/hi2';
 import ImageGenerator from './components/ImageGenerator';
@@ -264,12 +264,9 @@ function App() {
           <NavItem icon={<HiMicrophone size={17} />}              label="EchoScribe"  active={activeTab === 'transcription'} onClick={() => go('transcription')} />
 
           <div style={s.groupLabel}>Social Media</div>
-          <NavItem icon={<HiVideoCamera size={17} />}              label="Video Publisher"    active={activeTab === 'video-publisher'} onClick={() => go('video-publisher')} hasArrow />
           <NavItem icon={<HiChartBar size={17} />}                 label="Analytics"          active={activeTab === 'analytics'}       onClick={() => go('analytics')} />
           <NavItem icon={<HiChatBubbleOvalLeft size={17} />}       label="Messages"           active={activeTab === 'messages'}         onClick={() => go('messages')} />
           <NavItem icon={<HiArrowPathRoundedSquare size={17} />}   label="Auto Reply"         active={activeTab === 'auto-reply'}       onClick={() => go('auto-reply')} />
-          <NavItem icon={<HiLink size={17} />}                     label="Connected Accounts" active={activeTab === 'social-connect'}   onClick={() => go('social-connect')} />
-          <NavItem icon={<HiGlobeAlt size={17} />}                 label="Link in Bio"        active={activeTab === 'bio'}              onClick={() => go('bio')} />
           <NavItem icon={<HiArrowTrendingUp size={17} />}          label="Trends"             active={activeTab === 'trends'}           onClick={() => go('trends')} />
           <NavItem icon={<HiCpuChip size={17} />}                  label="Social AI"          active={activeTab === 'social-ai'}        onClick={() => go('social-ai')} />
           <NavItem icon={<HiPhoto size={17} />}                    label="Content Calendar"   active={activeTab === 'calendar'}         onClick={() => go('calendar')} />
@@ -352,9 +349,14 @@ function App() {
         <div style={s.pageBar}>
           <h2 style={s.pageTitle}>{pageTitle}</h2>
           {user && (
-            <button type="button" style={s.settingsBtn} onClick={() => go('account')} title="Account settings" aria-label="Account settings">
-              ⚙️
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button type="button" style={s.headerQuickBtn} onClick={() => go('bio')} title="Open Link in Bio" aria-label="Open Link in Bio">
+                🔗 Link in Bio
+              </button>
+              <button type="button" style={s.settingsBtn} onClick={() => go('account')} title="Account settings" aria-label="Account settings">
+                ⚙️
+              </button>
+            </div>
           )}
         </div>
 
@@ -373,7 +375,7 @@ function App() {
           {activeTab === 'account'          && <AskAIGate  featureName="Account"><AccountSettings /></AskAIGate>}
           {activeTab === 'video-publisher'  && <MemberGate featureName="Video Publisher"><VideoPublisher onNavigateToSocialConnect={() => go('social-connect')} /></MemberGate>}
           {activeTab === 'analytics'        && <MemberGate featureName="Analytics"><AnalyticsDashboard /></MemberGate>}
-          {activeTab === 'messages'         && <MemberGate featureName="Messages"><ProGate featureName="Messages"><MessagesInbox /></ProGate></MemberGate>}
+          {activeTab === 'messages'         && <MemberGate featureName="Messages"><ProGate featureName="Messages"><MessagesInbox onOpenVideoPublisher={() => go('video-publisher')} onOpenConnectedAccounts={() => go('social-connect')} /></ProGate></MemberGate>}
           {activeTab === 'social-connect'   && <MemberGate featureName="Connected Accounts"><SocialConnect /></MemberGate>}
           {activeTab === 'bio'              && <MemberGate featureName="Link in Bio"><LinkInBioBuilder /></MemberGate>}
           {activeTab === 'trends'          && <MemberGate featureName="Trends"><ProGate featureName="Trends"><DeepAnalytics /></ProGate></MemberGate>}
@@ -583,6 +585,17 @@ const s = {
     background: '#f1f5f9', border: '1px solid #e2e8f0',
     borderRadius: '8px', cursor: 'pointer',
     fontSize: '16px', padding: '6px 8px', lineHeight: 1,
+  },
+  headerQuickBtn: {
+    background: '#ffffff',
+    border: '1px solid #e2e8f0',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '12px',
+    fontWeight: '700',
+    color: '#334155',
+    padding: '7px 10px',
+    lineHeight: 1,
   },
 
   /* Content */

@@ -981,8 +981,8 @@ function BestTimeMonthPostStrip({ authHeaders, platformId }) {
               width: 10,
               height: 10,
               borderRadius: 2,
-              background: SCHEDULED_ORANGE,
-              border: `1px solid ${SCHEDULED_ORANGE_BORDER}`,
+              background: SCHEDULED_YELLOW,
+              border: `1px solid ${SCHEDULED_YELLOW_BORDER}`,
             }}
           />
           Scheduled / pending
@@ -1013,8 +1013,8 @@ function BestTimeMonthPostStrip({ authHeaders, platformId }) {
                 }}
                 onMouseLeave={() => setHover(null)}
                 style={{
-                  border: `2px solid ${isSched ? SCHEDULED_ORANGE_BORDER : pc?.color || '#10b981'}`,
-                  background: isSched ? SCHEDULED_ORANGE : (pc?.color || '#10b981'),
+                  border: `2px solid ${isSched ? SCHEDULED_YELLOW_BORDER : pc?.color || '#10b981'}`,
+                  background: isSched ? SCHEDULED_YELLOW : (pc?.color || '#10b981'),
                   borderRadius: isSched ? 4 : 99,
                   width: isSched ? 14 : 12,
                   height: isSched ? 14 : 12,

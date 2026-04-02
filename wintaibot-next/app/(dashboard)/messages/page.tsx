@@ -6,7 +6,13 @@ import MessagesInbox from '@/components/MessagesInbox.js';
 import MemberGate from '@/components/MemberGate';
 import ProGate from '@/components/ProGate.js';
 
-const MessagesInboxAny = MessagesInbox as React.ComponentType<any>;
+type MessagesInboxProps = {
+  onOpenVideoPublisher?: () => void;
+  onOpenConnectedAccounts?: () => void;
+  onOpenAutoReply?: () => void;
+};
+
+const MessagesInboxTyped = MessagesInbox as React.ComponentType<MessagesInboxProps>;
 
 export default function MessagesPage() {
   const router = useRouter();
@@ -14,7 +20,7 @@ export default function MessagesPage() {
   return (
     <MemberGate featureName="Messages">
       <ProGate featureName="Messages">
-        <MessagesInboxAny
+        <MessagesInboxTyped
           onOpenVideoPublisher={() => router.push('/video-publisher')}
           onOpenConnectedAccounts={() => router.push('/social-connect')}
           onOpenAutoReply={() => router.push('/auto-reply')}

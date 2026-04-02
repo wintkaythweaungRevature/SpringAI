@@ -196,7 +196,8 @@
 
 .ls-hero-tagline {
   margin: 0 auto 28px;
-  max-width: 640px;
+  max-width: none;
+  width: 100%;
   font-size: clamp(0.98rem, 2.1vw, 1.12rem);
   font-weight: 450;
   line-height: 1.7;
@@ -413,6 +414,34 @@
   margin-bottom: 20px;
 }
 
+.ls-hero-copy__block {
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+}
+
+.ls-hero-copy__block + .ls-hero-copy__block {
+  margin-top: 4px;
+}
+
+.ls-hero-copy__block--title .ls-hero-h1 {
+  max-width: none;
+}
+
+.ls-hero-h1-line {
+  display: block;
+  width: 100%;
+}
+
+.ls-hero-h1-line + .ls-hero-h1-line {
+  margin-top: 0.08em;
+}
+
+.ls-hero-inner--split .ls-hero-copy__block--tagline .ls-hero-sub {
+  max-width: none;
+  width: 100%;
+}
+
 .ls-hero-copy__head .ls-hero-tagline {
   margin-bottom: 0;
 }
@@ -491,7 +520,8 @@
   .ls-hero-inner--split .ls-hero-sub {
     margin-left: 0;
     margin-right: 0;
-    max-width: 560px;
+    max-width: none;
+    width: 100%;
   }
 
   .ls-hero-inner--split .ls-hero-copy {

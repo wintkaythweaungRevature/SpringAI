@@ -483,16 +483,30 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
         <div className="ls-hero-inner ls-hero-inner--split">
           <div className="ls-hero-copy">
             <div className="ls-hero-copy__head">
-              <div className="ls-hero-badge">
-                Multi-platform video publishing · Social media managers &amp; creators
+              <div className="ls-hero-copy__block ls-hero-copy__block--badge">
+                <div className="ls-hero-badge">
+                  Multi-platform video publishing · Social media managers &amp; creators
+                </div>
               </div>
-              <p className="ls-hero-kicker">The end of format errors</p>
-              <h1 id="hero-heading" className="ls-hero-h1">
-                If You Can Record It,<br /><span className="ls-hero-h1-accent">We Can Post It.</span>
-              </h1>
-              <p className="ls-hero-tagline">
-                <strong>Upload Once. Optimize Everywhere.</strong> Let AI handle the formats while you focus on creating.
-              </p>
+              <div className="ls-hero-copy__block ls-hero-copy__block--kicker">
+                <div className="ls-hero-kicker">The end of format errors</div>
+              </div>
+              <div className="ls-hero-copy__block ls-hero-copy__block--title">
+                <div
+                  id="hero-heading"
+                  className="ls-hero-h1"
+                  role="heading"
+                  aria-level={1}
+                >
+                  <div className="ls-hero-h1-line">If You Can Record It,</div>
+                  <div className="ls-hero-h1-line ls-hero-h1-accent">We Can Post It.</div>
+                </div>
+              </div>
+              <div className="ls-hero-copy__block ls-hero-copy__block--tagline">
+                <div className="ls-hero-tagline">
+                  <strong>Upload Once. Optimize Everywhere.</strong> Let AI handle the formats while you focus on creating.
+                </div>
+              </div>
             </div>
             <div className="ls-hero-copy__body">
               <div className="ls-hero-copy__rail">

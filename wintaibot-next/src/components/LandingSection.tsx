@@ -481,15 +481,25 @@ export default function LandingSection() {
         <div className="ls-hero-inner ls-hero-inner--split">
           <div className="ls-hero-copy">
             <div className="ls-hero-copy__head">
-              <div className="ls-hero-badge">AI Social Media Publishing &amp; Analytics Platform</div>
-              <h1 id="hero-heading" className="ls-hero-h1">
-                Plan, Publish, and Optimize
-                <br />
-                Your Social Media Workflow with AI
-              </h1>
-              <p className="ls-hero-sub">
-                <strong>One workspace</strong> for video, scheduling, inbox, analytics, and AI — so you spend less time in tabs and more time creating.
-              </p>
+              <div className="ls-hero-copy__block ls-hero-copy__block--badge">
+                <div className="ls-hero-badge">AI Social Media Publishing &amp; Analytics Platform</div>
+              </div>
+              <div className="ls-hero-copy__block ls-hero-copy__block--title">
+                <div
+                  id="hero-heading"
+                  className="ls-hero-h1"
+                  role="heading"
+                  aria-level={1}
+                >
+                  <div className="ls-hero-h1-line">Plan, Publish, and Optimize</div>
+                  <div className="ls-hero-h1-line">Your Social Media Workflow with AI</div>
+                </div>
+              </div>
+              <div className="ls-hero-copy__block ls-hero-copy__block--tagline">
+                <div className="ls-hero-sub">
+                  <strong>One workspace</strong> for video, scheduling, inbox, analytics, and AI — so you spend less time in tabs and more time creating.
+                </div>
+              </div>
             </div>
             <div className="ls-hero-copy__body">
               <div className="ls-hero-copy__rail">
@@ -1089,8 +1099,8 @@ export default function LandingSection() {
             <Link href="/blog">Blog</Link>
             <Link href="/changelog">Changelog</Link>
           </span>
-          <a href="/#about">About</a>
-          <a href="/#faq">FAQ</a>
+          <Link href="/#about">About</Link>
+          <Link href="/#faq">FAQ</Link>
           <a
             href="https://github.com/wintkaythweaungRevature"
             target="_blank"

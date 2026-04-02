@@ -315,7 +315,7 @@ export default function LinkInBioBuilder() {
 
           {/* Link list */}
           {links.length === 0 && exists && !showAdd && (
-            <p style={s.hint}>No links yet. Click "+ Add Link" to start.</p>
+            <p style={s.hint}>No links yet. Click &quot;+ Add Link&quot; to start.</p>
           )}
 
           {links.map((link, idx) => (

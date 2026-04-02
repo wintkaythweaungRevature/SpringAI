@@ -45,6 +45,48 @@ function fmtDate(iso) {
   } catch { return ''; }
 }
 
+/** First non-empty string among API variants (camelCase / snake_case). */
+function firstNonEmptyStr(...vals) {
+  for (const v of vals) {
+    if (v != null && String(v).trim() !== '') return String(v).trim();
+  }
+  return '';
+}
+
+/**
+ * Which instant to plot on the calendar:
+ * - Published / failed → when it went live (publishedAt / createdAt), not the old scheduled slot.
+ * - Queued / scheduled → scheduledAt when present.
+ * - Missing status → if scheduledAt >= createdAt, treat as a scheduled job (common API shape).
+ */
+function postCalendarTimestamp(post) {
+  const scheduled = firstNonEmptyStr(post?.scheduledAt, post?.scheduled_at);
+  const created = firstNonEmptyStr(post?.createdAt, post?.created_at);
+  const published = firstNonEmptyStr(post?.publishedAt, post?.published_at);
+  const s = String(post?.status || '').toUpperCase();
+
+  if (s === 'SUCCESS' || s === 'PUBLISHED' || s === 'FAILED' || s === 'COMPLETED') {
+    return published || created || scheduled;
+  }
+  if (s === 'SCHEDULED' || s === 'PENDING' || s === 'QUEUED') {
+    return scheduled || created;
+  }
+  if (scheduled && created) {
+    try {
+      const tsS = new Date(scheduled).getTime();
+      const tsC = new Date(created).getTime();
+      if (Number.isFinite(tsS) && Number.isFinite(tsC)) {
+        return tsS >= tsC ? scheduled : (created || scheduled);
+      }
+    } catch (_) {}
+  }
+  return scheduled || created;
+}
+
+function postCalendarDate(post) {
+  return new Date(postCalendarTimestamp(post));
+}
+
 function pickFirstUrl(...vals) {
   for (const v of vals) {
     if (typeof v === 'string' && v.trim()) return v.trim();
@@ -82,7 +124,7 @@ function getPostPreview(post) {
 function postMergeKey(post) {
   const platform = String(post?.platform || '').toLowerCase();
   const caption = String(post?.caption || '').trim().slice(0, 80).toLowerCase();
-  const rawTs = post?.createdAt || post?.scheduledAt;
+  const rawTs = postCalendarTimestamp(post);
   const ts = rawTs ? new Date(rawTs).getTime() : 0;
   const minuteBucket = Number.isFinite(ts) ? Math.floor(ts / 60000) : 0;
   return `${platform}|${caption}|${minuteBucket}`;
@@ -102,6 +144,13 @@ function mergeRecentWithHistory(recentActivity, historyPosts) {
     return {
       ...src,
       ...p,
+      scheduledAt: firstNonEmptyStr(p?.scheduledAt, p?.scheduled_at, src?.scheduledAt, src?.scheduled_at),
+      createdAt: firstNonEmptyStr(p?.createdAt, p?.created_at, src?.createdAt, src?.created_at),
+      publishedAt: firstNonEmptyStr(p?.publishedAt, p?.published_at, src?.publishedAt, src?.published_at),
+      status:
+        p?.status != null && String(p.status).trim() !== ''
+          ? p.status
+          : src?.status,
       mediaUrl: pickFirstUrl(p?.mediaUrl, src?.mediaUrl),
       thumbnailUrl: pickFirstUrl(
         p?.thumbnailUrl,
@@ -142,7 +191,7 @@ function buildCalendarDays(year, month) {
 /* ── Scheduled post modal ───────────────────────────────────────────────── */
 function DayModal({ date, posts, onClose, onRetryFailed, retryingIds = {} }) {
   const dayPosts = posts.filter(p => {
-    try { return sameDay(new Date(p.createdAt || p.scheduledAt), date); } catch { return false; }
+    try { return sameDay(postCalendarDate(p), date); } catch { return false; }
   });
   return (
     <div style={ms.overlay} onClick={onClose}>
@@ -194,7 +243,7 @@ function DayModal({ date, posts, onClose, onRetryFailed, retryingIds = {} }) {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                         {pInfo && <PlatformIcon platform={pInfo} size={16} />}
                         <span style={{ fontWeight: 700, fontSize: 13, color: platformColor(p.platform), textTransform: 'capitalize' }}>{p.platform}</span>
-                        <span style={{ marginLeft: 'auto', fontSize: 11, color: '#94a3b8' }}>{fmtTime(p.createdAt || p.scheduledAt)}</span>
+                        <span style={{ marginLeft: 'auto', fontSize: 11, color: '#94a3b8' }}>{fmtTime(postCalendarTimestamp(p))}</span>
                         <span style={{
                           fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 99,
                           background: p.status === 'SUCCESS' ? '#f0fdf4' : p.status === 'FAILED' ? '#fef2f2' : '#fff7ed',
@@ -334,7 +383,7 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
   // Posts for this calendar month
   const monthPosts = filteredPosts.filter(p => {
     try {
-      const d = new Date(p.createdAt || p.scheduledAt);
+      const d = postCalendarDate(p);
       return d.getMonth() === viewMonth && d.getFullYear() === viewYear;
     } catch { return false; }
   });
@@ -343,7 +392,7 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
   const postsByDay = {};
   monthPosts.forEach(p => {
     try {
-      const d = new Date(p.createdAt || p.scheduledAt);
+      const d = postCalendarDate(p);
       const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
       if (!postsByDay[key]) postsByDay[key] = [];
       postsByDay[key].push(p);
@@ -352,7 +401,7 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
 
   // Upcoming posts (future or recent)
   const upcoming = [...filteredPosts]
-    .sort((a, b) => new Date(b.createdAt || b.scheduledAt) - new Date(a.createdAt || a.scheduledAt))
+    .sort((a, b) => postCalendarDate(b) - postCalendarDate(a))
     .slice(0, 20);
 
   return (
@@ -480,7 +529,7 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
                           {dayPosts.slice(0, 3).map((p, i) => {
                             const pInfo = PLATFORM_MAP[p.platform?.toLowerCase()];
                             const preview = getPostPreview(p);
-                            const t = fmtTime(p.createdAt || p.scheduledAt);
+                            const t = fmtTime(postCalendarTimestamp(p));
                             return (
                               <button
                                 key={`${key}-${i}`}
@@ -595,7 +644,7 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
                             </div>
                             <div style={s.upcomingCaption}>{p.caption || '(no caption)'}</div>
                             <div style={s.upcomingMeta}>
-                              {fmtDate(p.createdAt)} · {p.mediaType || 'post'}
+                              {fmtDate(postCalendarTimestamp(p))} · {p.mediaType || 'post'}
                             </div>
                             {canRetry && (
                               <button
@@ -725,7 +774,7 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
                       <div style={s.feedMeta}>
                         <span style={{ textTransform: 'capitalize' }}>{p.platform}</span>
                         <span>·</span>
-                        <span>{fmtDate(p.createdAt)}</span>
+                        <span>{fmtDate(postCalendarTimestamp(p))}</span>
                       </div>
                       {canRetry && (
                         <div style={{ padding: '0 12px 12px' }}>
@@ -794,7 +843,7 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
             <span style={{ color: platformColor(hoverPreview.post.platform), fontWeight: 800, textTransform: 'capitalize' }}>
               {hoverPreview.post.platform}
             </span>
-            <span style={{ fontSize: 11, color: '#94a3b8' }}>{fmtDate(hoverPreview.post.createdAt || hoverPreview.post.scheduledAt)} {fmtTime(hoverPreview.post.createdAt || hoverPreview.post.scheduledAt)}</span>
+            <span style={{ fontSize: 11, color: '#94a3b8' }}>{fmtDate(postCalendarTimestamp(hoverPreview.post))} {fmtTime(postCalendarTimestamp(hoverPreview.post))}</span>
           </div>
           <div style={s.hoverBody}>
             <div style={{ flex: 1, minWidth: 0 }}>

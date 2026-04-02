@@ -143,7 +143,7 @@ export default function SocialAIChat() {
           <div style={s.welcome}>
             <img src={BRAND_LOGO_SRC} alt="W!ntAi logo" style={s.welcomeLogo} />
             <p style={s.welcomeText}>
-              Hey! I've analyzed your social media history. Ask me anything about your performance.
+              Hey! I&apos;ve analyzed your social media history. Ask me anything about your performance.
             </p>
             <div style={s.chips}>
               {SUGGESTED.map(q => (

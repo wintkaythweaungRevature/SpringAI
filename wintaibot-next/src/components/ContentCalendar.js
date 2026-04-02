@@ -47,18 +47,39 @@ function fmtDate(iso) {
   } catch { return ''; }
 }
 
-function isScheduledLikeStatus(status) {
-  const s = String(status || '').toUpperCase();
-  return s === 'SCHEDULED' || s === 'PENDING' || s === 'QUEUED';
-}
-
-function postCalendarDate(post) {
-  const primary = isScheduledLikeStatus(post?.status) ? (post?.scheduledAt || post?.createdAt) : (post?.createdAt || post?.scheduledAt);
-  return new Date(primary);
+function firstNonEmptyStr(...vals) {
+  for (const v of vals) {
+    if (v != null && String(v).trim() !== '') return String(v).trim();
+  }
+  return '';
 }
 
 function postCalendarTimestamp(post) {
-  return isScheduledLikeStatus(post?.status) ? (post?.scheduledAt || post?.createdAt) : (post?.createdAt || post?.scheduledAt);
+  const scheduled = firstNonEmptyStr(post?.scheduledAt, post?.scheduled_at);
+  const created = firstNonEmptyStr(post?.createdAt, post?.created_at);
+  const published = firstNonEmptyStr(post?.publishedAt, post?.published_at);
+  const s = String(post?.status || '').toUpperCase();
+
+  if (s === 'SUCCESS' || s === 'PUBLISHED' || s === 'FAILED' || s === 'COMPLETED') {
+    return published || created || scheduled;
+  }
+  if (s === 'SCHEDULED' || s === 'PENDING' || s === 'QUEUED') {
+    return scheduled || created;
+  }
+  if (scheduled && created) {
+    try {
+      const tsS = new Date(scheduled).getTime();
+      const tsC = new Date(created).getTime();
+      if (Number.isFinite(tsS) && Number.isFinite(tsC)) {
+        return tsS >= tsC ? scheduled : (created || scheduled);
+      }
+    } catch (_) {}
+  }
+  return scheduled || created;
+}
+
+function postCalendarDate(post) {
+  return new Date(postCalendarTimestamp(post));
 }
 
 function pickFirstUrl(...vals) {
@@ -98,7 +119,7 @@ function getPostPreview(post) {
 function postMergeKey(post) {
   const platform = String(post?.platform || '').toLowerCase();
   const caption = String(post?.caption || '').trim().slice(0, 80).toLowerCase();
-  const rawTs = post?.createdAt || post?.scheduledAt;
+  const rawTs = postCalendarTimestamp(post);
   const ts = rawTs ? new Date(rawTs).getTime() : 0;
   const minuteBucket = Number.isFinite(ts) ? Math.floor(ts / 60000) : 0;
   return `${platform}|${caption}|${minuteBucket}`;
@@ -118,6 +139,13 @@ function mergeRecentWithHistory(recentActivity, historyPosts) {
     return {
       ...src,
       ...p,
+      scheduledAt: firstNonEmptyStr(p?.scheduledAt, p?.scheduled_at, src?.scheduledAt, src?.scheduled_at),
+      createdAt: firstNonEmptyStr(p?.createdAt, p?.created_at, src?.createdAt, src?.created_at),
+      publishedAt: firstNonEmptyStr(p?.publishedAt, p?.published_at, src?.publishedAt, src?.published_at),
+      status:
+        p?.status != null && String(p.status).trim() !== ''
+          ? p.status
+          : src?.status,
       mediaUrl: pickFirstUrl(p?.mediaUrl, src?.mediaUrl),
       thumbnailUrl: pickFirstUrl(
         p?.thumbnailUrl,
@@ -210,7 +238,7 @@ function DayModal({ date, posts, onClose, onRetryFailed, retryingIds = {} }) {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                         {pInfo && <PlatformIcon platform={pInfo} size={16} />}
                         <span style={{ fontWeight: 700, fontSize: 13, color: platformColor(p.platform), textTransform: 'capitalize' }}>{p.platform}</span>
-                        <span style={{ marginLeft: 'auto', fontSize: 11, color: '#94a3b8' }}>{fmtTime(p.createdAt || p.scheduledAt)}</span>
+                        <span style={{ marginLeft: 'auto', fontSize: 11, color: '#94a3b8' }}>{fmtTime(postCalendarTimestamp(p))}</span>
                         <span style={{
                           fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 99,
                           background: p.status === 'SUCCESS' ? '#f0fdf4' : p.status === 'FAILED' ? '#fef2f2' : '#fff7ed',

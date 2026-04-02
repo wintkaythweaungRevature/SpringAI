@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 
 type PlanId = 'STARTER' | 'PRO' | 'GROWTH';
@@ -321,6 +322,19 @@ export default function PricingPage({ onClose }: { onClose?: () => void }) {
         >
           W!ntAi never stores your bank account or card numbers. Payment details are handled only by Stripe.
         </p>
+        <p style={{ ...s.footer, marginTop: 14, fontSize: 12, color: '#64748b', lineHeight: 1.6 }}>
+          <Link href="/privacy-policy" style={s.legalLink}>
+            Privacy Policy
+          </Link>
+          {' · '}
+          <Link href="/terms-of-service" style={s.legalLink}>
+            Terms of Service
+          </Link>
+          {' · '}
+          <Link href="/refund-policy" style={s.legalLink}>
+            Refund Policy
+          </Link>
+        </p>
       </div>
     </div>
   );
@@ -530,4 +544,5 @@ const s: Record<string, any> = {
     borderTop: '1px solid #f1f5f9',
     paddingTop: 16,
   },
+  legalLink: { color: '#64748b', fontWeight: 600, textDecoration: 'underline' },
 };

@@ -274,6 +274,13 @@ export default function PricingPage({ onClose }) {
         <p style={{ ...s.footer, marginTop: 10, fontSize: 13, color: '#64748b', maxWidth: 520, marginLeft: 'auto', marginRight: 'auto' }}>
           W!ntAi never stores your bank account or card numbers. Payment details are handled only by Stripe.
         </p>
+        <p style={{ ...s.footer, marginTop: 14, fontSize: 12, color: '#64748b', lineHeight: 1.6 }}>
+          <a href="/privacy-policy" style={s.legalLink}>Privacy Policy</a>
+          {' · '}
+          <a href="/terms-of-service" style={s.legalLink}>Terms of Service</a>
+          {' · '}
+          <a href="/refund-policy" style={s.legalLink}>Refund Policy</a>
+        </p>
       </div>
     </div>
   );
@@ -401,4 +408,5 @@ const s = {
     textAlign: 'center', fontSize: 13, color: '#94a3b8', margin: 0,
     borderTop: '1px solid #f1f5f9', paddingTop: 16,
   },
+  legalLink: { color: '#64748b', fontWeight: 600, textDecoration: 'underline' },
 };

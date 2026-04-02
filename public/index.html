@@ -66,15 +66,16 @@
   "url": "https://www.wintaibot.com",
   "applicationCategory": "ProductivityApplication",
   "operatingSystem": "Web",
-  "description": "W!ntAi is an AI assistant that analyzes PDFs, extracts document data, transcribes audio, generates images, writes email replies, and prepares users for job interviews.",
+  "description": "W!ntAi is a web platform for multi-platform social video publishing, AI document analysis, transcription, image generation, email replies, interview prep, and analytics — in one dashboard.",
   "featureList": [
-    "PDF data extraction and analysis",
-    "AI document summarization",
-    "Voice and audio transcription",
+    "Multi-platform video publishing and scheduling",
+    "PDF, Excel, and Word data extraction (DocuWizard)",
+    "Voice and audio transcription (EchoScribe)",
     "AI image generation from text",
-    "AI email reply generator",
+    "AI email reply drafting",
     "Resume-based interview preparation",
-    "AI recipe generator"
+    "AI recipe generator",
+    "Social analytics and messaging tools"
   ],
   "offers": [
     {
@@ -113,7 +114,8 @@
     "@type": "Person",
     "name": "Wint Kay Thwe Aung",
     "url": "https://github.com/wintkaythweaungRevature"
-  }
+  },
+  "termsOfService": "https://www.wintaibot.com/terms-of-service"
 }
 </script>
 
@@ -124,7 +126,8 @@
   "@type": "WebSite",
   "name": "W!ntAi",
   "url": "https://www.wintaibot.com",
-  "description": "AI assistant for PDF analysis, document extraction, voice transcription, image generation, email writing, and interview preparation.",
+  "description": "AI assistant for social video publishing, PDF analysis, document extraction, voice transcription, image generation, email writing, and interview preparation.",
+  "termsOfService": "https://www.wintaibot.com/terms-of-service",
   "potentialAction": {
     "@type": "SearchAction",
     "target": "https://wintaibot.com/?q={search_term_string}",
@@ -148,7 +151,8 @@
   },
   "sameAs": [
     "https://github.com/wintkaythweaungRevature"
-  ]
+  ],
+  "privacyPolicy": "https://www.wintaibot.com/privacy-policy"
 }
 </script>
 
@@ -163,7 +167,7 @@
       "name": "What is W!ntAi?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "W!ntAi is an AI assistant platform that helps you analyze PDFs, extract document data, transcribe audio, generate images, write email replies, prepare for job interviews, and plan meals — all in one web-based dashboard."
+        "text": "W!ntAi is an AI assistant platform that helps you analyze PDFs, extract document data, transcribe audio, generate images, write email replies, prepare for job interviews, publish video to multiple social networks, and plan meals — all in one web-based dashboard."
       }
     },
     {
@@ -194,135 +198,282 @@
 }
 </script>
 
+<!--
+  Static HTML inside #root: visible in the raw document before React runs.
+  Tools that fetch HTML without executing JavaScript see real product copy (not an empty SPA shell).
+  createRoot(...).render() replaces all children of #root for users with JavaScript enabled.
+-->
+<style>
+  #wintai-static-fallback,
+  #wintai-static-fallback * {
+    box-sizing: border-box;
+  }
+  #wintai-static-fallback {
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #1a1a2e;
+    line-height: 1.6;
+    background: #f8fafc;
+    min-height: 100vh;
+  }
+  #wintai-static-fallback a {
+    color: #1e3a8a;
+    text-decoration: none;
+  }
+  #wintai-static-fallback nav {
+    background: #0f172a;
+    padding: 0 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+  }
+  #wintai-static-fallback .nav-brand {
+    color: #fff;
+    font-size: 1.1rem;
+    font-weight: 800;
+  }
+  #wintai-static-fallback .nav-links {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  #wintai-static-fallback .nav-links a {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+  #wintai-static-fallback .nav-cta {
+    background: #1d4ed8;
+    color: #fff !important;
+    padding: 8px 18px;
+    border-radius: 6px;
+    font-weight: 700 !important;
+  }
+  #wintai-static-fallback .hero {
+    background: linear-gradient(135deg, #0f172a, #1e3a8a);
+    color: #fff;
+    padding: 80px 32px;
+    text-align: center;
+  }
+  #wintai-static-fallback .hero h1 {
+    font-size: 2.6rem;
+    font-weight: 900;
+    margin-bottom: 16px;
+  }
+  #wintai-static-fallback .hero p {
+    font-size: 1.15rem;
+    opacity: 0.9;
+    max-width: 640px;
+    margin: 0 auto 28px;
+  }
+  #wintai-static-fallback .section {
+    padding: 56px 24px;
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+  #wintai-static-fallback .section h2 {
+    font-size: 1.7rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 12px;
+  }
+  #wintai-static-fallback .tools-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+    margin-top: 32px;
+  }
+  #wintai-static-fallback .tool-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 28px;
+  }
+  #wintai-static-fallback .tool-card h3 {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 8px;
+  }
+  #wintai-static-fallback .tool-card p {
+    color: #475569;
+    font-size: 0.9rem;
+    line-height: 1.65;
+  }
+  #wintai-static-fallback .badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 999px;
+    margin-left: 8px;
+  }
+  #wintai-static-fallback .badge-free {
+    background: #dcfce7;
+    color: #166534;
+  }
+  #wintai-static-fallback .badge-member {
+    background: #dbeafe;
+    color: #1e40af;
+  }
+  #wintai-static-fallback .pricing {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 40px;
+    max-width: 900px;
+    margin: 32px auto 0;
+    color: #334155;
+    font-size: 0.95rem;
+    line-height: 1.75;
+  }
+  #wintai-static-fallback .pricing h3 {
+    font-size: 1.05rem;
+    color: #0f172a;
+    margin: 20px 0 8px;
+  }
+  #wintai-static-fallback footer {
+    background: #0f172a;
+    color: rgba(255, 255, 255, 0.6);
+    text-align: center;
+    padding: 32px 24px;
+    font-size: 0.85rem;
+  }
+  #wintai-static-fallback footer a {
+    color: rgba(255, 255, 255, 0.7);
+  }
+  #wintai-static-fallback .footer-links {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 12px;
+  }
+</style>
+
 </head>
 
 <body>
-
-<!-- Static content for search engine crawlers and AI bots that don't execute JavaScript.
-     React will mount into #root and render the interactive app for real users. -->
 <noscript>
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #1a1a2e; line-height: 1.6; background: #f8fafc; }
-  a { color: #1e3a8a; text-decoration: none; }
-  nav { background: #0f172a; padding: 0 32px; display: flex; align-items: center; justify-content: space-between; height: 60px; }
-  .nav-brand { color: #fff; font-size: 1.1rem; font-weight: 800; }
-  .nav-links { display: flex; gap: 24px; }
-  .nav-links a { color: rgba(255,255,255,0.8); font-size: 0.875rem; font-weight: 500; }
-  .nav-cta { background: #1d4ed8; color: #fff !important; padding: 8px 18px; border-radius: 6px; font-weight: 700 !important; }
-  .hero { background: linear-gradient(135deg, #0f172a, #1e3a8a); color: #fff; padding: 80px 32px; text-align: center; }
-  .hero h1 { font-size: 2.6rem; font-weight: 900; margin-bottom: 16px; }
-  .hero p { font-size: 1.15rem; opacity: 0.9; max-width: 620px; margin: 0 auto 28px; }
-  .container { max-width: 1000px; margin: 0 auto; padding: 0 24px; }
-  .section { padding: 56px 24px; max-width: 1000px; margin: 0 auto; }
-  .section h2 { font-size: 1.7rem; font-weight: 800; color: #0f172a; margin-bottom: 12px; }
-  .tools-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-top: 32px; }
-  .tool-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 28px; }
-  .tool-card h3 { font-size: 1.05rem; font-weight: 800; color: #0f172a; margin-bottom: 8px; }
-  .tool-card p { color: #475569; font-size: 0.9rem; line-height: 1.65; }
-  .badge { display: inline-block; font-size: 0.7rem; font-weight: 700; padding: 3px 9px; border-radius: 999px; margin-left: 8px; }
-  .badge-free { background: #dcfce7; color: #166534; }
-  .badge-member { background: #dbeafe; color: #1e40af; }
-  .pricing { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 40px; max-width: 900px; margin: 32px auto 0; color: #334155; font-size: 0.95rem; line-height: 1.75; }
-  .pricing h3 { font-size: 1.05rem; color: #0f172a; margin: 20px 0 8px; }
-  .plan h3 { font-size: 1.2rem; font-weight: 800; color: #0f172a; margin-bottom: 8px; }
-  .plan .price { font-size: 2rem; font-weight: 900; color: #1d4ed8; margin-bottom: 12px; }
-  .plan ul { padding-left: 18px; color: #475569; font-size: 0.9rem; line-height: 1.9; }
-  footer { background: #0f172a; color: rgba(255,255,255,0.6); text-align: center; padding: 32px 24px; font-size: 0.85rem; }
-  footer a { color: rgba(255,255,255,0.7); }
-  .footer-links { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin-top: 12px; }
-</style>
-
-<nav>
-  <a href="/" class="nav-brand">W!ntAi</a>
-  <div class="nav-links">
-    <a href="/features">Features</a>
-    <a href="/pricing">Pricing</a>
-    <a href="/use-cases">Use Cases</a>
-    <a href="/docs">Docs</a>
-    <a href="/" class="nav-cta">Try Free Trial →</a>
-  </div>
-</nav>
-
-<div class="hero">
-  <h1>The AI Assistant That Works<br>With Your Documents</h1>
-  <p>W!ntAi lets you analyze PDFs, transcribe audio, generate images, write emails, prepare for interviews, and chat with AI — all in one platform. Start free, no credit card needed.</p>
-  <a href="/" style="display:inline-block;background:#fff;color:#1e3a8a;font-weight:700;padding:14px 32px;border-radius:8px;font-size:1rem;">Try Free Trial — No Credit Card</a>
-</div>
-
-<main>
-
-  <div class="section">
-    <h2>7 AI Tools in One Platform</h2>
-    <p style="color:#475569;max-width:600px;margin-bottom:0;">From document analysis to meal planning, W!ntAi covers the tasks that waste your time every day.</p>
-    <div class="tools-grid">
-      <div class="tool-card">
-        <h3>📄 DocuWizard – PDF & Document Analyzer <span class="badge badge-member">Member</span></h3>
-        <p>Upload PDFs, Excel files, or Word documents. Extract tables, summarize contracts, and ask AI questions about your files. Supports .pdf, .xlsx, and .docx.</p>
-      </div>
-      <div class="tool-card">
-        <h3>🎤 EchoScribe – Voice Transcription <span class="badge badge-member">Member</span></h3>
-        <p>Convert spoken audio into accurate written text. Transcribe meetings, lectures, interviews, and voice memos instantly with AI.</p>
-      </div>
-      <div class="tool-card">
-        <h3>🖼️ AI Image Generator <span class="badge badge-member">Member</span></h3>
-        <p>Turn any text prompt into a high-quality image. Generate logos, illustrations, product mockups, and social media visuals in seconds.</p>
-      </div>
-      <div class="tool-card">
-        <h3>✉️ Reply Enchanter – AI Email Writer <span class="badge badge-member">Member</span></h3>
-        <p>Paste an email you received and get a polished reply drafted by AI. Choose from professional, friendly, casual, or urgent tones.</p>
-      </div>
-      <div class="tool-card">
-        <h3>📝 Resume Warlock – Interview Prep <span class="badge badge-member">Member</span></h3>
-        <p>Upload your resume and get AI-generated interview questions tailored to your specific experience and target role. Practice before the real thing.</p>
-      </div>
-      <div class="tool-card">
-        <h3>🤖 Ask AI – AI Chatbot <span class="badge badge-free">Free</span></h3>
-        <p>General-purpose AI assistant available 24/7 at no cost. Get coding help, writing assistance, research answers, and more — no account required.</p>
-      </div>
-      <div class="tool-card">
-        <h3>🍳 Recipe Generator – AI Meal Planner <span class="badge badge-free">Free</span></h3>
-        <p>Enter the ingredients you have and get complete, step-by-step recipes from AI. Reduce food waste and discover new meals instantly.</p>
-      </div>
-    </div>
-  </div>
-
-  <div class="section">
-    <h2>Simple, Transparent Pricing</h2>
-    <div class="pricing">
-      <p><strong>Free</strong> — Ask AI and Recipe Generator forever. <strong>Starter $19/mo</strong> ($15/mo annual, $180/yr): premium AI tools + Video Publisher (5 platforms, 10 videos/mo, 30 scheduled/mo). <strong>Pro $39/mo</strong> ($32/mo annual, $384/yr): all 8 platforms, 30 videos/mo, unlimited scheduling, deep analytics, AI Social Chat. <strong>Growth $79/mo</strong> ($64/mo annual, $768/yr): unlimited videos, priority processing, 3 team seats. See <a href="/pricing">/pricing</a> for the full comparison table.</p>
-      <h3>Why these prices?</h3>
-      <p>Starter stays under $20 vs tools like Buffer; Pro is roughly half the cost of Hootsuite-class suites with stronger video AI; Growth leaves margin for teams and infrastructure.</p>
-    </div>
-  </div>
-
-  <div class="section">
-    <h2>Who Uses W!ntAi?</h2>
-    <ul style="color:#475569;padding-left:20px;line-height:2;font-size:0.95rem;">
-      <li><strong>Students &amp; researchers</strong> — analyze academic papers and extract key findings from PDFs</li>
-      <li><strong>Business professionals</strong> — summarize contracts, transcribe meetings, and automate email replies</li>
-      <li><strong>Job seekers</strong> — prepare for interviews with AI-generated questions tailored to your resume</li>
-      <li><strong>Creators &amp; marketers</strong> — generate images, write content, and plan campaigns faster</li>
-      <li><strong>Anyone saving time</strong> — replace hours of manual work with AI tools that take seconds</li>
-    </ul>
-  </div>
-
-</main>
-
-<footer>
-  <p>© 2026 W!ntAi · Built by <a href="https://github.com/wintkaythweaungRevature">Wint Kay Thwe Aung</a> · <a href="mailto:contact@wintaibot.com">contact@wintaibot.com</a></p>
-  <nav class="footer-links" aria-label="Footer">
-    <a href="/">Home</a>
-    <a href="/features">Features</a>
-    <a href="/pricing">Pricing</a>
-    <a href="/privacy-policy">Privacy Policy</a>
-    <a href="/terms-of-service">Terms of Service</a>
-    <a href="/docs">Docs</a>
-  </nav>
-</footer>
+  <p style="margin:0;padding:16px;background:#fef3c7;color:#78350f;font-family:system-ui,sans-serif;text-align:center;">
+    JavaScript is required for the interactive W!ntAi app. You can still read our
+    <a href="/features">features</a>, <a href="/pricing">pricing</a>,
+    <a href="/privacy-policy">privacy policy</a>, and <a href="/terms-of-service">terms of service</a>.
+  </p>
 </noscript>
 
-<div id="root"></div>
+<div id="root">
+  <!-- Full marketing summary for crawlers and HTML-only fetchers; React replaces this subtree on load. -->
+  <div id="wintai-static-fallback">
+    <nav aria-label="Primary">
+      <a href="/" class="nav-brand">W!ntAi</a>
+      <div class="nav-links">
+        <a href="/features">Features</a>
+        <a href="/pricing">Pricing</a>
+        <a href="/use-cases">Use Cases</a>
+        <a href="/docs">Docs</a>
+        <a href="/privacy-policy">Privacy</a>
+        <a href="/terms-of-service">Terms</a>
+        <a href="/" class="nav-cta">Start free</a>
+      </div>
+    </nav>
+
+    <header class="hero">
+      <h1>If You Can Record It,<br />We Can Post It.</h1>
+      <p>
+        W!ntAi is a real multi-platform social video workspace: upload once, adapt format per network (Instagram, YouTube, TikTok, and more), edit AI captions, schedule posts, and view analytics.
+        Plus DocuWizard, EchoScribe, image AI, email AI, interview prep, Ask AI, and Recipe Generator in one login.
+      </p>
+      <a href="/" style="display:inline-block;background:#fff;color:#1e3a8a;font-weight:700;padding:14px 32px;border-radius:8px;font-size:1rem;">Start free — no credit card</a>
+    </header>
+
+    <main>
+      <section class="section" aria-labelledby="static-tools-heading">
+        <h2 id="static-tools-heading">8 AI tools in one platform</h2>
+        <p style="color:#475569;max-width:640px;margin-bottom:0;">
+          This is the production product W!ntAi (wintaibot.com), not a placeholder or scam shell. Paid plans from $19/mo; free tier includes Ask AI and Recipe Generator.
+        </p>
+        <div class="tools-grid">
+          <div class="tool-card">
+            <h3>🎬 Video Publisher <span class="badge badge-member">Member</span></h3>
+            <p>One upload — per-platform video shape, thumbnails, editable AI captions, schedule or publish to multiple social accounts.</p>
+          </div>
+          <div class="tool-card">
+            <h3>📄 DocuWizard – PDF &amp; Document AI <span class="badge badge-member">Member</span></h3>
+            <p>Upload PDFs, Excel, or Word files. Extract tables, summarize contracts, and query your documents with AI.</p>
+          </div>
+          <div class="tool-card">
+            <h3>🎤 EchoScribe – Voice Transcription <span class="badge badge-member">Member</span></h3>
+            <p>Transcribe meetings, lectures, interviews, and voice memos to text with AI.</p>
+          </div>
+          <div class="tool-card">
+            <h3>🖼️ AI Image Generator <span class="badge badge-member">Member</span></h3>
+            <p>Generate images from text prompts for mockups, social graphics, and creative work.</p>
+          </div>
+          <div class="tool-card">
+            <h3>✉️ Reply Enchanter – Email AI <span class="badge badge-member">Member</span></h3>
+            <p>Draft polished replies from pasted emails; choose tone (professional, friendly, casual, urgent).</p>
+          </div>
+          <div class="tool-card">
+            <h3>📝 Resume Warlock – Interview Prep <span class="badge badge-member">Member</span></h3>
+            <p>Upload a resume; get tailored interview questions and practice with AI.</p>
+          </div>
+          <div class="tool-card">
+            <h3>🤖 Ask AI <span class="badge badge-free">Free</span></h3>
+            <p>24/7 general AI chat: code, writing, research, and explanations.</p>
+          </div>
+          <div class="tool-card">
+            <h3>🍳 Recipe Generator <span class="badge badge-free">Free</span></h3>
+            <p>List ingredients; get step-by-step recipes and reduce food waste.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="static-pricing-heading">
+        <h2 id="static-pricing-heading">Pricing</h2>
+        <div class="pricing">
+          <p>
+            <strong>Free</strong> — Ask AI and Recipe Generator.
+            <strong>Starter $19/mo</strong>, <strong>Pro $39/mo</strong>, <strong>Growth $79/mo</strong> for premium tools and Video Publisher limits; annual billing saves two months.
+            Full comparison: <a href="/pricing">wintaibot.com/pricing</a>.
+          </p>
+          <h3>Legal &amp; trust</h3>
+          <p>
+            <a href="/privacy-policy">Privacy Policy</a> ·
+            <a href="/terms-of-service">Terms of Service</a> ·
+            <a href="/refund-policy">Refund Policy</a>
+            · Contact: <a href="mailto:contact@wintaibot.com">contact@wintaibot.com</a>
+          </p>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="static-audience-heading">
+        <h2 id="static-audience-heading">Who uses W!ntAi?</h2>
+        <ul style="color:#475569;padding-left:20px;line-height:2;font-size:0.95rem;">
+          <li><strong>Social media managers &amp; creators</strong> — publish one video to many platforms without manual re-edits</li>
+          <li><strong>Students &amp; researchers</strong> — analyze PDFs and extract findings</li>
+          <li><strong>Professionals</strong> — transcribe meetings and draft email replies</li>
+          <li><strong>Job seekers</strong> — interview prep from your resume</li>
+        </ul>
+      </section>
+    </main>
+
+    <footer>
+      <p>© 2026 W!ntAi · <a href="https://github.com/wintkaythweaungRevature">Wint Kay Thwe Aung</a> · <a href="mailto:contact@wintaibot.com">contact@wintaibot.com</a></p>
+      <nav class="footer-links" aria-label="Footer">
+        <a href="/">Home</a>
+        <a href="/features">Features</a>
+        <a href="/pricing">Pricing</a>
+        <a href="/privacy-policy">Privacy Policy</a>
+        <a href="/terms-of-service">Terms of Service</a>
+        <a href="/refund-policy">Refund Policy</a>
+        <a href="/docs">Docs</a>
+      </nav>
+    </footer>
+  </div>
+</div>
 
 </body>
 

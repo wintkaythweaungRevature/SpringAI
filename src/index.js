@@ -7,6 +7,8 @@ import reportWebVitals from './reportWebVitals';
 import { AuthProvider } from './context/AuthContext';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsOfService from './components/TermsOfService';
+import RefundPolicy from './components/RefundPolicy';
+import ChangelogPage from './components/ChangelogPage';
 import ResetPassword from './components/ResetPassword';
 import SEOPublicLayout from './pages/SEOPublicLayout';
 import ToolLandingPage from './pages/ToolLandingPage';
@@ -35,6 +37,8 @@ function Root() {
       <Routes>
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/terms-of-service" element={<TermsOfService />} />
+        <Route path="/refund-policy" element={<RefundPolicy />} />
+        <Route path="/changelog" element={<ChangelogPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/features" element={<SEOPublicLayout />} />
         <Route path="/pricing" element={<SEOPublicLayout />} />

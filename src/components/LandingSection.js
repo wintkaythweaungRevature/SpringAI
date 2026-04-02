@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import PlatformIcon from "./PlatformIcon";
+import { WINTAI_SOCIAL } from "../config/brandSocial";
 import "./LandingSection.css";
 
 /** Simple Icons CDN — same source as PlatformIcon (production- recognizable marks). */
@@ -38,6 +39,132 @@ const VP_SHOWCASE_PLATFORMS = [
  * Visual story: one video → beams → platform marks (showcase, not a wall of text).
  * variant: hero (dark glass on hero) | card (feature tile) | compact (inline section)
  */
+/**
+ * Product-grid card preview: same light “stage” as Video Publisher, tool-specific motion.
+ * Decoupled from routing — keyed by feature slug.
+ */
+function FeatureCardMotionGraphic({ slug }) {
+  if (slug === "video-publisher") {
+    return <VideoPublishShowcaseGraphic variant="card" />;
+  }
+  if (slug === "ask-ai") {
+    return (
+      <figure className="ls-fc-motion" aria-hidden="true">
+        <div className="ls-fc-chat">
+          <div className="ls-fc-chat__row">
+            <div className="ls-fc-chat__bubble ls-fc-chat__bubble--in" />
+          </div>
+          <div className="ls-fc-chat__row ls-fc-chat__row--out">
+            <div className="ls-fc-chat__bubble ls-fc-chat__bubble--out">
+              <span className="ls-fc-chat__dot" />
+              <span className="ls-fc-chat__dot" />
+              <span className="ls-fc-chat__dot" />
+            </div>
+          </div>
+        </div>
+      </figure>
+    );
+  }
+  if (slug === "recipe-generator") {
+    return (
+      <figure className="ls-fc-motion" aria-hidden="true">
+        <div className="ls-fc-kitchen">
+          <div className="ls-fc-kitchen__steam" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </div>
+          <div className="ls-fc-kitchen__pot">
+            <div className="ls-fc-kitchen__rim" />
+          </div>
+        </div>
+      </figure>
+    );
+  }
+  if (slug === "docuwizard") {
+    return (
+      <figure className="ls-fc-motion" aria-hidden="true">
+        <div className="ls-fc-doc">
+          <div className="ls-fc-doc__lines" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </div>
+          <div className="ls-fc-doc__scan" />
+        </div>
+      </figure>
+    );
+  }
+  if (slug === "echoscribe") {
+    const bars = [0.35, 0.55, 0.75, 0.45, 0.9, 0.5, 0.7, 0.4, 0.85, 0.6];
+    return (
+      <figure className="ls-fc-motion" aria-hidden="true">
+        <div className="ls-fc-wave">
+          {bars.map((h, i) => (
+            <span
+              key={i}
+              className="ls-fc-wave__bar"
+              style={{ height: `${Math.round(h * 100)}%`, animationDelay: `${i * 0.07}s` }}
+            />
+          ))}
+        </div>
+      </figure>
+    );
+  }
+  if (slug === "image-generator") {
+    return (
+      <figure className="ls-fc-motion" aria-hidden="true">
+        <div className="ls-fc-vision">
+          <div className="ls-fc-vision__canvas" />
+          <div className="ls-fc-vision__shimmer" />
+        </div>
+      </figure>
+    );
+  }
+  if (slug === "reply-enchanter") {
+    return (
+      <figure className="ls-fc-motion" aria-hidden="true">
+        <div className="ls-fc-mail">
+          <div className="ls-fc-mail__tile ls-fc-mail__tile--in" />
+          <span className="ls-fc-mail__arrow" aria-hidden="true">
+            →
+          </span>
+          <div className="ls-fc-mail__tile ls-fc-mail__tile--out" />
+        </div>
+      </figure>
+    );
+  }
+  if (slug === "resume-warlock") {
+    return (
+      <figure className="ls-fc-motion" aria-hidden="true">
+        <div className="ls-fc-cv">
+          <span className="ls-fc-cv__line" />
+          <span className="ls-fc-cv__line" />
+          <span className="ls-fc-cv__line" />
+          <span className="ls-fc-cv__line" />
+        </div>
+      </figure>
+    );
+  }
+  if (slug === "creator-suite") {
+    const heights = ["32%", "48%", "72%", "56%", "88%"];
+    return (
+      <figure className="ls-fc-motion" aria-hidden="true">
+        <div className="ls-fc-grow">
+          {heights.map((h, i) => (
+            <span
+              key={i}
+              className="ls-fc-grow__bar"
+              style={{ height: h, animationDelay: `${i * 0.12}s` }}
+            />
+          ))}
+        </div>
+      </figure>
+    );
+  }
+  return null;
+}
+
 function VideoPublishShowcaseGraphic({ variant = "hero" }) {
   const v = variant === "card" ? "card" : variant === "compact" ? "compact" : "hero";
   const imgSize = v === "hero" ? 40 : v === "compact" ? 34 : 32;
@@ -355,36 +482,42 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
       <section className="ls-hero ls-hero--showcase" aria-labelledby="hero-heading">
         <div className="ls-hero-inner ls-hero-inner--split">
           <div className="ls-hero-copy">
-            <div className="ls-hero-badge">
-              Multi-platform video publishing · Social media managers &amp; creators
+            <div className="ls-hero-copy__head">
+              <div className="ls-hero-badge">
+                Multi-platform video publishing · Social media managers &amp; creators
+              </div>
+              <p className="ls-hero-kicker">The end of format errors</p>
+              <h1 id="hero-heading" className="ls-hero-h1">
+                If You Can Record It,<br /><span className="ls-hero-h1-accent">We Can Post It.</span>
+              </h1>
+              <p className="ls-hero-tagline">
+                <strong>Upload Once. Optimize Everywhere.</strong> Let AI handle the formats while you focus on creating.
+              </p>
             </div>
-            <p className="ls-hero-kicker">The end of format errors</p>
-            <h1 id="hero-heading" className="ls-hero-h1">
-              If You Can Record It,<br /><span className="ls-hero-h1-accent">We Can Post It.</span>
-            </h1>
-            <p className="ls-hero-tagline">
-              <strong>Upload Once. Optimize Everywhere.</strong> Let AI handle the formats while you focus on creating.
-            </p>
-            <ul className="ls-hero-chips" aria-label="Product highlights">
-              <li>No manual re-edits per platform</li>
-              <li>Thumbnail picker + AI frames</li>
-              <li>Schedule &amp; direct publishing</li>
-              <li>Brand-aware Social AI (RAG)</li>
-            </ul>
-            <div className="ls-hero-actions">
-              <button type="button" className="ls-btn-primary" onClick={onGetStarted}>
-                Start Trial
-              </button>
-              <a className="ls-btn-ghost" href="/features">See all tools →</a>
+            <div className="ls-hero-copy__body">
+              <div className="ls-hero-copy__rail">
+                <ul className="ls-hero-chips" aria-label="Product highlights">
+                  <li>No manual re-edits per platform</li>
+                  <li>Thumbnail picker + AI frames</li>
+                  <li>Schedule &amp; direct publishing</li>
+                  <li>Brand-aware Social AI (RAG)</li>
+                </ul>
+                <div className="ls-hero-actions">
+                  <button type="button" className="ls-btn-primary" onClick={onGetStarted}>
+                    Start Trial
+                  </button>
+                  <a className="ls-btn-ghost" href="/features">See all tools →</a>
+                </div>
+                <p className="ls-hero-note">
+                  <strong>Try free trial:</strong> Ask AI &amp; Recipe Generator.{" "}
+                  <strong>Paid:</strong> Starter <strong>$19/mo</strong> · Pro <strong>$39/mo</strong> · Growth <strong>$79/mo</strong> — no per-channel fees, no install.
+                </p>
+                <HeroPlatformsUnderNote />
+              </div>
+              <div className="ls-hero-visual ls-hero-visual--nested">
+                <HeroVisualOrchestration />
+              </div>
             </div>
-            <p className="ls-hero-note">
-              <strong>Try free trial:</strong> Ask AI &amp; Recipe Generator.{" "}
-              <strong>Paid:</strong> Starter <strong>$19/mo</strong> · Pro <strong>$39/mo</strong> · Growth <strong>$79/mo</strong> — no per-channel fees, no install.
-            </p>
-            <HeroPlatformsUnderNote />
-          </div>
-          <div className="ls-hero-visual">
-            <HeroVisualOrchestration />
           </div>
         </div>
       </section>
@@ -537,7 +670,7 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
               style={{ textDecoration: 'none', color: 'inherit', display: 'contents' }}
             >
               <article className="ls-feature-card ls-feature-card--linked" role="listitem">
-                {f.slug === "video-publisher" && <VideoPublishShowcaseGraphic variant="card" />}
+                <FeatureCardMotionGraphic slug={f.slug} />
                 <div className="ls-feature-top">
                   <span className="ls-feature-icon" aria-hidden="true">{f.icon}</span>
                   <span className={`ls-badge ls-badge--${f.badge.toLowerCase()}`}>{f.badge}</span>
@@ -838,6 +971,23 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
           >
             API Documentation (Swagger)
           </a>
+          <a href="/changelog" className="ls-authority-link">
+            Changelog — ship log
+          </a>
+        </div>
+        <div className="ls-authority-social" aria-label="W!ntAi on social">
+          <a href={WINTAI_SOCIAL.x} target="_blank" rel="noopener noreferrer" className="ls-authority-social-link" title="X (Twitter)">
+            <img src={`${SI}/x/000000`} alt="" width={20} height={20} />
+            <span>X</span>
+          </a>
+          <a href={WINTAI_SOCIAL.facebook} target="_blank" rel="noopener noreferrer" className="ls-authority-social-link" title="Facebook">
+            <img src={`${SI}/facebook/1877F2`} alt="" width={20} height={20} />
+            <span>Facebook</span>
+          </a>
+          <a href={WINTAI_SOCIAL.linkedin} target="_blank" rel="noopener noreferrer" className="ls-authority-social-link" title="LinkedIn">
+            <img src={`${SI}/linkedin/0A66C2`} alt="" width={20} height={20} />
+            <span>LinkedIn</span>
+          </a>
         </div>
       </section>
 
@@ -944,6 +1094,23 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
             </div>
           </div>
         </div>
+        <div className="ls-footer-social-row" aria-label="Follow W!ntAi">
+          <a href={WINTAI_SOCIAL.x} target="_blank" rel="noopener noreferrer" className="ls-footer-social-link">
+            <img src={`${SI}/x/000000`} alt="" width={18} height={18} />
+            X
+          </a>
+          <a href={WINTAI_SOCIAL.facebook} target="_blank" rel="noopener noreferrer" className="ls-footer-social-link">
+            <img src={`${SI}/facebook/1877F2`} alt="" width={18} height={18} />
+            Facebook
+          </a>
+          <a href={WINTAI_SOCIAL.linkedin} target="_blank" rel="noopener noreferrer" className="ls-footer-social-link">
+            <img src={`${SI}/linkedin/0A66C2`} alt="" width={18} height={18} />
+            LinkedIn
+          </a>
+          <a href="/changelog" className="ls-footer-social-link ls-footer-social-link--changelog">
+            Changelog
+          </a>
+        </div>
         <p>
           © {new Date().getFullYear()} W!ntAi · Built by{" "}
           <a href="https://github.com/wintkaythweaungRevature" target="_blank" rel="noopener noreferrer">
@@ -955,10 +1122,17 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
         <nav className="ls-footer-nav" aria-label="Footer navigation">
           <a href="/features">Features</a>
           <a href="/pricing">Pricing</a>
+          <span className="ls-footer-nav-group" role="group" aria-label="Legal">
+            <span className="ls-footer-nav-label">Legal</span>
+            <a href="/privacy-policy">Privacy Policy</a>
+            <a href="/terms-of-service">Terms of Service</a>
+            <a href="/refund-policy">Refund Policy</a>
+          </span>
           <span className="ls-footer-nav-group" role="group" aria-label="Resources">
             <span className="ls-footer-nav-label">Resources</span>
             <a href="/tutorial">Tutorials</a>
             <a href="/blog">Blog</a>
+            <a href="/changelog">Changelog</a>
           </span>
           <a href="/#about">About</a>
           <a href="/#faq">FAQ</a>

@@ -87,6 +87,7 @@ export default function SEOPublicLayout({ onGetStarted, onOpenVideoPublisher }) 
                 <div className="seo-nav-dropdown-menu" role="menu">
                   <a href="/tutorial" role="menuitem" onClick={() => setResourcesOpen(false)}>Tutorials</a>
                   <a href="/blog" role="menuitem" onClick={() => setResourcesOpen(false)}>Blog</a>
+                  <a href="/changelog" role="menuitem" onClick={() => setResourcesOpen(false)}>Changelog</a>
                 </div>
               )}
             </div>

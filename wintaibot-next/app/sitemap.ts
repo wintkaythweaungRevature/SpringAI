@@ -56,13 +56,31 @@ export default function sitemap(): MetadataRoute.Sitemap {
       url: `${SITE_URL}/privacy-policy`,
       lastModified: new Date(),
       changeFrequency: 'monthly' as const,
-      priority: 0.5,
+      priority: 0.7,
     },
     {
       url: `${SITE_URL}/terms-of-service`,
       lastModified: new Date(),
       changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    },
+    {
+      url: `${SITE_URL}/refund-policy`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly' as const,
       priority: 0.5,
+    },
+    {
+      url: `${SITE_URL}/refund-policy`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.5,
+    },
+    {
+      url: `${SITE_URL}/changelog`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly' as const,
+      priority: 0.55,
     },
   ];
 }

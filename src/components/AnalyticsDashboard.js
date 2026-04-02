@@ -514,7 +514,7 @@ export default function AnalyticsDashboard() {
   const tabPlatforms = ['overview', ...connected];
 
   return (
-    <div style={{ maxWidth: '1100px', margin: '0 auto', fontFamily: "'Inter',-apple-system,sans-serif" }}>
+    <div style={{ width: '100%', maxWidth: '100%', margin: 0, boxSizing: 'border-box', fontFamily: "'Inter',-apple-system,sans-serif" }}>
 
       {/* Subtitle + refresh (page title is in the app shell) */}
       <div

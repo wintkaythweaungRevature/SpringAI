@@ -123,8 +123,10 @@ export default function ToolLandingPage() {
         <footer style={s.footer}>
           <Link to="/" style={s.logo}>W!ntAi</Link>
           <div style={s.footerLinks}>
-            <Link to="/privacy-policy" style={s.footerLink}>Privacy</Link>
-            <Link to="/terms-of-service" style={s.footerLink}>Terms</Link>
+            <Link to="/privacy-policy" style={s.footerLink}>Privacy Policy</Link>
+            <Link to="/terms-of-service" style={s.footerLink}>Terms of Service</Link>
+            <Link to="/refund-policy" style={s.footerLink}>Refund Policy</Link>
+            <Link to="/changelog" style={s.footerLink}>Changelog</Link>
             <a href="mailto:contact@wintaibot.com" style={s.footerLink}>Contact</a>
           </div>
           <p style={s.footerCopy}>© 2026 W!ntAi. All rights reserved.</p>

@@ -174,6 +174,26 @@ function MarketingNav({ go, onLogin, onSignup }) {
               >
                 Blog
               </a>
+              <div
+                role="separator"
+                style={{ borderTop: '1px solid rgba(148,163,184,0.22)', margin: '6px 0 4px' }}
+              />
+              <a
+                href="/privacy-policy"
+                role="menuitem"
+                style={{ display: 'block', padding: '10px 16px', color: 'rgba(255,255,255,0.92)', fontSize: '14px', fontWeight: 500, textDecoration: 'none' }}
+                onClick={() => setResourcesOpen(false)}
+              >
+                Privacy Policy
+              </a>
+              <a
+                href="/terms-of-service"
+                role="menuitem"
+                style={{ display: 'block', padding: '10px 16px', color: 'rgba(255,255,255,0.92)', fontSize: '14px', fontWeight: 500, textDecoration: 'none' }}
+                onClick={() => setResourcesOpen(false)}
+              >
+                Terms of Service
+              </a>
             </div>
           )}
         </div>

@@ -37,6 +37,25 @@
   text-align: center;
 }
 
+.auth-legal {
+  margin: 0 0 14px;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.auth-legal a {
+  color: #2563eb;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.auth-legal a:hover {
+  color: #1d4ed8;
+}
+
 .auth-form {
   display: flex;
   flex-direction: column;

@@ -896,8 +896,7 @@ function PlatformBestTimeCards({ bestTime }) {
             borderRadius: 12,
             padding: '10px 14px',
             minWidth: 140,
-            flex: '1 1 140px',
-            maxWidth: 220,
+            flex: '1 1 160px',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 6 }}>
               {(() => { const pc = PLATFORMS.find(p => p.id === c.id); return pc ? <PlatformIcon platform={pc} size={18} /> : null; })()}

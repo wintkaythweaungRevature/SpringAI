@@ -126,6 +126,18 @@ export default function Signup({
                 </div>
               )}
 
+              <p className="auth-legal">
+                By creating an account, you agree to our{' '}
+                <a href="/terms-of-service" target="_blank" rel="noopener noreferrer">
+                  Terms of Service
+                </a>{' '}
+                and{' '}
+                <a href="/privacy-policy" target="_blank" rel="noopener noreferrer">
+                  Privacy Policy
+                </a>
+                .
+              </p>
+
               <button
                 type="submit"
                 disabled={loading}

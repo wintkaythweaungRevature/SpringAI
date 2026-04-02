@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import PlatformIcon from '@/components/PlatformIcon';
+import { WINTAI_SOCIAL } from '@/config/brandSocial';
 import './LandingSection.css';
 
 const SI = 'https://cdn.simpleicons.org';
@@ -72,6 +73,129 @@ function VideoPublishShowcaseGraphic({ variant = 'hero' }: { variant?: 'hero' | 
       </div>
     </figure>
   );
+}
+
+/** Product-grid card preview — same stage as Video Publisher; motion per slug. */
+function FeatureCardMotionGraphic({ slug }: { slug: string }) {
+  if (slug === 'video-publisher') {
+    return <VideoPublishShowcaseGraphic variant="card" />;
+  }
+  if (slug === 'ask-ai') {
+    return (
+      <figure className="ls-fc-motion" aria-hidden="true">
+        <div className="ls-fc-chat">
+          <div className="ls-fc-chat__row">
+            <div className="ls-fc-chat__bubble ls-fc-chat__bubble--in" />
+          </div>
+          <div className="ls-fc-chat__row ls-fc-chat__row--out">
+            <div className="ls-fc-chat__bubble ls-fc-chat__bubble--out">
+              <span className="ls-fc-chat__dot" />
+              <span className="ls-fc-chat__dot" />
+              <span className="ls-fc-chat__dot" />
+            </div>
+          </div>
+        </div>
+      </figure>
+    );
+  }
+  if (slug === 'recipe-generator') {
+    return (
+      <figure className="ls-fc-motion" aria-hidden="true">
+        <div className="ls-fc-kitchen">
+          <div className="ls-fc-kitchen__steam" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </div>
+          <div className="ls-fc-kitchen__pot">
+            <div className="ls-fc-kitchen__rim" />
+          </div>
+        </div>
+      </figure>
+    );
+  }
+  if (slug === 'docuwizard') {
+    return (
+      <figure className="ls-fc-motion" aria-hidden="true">
+        <div className="ls-fc-doc">
+          <div className="ls-fc-doc__lines" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </div>
+          <div className="ls-fc-doc__scan" />
+        </div>
+      </figure>
+    );
+  }
+  if (slug === 'echoscribe') {
+    const bars = [0.35, 0.55, 0.75, 0.45, 0.9, 0.5, 0.7, 0.4, 0.85, 0.6];
+    return (
+      <figure className="ls-fc-motion" aria-hidden="true">
+        <div className="ls-fc-wave">
+          {bars.map((h, i) => (
+            <span
+              key={i}
+              className="ls-fc-wave__bar"
+              style={{ height: `${Math.round(h * 100)}%`, animationDelay: `${i * 0.07}s` }}
+            />
+          ))}
+        </div>
+      </figure>
+    );
+  }
+  if (slug === 'image-generator') {
+    return (
+      <figure className="ls-fc-motion" aria-hidden="true">
+        <div className="ls-fc-vision">
+          <div className="ls-fc-vision__canvas" />
+          <div className="ls-fc-vision__shimmer" />
+        </div>
+      </figure>
+    );
+  }
+  if (slug === 'reply-enchanter') {
+    return (
+      <figure className="ls-fc-motion" aria-hidden="true">
+        <div className="ls-fc-mail">
+          <div className="ls-fc-mail__tile ls-fc-mail__tile--in" />
+          <span className="ls-fc-mail__arrow" aria-hidden="true">
+            →
+          </span>
+          <div className="ls-fc-mail__tile ls-fc-mail__tile--out" />
+        </div>
+      </figure>
+    );
+  }
+  if (slug === 'resume-warlock') {
+    return (
+      <figure className="ls-fc-motion" aria-hidden="true">
+        <div className="ls-fc-cv">
+          <span className="ls-fc-cv__line" />
+          <span className="ls-fc-cv__line" />
+          <span className="ls-fc-cv__line" />
+          <span className="ls-fc-cv__line" />
+        </div>
+      </figure>
+    );
+  }
+  if (slug === 'creator-suite') {
+    const heights = ['32%', '48%', '72%', '56%', '88%'];
+    return (
+      <figure className="ls-fc-motion" aria-hidden="true">
+        <div className="ls-fc-grow">
+          {heights.map((h, i) => (
+            <span
+              key={i}
+              className="ls-fc-grow__bar"
+              style={{ height: h, animationDelay: `${i * 0.12}s` }}
+            />
+          ))}
+        </div>
+      </figure>
+    );
+  }
+  return null;
 }
 
 const HERO_ORCH_HUB = { x: 200, y: 76 };
@@ -200,6 +324,7 @@ const features = [
     description:
       'Chat with a powerful AI assistant 24/7. Get answers, explanations, code help, writing assistance, and advice on any topic — no downloads, no setup.',
     badge: 'Free',
+    slug: 'ask-ai',
   },
   {
     icon: '🍳',
@@ -207,6 +332,7 @@ const features = [
     description:
       'Type the ingredients you have and get step-by-step recipes instantly. Reduce food waste, discover new dishes, and plan meals effortlessly.',
     badge: 'Free',
+    slug: 'recipe-generator',
   },
   {
     icon: '📄',
@@ -214,6 +340,7 @@ const features = [
     description:
       'Upload PDF, Excel, or Word files and extract structured data in seconds. Summarize reports, convert PDF tables to Excel, and analyze invoices with AI.',
     badge: 'Member',
+    slug: 'docuwizard',
   },
   {
     icon: '🎤',
@@ -221,6 +348,7 @@ const features = [
     description:
       'Convert audio recordings and live speech to accurate text. Transcribe meetings, lectures, and interviews — then summarize or translate the output.',
     badge: 'Member',
+    slug: 'echoscribe',
   },
   {
     icon: '🖼️',
@@ -228,6 +356,7 @@ const features = [
     description:
       'Turn text prompts into stunning images in seconds. Create digital art, product mockups, social media graphics, and illustrations — no design skills needed.',
     badge: 'Member',
+    slug: 'image-generator',
   },
   {
     icon: '✉️',
@@ -235,6 +364,7 @@ const features = [
     description:
       'Paste any email and get a polished AI-drafted reply instantly. Choose your tone — professional, friendly, casual, or urgent — and send with confidence.',
     badge: 'Member',
+    slug: 'reply-enchanter',
   },
   {
     icon: '📝',
@@ -242,6 +372,7 @@ const features = [
     description:
       'Upload your resume and receive AI-generated interview questions tailored to your experience. Practice answers, sharpen weak areas, and land your next role.',
     badge: 'Member',
+    slug: 'resume-warlock',
   },
   {
     icon: '🎬',
@@ -249,6 +380,7 @@ const features = [
     description:
       'Upload once, publish everywhere. Connect YouTube, Instagram, TikTok, and more. Get AI captions and hashtags per platform, schedule each post when you want.',
     badge: 'Member',
+    slug: 'video-publisher',
   },
 ];
 
@@ -348,31 +480,37 @@ export default function LandingSection() {
       <section className="ls-hero ls-hero--showcase" aria-labelledby="hero-heading">
         <div className="ls-hero-inner ls-hero-inner--split">
           <div className="ls-hero-copy">
-            <div className="ls-hero-badge">AI Social Media Publishing &amp; Analytics Platform</div>
-            <h1 id="hero-heading" className="ls-hero-h1">
-              Plan, Publish, and Optimize
-              <br />
-              Your Social Media Workflow with AI
-            </h1>
-            <p className="ls-hero-sub">
-              <strong>One workspace</strong> for video, scheduling, inbox, analytics, and AI — so you spend less time in tabs and more time creating.
-            </p>
-            <div className="ls-hero-actions">
-              <Link href="/chat" className="ls-btn-primary">
-                Start Trial
-              </Link>
-              <Link href="/#features" className="ls-btn-ghost">
-                See showcase →
-              </Link>
+            <div className="ls-hero-copy__head">
+              <div className="ls-hero-badge">AI Social Media Publishing &amp; Analytics Platform</div>
+              <h1 id="hero-heading" className="ls-hero-h1">
+                Plan, Publish, and Optimize
+                <br />
+                Your Social Media Workflow with AI
+              </h1>
+              <p className="ls-hero-sub">
+                <strong>One workspace</strong> for video, scheduling, inbox, analytics, and AI — so you spend less time in tabs and more time creating.
+              </p>
             </div>
-            <p className="ls-hero-note">
-              <strong>Try free trial:</strong> <strong>Ask AI</strong> and <strong>Recipe Generator</strong>.{" "}
-              <strong>Paid</strong> plans from <strong>$19/month</strong> (or <strong>$15/mo</strong> billed annually).
-            </p>
-            <HeroPlatformsUnderNote />
-          </div>
-          <div className="ls-hero-visual">
-            <HeroVisualOrchestration />
+            <div className="ls-hero-copy__body">
+              <div className="ls-hero-copy__rail">
+                <div className="ls-hero-actions">
+                  <Link href="/chat" className="ls-btn-primary">
+                    Start Trial
+                  </Link>
+                  <Link href="/#features" className="ls-btn-ghost">
+                    See showcase →
+                  </Link>
+                </div>
+                <p className="ls-hero-note">
+                  <strong>Try free trial:</strong> <strong>Ask AI</strong> and <strong>Recipe Generator</strong>.{" "}
+                  <strong>Paid</strong> plans from <strong>$19/month</strong> (or <strong>$15/mo</strong> billed annually).
+                </p>
+                <HeroPlatformsUnderNote />
+              </div>
+              <div className="ls-hero-visual ls-hero-visual--nested">
+                <HeroVisualOrchestration />
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -417,7 +555,7 @@ export default function LandingSection() {
         <div className="ls-features-grid" role="list">
           {features.map((f) => (
             <article className="ls-feature-card" key={f.title} role="listitem">
-              {f.title.startsWith('Video Publisher') && <VideoPublishShowcaseGraphic variant="card" />}
+              <FeatureCardMotionGraphic slug={f.slug} />
               <div className="ls-feature-top">
                 <span className="ls-feature-icon" aria-hidden="true">
                   {f.icon}
@@ -788,6 +926,23 @@ export default function LandingSection() {
           >
             API Documentation (Swagger)
           </a>
+          <Link href="/changelog" className="ls-authority-link">
+            Changelog — ship log
+          </Link>
+        </div>
+        <div className="ls-authority-social" aria-label="W!ntAi on social">
+          <a href={WINTAI_SOCIAL.x} target="_blank" rel="noopener noreferrer" className="ls-authority-social-link" title="X (Twitter)">
+            <img src={`${SI}/x/000000`} alt="" width={20} height={20} />
+            <span>X</span>
+          </a>
+          <a href={WINTAI_SOCIAL.facebook} target="_blank" rel="noopener noreferrer" className="ls-authority-social-link" title="Facebook">
+            <img src={`${SI}/facebook/1877F2`} alt="" width={20} height={20} />
+            <span>Facebook</span>
+          </a>
+          <a href={WINTAI_SOCIAL.linkedin} target="_blank" rel="noopener noreferrer" className="ls-authority-social-link" title="LinkedIn">
+            <img src={`${SI}/linkedin/0A66C2`} alt="" width={20} height={20} />
+            <span>LinkedIn</span>
+          </a>
         </div>
       </section>
 
@@ -889,6 +1044,23 @@ export default function LandingSection() {
             </div>
           </div>
         </div>
+        <div className="ls-footer-social-row" aria-label="Follow W!ntAi">
+          <a href={WINTAI_SOCIAL.x} target="_blank" rel="noopener noreferrer" className="ls-footer-social-link">
+            <img src={`${SI}/x/000000`} alt="" width={18} height={18} />
+            X
+          </a>
+          <a href={WINTAI_SOCIAL.facebook} target="_blank" rel="noopener noreferrer" className="ls-footer-social-link">
+            <img src={`${SI}/facebook/1877F2`} alt="" width={18} height={18} />
+            Facebook
+          </a>
+          <a href={WINTAI_SOCIAL.linkedin} target="_blank" rel="noopener noreferrer" className="ls-footer-social-link">
+            <img src={`${SI}/linkedin/0A66C2`} alt="" width={18} height={18} />
+            LinkedIn
+          </a>
+          <Link href="/changelog" className="ls-footer-social-link ls-footer-social-link--changelog">
+            Changelog
+          </Link>
+        </div>
         <p>
           © {new Date().getFullYear()} W!ntAi · Built by{' '}
           <a
@@ -905,6 +1077,18 @@ export default function LandingSection() {
           <Link href="/features">Features</Link>
           <Link href="/pricing">Pricing</Link>
           <Link href="/use-cases">Use Cases</Link>
+          <span className="ls-footer-nav-group" role="group" aria-label="Legal">
+            <span className="ls-footer-nav-label">Legal</span>
+            <Link href="/privacy-policy">Privacy Policy</Link>
+            <Link href="/terms-of-service">Terms of Service</Link>
+            <Link href="/refund-policy">Refund Policy</Link>
+          </span>
+          <span className="ls-footer-nav-group" role="group" aria-label="Resources">
+            <span className="ls-footer-nav-label">Resources</span>
+            <Link href="/tutorial">Tutorials</Link>
+            <Link href="/blog">Blog</Link>
+            <Link href="/changelog">Changelog</Link>
+          </span>
           <a href="/#about">About</a>
           <a href="/#faq">FAQ</a>
           <a

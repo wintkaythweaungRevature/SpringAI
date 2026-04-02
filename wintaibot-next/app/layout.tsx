@@ -133,6 +133,7 @@ const structuredData = {
       name: 'Wint Kay Thwe Aung',
       url: 'https://github.com/wintkaythweaungRevature',
     },
+    termsOfService: `${SITE_URL}/terms-of-service`,
   },
   webSite: {
     '@context': 'https://schema.org',
@@ -141,6 +142,7 @@ const structuredData = {
     url: SITE_URL,
     description:
       'AI assistant for PDF analysis, document extraction, voice transcription, image generation, email writing, and interview preparation.',
+    termsOfService: `${SITE_URL}/terms-of-service`,
     potentialAction: {
       '@type': 'SearchAction',
       target: `${SITE_URL}/?q={search_term_string}`,
@@ -158,7 +160,13 @@ const structuredData = {
       email: 'contact@wintaibot.com',
       contactType: 'customer support',
     },
-    sameAs: ['https://github.com/wintkaythweaungRevature'],
+    sameAs: [
+      'https://github.com/wintkaythweaungRevature',
+      'https://x.com/wintaibot',
+      'https://www.facebook.com/wintaibot',
+      'https://www.linkedin.com/company/wintaibot',
+    ],
+    privacyPolicy: `${SITE_URL}/privacy-policy`,
   },
   faqPage: {
     '@context': 'https://schema.org',

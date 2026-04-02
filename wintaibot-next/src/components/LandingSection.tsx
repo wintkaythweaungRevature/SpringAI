@@ -354,7 +354,7 @@ const features = [
     icon: '🖼️',
     title: 'AI Image Generator',
     description:
-      'Turn text prompts into stunning images in seconds. Create digital art, product mockups, social media graphics, and illustrations — no design skills needed.',
+      'Turn text prompts into images for posts, ads, and channel art. For each video upload, Video Publisher also includes a thumbnail picker: scrub any frame or use AI-suggested stills before you publish.',
     badge: 'Member',
     slug: 'image-generator',
   },

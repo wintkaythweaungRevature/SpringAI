@@ -1311,70 +1311,6 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
               </div>
             </div>
 
-            {/* Connected accounts — grouped under upload & dashboard */}
-            <div style={{ ...s.card, marginTop: '24px' }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', marginBottom: '8px' }}>
-                <div style={s.sectionTitle}>🔗 Connected accounts</div>
-                {onNavigateToSocialConnect && (
-                  <button
-                    type="button"
-                    onClick={onNavigateToSocialConnect}
-                    style={{
-                      padding: '6px 12px',
-                      borderRadius: '8px',
-                      border: '1px solid #6366f1',
-                      background: '#fff',
-                      color: '#4f46e5',
-                      fontSize: '12px',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      fontFamily: 'inherit',
-                      flexShrink: 0,
-                    }}
-                  >
-                    Manage all →
-                  </button>
-                )}
-              </div>
-              {(() => {
-                const ids = ['youtube', 'instagram', 'tiktok', 'linkedin', 'facebook', 'x'];
-                const n = ids.filter((pid) => connectedAccounts[pid]).length;
-                return (
-                  <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 12px' }}>
-                    <strong>{n}</strong> of <strong>{ids.length}</strong> platforms linked. Connect the rest to publish from here.
-                  </p>
-                );
-              })()}
-              {connectMessage && (
-                <div style={{ fontSize: '12px', color: connectMessage.includes('failed') ? '#b91c1c' : '#15803d', marginBottom: '10px', fontWeight: 500 }}>
-                  {connectMessage}
-                </div>
-              )}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {['youtube', 'instagram', 'tiktok', 'linkedin', 'facebook', 'x'].map((pid) => {
-                  const p = PLATFORMS.find((x) => x.id === pid);
-                  const connected = connectedAccounts[pid];
-                  return (
-                    <div key={pid} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', border: `1.5px solid ${connected ? p.color : '#e2e8f0'}`, background: '#f8fafc' }}>
-                      <PlatformIcon platform={p} size={24} />
-                      <span style={{ flex: 1, fontSize: '13px', fontWeight: 600 }}>{p.label}</span>
-                      <span style={{ fontSize: '11px', fontWeight: 600, color: connected ? '#15803d' : '#94a3b8', marginRight: '4px', whiteSpace: 'nowrap' }}>
-                        {connected ? 'Linked' : 'Not linked'}
-                      </span>
-                      <button
-                        type="button"
-                        style={{ padding: '6px 14px', borderRadius: '8px', border: `1.5px solid ${p.color}`, fontSize: '12px', fontWeight: 700, cursor: 'pointer', background: connected ? p.color : 'transparent', color: connected ? '#fff' : p.color }}
-                        onClick={() => (connected ? disconnectPlatform(pid) : connectPlatform(pid))}
-                        disabled={connectLoading === pid}
-                      >
-                        {connected ? '✓ Connected' : connectLoading === pid ? 'Connecting…' : 'Connect'}
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
           </div>
 
           {/* Right */}
@@ -1438,6 +1374,70 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
                   </div>
                 </div>
               ))}
+            </div>
+
+            {/* Connected accounts — under Select platforms & What happens next */}
+            <div style={s.card}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                <div style={s.sectionTitle}>🔗 Connected accounts</div>
+                {onNavigateToSocialConnect && (
+                  <button
+                    type="button"
+                    onClick={onNavigateToSocialConnect}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: '8px',
+                      border: '1px solid #6366f1',
+                      background: '#fff',
+                      color: '#4f46e5',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      fontFamily: 'inherit',
+                      flexShrink: 0,
+                    }}
+                  >
+                    Manage all →
+                  </button>
+                )}
+              </div>
+              {(() => {
+                const ids = ['youtube', 'instagram', 'tiktok', 'linkedin', 'facebook', 'x'];
+                const n = ids.filter((pid) => connectedAccounts[pid]).length;
+                return (
+                  <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 12px' }}>
+                    <strong>{n}</strong> of <strong>{ids.length}</strong> platforms linked. Connect the rest to publish from here.
+                  </p>
+                );
+              })()}
+              {connectMessage && (
+                <div style={{ fontSize: '12px', color: connectMessage.includes('failed') ? '#b91c1c' : '#15803d', marginBottom: '10px', fontWeight: 500 }}>
+                  {connectMessage}
+                </div>
+              )}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {['youtube', 'instagram', 'tiktok', 'linkedin', 'facebook', 'x'].map((pid) => {
+                  const p = PLATFORMS.find((x) => x.id === pid);
+                  const connected = connectedAccounts[pid];
+                  return (
+                    <div key={pid} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', border: `1.5px solid ${connected ? p.color : '#e2e8f0'}`, background: '#f8fafc' }}>
+                      <PlatformIcon platform={p} size={24} />
+                      <span style={{ flex: 1, fontSize: '13px', fontWeight: 600 }}>{p.label}</span>
+                      <span style={{ fontSize: '11px', fontWeight: 600, color: connected ? '#15803d' : '#94a3b8', marginRight: '4px', whiteSpace: 'nowrap' }}>
+                        {connected ? 'Linked' : 'Not linked'}
+                      </span>
+                      <button
+                        type="button"
+                        style={{ padding: '6px 14px', borderRadius: '8px', border: `1.5px solid ${p.color}`, fontSize: '12px', fontWeight: 700, cursor: 'pointer', background: connected ? p.color : 'transparent', color: connected ? '#fff' : p.color }}
+                        onClick={() => (connected ? disconnectPlatform(pid) : connectPlatform(pid))}
+                        disabled={connectLoading === pid}
+                      >
+                        {connected ? '✓ Connected' : connectLoading === pid ? 'Connecting…' : 'Connect'}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>

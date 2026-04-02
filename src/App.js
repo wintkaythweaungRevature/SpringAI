@@ -5,7 +5,7 @@ import { useMediaQuery } from './hooks/useMediaQuery';
 // Icons — react-icons/hi2 (Heroicons v2, solid style)
 import { HiHome, HiChatBubbleLeftRight, HiPhoto, HiSparkles } from 'react-icons/hi2';
 import { HiDocumentText, HiMicrophone } from 'react-icons/hi2';
-import { HiChartBar, HiChatBubbleOvalLeft, HiArrowTrendingUp, HiCpuChip } from 'react-icons/hi2';
+import { HiChatBubbleOvalLeft, HiArrowTrendingUp, HiCpuChip } from 'react-icons/hi2';
 import { HiPencilSquare, HiDocumentMagnifyingGlass } from 'react-icons/hi2';
 import { HiCog6Tooth, HiCreditCard } from 'react-icons/hi2';
 import ImageGenerator from './components/ImageGenerator';
@@ -44,28 +44,6 @@ const SIDEBAR_GROUPS = {
   socialHq: 'Social HQ',
   theForge: 'The Forge',
   settings: 'Settings',
-};
-
-const PAGE_TITLES = {
-  null: 'Dashboard',
-  'chat': 'Ask AI',
-  'image-generator': 'Image Generator',
-  'recipe-generator': 'Recipe Generator',
-  'analyzer': 'DocuWizard',
-  'transcription': 'EchoScribe',
-  'Content': 'Reply Enchanter',
-  'Resume': 'Career Alchemist',
-  'account': 'Account',
-  'video-publisher': 'Video Publisher',
-  'social-connect': 'Connected Accounts',
-  'analytics': 'Analytics Dashboard',
-  'messages':  'Messages & Comments',
-  'bio':       'Link in Bio',
-  'trends':    'Trends',
-  'social-ai': 'Social AI',
-  'pricing':      'Pricing & Plans',
-  'auto-reply':   'Auto Reply',
-  'calendar':     'Content Calendar',
 };
 
 /* ─── NavItem ─────────────────────────────────────────────── */
@@ -181,20 +159,20 @@ function MarketingNav({ go, onLogin, onSignup }) {
               }}
             >
               <a
+                href="/tutorial"
+                role="menuitem"
+                style={{ display: 'block', padding: '10px 16px', color: 'rgba(255,255,255,0.92)', fontSize: '14px', fontWeight: 500, textDecoration: 'none' }}
+                onClick={() => setResourcesOpen(false)}
+              >
+                Tutorials
+              </a>
+              <a
                 href="/blog"
                 role="menuitem"
                 style={{ display: 'block', padding: '10px 16px', color: 'rgba(255,255,255,0.92)', fontSize: '14px', fontWeight: 500, textDecoration: 'none' }}
                 onClick={() => setResourcesOpen(false)}
               >
                 Blog
-              </a>
-              <a
-                href="/tutorial"
-                role="menuitem"
-                style={{ display: 'block', padding: '10px 16px', color: 'rgba(255,255,255,0.92)', fontSize: '14px', fontWeight: 500, textDecoration: 'none' }}
-                onClick={() => setResourcesOpen(false)}
-              >
-                Tutorial
               </a>
             </div>
           )}
@@ -235,7 +213,7 @@ function MarketingNav({ go, onLogin, onSignup }) {
             boxShadow: '0 2px 12px rgba(99,102,241,0.4)',
           }}
         >
-          Get Started Free →
+          Try Free Trial →
         </button>
       </div>
     </nav>
@@ -254,7 +232,6 @@ function App() {
   const isTablet = useMediaQuery('(max-width: 1024px)');
 
   const go = (tab) => setActiveTab(tab);
-  const pageTitle = PAGE_TITLES[activeTab ?? 'null'] ?? 'Dashboard';
   const handleChoosePlan = async (plan) => {
     if (!user) { setAuthMode('signup'); setShowAuthModal(true); return; }
     const base = apiBase || 'https://api.wintaibot.com';
@@ -309,13 +286,8 @@ function App() {
   const openLogin = () => { setAuthMode('login'); setShowAuthModal(true); };
   const openSignup = () => { setAuthMode('signup'); setShowAuthModal(true); };
 
-  const isMarketingHome = !user && activeTab === null;
-
   return (
-    <div style={{
-      ...s.shell,
-      ...(isMarketingHome ? { background: '#060a14' } : {}),
-    }}>
+    <div style={s.shell}>
 
       {/* Marketing Nav — fixed at top for logged-out visitors, above everything */}
       {!user && <MarketingNav go={go} onLogin={openLogin} onSignup={openSignup} />}
@@ -351,7 +323,7 @@ function App() {
 
         {/* Nav */}
         <nav style={s.nav}>
-          <NavItem icon={<HiHome size={17} />} label="Dashboard" active={activeTab === null} onClick={() => go(null)} />
+          <NavItem icon={<HiHome size={17} />} label="Dashboard" active={activeTab === null || activeTab === 'analytics'} onClick={() => go(null)} />
 
           <div style={s.navDivider} role="separator" aria-hidden="true" />
           <div style={s.groupLabel}>{SIDEBAR_GROUPS.smartHub}</div>
@@ -367,9 +339,8 @@ function App() {
           <div style={s.navDivider} role="separator" aria-hidden="true" />
           <div style={s.groupLabel}>{SIDEBAR_GROUPS.socialHq}</div>
           <NavItem icon={<HiPhoto size={17} />}                    label="Content Calendar"   active={activeTab === 'calendar'}         onClick={() => go('calendar')} />
-          <NavItem icon={<HiChartBar size={17} />}                 label="Analytics"          active={activeTab === 'analytics'}       onClick={() => go('analytics')} />
           <NavItem icon={<HiChatBubbleOvalLeft size={17} />}       label="Messages"           active={activeTab === 'messages'}         onClick={() => go('messages')} />
-          <NavItem icon={<HiArrowTrendingUp size={17} />}          label="Trends"             active={activeTab === 'trends'}           onClick={() => go('trends')} />
+          <NavItem icon={<HiArrowTrendingUp size={17} />}          label="Growth Planner"     active={activeTab === 'trends'}           onClick={() => go('trends')} />
           <NavItem icon={<HiCpuChip size={17} />}                  label="Social AI"          active={activeTab === 'social-ai'}        onClick={() => go('social-ai')} />
 
           <div style={s.navDivider} role="separator" aria-hidden="true" />
@@ -440,15 +411,6 @@ function App() {
                       </span>
                     );
                   })()}
-                  <button
-                    type="button"
-                    onClick={() => go('bio')}
-                    title="Open Link in Bio"
-                    aria-label="Open Link in Bio"
-                    style={s.headerQuickBtn}
-                  >
-                    🔗 Link in Bio
-                  </button>
                   <button onClick={logout} style={s.logoutBtn}>Logout</button>
                   <div style={s.avatar}>{userInitials}</div>
                 </>
@@ -457,29 +419,18 @@ function App() {
           </header>
         )}
 
-        {/* Page title (account email / member badge stay in the top bar only) */}
-        <div style={s.pageBar}>
-          <h2 style={s.pageTitle}>{pageTitle}</h2>
-          {user && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <button type="button" style={s.headerQuickBtn} onClick={() => go('bio')} title="Open Link in Bio" aria-label="Open Link in Bio">
-                🔗 Link in Bio
-              </button>
-              <button type="button" style={s.settingsBtn} onClick={() => go('account')} title="Account settings" aria-label="Account settings">
-                ⚙️
-              </button>
-            </div>
-          )}
-        </div>
-
         {/* Content */}
         <div style={{
           ...s.content,
           paddingTop: !user ? '58px' : undefined,
-          ...(isMarketingHome ? { background: '#060a14' } : {}),
         }}>
-          {!activeTab && (
+          {!activeTab && !user && (
             <LandingSection onGetStarted={() => go('chat')} onChoosePlan={handleChoosePlan} />
+          )}
+          {user && (!activeTab || activeTab === 'analytics') && (
+            <MemberGate featureName="Analytics">
+              <AnalyticsDashboard />
+            </MemberGate>
           )}
           {activeTab === 'image-generator'  && <MemberGate featureName="Image Generator"><ImageGenerator /></MemberGate>}
           {activeTab === 'chat'             && <AskAIGate  featureName="Ask AI"><ChatComponent /></AskAIGate>}
@@ -490,11 +441,10 @@ function App() {
           {activeTab === 'Resume'           && <MemberGate featureName="Career Alchemist"><Resume /></MemberGate>}
           {activeTab === 'account'          && <AskAIGate  featureName="Account"><AccountSettings /></AskAIGate>}
           {activeTab === 'video-publisher'  && <MemberGate featureName="Video Publisher"><VideoPublisher onNavigateToSocialConnect={() => go('social-connect')} /></MemberGate>}
-          {activeTab === 'analytics'        && <MemberGate featureName="Analytics"><AnalyticsDashboard /></MemberGate>}
           {activeTab === 'messages'         && <MemberGate featureName="Messages"><ProGate featureName="Messages"><MessagesInbox onOpenConnectedAccounts={() => go('social-connect')} onOpenAutoReply={() => go('auto-reply')} /></ProGate></MemberGate>}
           {activeTab === 'social-connect'   && <MemberGate featureName="Connected Accounts"><SocialConnect /></MemberGate>}
           {activeTab === 'bio'              && <MemberGate featureName="Link in Bio"><LinkInBioBuilder /></MemberGate>}
-          {activeTab === 'trends'          && <MemberGate featureName="Trends"><ProGate featureName="Trends"><DeepAnalytics /></ProGate></MemberGate>}
+          {activeTab === 'trends'          && <MemberGate featureName="Growth Planner"><ProGate featureName="Growth Planner"><DeepAnalytics /></ProGate></MemberGate>}
           {activeTab === 'social-ai'       && <MemberGate featureName="Social AI"><ProGate featureName="Social AI"><SocialAIChat /></ProGate></MemberGate>}
           {activeTab === 'pricing'         && <PricingPage onClose={() => go(null)} />}
           {activeTab === 'auto-reply'      && <MemberGate featureName="Auto Reply"><ProGate featureName="Auto Reply"><AutoReplySettings /></ProGate></MemberGate>}
@@ -535,36 +485,40 @@ const nav = {
     display: 'flex', alignItems: 'center', gap: '10px',
     width: '100%', padding: '9px 12px', borderRadius: '10px',
     border: 'none', background: 'transparent',
-    color: '#94a3b8', fontSize: '13.5px', fontWeight: '500',
+    color: '#cbd5e1', fontSize: '13.5px', fontWeight: '500',
     cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit',
-    marginBottom: '2px', transition: 'all 0.15s',
+    marginBottom: '2px', transition: 'background 0.15s, color 0.15s, box-shadow 0.15s',
   },
   active: {
-    background: '#2563eb',
+    background: 'linear-gradient(135deg, #4f46e5 0%, #6366f1 52%, #7c3aed 100%)',
     color: '#ffffff',
     fontWeight: '700',
+    boxShadow: '0 2px 14px rgba(99, 102, 241, 0.35)',
   },
   hover: {
     background: 'rgba(255,255,255,0.08)',
-    color: '#ffffff',
+    color: '#f8fafc',
   },
   icon: { fontSize: '0px', flexShrink: 0, width: '20px', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   label: { flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
   arrow: { opacity: 0.45, fontSize: '17px', marginLeft: 'auto' },
 };
 
+const APP_MAIN_GRAD =
+  'linear-gradient(165deg, #060a14 0%, #0f172a 35%, #111d36 50%, #0a1020 100%)';
+
 const s = {
   shell: {
     display: 'flex', height: '100vh', overflow: 'hidden',
     fontFamily: "'Inter', -apple-system, sans-serif",
-    background: '#f0f4f8',
+    background: APP_MAIN_GRAD,
   },
 
   /* Sidebar */
   sidebar: {
     width: '224px', minWidth: '224px', maxWidth: '280px', height: '100vh',
-    background: '#1a2547',
-    borderRight: '1px solid rgba(0,0,0,0.12)',
+    background: 'linear-gradient(180deg, #0c1222 0%, #0f172a 42%, #151e35 100%)',
+    borderRight: '1px solid rgba(148, 163, 184, 0.14)',
     display: 'flex', flexDirection: 'column',
     transition: 'width 0.25s ease, min-width 0.25s ease',
     flexShrink: 0, overflow: 'hidden',
@@ -639,51 +593,53 @@ const s = {
   exploreBtn: {
     display: 'flex', alignItems: 'center', gap: '10px',
     width: '100%', padding: '10px 12px', borderRadius: '10px',
-    border: '1px solid rgba(255,255,255,0.08)',
-    background: 'rgba(255,255,255,0.04)',
-    color: '#94a3b8', fontSize: '13px', fontWeight: '600',
+    border: '1px solid rgba(148, 163, 184, 0.2)',
+    background: 'rgba(255,255,255,0.06)',
+    color: '#cbd5e1', fontSize: '13px', fontWeight: '600',
     cursor: 'pointer', fontFamily: 'inherit',
   },
 
   /* Main */
   main: {
     flex: 1, display: 'flex', flexDirection: 'column',
-    overflow: 'hidden', background: '#f0f4f8',
+    overflow: 'hidden', background: APP_MAIN_GRAD,
     minWidth: 0,
   },
 
   /* Top Bar */
   topBar: {
     height: '58px', flexShrink: 0,
-    background: '#ffffff',
-    borderBottom: '1px solid #e2e8f0',
+    background: 'rgba(15, 23, 42, 0.72)',
+    backdropFilter: 'blur(16px)',
+    WebkitBackdropFilter: 'blur(16px)',
+    borderBottom: '1px solid rgba(255,255,255,0.08)',
     display: 'flex', alignItems: 'center',
     padding: '0 12px 0 16px', gap: '10px',
-    boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+    boxShadow: '0 8px 32px rgba(0,0,0,0.22)',
     flexWrap: 'wrap', minWidth: 0,
   },
   menuBtn: {
-    background: 'none', border: 'none', color: '#94a3b8',
+    background: 'none', border: 'none', color: '#cbd5e1',
     fontSize: '18px', cursor: 'pointer', padding: '4px 6px',
     borderRadius: '6px', flexShrink: 0, lineHeight: 1,
   },
   searchBox: {
     display: 'flex', alignItems: 'center', gap: '8px',
-    background: '#f8fafc',
-    border: '1px solid #e2e8f0',
+    background: 'rgba(255,255,255,0.06)',
+    border: '1px solid rgba(148, 163, 184, 0.2)',
     borderRadius: '24px', padding: '8px 16px',
     flex: 1, maxWidth: '360px', minWidth: 0,
   },
   searchInput: {
     border: 'none', background: 'transparent',
     outline: 'none', fontSize: '13px',
-    color: '#0f172a', width: '100%', fontFamily: 'inherit',
+    color: '#f1f5f9', width: '100%', fontFamily: 'inherit',
   },
   topRight: {
     marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '12px',
   },
   topEmail: {
-    fontSize: '13px', color: '#64748b',
+    fontSize: '13px', color: '#94a3b8',
     maxWidth: '180px', overflow: 'hidden',
     textOverflow: 'ellipsis', whiteSpace: 'nowrap',
   },
@@ -694,10 +650,10 @@ const s = {
     padding: '3px 10px', borderRadius: '20px', whiteSpace: 'nowrap',
   },
   logoutBtn: {
-    padding: '6px 14px', borderRadius: '8px',
-    border: '1px solid #e2e8f0',
-    background: '#fff', color: '#64748b',
-    fontSize: '13px', fontWeight: '500', cursor: 'pointer', fontFamily: 'inherit',
+    padding: '6px 14px', borderRadius: '10px',
+    border: '1px solid rgba(148, 163, 184, 0.35)',
+    background: 'rgba(255,255,255,0.06)', color: '#e2e8f0',
+    fontSize: '13px', fontWeight: '600', cursor: 'pointer', fontFamily: 'inherit',
   },
   loginBtn: {
     padding: '7px 16px', borderRadius: '8px',
@@ -717,33 +673,6 @@ const s = {
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     color: '#fff', fontSize: '12px', fontWeight: '700', flexShrink: 0,
     boxShadow: '0 0 0 2px rgba(102,126,234,0.3)',
-  },
-
-  /* Page Header */
-  pageBar: {
-    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    padding: '12px 16px 0', flexShrink: 0,
-    flexWrap: 'wrap', gap: '8px',
-  },
-  pageTitle: {
-    margin: 0, fontSize: 'clamp(18px, 4vw, 22px)', fontWeight: '800',
-    color: '#0f172a', letterSpacing: '-0.4px',
-  },
-  settingsBtn: {
-    background: '#f1f5f9', border: '1px solid #e2e8f0',
-    borderRadius: '8px', cursor: 'pointer',
-    fontSize: '16px', padding: '6px 8px', lineHeight: 1,
-  },
-  headerQuickBtn: {
-    background: '#ffffff',
-    border: '1px solid #e2e8f0',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontSize: '12px',
-    fontWeight: '700',
-    color: '#334155',
-    padding: '7px 10px',
-    lineHeight: 1,
   },
 
   /* Content */

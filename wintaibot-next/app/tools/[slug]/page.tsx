@@ -67,7 +67,7 @@ export default function ToolSlugPage({ params }: ToolPageProps) {
             Pricing
           </Link>
           <Link href="/" style={{ ...s.navCta, background: tool.color }}>
-            Try Free
+            Try Free Trial
           </Link>
         </div>
       </nav>

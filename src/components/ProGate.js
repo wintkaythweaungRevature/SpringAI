@@ -28,7 +28,7 @@ export default function ProGate({ featureName = 'this feature', children }) {
         <h2 style={{ color: '#1e293b', marginBottom: 8, fontSize: 22 }}>{featureName} requires Pro</h2>
         <p style={{ color: '#64748b', marginBottom: 28, lineHeight: 1.6 }}>
           Your Starter plan doesn't include <strong>{featureName}</strong>. Upgrade to Pro to unlock
-          Messages, Auto Reply, Trends, Social AI, EchoScribe and more.
+          Messages, Auto Reply, Growth Planner, Social AI, EchoScribe and more.
         </p>
         <button
           style={{

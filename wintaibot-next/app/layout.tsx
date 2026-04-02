@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     template: '%s | W!ntAi',
   },
   description:
-    'W!ntAi is an AI assistant that analyzes PDFs, extracts data from documents, transcribes audio, generates images, writes emails, and prepares you for interviews. Start free.',
+    'W!ntAi is an AI assistant that analyzes PDFs, extracts data from documents, transcribes audio, generates images, writes emails, and prepares you for interviews. Try free trial.',
   keywords: [
     'AI PDF analyzer',
     'PDF data extraction',
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     siteName: 'W!ntAi',
     title: 'W!ntAi – AI Assistant for PDF Analysis & Documents',
     description:
-      'Analyze PDFs, extract document data, transcribe audio, generate images, and automate email replies — all in one AI platform. Start free.',
+      'Analyze PDFs, extract document data, transcribe audio, generate images, and automate email replies — all in one AI platform. Try free trial.',
     images: [
       {
         url: OG_IMAGE,

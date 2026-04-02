@@ -74,6 +74,125 @@ function VideoPublishShowcaseGraphic({ variant = 'hero' }: { variant?: 'hero' | 
   );
 }
 
+const HERO_ORCH_HUB = { x: 200, y: 76 };
+const HERO_ORCH_SPOKES = [
+  [48, 172],
+  [112, 200],
+  [168, 152],
+  [216, 192],
+  [272, 156],
+  [336, 178],
+  [88, 224],
+  [296, 214],
+] as const;
+
+function HeroVisualOrchestration() {
+  return (
+    <div className="ls-hero-orch">
+      <svg
+        className="ls-hero-orch__svg"
+        viewBox="0 0 400 280"
+        preserveAspectRatio="xMidYMid meet"
+        aria-hidden="true"
+      >
+        {HERO_ORCH_SPOKES.map(([x2, y2], i) => (
+          <line
+            key={i}
+            x1={HERO_ORCH_HUB.x}
+            y1={HERO_ORCH_HUB.y}
+            x2={x2}
+            y2={y2}
+            className="ls-hero-orch__link"
+            style={{ animationDelay: `${-i * 0.9}s` }}
+          />
+        ))}
+      </svg>
+      <div className="ls-hero-orch__content">
+        <VideoPublishShowcaseGraphic variant="hero" />
+        <HeroEightPlatformsMotion />
+      </div>
+    </div>
+  );
+}
+
+function HeroEightPlatformsMotion() {
+  const wobble = [
+    'ls-hero-platform-dance__orb--a',
+    'ls-hero-platform-dance__orb--b',
+    'ls-hero-platform-dance__orb--c',
+    'ls-hero-platform-dance__orb--d',
+    'ls-hero-platform-dance__orb--b',
+    'ls-hero-platform-dance__orb--a',
+    'ls-hero-platform-dance__orb--d',
+    'ls-hero-platform-dance__orb--c',
+  ] as const;
+  return (
+    <div
+      className="ls-hero-platform-dance"
+      role="img"
+      aria-label="YouTube, Instagram, Facebook, TikTok, LinkedIn, X, Threads, and Pinterest"
+    >
+      {landingPublishPlatforms.map((p, i) => (
+        <span
+          key={p.id}
+          className={`ls-hero-platform-dance__orb ${wobble[i]}`}
+          style={{ animationDelay: `${-i * 0.42}s` }}
+        >
+          <span className="ls-hero-platform-dance__tile">
+            <img
+              src={`${SI}/${p.logo}/${p.color.replace('#', '')}`}
+              alt=""
+              width={22}
+              height={22}
+              loading="lazy"
+              decoding="async"
+            />
+          </span>
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function HeroPlatformsUnderNote() {
+  const wobble = [
+    'ls-hero-under-note__item--a',
+    'ls-hero-under-note__item--b',
+    'ls-hero-under-note__item--c',
+    'ls-hero-under-note__item--d',
+    'ls-hero-under-note__item--b',
+    'ls-hero-under-note__item--a',
+    'ls-hero-under-note__item--d',
+    'ls-hero-under-note__item--c',
+  ] as const;
+  return (
+    <div
+      className="ls-hero-under-note"
+      role="img"
+      aria-label="YouTube, Instagram, Facebook, TikTok, LinkedIn, X, Threads, and Pinterest"
+    >
+      {landingPublishPlatforms.map((p, i) => (
+        <span
+          key={p.id}
+          className={`ls-hero-under-note__item ${wobble[i]}`}
+          style={{ animationDelay: `${-i * 0.42}s` }}
+        >
+          <span className="ls-hero-under-note__tile">
+            <img
+              src={`${SI}/${p.logo}/${p.color.replace('#', '')}`}
+              alt=""
+              width={18}
+              height={18}
+              loading="lazy"
+              decoding="async"
+            />
+          </span>
+        </span>
+      ))}
+    </div>
+  );
+}
+
 const features = [
   {
     icon: '🤖',
@@ -240,19 +359,20 @@ export default function LandingSection() {
             </p>
             <div className="ls-hero-actions">
               <Link href="/chat" className="ls-btn-primary">
-                Try Free — No Credit Card
+                Start Trial
               </Link>
               <Link href="/#features" className="ls-btn-ghost">
                 See showcase →
               </Link>
             </div>
             <p className="ls-hero-note">
-              Free tier includes <strong>Ask AI</strong> and <strong>Recipe Generator</strong>. Paid
-              plans from <strong>$19/month</strong> (or <strong>$15/mo</strong> billed annually).
+              <strong>Try free trial:</strong> <strong>Ask AI</strong> and <strong>Recipe Generator</strong>.{" "}
+              <strong>Paid</strong> plans from <strong>$19/month</strong> (or <strong>$15/mo</strong> billed annually).
             </p>
+            <HeroPlatformsUnderNote />
           </div>
           <div className="ls-hero-visual">
-            <VideoPublishShowcaseGraphic variant="hero" />
+            <HeroVisualOrchestration />
           </div>
         </div>
       </section>
@@ -315,7 +435,7 @@ export default function LandingSection() {
           ))}
         </div>
         <p className="ls-features-note">
-          <strong>Free</strong> tools are available immediately after signup.{' '}
+          <strong>Try free trial</strong> — Ask AI and Recipe Generator are available immediately after signup.{' '}
           <strong>Premium</strong> tools unlock on <strong>Starter</strong>, <strong>Pro</strong>, or{' '}
           <strong>Growth</strong> — see pricing for limits.
         </p>
@@ -389,7 +509,9 @@ export default function LandingSection() {
 
       <section className="ls-section ls-pricing" id="pricing" aria-labelledby="pricing-heading">
         <h2 id="pricing-heading">Simple, Transparent Pricing</h2>
-        <p className="ls-section-sub">Start free. Upgrade when you need more — annual billing saves up to ~21%.</p>
+        <p className="ls-section-sub">
+          Try free trial, then upgrade when you need more — annual billing saves up to ~21%.
+        </p>
 
         <div className="ls-pricing-why" aria-labelledby="why-pricing-heading">
           <h3 id="why-pricing-heading">Why these numbers?</h3>
@@ -430,7 +552,7 @@ export default function LandingSection() {
               <li>No credit card required</li>
             </ul>
             <Link href="/chat" className="ls-btn-outline">
-              Get Started Free
+              Try Free Trial
             </Link>
           </article>
 
@@ -715,10 +837,10 @@ export default function LandingSection() {
         <h2>Ready to Run Your Social Workflow in One Place?</h2>
         <p>
           Publish faster, schedule with confidence, and optimize with real analytics and engagement
-          data. Start free — no credit card needed.
+          data. <strong>Try free trial</strong> — no credit card needed.
         </p>
         <Link href="/chat" className="ls-btn-primary ls-btn-lg">
-          Get Started Free →
+          Try Free Trial →
         </Link>
       </section>
 

@@ -8,28 +8,6 @@ import { useAuth } from '@/context/AuthContext';
 import Login from './Login';
 import Signup from './Signup';
 
-const PAGE_TITLES: Record<string, string> = {
-  '/': 'Dashboard',
-  '/chat': 'Ask AI',
-  '/image-generator': 'Image Generator',
-  '/recipe-generator': 'Recipe Generator',
-  '/analyzer': 'DocuWizard',
-  '/transcription': 'EchoScribe',
-  '/Content': 'Reply Enchanter',
-  '/Resume': 'Career Alchemist',
-  '/account': 'Account',
-  '/video-publisher': 'Video Publisher',
-  '/social-connect': 'Connected Accounts',
-  '/bio': 'Link in Bio',
-  '/messages': 'Messages & Comments',
-  '/analytics': 'Analytics Dashboard',
-  '/auto-reply': 'Auto Reply',
-  '/trends': 'Trends',
-  '/social-ai': 'Social AI',
-  '/calendar': 'Content Calendar',
-  '/pricing': 'Pricing & Plans',
-};
-
 const SIDEBAR_GROUPS = {
   smartHub: 'Smart Hub',
   digitalVault: 'Digital Vault',
@@ -93,12 +71,19 @@ export default function DashboardShell({ children }: { children: React.ReactNode
     }
   }, [loading, user, pathname]);
 
-  const pageTitle = PAGE_TITLES[pathname] ?? 'Dashboard';
   const userInitials = user?.email ? user.email.slice(0, 2).toUpperCase() : '??';
   const showDashboardChrome = Boolean(user);
 
+  const mainShellBg =
+    'linear-gradient(165deg, #060a14 0%, #0f172a 35%, #111d36 50%, #0a1020 100%)';
+
   return (
-    <div style={s.shell}>
+    <div
+      style={{
+        ...s.shell,
+        ...(showDashboardChrome ? { background: mainShellBg } : {}),
+      } as React.CSSProperties}
+    >
       {showDashboardChrome && ((isMobile || isTablet) && sidebarOpen) && (
         <div
           style={{
@@ -126,7 +111,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
                 minWidth: sidebarOpen ? '280px' : '0',
                 overflow: 'hidden',
                 transition: 'width 0.25s ease, min-width 0.25s ease',
-                boxShadow: sidebarOpen ? '4px 0 24px rgba(0,0,0,0.15)' : 'none',
+                boxShadow: sidebarOpen ? '4px 0 28px rgba(0,0,0,0.45)' : 'none',
               }
             : {}),
         } as React.CSSProperties}
@@ -141,7 +126,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         </div>
 
         <nav style={s.nav}>
-          <NavItem emoji="🏠" label="Dashboard" href="/" active={pathname === '/'} />
+          <NavItem emoji="🏠" label="Dashboard" href="/" active={pathname === '/' || pathname === '/analytics'} />
 
           <div style={s.navDivider} role="separator" aria-hidden="true" />
           <div style={s.groupLabel}>{SIDEBAR_GROUPS.smartHub}</div>
@@ -171,14 +156,13 @@ export default function DashboardShell({ children }: { children: React.ReactNode
 
           <div style={s.navDivider} role="separator" aria-hidden="true" />
           <div style={s.groupLabel}>{SIDEBAR_GROUPS.socialHq}</div>
-          <NavItem emoji="📊" label="Analytics" href="/analytics" active={pathname === '/analytics'} />
           <NavItem
             emoji="💬"
             label="Messages"
             href="/messages"
             active={pathname === '/messages'}
           />
-          <NavItem emoji="📈" label="Trends" href="/trends" active={pathname === '/trends'} />
+          <NavItem emoji="📈" label="Growth Planner" href="/trends" active={pathname === '/trends'} />
           <NavItem emoji="🧠" label="Social AI" href="/social-ai" active={pathname === '/social-ai'} />
           <NavItem emoji="🗓️" label="Content Calendar" href="/calendar" active={pathname === '/calendar'} />
 
@@ -210,7 +194,12 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         </div>
       </aside>}
 
-      <main style={s.main}>
+      <main
+        style={{
+          ...s.main,
+          ...(showDashboardChrome ? { background: mainShellBg } : {}),
+        } as React.CSSProperties}
+      >
         {showDashboardChrome ? (
           <header style={s.topBar}>
           <button style={s.menuBtn} onClick={() => setSidebarOpen(!sidebarOpen)}>
@@ -219,7 +208,12 @@ export default function DashboardShell({ children }: { children: React.ReactNode
 
           <div style={s.searchBox}>
             <span style={{ opacity: 0.4, fontSize: '14px' }}>🔍</span>
-            <input style={s.searchInput} type="text" placeholder="Search..." />
+            <input
+              className="dashboard-search-input"
+              style={s.searchInput}
+              type="text"
+              placeholder="Search..."
+            />
           </div>
 
           <div style={s.topRight}>
@@ -253,27 +247,6 @@ export default function DashboardShell({ children }: { children: React.ReactNode
             </div>
           </header>
         )}
-
-        {showDashboardChrome && <div style={s.pageBar}>
-          <h2 style={s.pageTitle}>{pageTitle}</h2>
-          {user && (
-            <div style={s.pageRight}>
-              <span style={s.pageEmail}>{user.email}</span>
-              {user?.membershipType === 'MEMBER' && (
-                <span style={s.pageMemberBadge}>✓ Member</span>
-              )}
-              <Link href="/video-publisher" style={s.quickPageBtn} title="Open Video Publisher">
-                📲 Video Publisher
-              </Link>
-              <Link href="/bio" style={s.quickPageBtn} title="Open Link in Bio">
-                🔗 Link in Bio
-              </Link>
-              <Link href="/account" style={s.settingsBtn} title="Account Settings">
-                ⚙️
-              </Link>
-            </div>
-          )}
-        </div>}
 
         <div style={s.content}>{children}</div>
       </main>
@@ -361,8 +334,8 @@ const s: Record<string, any> = {
     minWidth: '224px',
     maxWidth: '280px',
     height: '100vh',
-    background: '#1a2547',
-    borderRight: '1px solid rgba(0,0,0,0.12)',
+    background: 'linear-gradient(180deg, #0c1222 0%, #0f172a 42%, #151e35 100%)',
+    borderRight: '1px solid rgba(148, 163, 184, 0.14)',
     display: 'flex',
     flexDirection: 'column',
     transition: 'width 0.25s ease, min-width 0.25s ease',
@@ -476,13 +449,15 @@ const s: Record<string, any> = {
   topBar: {
     height: '58px',
     flexShrink: 0,
-    background: '#ffffff',
-    borderBottom: '1px solid #e2e8f0',
+    background: 'rgba(15, 23, 42, 0.72)',
+    backdropFilter: 'blur(16px)',
+    WebkitBackdropFilter: 'blur(16px)',
+    borderBottom: '1px solid rgba(255,255,255,0.08)',
     display: 'flex',
     alignItems: 'center',
     padding: '0 12px 0 16px',
     gap: '10px',
-    boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+    boxShadow: '0 8px 32px rgba(0,0,0,0.22)',
     flexWrap: 'wrap',
     minWidth: 0,
   },
@@ -525,7 +500,7 @@ const s: Record<string, any> = {
   menuBtn: {
     background: 'none',
     border: 'none',
-    color: '#94a3b8',
+    color: '#cbd5e1',
     fontSize: '18px',
     cursor: 'pointer',
     padding: '4px 6px',
@@ -537,8 +512,8 @@ const s: Record<string, any> = {
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
-    background: '#f8fafc',
-    border: '1px solid #e2e8f0',
+    background: 'rgba(255,255,255,0.06)',
+    border: '1px solid rgba(148, 163, 184, 0.2)',
     borderRadius: '24px',
     padding: '8px 16px',
     flex: 1,
@@ -550,7 +525,7 @@ const s: Record<string, any> = {
     background: 'transparent',
     outline: 'none',
     fontSize: '13px',
-    color: '#0f172a',
+    color: '#f1f5f9',
     width: '100%',
     fontFamily: 'inherit',
   },
@@ -637,57 +612,6 @@ const s: Record<string, any> = {
     fontWeight: '700',
     flexShrink: 0,
     boxShadow: '0 0 0 2px rgba(102,126,234,0.3)',
-  },
-  pageBar: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: '16px 0 0',
-    flexShrink: 0,
-    flexWrap: 'wrap',
-    gap: '8px',
-  },
-  pageTitle: {
-    margin: 0,
-    fontSize: 'clamp(18px, 4vw, 22px)',
-    fontWeight: '800',
-    color: '#0f172a',
-    letterSpacing: '-0.4px',
-  },
-  pageRight: { display: 'flex', alignItems: 'center', gap: '10px' },
-  pageEmail: { fontSize: '13px', color: '#64748b' },
-  pageMemberBadge: {
-    fontSize: '11.5px',
-    fontWeight: '700',
-    color: '#16a34a',
-    background: '#f0fdf4',
-    border: '1px solid #bbf7d0',
-    padding: '3px 10px',
-    borderRadius: '20px',
-  },
-  settingsBtn: {
-    background: '#f1f5f9',
-    border: '1px solid #e2e8f0',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontSize: '16px',
-    padding: '6px 8px',
-    lineHeight: 1,
-    textDecoration: 'none',
-    color: 'inherit',
-  },
-  quickPageBtn: {
-    background: '#ffffff',
-    border: '1px solid #e2e8f0',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontSize: '12px',
-    fontWeight: '700',
-    padding: '7px 10px',
-    lineHeight: 1,
-    textDecoration: 'none',
-    color: '#334155',
-    whiteSpace: 'nowrap',
   },
   content: {
     flex: 1,

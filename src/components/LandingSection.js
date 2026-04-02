@@ -76,6 +76,132 @@ function VideoPublishShowcaseGraphic({ variant = "hero" }) {
   );
 }
 
+/**
+ * Frames our existing hero graphics: dot field + dashed spokes from the upload hub to each
+ * destination (same 8 platforms as HeroEightPlatformsMotion). Not a third-party layout clone.
+ */
+const HERO_ORCH_HUB = { x: 200, y: 76 };
+/** viewBox 0 0 400 280 — line ends align roughly with `.ls-hero-platform-dance__orb` positions */
+const HERO_ORCH_SPOKES = [
+  [48, 172],
+  [112, 200],
+  [168, 152],
+  [216, 192],
+  [272, 156],
+  [336, 178],
+  [88, 224],
+  [296, 214],
+];
+
+function HeroVisualOrchestration() {
+  return (
+    <div className="ls-hero-orch">
+      <svg
+        className="ls-hero-orch__svg"
+        viewBox="0 0 400 280"
+        preserveAspectRatio="xMidYMid meet"
+        aria-hidden="true"
+      >
+        {HERO_ORCH_SPOKES.map(([x2, y2], i) => (
+          <line
+            key={i}
+            x1={HERO_ORCH_HUB.x}
+            y1={HERO_ORCH_HUB.y}
+            x2={x2}
+            y2={y2}
+            className="ls-hero-orch__link"
+            style={{ animationDelay: `${-i * 0.9}s` }}
+          />
+        ))}
+      </svg>
+      <div className="ls-hero-orch__content">
+        <VideoPublishShowcaseGraphic variant="hero" />
+        <HeroEightPlatformsMotion />
+      </div>
+    </div>
+  );
+}
+
+/** Eight publish destinations — gentle float inside a small hero “stage” (Simple Icons CDN). */
+function HeroEightPlatformsMotion() {
+  const wobble = [
+    "ls-hero-platform-dance__orb--a",
+    "ls-hero-platform-dance__orb--b",
+    "ls-hero-platform-dance__orb--c",
+    "ls-hero-platform-dance__orb--d",
+    "ls-hero-platform-dance__orb--b",
+    "ls-hero-platform-dance__orb--a",
+    "ls-hero-platform-dance__orb--d",
+    "ls-hero-platform-dance__orb--c",
+  ];
+  return (
+    <div
+      className="ls-hero-platform-dance"
+      role="img"
+      aria-label="YouTube, Instagram, Facebook, TikTok, LinkedIn, X, Threads, and Pinterest"
+    >
+      {landingPublishPlatforms.map((p, i) => (
+        <span
+          key={p.id}
+          className={`ls-hero-platform-dance__orb ${wobble[i] || wobble[0]}`}
+          style={{ animationDelay: `${-i * 0.42}s` }}
+        >
+          <span className="ls-hero-platform-dance__tile">
+            <img
+              src={`${SI}/${p.logo}/${p.color.replace("#", "")}`}
+              alt=""
+              width={22}
+              height={22}
+              loading="lazy"
+              decoding="async"
+            />
+          </span>
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/** Eight platform marks under the pricing note (“no install”) — same destinations, gentle drift. */
+function HeroPlatformsUnderNote() {
+  const wobble = [
+    "ls-hero-under-note__item--a",
+    "ls-hero-under-note__item--b",
+    "ls-hero-under-note__item--c",
+    "ls-hero-under-note__item--d",
+    "ls-hero-under-note__item--b",
+    "ls-hero-under-note__item--a",
+    "ls-hero-under-note__item--d",
+    "ls-hero-under-note__item--c",
+  ];
+  return (
+    <div
+      className="ls-hero-under-note"
+      role="img"
+      aria-label="YouTube, Instagram, Facebook, TikTok, LinkedIn, X, Threads, and Pinterest"
+    >
+      {landingPublishPlatforms.map((p, i) => (
+        <span
+          key={p.id}
+          className={`ls-hero-under-note__item ${wobble[i] || wobble[0]}`}
+          style={{ animationDelay: `${-i * 0.42}s` }}
+        >
+          <span className="ls-hero-under-note__tile">
+            <img
+              src={`${SI}/${p.logo}/${p.color.replace("#", "")}`}
+              alt=""
+              width={18}
+              height={18}
+              loading="lazy"
+              decoding="async"
+            />
+          </span>
+        </span>
+      ))}
+    </div>
+  );
+}
+
 /* ─── Data ─────────────────────────────────────────────────── */
 
 const features = [
@@ -237,7 +363,7 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
               If You Can Record It,<br /><span className="ls-hero-h1-accent">We Can Post It.</span>
             </h1>
             <p className="ls-hero-tagline">
-              <strong>One upload</strong> — we adapt ratio, framing, and quality for each network you pick; AI thumbnails and captions you can edit; schedule or publish from one workspace.
+              <strong>Upload Once. Optimize Everywhere.</strong> Let AI handle the formats while you focus on creating.
             </p>
             <ul className="ls-hero-chips" aria-label="Product highlights">
               <li>No manual re-edits per platform</li>
@@ -247,17 +373,18 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
             </ul>
             <div className="ls-hero-actions">
               <button type="button" className="ls-btn-primary" onClick={onGetStarted}>
-                Try Free — No Credit Card
+                Start Trial
               </button>
               <a className="ls-btn-ghost" href="/features">See all tools →</a>
             </div>
             <p className="ls-hero-note">
-              <strong>Free:</strong> Ask AI &amp; Recipe Generator.{" "}
+              <strong>Try free trial:</strong> Ask AI &amp; Recipe Generator.{" "}
               <strong>Paid:</strong> Starter <strong>$19/mo</strong> · Pro <strong>$39/mo</strong> · Growth <strong>$79/mo</strong> — no per-channel fees, no install.
             </p>
+            <HeroPlatformsUnderNote />
           </div>
           <div className="ls-hero-visual">
-            <VideoPublishShowcaseGraphic variant="hero" />
+            <HeroVisualOrchestration />
           </div>
         </div>
       </section>
@@ -428,7 +555,7 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
           ))}
         </div>
         <p className="ls-features-note">
-          <strong>Free</strong> tools are available immediately after signup.{" "}
+          <strong>Try free trial</strong> — Ask AI and Recipe Generator are available immediately after signup.{" "}
           <strong>Premium</strong> tools (docs, transcription, images, email, interview prep, video publisher) unlock on{" "}
           <strong>Starter</strong>, <strong>Pro</strong>, or <strong>Growth</strong> — see pricing for limits.
         </p>
@@ -543,7 +670,7 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
               <li>Recipe Generator (unlimited)</li>
               <li>No credit card required</li>
             </ul>
-            <button type="button" className="ls-btn-outline" onClick={onGetStarted}>Get Started Free</button>
+            <button type="button" className="ls-btn-outline" onClick={onGetStarted}>Try Free Trial</button>
           </div>
 
           <div className="ls-plan">
@@ -650,26 +777,26 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
         </div>
       </section>
 
-      {/* ── RESOURCES: BLOG & TUTORIAL ──────────────────────── */}
+      {/* ── RESOURCES: TUTORIALS & BLOGS ───────────────────── */}
       <section className="ls-section ls-resources" id="resources" aria-labelledby="resources-heading">
         <h2 id="resources-heading">Resources</h2>
         <p className="ls-section-sub">
           Articles and walkthroughs to help you publish smarter and get more from W!ntAi.
         </p>
         <div className="ls-resources-grid">
-          <article className="ls-resource-card" id="blog" aria-labelledby="blog-heading">
-            <h3 id="blog-heading">Blog</h3>
-            <p>
-              Product updates, creator tips, and how we think about AI, video, and social workflows.
-            </p>
-            <a className="ls-resource-link" href="/blog">View Blog →</a>
-          </article>
           <article className="ls-resource-card" id="tutorial" aria-labelledby="tutorial-heading">
-            <h3 id="tutorial-heading">Tutorial</h3>
+            <h3 id="tutorial-heading">Tutorials</h3>
             <p>
               Step-by-step guides for Video Publisher, scheduling, analytics, messages, and more.
             </p>
             <a className="ls-resource-link" href="/tutorial">View Tutorials →</a>
+          </article>
+          <article className="ls-resource-card" id="blog" aria-labelledby="blog-heading">
+            <h3 id="blog-heading">Blogs</h3>
+            <p>
+              Product updates, creator tips, and how we think about AI, video, and social workflows.
+            </p>
+            <a className="ls-resource-link" href="/blog">View Blogs →</a>
           </article>
         </div>
       </section>
@@ -763,11 +890,11 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
       <section className="ls-section ls-final-cta" aria-label="Get started with W!ntAi">
         <h2>Ready to post video everywhere — without format headaches?</h2>
         <p>
-          Start free, then scale to <strong>Starter, Pro, or Growth</strong> for full <strong>video publishing</strong>, scheduling, and AI workflows.
-          No credit card for the free tier.
+          Start with a <strong>free trial</strong>, then scale to <strong>Starter, Pro, or Growth</strong> for full <strong>video publishing</strong>, scheduling, and AI workflows.
+          No credit card required to try.
         </p>
         <button className="ls-btn-primary ls-btn-lg" onClick={onGetStarted}>
-          Get Started Free →
+          Try Free Trial →
         </button>
       </section>
 
@@ -830,8 +957,8 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
           <a href="/pricing">Pricing</a>
           <span className="ls-footer-nav-group" role="group" aria-label="Resources">
             <span className="ls-footer-nav-label">Resources</span>
+            <a href="/tutorial">Tutorials</a>
             <a href="/blog">Blog</a>
-            <a href="/tutorial">Tutorial</a>
           </span>
           <a href="/#about">About</a>
           <a href="/#faq">FAQ</a>

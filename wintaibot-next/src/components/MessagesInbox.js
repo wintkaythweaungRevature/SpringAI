@@ -888,54 +888,6 @@ export default function MessagesInbox({ onOpenVideoPublisher, onOpenConnectedAcc
               Video Publisher
             </button>
           )}
-          {typeof onOpenConnectedAccounts === 'function' && (
-            <button
-              type="button"
-              onClick={onOpenConnectedAccounts}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '8px 12px',
-                borderRadius: '8px',
-                border: '1px solid #e2e8f0',
-                background: '#fff',
-                color: '#334155',
-                fontWeight: 600,
-                fontSize: '13px',
-                cursor: 'pointer',
-                boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
-                flexShrink: 0,
-              }}
-            >
-              <span aria-hidden>🔗</span>
-              Connected Accounts
-            </button>
-          )}
-          {typeof onOpenAutoReply === 'function' && (
-            <button
-              type="button"
-              onClick={onOpenAutoReply}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '8px 12px',
-                borderRadius: '8px',
-                border: '1px solid #e2e8f0',
-                background: '#fff',
-                color: '#334155',
-                fontWeight: 600,
-                fontSize: '13px',
-                cursor: 'pointer',
-                boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
-                flexShrink: 0,
-              }}
-            >
-              <span aria-hidden>🤖</span>
-              Auto Reply
-            </button>
-          )}
           <button
             type="button"
             onClick={load}
@@ -1069,29 +1021,99 @@ export default function MessagesInbox({ onOpenVideoPublisher, onOpenConnectedAcc
         </div>
         <div
           style={{
-            fontSize: '10px',
-            fontWeight: 700,
-            color: '#64748b',
-            letterSpacing: '0.06em',
-            textTransform: 'uppercase',
             marginTop: '12px',
-            marginBottom: '8px',
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'flex-end',
+            justifyContent: 'space-between',
+            gap: '12px',
           }}
         >
-          Type
-        </div>
-        <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', flexWrap: 'wrap' }}>
-          {(PLATFORM_TYPES[platformTab] || ['all']).map(t => (
-            <TabBtn
-              key={t}
-              label={TYPE_TAB_LABELS[t] || t}
-              active={typeTab === t}
-              badge={t === 'messages' ? platConvs.filter(c => Number(c.unread) > 0).length
-                : t === 'comments' ? platComments.length
-                  : 0}
-              onClick={() => setTypeTab(t)}
-            />
-          ))}
+          <div style={{ flex: '1 1 200px', minWidth: 0 }}>
+            <div
+              style={{
+                fontSize: '10px',
+                fontWeight: 700,
+                color: '#64748b',
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                marginBottom: '8px',
+              }}
+            >
+              Type
+            </div>
+            <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', flexWrap: 'wrap' }}>
+              {(PLATFORM_TYPES[platformTab] || ['all']).map(t => (
+                <TabBtn
+                  key={t}
+                  label={TYPE_TAB_LABELS[t] || t}
+                  active={typeTab === t}
+                  badge={t === 'messages' ? platConvs.filter(c => Number(c.unread) > 0).length
+                    : t === 'comments' ? platComments.length
+                      : 0}
+                  onClick={() => setTypeTab(t)}
+                />
+              ))}
+            </div>
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              flexWrap: 'wrap',
+              flexShrink: 0,
+            }}
+          >
+            {typeof onOpenConnectedAccounts === 'function' && (
+              <button
+                type="button"
+                onClick={onOpenConnectedAccounts}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '8px 12px',
+                  borderRadius: '8px',
+                  border: '1px solid #e2e8f0',
+                  background: '#fff',
+                  color: '#334155',
+                  fontWeight: 600,
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+                  flexShrink: 0,
+                }}
+              >
+                <span aria-hidden>🔗</span>
+                Connected Accounts
+              </button>
+            )}
+            {typeof onOpenAutoReply === 'function' && (
+              <button
+                type="button"
+                onClick={onOpenAutoReply}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '8px 12px',
+                  borderRadius: '8px',
+                  border: '1px solid #e2e8f0',
+                  background: '#fff',
+                  color: '#334155',
+                  fontWeight: 600,
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+                  flexShrink: 0,
+                }}
+              >
+                <span aria-hidden>🤖</span>
+                Auto Reply
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

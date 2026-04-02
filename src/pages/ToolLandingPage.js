@@ -36,7 +36,7 @@ export default function ToolLandingPage() {
           <div style={s.navLinks}>
             <a href="/#features" style={s.navLink}>All Tools</a>
             <a href="/pricing" style={s.navLink}>Pricing</a>
-            <a href="/" style={{ ...s.navCta, background: tool.color }}>Try Free →</a>
+            <a href="/" style={{ ...s.navCta, background: tool.color }}>Try Free Trial →</a>
           </div>
         </nav>
 

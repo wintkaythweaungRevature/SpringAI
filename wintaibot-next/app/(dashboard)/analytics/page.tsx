@@ -1,13 +1,6 @@
-'use client';
+import { redirect } from 'next/navigation';
 
-import React from 'react';
-import MemberGate from '@/components/MemberGate';
-import AnalyticsDashboard from '@/components/AnalyticsDashboard';
-
+/** Analytics is the default dashboard at `/`; keep old URL working. */
 export default function AnalyticsPage() {
-  return (
-    <MemberGate featureName="Analytics">
-      <AnalyticsDashboard />
-    </MemberGate>
-  );
+  redirect('/');
 }

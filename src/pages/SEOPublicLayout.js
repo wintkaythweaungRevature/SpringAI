@@ -22,7 +22,7 @@ const ROUTE_META = {
     description: 'Job seekers, business professionals, students, content creators, and teams use W!ntAi to automate documents, emails, and more.',
   },
   '/blog': {
-    title: 'Blog – Guides & Updates | W!ntAi',
+    title: 'Blogs – Guides & Updates | W!ntAi',
     description: 'Product updates, creator tips, and articles from the W!ntAi team.',
   },
   '/tutorial': {
@@ -85,14 +85,14 @@ export default function SEOPublicLayout({ onGetStarted, onOpenVideoPublisher }) 
               </button>
               {resourcesOpen && (
                 <div className="seo-nav-dropdown-menu" role="menu">
+                  <a href="/tutorial" role="menuitem" onClick={() => setResourcesOpen(false)}>Tutorials</a>
                   <a href="/blog" role="menuitem" onClick={() => setResourcesOpen(false)}>Blog</a>
-                  <a href="/tutorial" role="menuitem" onClick={() => setResourcesOpen(false)}>Tutorial</a>
                 </div>
               )}
             </div>
             <a href="/docs">Docs</a>
             <a href="/?auth=login" className="seo-nav-login" onClick={(e) => { e.preventDefault(); handleLogin(); }}>Login</a>
-            <a href="/" className="seo-nav-cta" onClick={(e) => { e.preventDefault(); handleGetStarted(); }}>Get Started Free →</a>
+            <a href="/" className="seo-nav-cta" onClick={(e) => { e.preventDefault(); handleGetStarted(); }}>Try Free Trial →</a>
           </div>
         </nav>
       </header>

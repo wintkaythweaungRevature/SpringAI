@@ -7,8 +7,8 @@ import ProGate from '@/components/ProGate.js';
 
 export default function TrendsPage() {
   return (
-    <MemberGate featureName="Trends">
-      <ProGate featureName="Trends">
+    <MemberGate featureName="Growth Planner">
+      <ProGate featureName="Growth Planner">
         <DeepAnalytics />
       </ProGate>
     </MemberGate>

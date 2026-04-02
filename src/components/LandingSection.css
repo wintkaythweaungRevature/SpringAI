@@ -195,22 +195,22 @@
 }
 
 .ls-hero-tagline {
-  margin: 0 auto 22px;
+  margin: 0 auto 28px;
   max-width: 640px;
   font-size: clamp(0.98rem, 2.1vw, 1.12rem);
   font-weight: 450;
-  line-height: 1.65;
+  line-height: 1.7;
   color: rgba(255, 255, 255, 0.92);
 }
 
 .ls-hero-chips {
   list-style: none;
-  margin: 0 auto 28px;
+  margin: 0 auto 36px;
   padding: 0;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 10px;
+  gap: 12px;
   max-width: 640px;
 }
 
@@ -296,17 +296,92 @@
   gap: 14px;
   justify-content: center;
   flex-wrap: wrap;
-  margin-bottom: 18px;
+  margin-bottom: 26px;
 }
 
 .ls-hero-note {
   font-size: 0.8125rem;
-  line-height: 1.55;
-  opacity: 0.78;
+  line-height: 1.65;
+  opacity: 0.82;
   margin: 0;
-  max-width: 520px;
+  max-width: 560px;
   margin-left: auto;
   margin-right: auto;
+  padding-top: 4px;
+}
+
+/* Platform marks under hero note (aligned with “no install” line) */
+.ls-hero-under-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px 12px;
+  margin-top: 14px;
+  max-width: 560px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.ls-hero-under-note__item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  will-change: transform;
+}
+
+.ls-hero-under-note__tile {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.16);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ls-hero-under-note__tile img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  display: block;
+}
+
+.ls-hero-under-note__item--a {
+  animation: lsHeroWobbleA 4.1s ease-in-out infinite;
+}
+
+.ls-hero-under-note__item--b {
+  animation: lsHeroWobbleB 4.6s ease-in-out infinite;
+}
+
+.ls-hero-under-note__item--c {
+  animation: lsHeroWobbleC 3.7s ease-in-out infinite;
+}
+
+.ls-hero-under-note__item--d {
+  animation: lsHeroWobbleD 5s ease-in-out infinite;
+}
+
+@media (min-width: 900px) {
+  .ls-hero-inner--split .ls-hero-under-note {
+    margin-left: 0;
+    margin-right: 0;
+    justify-content: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ls-hero-under-note__item--a,
+  .ls-hero-under-note__item--b,
+  .ls-hero-under-note__item--c,
+  .ls-hero-under-note__item--d {
+    animation: none !important;
+  }
 }
 
 /* Hero + showcase split (visual story, not manual wall of text) */
@@ -314,12 +389,23 @@
   max-width: 1080px;
   margin: 0 auto;
   display: grid;
-  gap: 28px 40px;
+  gap: 32px 44px;
   align-items: center;
 }
 
 .ls-hero-copy {
   text-align: center;
+}
+
+/* Glass panel on hero copy (balances showcase graphic; eases pill → CTA → note spacing) */
+.ls-hero-inner--split .ls-hero-copy {
+  padding: 22px 20px 26px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.055);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .ls-hero-visual {
@@ -354,10 +440,191 @@
     max-width: 520px;
   }
 
+  .ls-hero-inner--split .ls-hero-copy {
+    padding: 26px 28px 30px;
+  }
+
   .ls-hero-visual {
     margin-left: 0;
     margin-right: 0;
     max-width: none;
+  }
+}
+
+/* Hero: our showcase + 8 platforms inside one “orchestration” frame (hub → destinations) */
+.ls-hero-orch {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 16px 14px 14px;
+  border-radius: 20px;
+  background-color: rgba(255, 255, 255, 0.04);
+  background-image: radial-gradient(circle at 1px 1px, rgba(148, 163, 184, 0.2) 1px, transparent 0);
+  background-size: 16px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.ls-hero-orch__svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.ls-hero-orch__link {
+  fill: none;
+  stroke: rgba(165, 180, 252, 0.38);
+  stroke-width: 1.15;
+  stroke-dasharray: 5 7;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+  animation: lsHeroOrchFlow 16s linear infinite;
+}
+
+.ls-hero-orch__content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 14px;
+}
+
+@keyframes lsHeroOrchFlow {
+  to {
+    stroke-dashoffset: -48;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ls-hero-orch__link {
+    animation: none !important;
+  }
+}
+
+@media (min-width: 900px) {
+  .ls-hero-inner--split .ls-hero-orch {
+    margin-left: 0;
+    margin-right: 0;
+    max-width: none;
+  }
+}
+
+/* Slightly softer inner stage so the outer frame reads as one card */
+.ls-hero-orch .ls-hero-platform-dance {
+  background: rgba(255, 255, 255, 0.035);
+  border-color: rgba(255, 255, 255, 0.09);
+}
+
+.ls-hero-platform-dance {
+  position: relative;
+  width: 100%;
+  height: 96px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.055);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  overflow: hidden;
+}
+
+.ls-hero-platform-dance__orb {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  margin-left: -21px;
+  margin-top: -21px;
+  will-change: transform;
+}
+
+.ls-hero-platform-dance__tile {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ls-hero-platform-dance__tile img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  display: block;
+}
+
+/* Scattered anchor points (percent = center of orb) */
+.ls-hero-platform-dance__orb:nth-child(1) { left: 12%; top: 40%; }
+.ls-hero-platform-dance__orb:nth-child(2) { left: 28%; top: 64%; }
+.ls-hero-platform-dance__orb:nth-child(3) { left: 42%; top: 30%; }
+.ls-hero-platform-dance__orb:nth-child(4) { left: 54%; top: 56%; }
+.ls-hero-platform-dance__orb:nth-child(5) { left: 68%; top: 34%; }
+.ls-hero-platform-dance__orb:nth-child(6) { left: 84%; top: 52%; }
+.ls-hero-platform-dance__orb:nth-child(7) { left: 22%; top: 78%; }
+.ls-hero-platform-dance__orb:nth-child(8) { left: 74%; top: 74%; }
+
+.ls-hero-platform-dance__orb--a {
+  animation: lsHeroWobbleA 4.1s ease-in-out infinite;
+}
+
+.ls-hero-platform-dance__orb--b {
+  animation: lsHeroWobbleB 4.6s ease-in-out infinite;
+}
+
+.ls-hero-platform-dance__orb--c {
+  animation: lsHeroWobbleC 3.7s ease-in-out infinite;
+}
+
+.ls-hero-platform-dance__orb--d {
+  animation: lsHeroWobbleD 5s ease-in-out infinite;
+}
+
+@keyframes lsHeroWobbleA {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  33% { transform: translate(7px, -9px) rotate(2deg); }
+  66% { transform: translate(-5px, 6px) rotate(-1.5deg); }
+}
+
+@keyframes lsHeroWobbleB {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  40% { transform: translate(-8px, -6px) rotate(-2deg); }
+  70% { transform: translate(6px, 7px) rotate(1deg); }
+}
+
+@keyframes lsHeroWobbleC {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(5px, 8px) scale(1.04); }
+}
+
+@keyframes lsHeroWobbleD {
+  0%, 100% { transform: translate(0, 0); }
+  30% { transform: translate(-6px, 8px); }
+  60% { transform: translate(8px, -5px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ls-hero-platform-dance__orb--a,
+  .ls-hero-platform-dance__orb--b,
+  .ls-hero-platform-dance__orb--c,
+  .ls-hero-platform-dance__orb--d {
+    animation: none !important;
   }
 }
 
@@ -1060,23 +1327,37 @@
 }
 
 .ls-plan--featured {
-  border-color: rgba(129, 140, 248, 0.55);
-  box-shadow: 0 20px 56px rgba(79, 70, 229, 0.2);
-  background: rgba(255, 255, 255, 0.09);
+  border: 2px solid transparent;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.06)) padding-box,
+    linear-gradient(135deg, rgba(129, 140, 248, 0.95), rgba(99, 102, 241, 0.65), rgba(168, 85, 247, 0.55)) border-box;
+  box-shadow:
+    0 0 0 1px rgba(165, 180, 252, 0.35),
+    0 24px 64px rgba(79, 70, 229, 0.35),
+    0 0 48px rgba(99, 102, 241, 0.12);
+  transform: translateY(-2px);
 }
 
 .ls-plan-popular {
   position: absolute;
-  top: -13px;
+  top: -14px;
   left: 50%;
   transform: translateX(-50%);
-  background: #1e3a8a;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
   color: #fff;
   font-size: 0.75rem;
-  font-weight: 700;
-  padding: 4px 14px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 5px 16px;
   border-radius: 999px;
   white-space: nowrap;
+  box-shadow: 0 4px 18px rgba(99, 102, 241, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ls-plan--featured {
+    transform: none;
+  }
 }
 
 .ls-plan-name {
@@ -1255,7 +1536,7 @@
   font-weight: 700;
 }
 
-/* ── Resources (Blog & Tutorial) ─────────────────────────── */
+/* ── Resources (Tutorials & Blogs) ───────────────────────── */
 .ls-resources-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));

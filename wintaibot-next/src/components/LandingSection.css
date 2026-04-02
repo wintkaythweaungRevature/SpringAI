@@ -2250,7 +2250,8 @@
   border-color: rgba(165, 180, 252, 0.35);
 }
 
-.ls-authority-social-link img {
+.ls-authority-social-link img,
+.ls-authority-social-link svg {
   flex-shrink: 0;
   border-radius: 4px;
 }
@@ -2443,7 +2444,8 @@
   background: rgba(255, 255, 255, 0.04);
 }
 
-.ls-footer-social-link img {
+.ls-footer-social-link img,
+.ls-footer-social-link svg {
   width: 18px;
   height: 18px;
   flex-shrink: 0;

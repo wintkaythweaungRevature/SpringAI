@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import PlatformIcon from "./PlatformIcon";
+import PlatformIcon, { LinkedInLogo } from "./PlatformIcon";
 import { WINTAI_SOCIAL } from "../config/brandSocial";
 import "./LandingSection.css";
 
@@ -985,7 +985,7 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
             <span>Facebook</span>
           </a>
           <a href={WINTAI_SOCIAL.linkedin} target="_blank" rel="noopener noreferrer" className="ls-authority-social-link" title="LinkedIn">
-            <img src={`${SI}/linkedin/0A66C2`} alt="" width={20} height={20} />
+            <LinkedInLogo size={20} color="#0A66C2" />
             <span>LinkedIn</span>
           </a>
         </div>
@@ -1104,7 +1104,7 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
             Facebook
           </a>
           <a href={WINTAI_SOCIAL.linkedin} target="_blank" rel="noopener noreferrer" className="ls-footer-social-link">
-            <img src={`${SI}/linkedin/0A66C2`} alt="" width={18} height={18} />
+            <LinkedInLogo size={18} color="#0A66C2" />
             LinkedIn
           </a>
           <a href="/changelog" className="ls-footer-social-link ls-footer-social-link--changelog">

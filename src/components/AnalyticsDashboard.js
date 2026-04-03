@@ -143,16 +143,14 @@ function pickDeltaPct(data, keys) {
   return Number.isFinite(n) ? n : null;
 }
 
-/** Mini area sparkline — `values` optional (7–28 points); placeholder if missing. */
-function InsightSparkline({ values, color = '#1877F2' }) {
+/** Meta-style light blue sparkline — `values` optional (7–28 points); placeholder if missing. */
+function InsightSparkline({ values, color = '#5B9BD5', w = 120, h = 52 }) {
   const gid = React.useId().replace(/:/g, '');
   const arr = Array.isArray(values) && values.length > 1
     ? values.map((x) => Number(x) || 0)
     : [2, 3, 2, 4, 6, 11, 8, 7, 9, 14, 12];
   const max = Math.max(...arr, 1);
   const min = Math.min(...arr, 0);
-  const w = 108;
-  const h = 44;
   const pad = 3;
   const linePts = arr.map((v, i) => {
     const x = pad + (i / Math.max(arr.length - 1, 1)) * (w - 2 * pad);
@@ -183,109 +181,255 @@ function DeltaBadge({ pct }) {
   const n = Number(pct);
   const pos = n >= 0;
   return (
-    <span style={{ fontSize: 12, fontWeight: 700, color: pos ? '#16a34a' : '#dc2626', whiteSpace: 'nowrap' }}>
+    <span style={{ fontSize: 13, fontWeight: 600, color: pos ? '#31a24c' : '#dc2626', whiteSpace: 'nowrap' }}>
       {pos ? '↑' : '↓'} {Math.abs(Math.round(n * 10) / 10)}%
     </span>
   );
 }
 
-/** Meta Business Suite–style card (Overview / Messaging inspired). */
-function MetaInsightCard({ title, value, deltaPct, sub, sparkValues, accent = '#1877F2' }) {
+function MetaHintIcon() {
+  return (
+    <span
+      title="Metric definition from your connected Page insights"
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 14,
+        height: 14,
+        borderRadius: '50%',
+        background: '#e5e7eb',
+        color: '#6b7280',
+        fontSize: 9,
+        fontWeight: 700,
+        fontStyle: 'italic',
+        flexShrink: 0,
+        cursor: 'default',
+        lineHeight: 1,
+      }}
+      aria-label="Info"
+    >
+      i
+    </span>
+  );
+}
+
+function formatInsightsDateRange(days = 28) {
+  const end = new Date();
+  const start = new Date();
+  start.setDate(start.getDate() - days);
+  const o = { month: 'long', day: 'numeric', year: 'numeric' };
+  return `${start.toLocaleDateString('en-US', o)} – ${end.toLocaleDateString('en-US', o)}`;
+}
+
+/** Meta Business Suite Performance card — title row, primary + delta, optional breakdown + footer. */
+function MetaPerformanceCard({
+  title,
+  primaryValue,
+  deltaPct,
+  sparkValues,
+  sparkColor = '#5B9BD5',
+  breakdownRows,
+  visitsSubLabel,
+  footerRow,
+}) {
   return (
     <div
       style={{
-        display: 'flex',
-        gap: 12,
-        alignItems: 'stretch',
-        padding: '16px 14px',
         background: '#fff',
-        border: '1px solid #e8ecf1',
-        borderRadius: 12,
-        boxShadow: '0 1px 3px rgba(15, 23, 42, 0.06)',
-        minHeight: 112,
+        border: '1px solid #e5e7eb',
+        borderRadius: 10,
+        padding: '18px 16px 16px',
+        minHeight: 168,
+        boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
       }}
     >
-      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: '#64748b', marginBottom: 4 }}>{title}</div>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 26, fontWeight: 800, color: '#0f172a', letterSpacing: '-0.03em', lineHeight: 1 }}>{value}</span>
-          <DeltaBadge pct={deltaPct} />
-        </div>
-        {sub && (
-          <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 8, lineHeight: 1.45 }}>{sub}</div>
-        )}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+        <div style={{ fontSize: 16, fontWeight: 700, color: '#1c2b33', letterSpacing: '-0.02em' }}>{title}</div>
+        <span style={{ color: '#bcc0c4', fontSize: 22, lineHeight: 1, userSelect: 'none' }} aria-hidden>›</span>
       </div>
-      <InsightSparkline values={sparkValues} color={accent} />
+      <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap', marginBottom: 4 }}>
+            <span style={{ fontSize: 34, fontWeight: 700, color: '#050505', letterSpacing: '-0.03em', lineHeight: 1 }}>{primaryValue}</span>
+            <DeltaBadge pct={deltaPct} />
+          </div>
+          {visitsSubLabel && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, fontSize: 13, color: '#374151' }}>
+              <span>{visitsSubLabel}</span>
+              <MetaHintIcon />
+            </div>
+          )}
+          {Array.isArray(breakdownRows) && breakdownRows.length > 0 && (
+            <div style={{ marginTop: 10 }}>
+              {breakdownRows.map((row, i) => (
+                <div
+                  key={`${row.label}-${i}`}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    flexWrap: 'wrap',
+                    fontSize: 13,
+                    color: '#374151',
+                    marginTop: i === 0 ? 0 : 8,
+                  }}
+                >
+                  <span>{row.label}</span>
+                  <MetaHintIcon />
+                  <span style={{ fontWeight: 600, color: '#050505' }}>{row.valueText}</span>
+                  {row.deltaPct != null && <DeltaBadge pct={row.deltaPct} />}
+                </div>
+              ))}
+            </div>
+          )}
+          {footerRow && (
+            <div
+              style={{
+                borderTop: '1px solid #e5e7eb',
+                marginTop: 14,
+                paddingTop: 12,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                flexWrap: 'wrap',
+                fontSize: 13,
+                color: '#374151',
+              }}
+            >
+              <span>{footerRow.label}</span>
+              <MetaHintIcon />
+              <span style={{ fontWeight: 700, fontSize: 15, color: '#050505' }}>{footerRow.valueText}</span>
+              {footerRow.deltaPct != null && <DeltaBadge pct={footerRow.deltaPct} />}
+            </div>
+          )}
+        </div>
+        <InsightSparkline values={sparkValues} color={sparkColor} />
+      </div>
     </div>
   );
 }
 
-/** Facebook: Meta-like grid — messages, interactions, visits, follows (maps API + optional `messaging` subtree). */
+/** Facebook: Meta Business Suite–style Performance grid (Views, Interactions, Visits, Follows). */
 function FacebookMetaInsightsGrid({ data }) {
-  const fb = '#1877F2';
+  const fbPlatform = PLATFORMS.find((p) => p.id === 'facebook');
   const m = data?.messaging && typeof data.messaging === 'object' ? data.messaging : {};
-
-  const messages = pickMetricMessaging(data, ['messagesTotal', 'totalMessages', 'conversations', 'threads', 'inboxMessages']);
-  const interactions = pickMetricMessaging(data, ['messagingInteractions', 'contentInteractions', 'interactions', 'repliesSent']);
-  const visits = pickMetric(data, ['pageVisits', 'facebookVisits', 'profileVisits', 'visits']);
-  const follows = pickMetric(data, ['netFollows', 'newFollows', 'follows', 'pageFollows']);
 
   const fmtVal = (v) => (v !== null && v !== undefined ? fmt(v) : '—');
 
-  const dMsg = pickDeltaPct(m, ['messagesDeltaPct', 'messages_delta_pct', 'messagesChangePct']) ?? pickDeltaPct(data, ['messagesDeltaPct']);
-  const dInt = pickDeltaPct(m, ['interactionsDeltaPct', 'interactions_delta_pct']) ?? pickDeltaPct(data, ['interactionsDeltaPct']);
-  const dVis = pickDeltaPct(data, ['visitsDeltaPct', 'pageVisitsDeltaPct']);
-  const dFol = pickDeltaPct(data, ['followsDeltaPct', 'netFollowsDeltaPct']);
+  const views = pickMetric(data, ['totalViews', 'views', 'pageViews', 'impressions', 'videoViews', 'profileViews']);
+  const dViews = pickDeltaPct(data, ['viewsDeltaPct', 'totalViewsDeltaPct', 'impressionsDeltaPct']);
+  const sparkViews = Array.isArray(data.viewsTrend) ? data.viewsTrend : data.pageViewsTrend;
 
-  const sparkMsg = Array.isArray(m.messagesTrend) ? m.messagesTrend : m.messages_spark;
+  const pfPct = pickMetric(data, ['viewsFromFollowersPct', 'fromFollowersPct']);
+  const pnfPct = pickMetric(data, ['viewsFromNonFollowersPct', 'fromNonFollowersPct']);
+  const dPf = pickDeltaPct(data, ['viewsFromFollowersDeltaPct']);
+  const dPnf = pickDeltaPct(data, ['viewsFromNonFollowersDeltaPct']);
+  const viewers = pickMetric(data, ['viewers', 'uniqueViewers']);
+  const dViewers = pickDeltaPct(data, ['viewersDeltaPct']);
+
+  const interactions = pickMetricMessaging(data, ['contentInteractions', 'messagingInteractions', 'interactions', 'repliesSent']);
+  const dInt = pickDeltaPct(m, ['interactionsDeltaPct', 'interactions_delta_pct']) ?? pickDeltaPct(data, ['interactionsDeltaPct']);
   const sparkInt = Array.isArray(m.interactionsTrend) ? m.interactionsTrend : m.interactions_spark;
+  const intFollow = pickMetricMessaging(data, ['interactionsFromFollowers', 'interactions_from_followers']);
+  const intNon = pickMetricMessaging(data, ['interactionsFromNonFollowers', 'interactions_from_non_followers']);
+
+  const visits = pickMetric(data, ['pageVisits', 'facebookVisits', 'profileVisits', 'visits']);
+  const dVis = pickDeltaPct(data, ['visitsDeltaPct', 'pageVisitsDeltaPct']);
   const sparkVis = Array.isArray(data.pageVisitsTrend) ? data.pageVisitsTrend : data.visits_spark;
+
+  const unfollows = pickMetric(data, ['unfollows']);
+  const netFollows = pickMetric(data, ['netFollows', 'newFollows', 'follows', 'pageFollows']);
+  const dFol = pickDeltaPct(data, ['followsDeltaPct', 'netFollowsDeltaPct']);
+  const dNet = pickDeltaPct(data, ['netFollowsDeltaPct']);
+  const dUnf = pickDeltaPct(data, ['unfollowsDeltaPct']);
   const sparkFol = Array.isArray(data.followsTrend) ? data.followsTrend : data.follows_spark;
 
+  const viewsBreakdown = [];
+  if (pfPct != null) viewsBreakdown.push({ label: 'From followers', valueText: `${fmt(pfPct)}%`, deltaPct: dPf });
+  if (pnfPct != null) viewsBreakdown.push({ label: 'From non-followers', valueText: `${fmt(pnfPct)}%`, deltaPct: dPnf });
+
+  const intBreakdown = [];
+  if (intFollow != null) intBreakdown.push({ label: 'From followers', valueText: fmt(intFollow), deltaPct: null });
+  if (intNon != null) intBreakdown.push({ label: 'From non-followers', valueText: fmt(intNon), deltaPct: null });
+
+  const followsBreakdown = [];
+  if (unfollows != null) {
+    followsBreakdown.push({ label: 'Unfollows', valueText: fmt(unfollows), deltaPct: dUnf });
+  }
+  if (netFollows != null) {
+    followsBreakdown.push({ label: 'Net follows', valueText: fmt(netFollows), deltaPct: dNet ?? dFol });
+  }
+
   return (
-    <div>
-      <div style={{ fontSize: 13, fontWeight: 700, color: '#1e293b', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
-        <IconBubble size={18} color={fb} />
-        Page and messaging performance
+    <div
+      style={{
+        background: '#f3f4f6',
+        borderRadius: 12,
+        border: '1px solid #e5e7eb',
+        padding: '18px 18px 20px',
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, marginBottom: 18 }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+            {fbPlatform && <PlatformIcon platform={fbPlatform} size={22} />}
+            <span style={{ fontSize: 18, fontWeight: 700, color: '#1c2b33', letterSpacing: '-0.02em' }}>Performance</span>
+          </div>
+          <div style={{ fontSize: 13, color: '#65676b' }}>{formatInsightsDateRange(28)}</div>
+        </div>
+        <button
+          type="button"
+          disabled
+          title="Coming soon"
+          style={{
+            padding: '8px 12px',
+            borderRadius: 8,
+            border: '1px solid #e5e7eb',
+            background: '#fff',
+            color: '#bcc0c4',
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: 'not-allowed',
+            fontFamily: 'inherit',
+          }}
+        >
+          Customize view: Business
+        </button>
       </div>
-      <p style={{ fontSize: 11, color: '#94a3b8', marginBottom: 12, lineHeight: 1.5, maxWidth: 'min(100%, 920px)' }}>
-        Similar layout to Meta Business Suite Insights. Numbers and trends appear when <code style={{ fontSize: 10 }}>platforms.facebook</code> includes these fields (optional nested <code style={{ fontSize: 10 }}>messaging</code> for inbox metrics).
-      </p>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12 }}>
-        <MetaInsightCard
-          title="Messages"
-          value={fmtVal(messages)}
-          deltaPct={dMsg}
-          sub={pickMetric(m, ['fromFollowersPct']) != null ? `From followers ${pickMetric(m, ['fromFollowersPct'])}%` : null}
-          sparkValues={sparkMsg}
-          accent={fb}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 14 }}>
+        <MetaPerformanceCard
+          title="Views"
+          primaryValue={fmtVal(views)}
+          deltaPct={dViews}
+          sparkValues={sparkViews}
+          breakdownRows={viewsBreakdown.length ? viewsBreakdown : undefined}
+          footerRow={
+            viewers != null
+              ? { label: 'Viewers', valueText: fmtVal(viewers), deltaPct: dViewers }
+              : undefined
+          }
         />
-        <MetaInsightCard
+        <MetaPerformanceCard
           title="Interactions"
-          value={fmtVal(interactions)}
+          primaryValue={fmtVal(interactions)}
           deltaPct={dInt}
-          sub={pickMetric(m, ['interactionsFromFollowers']) != null ? `From followers ${fmt(pickMetric(m, ['interactionsFromFollowers']))}` : null}
           sparkValues={sparkInt}
-          accent="#7c3aed"
+          breakdownRows={intBreakdown.length ? intBreakdown : undefined}
         />
-        <MetaInsightCard
-          title="Page visits"
-          value={fmtVal(visits)}
+        <MetaPerformanceCard
+          title="Visits"
+          primaryValue={fmtVal(visits)}
           deltaPct={dVis}
           sparkValues={sparkVis}
-          accent="#0891b2"
+          visitsSubLabel="Facebook visits"
         />
-        <MetaInsightCard
+        <MetaPerformanceCard
           title="Follows"
-          value={fmtVal(follows)}
+          primaryValue={fmtVal(netFollows)}
           deltaPct={dFol}
-          sub={
-            pickMetric(data, ['unfollows']) != null
-              ? `Unfollows ${fmt(pickMetric(data, ['unfollows']))}`
-              : null
-          }
           sparkValues={sparkFol}
-          accent="#ea580c"
+          breakdownRows={followsBreakdown.length ? followsBreakdown : undefined}
         />
       </div>
     </div>

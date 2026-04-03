@@ -2035,7 +2035,7 @@ function TrendsCalendar({ authHeaders }) {
 
                   {/* Reschedule button for pending jobs */}
                   {item._kind === 'scheduled' && (item.status === 'PENDING' || item.status === 'SCHEDULED') && (
-                    rescheduleJob?.job?.jobId === item.jobId ? (
+                    rescheduleJob && rescheduleJob.job?.jobId === item.jobId ? (
                       <div style={{ marginTop: 8 }}>
                         <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
                           <input type="date"

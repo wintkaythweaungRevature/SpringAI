@@ -37,28 +37,6 @@ function IconUsers({ size = 22, color = '#6366f1' }) {
     </svg>
   );
 }
-function IconCheck({ size = 22, color = '#16a34a' }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-      <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke={color} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-function IconBubble({ size = 22, color = '#d97706' }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke={color} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-function IconEye({ size = 22, color = '#2563eb' }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke={color} strokeWidth="1.75" />
-      <circle cx="12" cy="12" r="3" stroke={color} strokeWidth="1.75" />
-    </svg>
-  );
-}
 function IconTrash({ size = 16, color = '#94a3b8' }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
@@ -116,14 +94,6 @@ function pickMetric(data, keys) {
     }
   }
   return null;
-}
-
-function engagementPrimary(data) {
-  const rate = pickMetric(data, ['engagementRate', 'engagement_rate', 'engagementPercent', 'engagement_percent']);
-  if (rate !== null) return `${rate}%`;
-  const score = pickMetric(data, ['engagement', 'engagementScore', 'engagement_score', 'totalEngagement']);
-  if (score !== null) return fmt(score);
-  return '—';
 }
 
 function pickMetricMessaging(data, keys) {
@@ -305,38 +275,238 @@ function MetaPerformanceCard({
   );
 }
 
-function FacebookMetaInsightsGrid({ data }) {
-  const fbPlatform = PLATFORMS.find((p) => p.id === 'facebook');
-  const m = data?.messaging && typeof data.messaging === 'object' ? data.messaging : {};
+function visitsSubLabelForPlatform(platformId) {
+  const m = {
+    facebook: 'Facebook visits',
+    youtube: 'Channel / watch',
+    instagram: 'Profile visits',
+    tiktok: 'Profile views',
+    x: 'Profile visits',
+    linkedin: 'Page views',
+  };
+  return m[platformId] ?? 'Profile visits';
+}
+
+function audienceCardTitle(platformId, overview) {
+  if (overview) return 'Audience';
+  const t = {
+    youtube: 'Subscribers',
+    facebook: 'Follows',
+    instagram: 'Followers',
+    tiktok: 'Followers',
+    x: 'Followers',
+    linkedin: 'Followers',
+  };
+  return t[platformId] ?? 'Audience';
+}
+
+/** Sum likes + comments + shares when no single “interactions” field exists. */
+function computeInteractionsTotal(data) {
+  const direct = pickMetricMessaging(data, ['contentInteractions', 'messagingInteractions', 'interactions', 'repliesSent']);
+  if (direct != null) return direct;
+  const likes = pickMetric(data, ['totalLikes', 'recentLikes', 'likes', 'pageLikes']);
+  const comments = pickMetric(data, ['recentComments', 'comments']);
+  const shares = pickMetric(data, ['shares', 'totalShares', 'shareCount', 'reposts']);
+  if (likes == null && comments == null && shares == null) return null;
+  return (likes ?? 0) + (comments ?? 0) + (shares ?? 0);
+}
+
+function audiencePrimaryMetric(platformId, data) {
+  const sub = pickMetric(data, ['subscribers']);
+  const fans = pickMetric(data, ['fans']);
+  const follow = pickMetric(data, ['followers']);
+  const net = pickMetric(data, ['netFollows', 'newFollows', 'follows', 'pageFollows']);
+  if (platformId === 'youtube' && sub != null) return sub;
+  if (platformId === 'facebook') return net ?? follow ?? fans;
+  if (fans != null) return fans;
+  if (follow != null) return follow;
+  return net;
+}
+
+function sumVisitsAcrossPlatforms(platforms, connected) {
+  let s = 0;
+  let any = false;
+  for (const pid of connected) {
+    const d = platforms[pid] ?? {};
+    const v = pickMetric(d, ['pageVisits', 'facebookVisits', 'profileVisits', 'visits']);
+    if (v != null) {
+      s += v;
+      any = true;
+    }
+  }
+  return any ? s : null;
+}
+
+/**
+ * Meta-style Performance panel — Overview (aggregated) or single platform.
+ * `platform === 'overview'` → pass `analyticsData` (full /api/analytics/overview JSON).
+ * Else pass `data` = `platforms[platform]`.
+ */
+function PerformanceInsightsGrid({ platform, data, analyticsData }) {
   const fmtVal = (v) => (v !== null && v !== undefined ? fmt(v) : '—');
+  const isOverview = platform === 'overview';
+  const pMeta = isOverview ? null : PLATFORMS.find((x) => x.id === platform);
 
-  const views = pickMetric(data, ['totalViews', 'views', 'pageViews', 'impressions', 'videoViews', 'profileViews']);
-  const dViews = pickDeltaPct(data, ['viewsDeltaPct', 'totalViewsDeltaPct', 'impressionsDeltaPct']);
-  const sparkViews = Array.isArray(data.viewsTrend) ? data.viewsTrend : data.pageViewsTrend;
+  const customizeBtn = (
+    <button
+      type="button"
+      disabled
+      title="Coming soon"
+      style={{
+        padding: '8px 12px',
+        borderRadius: 8,
+        border: '1px solid #e5e7eb',
+        background: '#fff',
+        color: '#bcc0c4',
+        fontSize: 13,
+        fontWeight: 600,
+        cursor: 'not-allowed',
+        fontFamily: 'inherit',
+      }}
+    >
+      Customize view: Business
+    </button>
+  );
 
-  const pfPct = pickMetric(data, ['viewsFromFollowersPct', 'fromFollowersPct']);
-  const pnfPct = pickMetric(data, ['viewsFromNonFollowersPct', 'fromNonFollowersPct']);
-  const dPf = pickDeltaPct(data, ['viewsFromFollowersDeltaPct']);
-  const dPnf = pickDeltaPct(data, ['viewsFromNonFollowersDeltaPct']);
-  const viewers = pickMetric(data, ['viewers', 'uniqueViewers']);
-  const dViewers = pickDeltaPct(data, ['viewersDeltaPct']);
+  if (isOverview) {
+    const ad = analyticsData;
+    if (!ad) return null;
+    const connected = ad.connectedPlatforms ?? [];
+    const platforms = ad.platforms ?? {};
+    const ownPosts = ad.ownPosts ?? {};
 
-  const interactions = pickMetricMessaging(data, ['contentInteractions', 'messagingInteractions', 'interactions', 'repliesSent']);
-  const dInt = pickDeltaPct(m, ['interactionsDeltaPct', 'interactions_delta_pct']) ?? pickDeltaPct(data, ['interactionsDeltaPct']);
+    const totalFollowers = connected.reduce((sum, pid) => {
+      const d = platforms[pid] ?? {};
+      return sum + (d.followers ?? d.subscribers ?? d.fans ?? 0);
+    }, 0);
+    const totalEngagement = connected.reduce((sum, pid) => {
+      const d = platforms[pid] ?? {};
+      return sum + (d.recentLikes ?? 0) + (d.recentComments ?? 0) + (d.talkingAbout ?? 0) + (d.totalLikes ?? 0);
+    }, 0);
+    const totalViews = connected.reduce((sum, pid) => {
+      const d = platforms[pid] ?? {};
+      return sum + (d.totalViews ?? d.profileViews ?? d.videoViews ?? 0);
+    }, 0);
+    const totalVisits = sumVisitsAcrossPlatforms(platforms, connected);
+
+    const ov = ad.overviewPerformance ?? {};
+    const dViews = pickDeltaPct(ov, ['viewsDeltaPct']);
+    const dInt = pickDeltaPct(ov, ['interactionsDeltaPct']);
+    const dVis = pickDeltaPct(ov, ['visitsDeltaPct']);
+    const dAud = pickDeltaPct(ov, ['audienceDeltaPct']);
+    const sparkViews = Array.isArray(ov.viewsTrend) ? ov.viewsTrend : ad.overviewViewsTrend;
+    const sparkInt = Array.isArray(ov.interactionsTrend) ? ov.interactionsTrend : ad.overviewInteractionsTrend;
+    const sparkVis = Array.isArray(ov.visitsTrend) ? ov.visitsTrend : ad.overviewVisitsTrend;
+    const sparkAud = Array.isArray(ov.audienceTrend) ? ov.audienceTrend : ad.overviewAudienceTrend;
+
+    const nConnected = connected.length;
+    const breakdownPlatforms = [...connected]
+      .map((pid) => {
+        const pl = PLATFORMS.find((x) => x.id === pid);
+        const d = platforms[pid] ?? {};
+        const v = pickMetric(d, ['totalViews', 'views', 'pageViews', 'impressions', 'videoViews', 'profileViews']);
+        return { pid, label: pl?.label ?? pid, value: v };
+      })
+      .filter((x) => x.value != null)
+      .sort((a, b) => Number(b.value) - Number(a.value))
+      .slice(0, 3);
+
+    const viewsBreakdownOv = breakdownPlatforms.map((row) => ({
+      label: row.label,
+      valueText: fmt(row.value),
+      deltaPct: null,
+    }));
+
+    return (
+      <div
+        style={{
+          background: '#f3f4f6',
+          borderRadius: 12,
+          border: '1px solid #e5e7eb',
+          padding: '18px 18px 20px',
+          marginBottom: 14,
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, marginBottom: 18 }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+              <IconGlobe size={22} color="#475569" />
+              <span style={{ fontSize: 18, fontWeight: 700, color: '#1c2b33', letterSpacing: '-0.02em' }}>Performance</span>
+            </div>
+            <div style={{ fontSize: 13, color: '#65676b' }}>
+              All connected accounts{nConnected ? ` · ${nConnected} platform${nConnected !== 1 ? 's' : ''}` : ''} · {formatInsightsDateRange(28)}
+            </div>
+          </div>
+          {customizeBtn}
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 14 }}>
+          <MetaPerformanceCard
+            title="Views"
+            primaryValue={fmtVal(totalViews)}
+            deltaPct={dViews}
+            sparkValues={sparkViews}
+            breakdownRows={viewsBreakdownOv.length ? viewsBreakdownOv : undefined}
+          />
+          <MetaPerformanceCard
+            title="Interactions"
+            primaryValue={fmtVal(totalEngagement)}
+            deltaPct={dInt}
+            sparkValues={sparkInt}
+          />
+          <MetaPerformanceCard
+            title="Visits"
+            primaryValue={fmtVal(totalVisits)}
+            deltaPct={dVis}
+            sparkValues={sparkVis}
+            visitsSubLabel="Across connected accounts"
+          />
+          <MetaPerformanceCard
+            title={audienceCardTitle(platform, true)}
+            primaryValue={fmtVal(totalFollowers)}
+            deltaPct={dAud}
+            sparkValues={sparkAud}
+            footerRow={
+              ownPosts.totalPublished != null
+                ? { label: 'Posts published', valueText: fmt(ownPosts.totalPublished), deltaPct: null }
+                : undefined
+            }
+          />
+        </div>
+      </div>
+    );
+  }
+
+  const d = data;
+  if (!d) return null;
+  const m = d?.messaging && typeof d.messaging === 'object' ? d.messaging : {};
+
+  const views = pickMetric(d, ['totalViews', 'views', 'pageViews', 'impressions', 'videoViews', 'profileViews']);
+  const dViews = pickDeltaPct(d, ['viewsDeltaPct', 'totalViewsDeltaPct', 'impressionsDeltaPct']);
+  const sparkViews = Array.isArray(d.viewsTrend) ? d.viewsTrend : d.pageViewsTrend;
+
+  const pfPct = pickMetric(d, ['viewsFromFollowersPct', 'fromFollowersPct']);
+  const pnfPct = pickMetric(d, ['viewsFromNonFollowersPct', 'fromNonFollowersPct']);
+  const dPf = pickDeltaPct(d, ['viewsFromFollowersDeltaPct']);
+  const dPnf = pickDeltaPct(d, ['viewsFromNonFollowersDeltaPct']);
+  const viewers = pickMetric(d, ['viewers', 'uniqueViewers']);
+  const dViewers = pickDeltaPct(d, ['viewersDeltaPct']);
+
+  const interactions = computeInteractionsTotal(d);
+  const dInt = pickDeltaPct(m, ['interactionsDeltaPct', 'interactions_delta_pct']) ?? pickDeltaPct(d, ['interactionsDeltaPct']);
   const sparkInt = Array.isArray(m.interactionsTrend) ? m.interactionsTrend : m.interactions_spark;
-  const intFollow = pickMetricMessaging(data, ['interactionsFromFollowers', 'interactions_from_followers']);
-  const intNon = pickMetricMessaging(data, ['interactionsFromNonFollowers', 'interactions_from_non_followers']);
+  const intFollow = pickMetricMessaging(d, ['interactionsFromFollowers', 'interactions_from_followers']);
+  const intNon = pickMetricMessaging(d, ['interactionsFromNonFollowers', 'interactions_from_non_followers']);
 
-  const visits = pickMetric(data, ['pageVisits', 'facebookVisits', 'profileVisits', 'visits']);
-  const dVis = pickDeltaPct(data, ['visitsDeltaPct', 'pageVisitsDeltaPct']);
-  const sparkVis = Array.isArray(data.pageVisitsTrend) ? data.pageVisitsTrend : data.visits_spark;
+  const visits = pickMetric(d, ['pageVisits', 'facebookVisits', 'profileVisits', 'visits']);
+  const dVis = pickDeltaPct(d, ['visitsDeltaPct', 'pageVisitsDeltaPct']);
+  const sparkVis = Array.isArray(d.pageVisitsTrend) ? d.pageVisitsTrend : d.visits_spark;
 
-  const unfollows = pickMetric(data, ['unfollows']);
-  const netFollows = pickMetric(data, ['netFollows', 'newFollows', 'follows', 'pageFollows']);
-  const dFol = pickDeltaPct(data, ['followsDeltaPct', 'netFollowsDeltaPct']);
-  const dNet = pickDeltaPct(data, ['netFollowsDeltaPct']);
-  const dUnf = pickDeltaPct(data, ['unfollowsDeltaPct']);
-  const sparkFol = Array.isArray(data.followsTrend) ? data.followsTrend : data.follows_spark;
+  const unfollows = pickMetric(d, ['unfollows']);
+  const aud = audiencePrimaryMetric(platform, d);
+  const dFol = pickDeltaPct(d, ['followsDeltaPct', 'netFollowsDeltaPct', 'subscribersDeltaPct']);
+  const dNet = pickDeltaPct(d, ['netFollowsDeltaPct']);
+  const dUnf = pickDeltaPct(d, ['unfollowsDeltaPct']);
+  const sparkFol = Array.isArray(d.followsTrend) ? d.followsTrend : d.subscribersTrend;
 
   const viewsBreakdown = [];
   if (pfPct != null) viewsBreakdown.push({ label: 'From followers', valueText: `${fmt(pfPct)}%`, deltaPct: dPf });
@@ -346,38 +516,38 @@ function FacebookMetaInsightsGrid({ data }) {
   if (intFollow != null) intBreakdown.push({ label: 'From followers', valueText: fmt(intFollow), deltaPct: null });
   if (intNon != null) intBreakdown.push({ label: 'From non-followers', valueText: fmt(intNon), deltaPct: null });
 
-  const followsBreakdown = [];
-  if (unfollows != null) followsBreakdown.push({ label: 'Unfollows', valueText: fmt(unfollows), deltaPct: dUnf });
-  if (netFollows != null) followsBreakdown.push({ label: 'Net follows', valueText: fmt(netFollows), deltaPct: dNet ?? dFol });
+  const audienceBreakdown = [];
+  if (platform === 'facebook' && unfollows != null) {
+    audienceBreakdown.push({ label: 'Unfollows', valueText: fmt(unfollows), deltaPct: dUnf });
+  }
+  if (platform === 'facebook') {
+    const netF = pickMetric(d, ['netFollows', 'newFollows', 'follows', 'pageFollows']);
+    if (netF != null) audienceBreakdown.push({ label: 'Net follows', valueText: fmt(netF), deltaPct: dNet ?? dFol });
+  }
+
+  const audTitle = audienceCardTitle(platform, false);
+  const visitsLabel = visitsSubLabelForPlatform(platform);
 
   return (
-    <div style={{ background: '#f3f4f6', borderRadius: 12, border: '1px solid #e5e7eb', padding: '18px 18px 20px' }}>
+    <div
+      style={{
+        background: '#f3f4f6',
+        borderRadius: 12,
+        border: '1px solid #e5e7eb',
+        padding: '18px 18px 20px',
+      }}
+    >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, marginBottom: 18 }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-            {fbPlatform && <PlatformIcon platform={fbPlatform} size={22} />}
+            {pMeta && <PlatformIcon platform={pMeta} size={22} />}
             <span style={{ fontSize: 18, fontWeight: 700, color: '#1c2b33', letterSpacing: '-0.02em' }}>Performance</span>
           </div>
-          <div style={{ fontSize: 13, color: '#65676b' }}>{formatInsightsDateRange(28)}</div>
+          <div style={{ fontSize: 13, color: '#65676b' }}>
+            {pMeta?.label ?? platform} · {formatInsightsDateRange(28)}
+          </div>
         </div>
-        <button
-          type="button"
-          disabled
-          title="Coming soon"
-          style={{
-            padding: '8px 12px',
-            borderRadius: 8,
-            border: '1px solid #e5e7eb',
-            background: '#fff',
-            color: '#bcc0c4',
-            fontSize: 13,
-            fontWeight: 600,
-            cursor: 'not-allowed',
-            fontFamily: 'inherit',
-          }}
-        >
-          Customize view: Business
-        </button>
+        {customizeBtn}
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 14 }}>
         <MetaPerformanceCard
@@ -386,7 +556,9 @@ function FacebookMetaInsightsGrid({ data }) {
           deltaPct={dViews}
           sparkValues={sparkViews}
           breakdownRows={viewsBreakdown.length ? viewsBreakdown : undefined}
-          footerRow={viewers != null ? { label: 'Viewers', valueText: fmtVal(viewers), deltaPct: dViewers } : undefined}
+          footerRow={
+            viewers != null ? { label: 'Viewers', valueText: fmtVal(viewers), deltaPct: dViewers } : undefined
+          }
         />
         <MetaPerformanceCard
           title="Interactions"
@@ -395,33 +567,25 @@ function FacebookMetaInsightsGrid({ data }) {
           sparkValues={sparkInt}
           breakdownRows={intBreakdown.length ? intBreakdown : undefined}
         />
-        <MetaPerformanceCard title="Visits" primaryValue={fmtVal(visits)} deltaPct={dVis} sparkValues={sparkVis} visitsSubLabel="Facebook visits" />
         <MetaPerformanceCard
-          title="Follows"
-          primaryValue={fmtVal(netFollows)}
+          title="Visits"
+          primaryValue={fmtVal(visits)}
+          deltaPct={dVis}
+          sparkValues={sparkVis}
+          visitsSubLabel={visitsLabel}
+        />
+        <MetaPerformanceCard
+          title={audTitle}
+          primaryValue={fmtVal(aud)}
           deltaPct={dFol}
           sparkValues={sparkFol}
-          breakdownRows={followsBreakdown.length ? followsBreakdown : undefined}
+          breakdownRows={audienceBreakdown.length ? audienceBreakdown : undefined}
         />
       </div>
     </div>
   );
 }
 
-function StatTile({ icon, label, value, sub, accent = '#6366f1' }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '16px 18px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)', flex: 1, minWidth: '140px' }}>
-      <div style={{ width: '44px', height: '44px', borderRadius: '10px', background: `${accent}14`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: accent }} aria-hidden>
-        {icon}
-      </div>
-      <div style={{ minWidth: 0 }}>
-        <div style={{ fontSize: '24px', fontWeight: 800, color: '#0f172a', lineHeight: 1.1 }}>{value}</div>
-        <div style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', marginTop: '4px' }}>{label}</div>
-        {sub && <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '3px', lineHeight: 1.35 }}>{sub}</div>}
-      </div>
-    </div>
-  );
-}
 
 function RefreshIcon({ size = 14 }) {
   return (
@@ -534,78 +698,7 @@ function PlatformCard({ platform, data }) {
       {hasError ? (
         <div style={{ fontSize: '12px', color: '#94a3b8', background: '#f8fafc', borderRadius: '8px', padding: '10px', lineHeight: 1.5 }}>⚠️ {data.error}</div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '10px' }}>
-          {platform === 'facebook' && (
-            <div style={{ gridColumn: '1 / -1' }}>
-              <FacebookMetaInsightsGrid data={data} />
-            </div>
-          )}
-          {platform !== 'facebook' && (
-          <div style={{ gridColumn: '1 / -1', display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '10px' }}>
-            <div style={{ background: '#f1f5f9', borderRadius: '10px', padding: '10px', textAlign: 'center', border: '1px solid #e2e8f0' }}>
-              <div style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a' }}>
-                {(() => {
-                  const v = pickMetric(data, ['totalViews', 'views', 'pageViews', 'impressions', 'videoViews', 'profileViews']);
-                  return v !== null ? fmt(v) : '—';
-                })()}
-              </div>
-              <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>Views</div>
-            </div>
-            <div style={{ background: '#fffbeb', borderRadius: '10px', padding: '10px', textAlign: 'center', border: '1px solid #fde68a' }}>
-              <div style={{ fontSize: '18px', fontWeight: 800, color: '#b45309' }}>
-                {(() => {
-                  const v = pickMetric(data, ['totalLikes', 'recentLikes', 'likes', 'pageLikes']);
-                  return v !== null ? fmt(v) : '—';
-                })()}
-              </div>
-              <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>Likes</div>
-            </div>
-            <div style={{ background: '#ecfeff', borderRadius: '10px', padding: '10px', textAlign: 'center', border: '1px solid #a5f3fc' }}>
-              <div style={{ fontSize: '18px', fontWeight: 800, color: '#0e7490' }}>
-                {(() => {
-                  const v = pickMetric(data, ['shares', 'totalShares', 'shareCount', 'reposts']);
-                  return v !== null ? fmt(v) : '—';
-                })()}
-              </div>
-              <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>Shares</div>
-            </div>
-            <div style={{ background: '#fff7ed', borderRadius: '10px', padding: '10px', textAlign: 'center', border: '1px solid #fed7aa' }}>
-              <div style={{ fontSize: '18px', fontWeight: 800, color: '#c2410c' }}>{engagementPrimary(data)}</div>
-              <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>Engagement</div>
-            </div>
-          </div>
-          )}
-          {(data.followers !== undefined || data.subscribers !== undefined || data.fans !== undefined) && (
-            <div style={{ background: '#f8fafc', borderRadius: '10px', padding: '10px', textAlign: 'center' }}>
-              <div style={{ fontSize: '18px', fontWeight: 800, color: p.color }}>{fmt(data.followers ?? data.subscribers ?? data.fans ?? 0)}</div>
-              <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>{data.subscribers !== undefined ? 'Subscribers' : data.fans !== undefined ? 'Fans' : 'Followers'}</div>
-            </div>
-          )}
-          {data.following !== undefined && (
-            <div style={{ background: '#f8fafc', borderRadius: '10px', padding: '10px', textAlign: 'center' }}>
-              <div style={{ fontSize: '18px', fontWeight: 800, color: '#374151' }}>{fmt(data.following)}</div>
-              <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>Following</div>
-            </div>
-          )}
-          {(data.posts !== undefined || data.videos !== undefined || data.tweets !== undefined) && (
-            <div style={{ background: '#f8fafc', borderRadius: '10px', padding: '10px', textAlign: 'center' }}>
-              <div style={{ fontSize: '18px', fontWeight: 800, color: '#374151' }}>{fmt(data.posts ?? data.videos ?? data.tweets ?? 0)}</div>
-              <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>{data.tweets !== undefined ? 'Tweets' : 'Posts'}</div>
-            </div>
-          )}
-          {data.recentComments !== undefined && (
-            <div style={{ background: '#f0fdf4', borderRadius: '10px', padding: '10px', textAlign: 'center' }}>
-              <div style={{ fontSize: '18px', fontWeight: 800, color: '#16a34a' }}>{fmt(data.recentComments)}</div>
-              <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>Comments</div>
-            </div>
-          )}
-          {data.talkingAbout !== undefined && (
-            <div style={{ background: '#eff6ff', borderRadius: '10px', padding: '10px', textAlign: 'center' }}>
-              <div style={{ fontSize: '18px', fontWeight: 800, color: '#2563eb' }}>{fmt(data.talkingAbout)}</div>
-              <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>Talking About</div>
-            </div>
-          )}
-        </div>
+        <PerformanceInsightsGrid platform={platform} data={data} />
       )}
     </div>
   );
@@ -734,12 +827,7 @@ export default function AnalyticsDashboard() {
 
           {tab === 'overview' && (
             <>
-              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '14px' }}>
-                <StatTile icon={<IconUsers size={22} color="#6366f1" />} label="Total followers" value={fmt(totalFollowers)} sub={`Across ${connected.length} platform${connected.length !== 1 ? 's' : ''}`} accent="#6366f1" />
-                <StatTile icon={<IconCheck size={22} color="#16a34a" />} label="Posts published" value={fmt(ownPosts.totalPublished)} sub={`${fmt(ownPosts.thisWeek)} this week`} accent="#16a34a" />
-                <StatTile icon={<IconBubble size={22} color="#d97706" />} label="Total engagement" value={fmt(totalEngagement)} sub="Likes + comments" accent="#d97706" />
-                <StatTile icon={<IconEye size={22} color="#2563eb" />} label="Total views" value={fmt(totalViews)} sub="YouTube + profile views" accent="#2563eb" />
-              </div>
+              <PerformanceInsightsGrid platform="overview" analyticsData={data} />
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: '14px', marginBottom: '14px' }}>
                 <div style={{ background: '#fff', borderRadius: '12px', padding: '18px 20px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)' }}>
@@ -846,7 +934,7 @@ export default function AnalyticsDashboard() {
             </>
           )}
 
-          {tab !== 'overview' && platforms[tab] && <div style={{ maxWidth: tab === 'facebook' ? 'min(100%, 920px)' : '640px' }}><PlatformCard platform={tab} data={platforms[tab]} /></div>}
+          {tab !== 'overview' && platforms[tab] && <div style={{ maxWidth: 'min(100%, 920px)' }}><PlatformCard platform={tab} data={platforms[tab]} /></div>}
           {tab !== 'overview' && !platforms[tab] && <div style={{ background: '#f8fafc', borderRadius: '14px', padding: '40px', textAlign: 'center', color: '#94a3b8', fontSize: '14px' }}>No analytics data available for this platform yet.</div>}
         </>
       )}

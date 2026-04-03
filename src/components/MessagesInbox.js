@@ -37,6 +37,13 @@ const PLATFORM_TYPES = {
 
 const TYPE_TAB_LABELS = { all: 'All', messages: 'Messages', comments: 'Comments' };
 
+/** API may return numeric or string ids — keep selection/detail in sync. */
+function sameInboxId(a, b) {
+  if (a === b) return true;
+  if (a == null || b == null) return false;
+  return String(a) === String(b);
+}
+
 /** Page inbox at Meta (reply to Messenger / Instagram DMs outside W!ntAi until API permissions are complete). */
 const META_BUSINESS_INBOX_URL = 'https://business.facebook.com/latest/inbox';
 
@@ -529,7 +536,7 @@ function CommentItem({ item, apiBase, token, selected, onSelect, onReplySent, re
 }
 
 /** Right pane: full DM thread or comment + all replies (matches list selection). */
-function InboxDetailPanel({ item, kind, commentReplyExtras, onClose }) {
+function InboxDetailPanel({ item, kind, commentReplyExtras, onClose, onOpenAutoReply, onOpenConnectedAccounts }) {
   const p = PLATFORM_META[item.platform] ?? PLATFORM_META.instagram;
   const sl = SOURCE_LABELS[item.source] ?? { label: item.source, icon: '💬' };
   const isMetaDm = item.source === 'facebook_messenger' || item.source === 'instagram_dm';
@@ -805,7 +812,10 @@ export default function MessagesInbox({ onOpenConnectedAccounts, onOpenAutoReply
   const [commentReplyExtras, setCommentReplyExtras] = useState({}); // commentId -> locally sent replies
 
   const load = useCallback(async () => {
-    if (!token) return;
+    if (!token) {
+      setLoading(false);
+      return;
+    }
     setLoading(true); setError(null);
     try {
       const res = await fetch(`${base}/api/analytics/messages`, {
@@ -826,8 +836,8 @@ export default function MessagesInbox({ onOpenConnectedAccounts, onOpenAutoReply
     setSelection(null);
   }, [platformTab, typeTab]);
 
-  const conversations = data?.conversations ?? [];
-  const comments      = data?.comments      ?? [];
+  const conversations = data?.conversations ?? data?.directMessages ?? [];
+  const comments      = data?.comments      ?? data?.pageComments ?? [];
   const totalUnread   = Number(data?.totalUnread ?? 0);
 
   // Per-platform counts for stat cards
@@ -859,8 +869,8 @@ export default function MessagesInbox({ onOpenConnectedAccounts, onOpenAutoReply
 
   const selectedItem = useMemo(() => {
     if (!selection) return null;
-    if (selection.kind === 'dm') return conversations.find(c => c.id === selection.id) ?? null;
-    return comments.find(c => c.id === selection.id) ?? null;
+    if (selection.kind === 'dm') return conversations.find((c) => sameInboxId(c.id, selection.id)) ?? null;
+    return comments.find((c) => sameInboxId(c.id, selection.id)) ?? null;
   }, [selection, conversations, comments]);
 
   const filteredView = platformTab !== 'all' || typeTab !== 'all';
@@ -1144,7 +1154,9 @@ export default function MessagesInbox({ onOpenConnectedAccounts, onOpenAutoReply
             gridTemplateColumns: selection ? 'minmax(280px, 1fr) minmax(320px, 1.15fr)' : '1fr',
             gap: '16px',
             alignItems: 'stretch',
-            minHeight: 'min(72vh, 880px)',
+            minHeight: 0,
+            height: 'min(72vh, 880px)',
+            maxHeight: 'min(72vh, 880px)',
           }}
         >
 
@@ -1157,7 +1169,8 @@ export default function MessagesInbox({ onOpenConnectedAccounts, onOpenAutoReply
               boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
               border: '1px solid #e2e8f0',
               minHeight: 0,
-              maxHeight: 'min(72vh, 880px)',
+              height: '100%',
+              maxHeight: '100%',
               display: 'flex',
               flexDirection: 'column',
             }}
@@ -1173,9 +1186,9 @@ export default function MessagesInbox({ onOpenConnectedAccounts, onOpenAutoReply
                   <ConversationItem
                     key={item.id}
                     item={item}
-                    selected={selection?.kind === 'dm' && selection.id === item.id}
+                    selected={selection?.kind === 'dm' && sameInboxId(selection.id, item.id)}
                     onClick={() => setSelection(
-                      sel => (sel?.kind === 'dm' && sel.id === item.id ? null : { kind: 'dm', id: item.id })
+                      (sel) => (sel?.kind === 'dm' && sameInboxId(sel.id, item.id) ? null : { kind: 'dm', id: item.id })
                     )}
                   />
                 ))}
@@ -1194,9 +1207,9 @@ export default function MessagesInbox({ onOpenConnectedAccounts, onOpenAutoReply
                     item={item}
                     apiBase={base}
                     token={token}
-                    selected={selection?.kind === 'comment' && selection.id === item.id}
+                    selected={selection?.kind === 'comment' && sameInboxId(selection.id, item.id)}
                     onSelect={() => setSelection(
-                      sel => (sel?.kind === 'comment' && sel.id === item.id ? null : { kind: 'comment', id: item.id })
+                      (sel) => (sel?.kind === 'comment' && sameInboxId(sel.id, item.id) ? null : { kind: 'comment', id: item.id })
                     )}
                     replyExtras={commentReplyExtras}
                     onReplySent={(commentId, row) => {
@@ -1218,7 +1231,9 @@ export default function MessagesInbox({ onOpenConnectedAccounts, onOpenAutoReply
                 </div>
                 <div style={{ fontSize: '13px', color: '#64748b', lineHeight: 1.55 }}>
                   {filteredView
-                    ? 'Try choosing All platforms or All types, or pick a different combination.'
+                    ? (typeTab === 'messages'
+                        ? 'No DMs match this filter. Choose All or Comments to see comment threads and other activity.'
+                        : 'Try choosing All platforms or All types, or pick a different combination.')
                     : 'New comments and messages from connected accounts will appear here.'}
                 </div>
               </div>

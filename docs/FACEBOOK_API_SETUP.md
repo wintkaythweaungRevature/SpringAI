@@ -150,6 +150,25 @@ Set `FACEBOOK_VERIFY_TOKEN` in backend.env to **exactly** match the verify token
 
 ---
 
+## 12. AI Auto-Reply: Page Comments vs Messenger DMs
+
+W!ntAi’s **Auto-Reply** screen treats these as **two separate rules**:
+
+| Rule in the app | What it covers | Meta side (typical) |
+|-----------------|----------------|---------------------|
+| **Facebook (comments)** | Reply to **comments** on your Page’s posts | Graph API on comments (Page token with engagement/comment permissions). Server may **poll** the Graph API. |
+| **Facebook Messenger** | Reply to **direct messages** in Page Inbox | **Messenger Platform**: `pages_messaging` (and often webhook subscribe + `messages` field). Sending uses `POST /me/messages` or the Send API with the user’s PSID. |
+
+**What you need in Meta Developer Console**
+
+1. **Comments** — Ensure the app has permissions to read and reply to Page comments (e.g. `pages_read_engagement`, `pages_manage_engagement` as required by your implementation), and that the Page is connected via OAuth with those scopes.
+2. **Messenger** — Add **Messenger** product; request **`pages_messaging`** (often **Advanced Access** / App Review). Configure **Webhooks** for `messages` on the Page if your backend uses webhooks; some stacks poll conversations instead—match what `api.wintaibot.com` implements.
+3. **Same Page** — Both flows use the **same Facebook Page**; tokens must include the scopes for each feature you enable.
+
+If Messenger auto-reply does nothing after you enable it, the production API must persist and process rules for platform key **`facebook_messenger`** (separate from **`facebook`**). Backend work is required if that endpoint does not exist yet.
+
+---
+
 ## Quick Reference
 
 - [Facebook Graph API Docs](https://developers.facebook.com/docs/graph-api)

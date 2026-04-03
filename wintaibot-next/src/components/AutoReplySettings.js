@@ -9,8 +9,10 @@ const API_BASE = (process.env.NEXT_PUBLIC_API_BASE || '').replace(/\/$/, '') || 
 const PLATFORMS = [
   { id: 'instagram', label: 'Instagram', color: '#E1306C', emoji: '📸', logo: 'instagram',
     note: 'Replies to comments on your Instagram posts.' },
-  { id: 'facebook',  label: 'Facebook',  color: '#1877F2', emoji: '👍', logo: 'facebook',
-    note: 'Replies to comments on your Facebook Page posts. Enable this rule, keep the Page connected with comment permissions, and rely on the server scheduler polling the Graph API—no public webhook URL is used for auto-reply in this product.' },
+  { id: 'facebook',  label: 'Facebook (comments)',  color: '#1877F2', emoji: '👍', logo: 'facebook',
+    note: 'AI replies to new comments on your Facebook Page posts only. Uses Graph API comment replies. Keep the Page connected with comment permissions; the server polls periodically (no webhook on your domain).' },
+  { id: 'facebook_messenger', label: 'Facebook Messenger', color: '#0084FF', emoji: '💬', logo: 'facebookmessenger',
+    note: 'AI replies to new direct messages to your Page Inbox. Requires Meta permissions for messaging (e.g. pages_messaging) and a backend that can send via the Messenger Platform; enable this rule separately from Page comments.' },
   { id: 'youtube',   label: 'YouTube',   color: '#FF0000', emoji: '▶️', logo: 'youtube',
     note: 'Replies to top-level comments on your YouTube videos.' },
   { id: 'tiktok',   label: 'TikTok',    color: '#010101', emoji: '🎵', logo: 'tiktok',
@@ -304,8 +306,8 @@ export default function AutoReplySettings() {
       <div style={s.header}>
         <h2 style={s.title}>AI Auto-Reply</h2>
         <p style={s.subtitle}>
-          Automatically reply to new comments on your posts using AI. The backend polls about every 5 minutes (scheduled Graph API checks—not a customer-hosted webhook).
-          Use <strong>Enable all</strong> to turn on every platform at once (connect each account in Social / Video Publisher first; Facebook OAuth must use the API redirect URI shown under Connected Accounts).
+          Automatically reply to new comments (and, where supported, Messenger DMs) using AI. The backend polls about every 5 minutes for comment-style channels (scheduled Graph API checks—not a customer-hosted webhook).
+          <strong> Facebook</strong> has two toggles: <strong>Facebook (comments)</strong> for post comments and <strong>Facebook Messenger</strong> for DMs—enable each one you need. Use <strong>Enable all</strong> to turn on every row at once (connect each account in Social / Video Publisher first; Facebook OAuth must use the API redirect URI under Connected Accounts).
         </p>
         <div style={s.bulkActions}>
           <button
@@ -729,6 +731,12 @@ function resolvePlatform(raw) {
     metafacebook: 'facebook',
     metafb: 'facebook',
     graphfacebook: 'facebook',
+    facebookmessenger: 'facebook_messenger',
+    fbmessenger: 'facebook_messenger',
+    pagesmessenger: 'facebook_messenger',
+    messenger: 'facebook_messenger',
+    msngr: 'facebook_messenger',
+    fbm: 'facebook_messenger',
     ig: 'instagram',
     insta: 'instagram',
     instagrambusiness: 'instagram',

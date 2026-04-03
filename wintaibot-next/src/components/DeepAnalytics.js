@@ -820,6 +820,7 @@ const SCHEDULED_YELLOW = '#facc15';
 const SCHEDULED_YELLOW_BORDER = '#eab308';
 const SCHEDULED_SELECTED_ORANGE = '#f97316';
 const SCHEDULED_SELECTED_ORANGE_BORDER = '#ea580c';
+const DAY_BORDER_HAS_SCHEDULED = '#fde68a';
 
 /* ── Per-platform best time summary cards ─────────────────────── */
 function PlatformBestTimeCards({ bestTime }) {
@@ -934,15 +935,21 @@ function BestTimeMonthPostStrip({ authHeaders, platformId }) {
   const flatItems = useMemo(() => {
     if (!data) return [];
     const out = [];
-    (data.posts || []).forEach((p) => {
-      const pid = (p.platform || '').toLowerCase();
-      if (platformId && pid && pid !== platformId) return;
-      out.push({ ...p, _kind: 'post' });
-    });
+    const seen = new Set();
     (data.scheduled || []).forEach((j) => {
       const pid = (j.platform || '').toLowerCase();
       if (platformId && pid && pid !== platformId) return;
+      const jid = j.jobId ?? j.id;
+      if (jid != null) seen.add(String(jid));
       out.push({ ...j, _kind: 'scheduled' });
+    });
+    (data.posts || []).forEach((p) => {
+      const pid = (p.platform || '').toLowerCase();
+      if (platformId && pid && pid !== platformId) return;
+      const pjob = p.jobId ?? p.id;
+      if (pjob != null && seen.has(String(pjob))) return;
+      const kind = isCalendarRowScheduled(p) ? 'scheduled' : 'post';
+      out.push({ ...p, _kind: kind });
     });
     out.sort((a, b) => String(a.dateTime || a.date || '').localeCompare(String(b.dateTime || b.date || '')));
     return out;
@@ -1137,6 +1144,24 @@ function calendarLocalDateKey(rec) {
   const m = d.getMonth() + 1;
   const day = d.getDate();
   return `${y}-${String(m).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+function isCalendarRowScheduled(row) {
+  if (!row || typeof row !== 'object') return false;
+  const s = String(row.status ?? '').toUpperCase();
+  if (s.includes('SCHEDULED')) return true;
+  if (['PENDING', 'QUEUED', 'PROCESSING'].includes(s)) return true;
+  if (['SUCCESS', 'PUBLISHED', 'FAILED', 'COMPLETED'].includes(s)) return false;
+  const raw =
+    row.scheduledAt ||
+    row.scheduledTime ||
+    row.executeAt ||
+    row.runAt ||
+    row.dateTime ||
+    null;
+  if (!raw) return false;
+  const t = new Date(raw).getTime();
+  return Number.isFinite(t) && t > Date.now();
 }
 
 function dayScoresFromHeatmapRows(heatmap) {
@@ -1451,17 +1476,23 @@ function TrendsCalendar({ authHeaders }) {
   // Group posts + scheduled by local calendar key YYYY-MM-DD (not only p.date — jobs often use scheduledAt)
   const byDate = {};
   if (data) {
-    (data.posts || []).forEach((p) => {
-      const key = calendarLocalDateKey(p);
-      if (!key) return;
-      if (!byDate[key]) byDate[key] = [];
-      byDate[key].push({ ...p, _kind: 'post' });
-    });
+    const seenJobIds = new Set();
     (data.scheduled || []).forEach((j) => {
       const key = calendarLocalDateKey(j);
       if (!key) return;
+      const jid = j.jobId ?? j.id;
+      if (jid != null) seenJobIds.add(String(jid));
       if (!byDate[key]) byDate[key] = [];
       byDate[key].push({ ...j, _kind: 'scheduled' });
+    });
+    (data.posts || []).forEach((p) => {
+      const pid = p.jobId ?? p.id;
+      if (pid != null && seenJobIds.has(String(pid))) return;
+      const key = calendarLocalDateKey(p);
+      if (!key) return;
+      const kind = isCalendarRowScheduled(p) ? 'scheduled' : 'post';
+      if (!byDate[key]) byDate[key] = [];
+      byDate[key].push({ ...p, _kind: kind });
     });
   }
 
@@ -1774,6 +1805,7 @@ function TrendsCalendar({ authHeaders }) {
                 const sched   = items.filter(x => x._kind === 'scheduled');
                 const isToday = day === today.getDate() && month === today.getMonth() + 1 && year === today.getFullYear();
                 const isSel   = day === selectedDay;
+                const hasScheduledDay = calView === 'posts' && sched.length > 0;
 
                 // Best time: shade by weekday score (API heatmap or inferred from post dates)
                 const dow = (new Date(year, month - 1, day).getDay() + 6) % 7; // Mon=0
@@ -1794,25 +1826,41 @@ function TrendsCalendar({ authHeaders }) {
                     key={day}
                     onClick={() => setSelectedDay(isSel ? null : day)}
                     title={
-                      calView === 'besttime' && bestTimeCal.hasAny
-                        ? `${['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][dow]} · relative activity ${Math.round(score * 100)}%`
-                        : undefined
+                      calView === 'posts'
+                        ? `${['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][dow]} · ${posts.length} published, ${sched.length} scheduled`
+                        : calView === 'besttime' && bestTimeCal.hasAny
+                          ? `${['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][dow]} · relative activity ${Math.round(score * 100)}%`
+                          : undefined
                     }
                     style={{
                       minHeight: 60, borderRadius: 8, padding: '6px 6px 4px',
                       cursor: 'pointer',
-                      border: `1.5px solid ${isSel ? '#6366f1' : isToday ? '#818cf8' : '#e2e8f0'}`,
+                      border: `1.5px solid ${
+                        isSel
+                          ? '#6366f1'
+                          : hasScheduledDay
+                            ? DAY_BORDER_HAS_SCHEDULED
+                            : isToday
+                              ? '#818cf8'
+                              : '#e2e8f0'
+                      }`,
                       background: calView === 'besttime'
                         ? `rgba(99,102,241,${0.1 + score * 0.55})`
-                        : isSel ? '#ede9fe' : isToday ? '#f5f3ff' : '#fff',
-                      transition: 'background 0.15s',
+                        : isSel ? '#ede9fe' : isToday ? '#f5f3ff' : hasScheduledDay ? '#fffef8' : '#fff',
+                      transition: 'background 0.15s, border-color 0.15s',
                     }}
                   >
                     <div style={{
                       fontSize: 11, fontWeight: isToday ? 800 : 600,
                       color: isToday || isSel ? '#6366f1' : '#475569',
                       marginBottom: 4,
-                    }}>{day}</div>
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4, flexWrap: 'wrap',
+                    }}>
+                      <span>{day}</span>
+                      {calView === 'posts' && isToday && (
+                        <span style={{ fontSize: 8, fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Today</span>
+                      )}
+                    </div>
                     {calView === 'posts' && (
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
                         {posts.slice(0, 4).map((p, i) => {
@@ -1915,15 +1963,29 @@ function TrendsCalendar({ authHeaders }) {
 
             {/* Legend */}
             {calView === 'posts' && (
-              <div style={{ display: 'flex', gap: 16, marginTop: 12, flexWrap: 'wrap' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#64748b' }}>
-                  <div style={{ minWidth: 12, height: 11, borderRadius: 999, background: '#6366f1', color: '#fff', fontSize: 8, fontWeight: 800, lineHeight: '9px', textAlign: 'center', padding: '0 2px' }}>V</div>
-                  Published post (colored by platform, type tag: V/I/T)
+              <div style={{ marginTop: 12 }}>
+                <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#64748b' }}>
+                    <div style={{ minWidth: 12, height: 11, borderRadius: 999, background: '#6366f1', color: '#fff', fontSize: 8, fontWeight: 800, lineHeight: '9px', textAlign: 'center', padding: '0 2px' }}>V</div>
+                    Published — <strong>round</strong> dots (platform color; V/I/T = type)
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#64748b' }}>
+                    <div style={{ minWidth: 12, height: 11, borderRadius: 2, background: SCHEDULED_YELLOW, border: `1px solid ${SCHEDULED_YELLOW_BORDER}`, color: '#7c2d12', fontSize: 8, fontWeight: 800, lineHeight: '9px', textAlign: 'center', padding: '0 2px' }}>I</div>
+                    Scheduled / pending — <strong>square</strong> (different shape from published)
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#64748b' }}>
+                    <div style={{ width: 14, height: 10, borderRadius: 4, border: `1.5px solid ${DAY_BORDER_HAS_SCHEDULED}`, background: '#fffef8' }} />
+                    Day has a schedule — pale yellow cell outline
+                  </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#64748b' }}>
-                  <div style={{ minWidth: 12, height: 11, borderRadius: 2, background: SCHEDULED_YELLOW, border: `1px solid ${SCHEDULED_YELLOW_BORDER}`, color: '#7c2d12', fontSize: 8, fontWeight: 800, lineHeight: '9px', textAlign: 'center', padding: '0 2px' }}>I</div>
-                  Scheduled / pending (type tag shown, selected day turns orange)
-                </div>
+                <p style={{ margin: '10px 0 0', fontSize: 11, color: '#94a3b8', lineHeight: 1.5, maxWidth: 640 }}>
+                  Squares are <strong>amber/yellow</strong> when the day is not selected; when you <strong>select</strong> that day, squares turn <strong>orange</strong> so they stay visible on the purple highlight.
+                </p>
+                <p style={{ margin: '10px 0 0', fontSize: 11, color: '#64748b', lineHeight: 1.55, maxWidth: 720 }}>
+                  <strong>Today vs a future day:</strong> the marker shape does <strong>not</strong> mean “today” vs “later.”{' '}
+                  <strong>Round dots</strong> mean the API returned <strong>published</strong> posts for that date; <strong>squares</strong> mean{' '}
+                  <strong>scheduled / not yet published</strong> jobs. So the 3rd can show only dots if your data has publishes that day, while the 10th shows a square if that day only has a schedule—both are normal.
+                </p>
               </div>
             )}
             {calView === 'besttime' && (
@@ -2610,8 +2672,9 @@ export default function DeepAnalytics() {
       <section id="trends-calendar" style={{ scrollMarginTop: 12 }}>
         <div style={s.card}>
           <h3 style={s.cardTitle}>📅 Posts Calendar</h3>
-          <p style={{ fontSize: 12, color: '#94a3b8', marginBottom: 16 }}>
-            View all your published and scheduled posts by month. The <strong>Best Time</strong> section above shows which days and hours you post most often.
+          <p style={{ fontSize: 12, color: '#94a3b8', marginBottom: 16, lineHeight: 1.55 }}>
+            View all your published and scheduled posts by month. The <strong>Best Time</strong> section above shows which days and hours you post most often.{' '}
+            <span style={{ color: '#64748b' }}>Dots = published for that day; squares = scheduled jobs—see the legend below.</span>
           </p>
           <TrendsCalendar authHeaders={authHeaders} />
         </div>

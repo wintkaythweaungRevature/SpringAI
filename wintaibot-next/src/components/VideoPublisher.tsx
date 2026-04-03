@@ -20,6 +20,20 @@ const PLATFORMS = [
 
 const STEPS = ['upload', 'processing', 'review', 'published', 'analytics'];
 
+/** Avoid `toISOString()` `.000Z` — Java DateTimeFormatter often rejects trailing `Z` at index 23. */
+function formatScheduledAtForScheduleApi(input: string) {
+  const d = new Date(String(input));
+  if (Number.isNaN(d.getTime())) return String(input);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const y = d.getUTCFullYear();
+  const m = pad(d.getUTCMonth() + 1);
+  const day = pad(d.getUTCDate());
+  const h = pad(d.getUTCHours());
+  const min = pad(d.getUTCMinutes());
+  const s = pad(d.getUTCSeconds());
+  return `${y}-${m}-${day}T${h}:${min}:${s}+00:00`;
+}
+
 /* ─── Component ─────────────────────────────────────────────── */
 export default function VideoPublisher() {
   const { apiBase, token } = useAuth();
@@ -271,14 +285,7 @@ export default function VideoPublisher() {
 
   const scheduleVariant = async (variantId, platform, scheduledAt) => {
     if (!variantId) return false;
-    const scheduledIso = (() => {
-      try {
-        const d = new Date(String(scheduledAt));
-        return Number.isNaN(d.getTime()) ? String(scheduledAt) : d.toISOString();
-      } catch {
-        return String(scheduledAt);
-      }
-    })();
+    const scheduledIso = formatScheduledAtForScheduleApi(String(scheduledAt));
     try {
       const res = await fetch(api(`/variants/${variantId}/schedule`), {
         method: 'POST',

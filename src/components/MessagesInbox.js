@@ -37,6 +37,9 @@ const PLATFORM_TYPES = {
 
 const TYPE_TAB_LABELS = { all: 'All', messages: 'Messages', comments: 'Comments' };
 
+/** Page inbox at Meta (reply to Messenger / Instagram DMs outside W!ntAi until API permissions are complete). */
+const META_BUSINESS_INBOX_URL = 'https://business.facebook.com/latest/inbox';
+
 function timeAgo(iso) {
   if (!iso) return '';
   const diff = Date.now() - new Date(iso).getTime();
@@ -740,8 +743,47 @@ function InboxDetailPanel({ item, kind, commentReplyExtras, onClose }) {
       </div>
 
       {kind === 'dm' && isMetaDm && (
-        <div style={{ margin: '0 18px 16px', padding: '12px', background: '#fffbeb', borderRadius: '8px', border: '1px solid #fde68a', fontSize: '12px', color: '#92400e' }}>
-          💡 To reply, open <strong>Meta Business Suite</strong> or the platform&apos;s native app. Direct replies via API require additional Meta permissions.
+        <div style={{ margin: '0 18px 16px', padding: '14px', background: '#fffbeb', borderRadius: '8px', border: '1px solid #fde68a', fontSize: '12px', color: '#92400e' }}>
+          <p style={{ margin: '0 0 12px', lineHeight: 1.55 }}>
+            💡 <strong>You can’t send Messenger / IG DMs from this panel yet</strong> — Meta requires <code style={{ fontSize: 11 }}>pages_messaging</code> (and related) on your app, plus a backend that calls the Send API. Use the buttons below to reply in Meta or configure auto-reply for when your API supports it.
+          </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+            <a
+              href={META_BUSINESS_INBOX_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'inline-flex', alignItems: 'center', padding: '8px 12px', background: '#fff',
+                border: '1px solid #fbbf24', borderRadius: 8, color: '#0f172a', fontWeight: 700, fontSize: 12, textDecoration: 'none',
+              }}
+            >
+              Open Meta Business Suite ↗
+            </a>
+            {typeof onOpenAutoReply === 'function' && (
+              <button
+                type="button"
+                onClick={onOpenAutoReply}
+                style={{
+                  padding: '8px 12px', background: '#0f172a', color: '#fff', border: 'none', borderRadius: 8,
+                  fontWeight: 700, fontSize: 12, cursor: 'pointer',
+                }}
+              >
+                Auto-Reply settings
+              </button>
+            )}
+            {typeof onOpenConnectedAccounts === 'function' && (
+              <button
+                type="button"
+                onClick={onOpenConnectedAccounts}
+                style={{
+                  padding: '8px 12px', background: '#fff', color: '#0f172a', border: '1px solid #e2e8f0', borderRadius: 8,
+                  fontWeight: 600, fontSize: 12, cursor: 'pointer',
+                }}
+              >
+                Connected accounts
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -1191,6 +1233,8 @@ export default function MessagesInbox({ onOpenConnectedAccounts, onOpenAutoReply
               kind={selection.kind}
               commentReplyExtras={commentReplyExtras}
               onClose={() => setSelection(null)}
+              onOpenAutoReply={onOpenAutoReply}
+              onOpenConnectedAccounts={onOpenConnectedAccounts}
             />
           )}
         </div>

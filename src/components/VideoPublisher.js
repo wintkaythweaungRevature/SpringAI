@@ -44,6 +44,24 @@ const POST_TYPES = [
   { id: 'text',  label: 'Text',   icon: '✍️' },
 ];
 
+/**
+ * Schedule APIs (Java DateTimeFormatter) often reject `toISOString()` values like
+ * `2026-04-21T13:00:00.000Z` with "unparsed text at index 23" (the `Z`).
+ * Send UTC with an explicit `+00:00` offset and second precision instead.
+ */
+function formatScheduledAtForScheduleApi(input) {
+  const d = new Date(String(input));
+  if (Number.isNaN(d.getTime())) return String(input);
+  const pad = n => String(n).padStart(2, '0');
+  const y = d.getUTCFullYear();
+  const m = pad(d.getUTCMonth() + 1);
+  const day = pad(d.getUTCDate());
+  const h = pad(d.getUTCHours());
+  const min = pad(d.getUTCMinutes());
+  const s = pad(d.getUTCSeconds());
+  return `${y}-${m}-${day}T${h}:${min}:${s}+00:00`;
+}
+
 /* ── Video Frame Scrubber ─────────────────────────────────────────────────── */
 function VideoFramePicker({ videoFile, onFrameSelected, thumbnailUrl }) {
   const videoRef = useRef(null);
@@ -720,15 +738,8 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
     if (!platform || !scheduledAt) return { ok: false, error: 'Missing schedule fields' };
     try {
       const fd = new FormData();
-      // datetime-local is wall-clock local; convert to ISO UTC so the API stores one unambiguous instant.
-      const scheduledIso = (() => {
-        try {
-          const d = new Date(String(scheduledAt));
-          return Number.isNaN(d.getTime()) ? String(scheduledAt) : d.toISOString();
-        } catch {
-          return String(scheduledAt);
-        }
-      })();
+      // datetime-local → UTC instant; avoid `.000Z` (many Java parsers fail on trailing Z).
+      const scheduledIso = formatScheduledAtForScheduleApi(scheduledAt);
       fd.append('scheduledAt', scheduledIso);
       fd.append('caption', variant?.caption || '');
       fd.append('hashtags', variant?.hashtags?.join ? variant.hashtags.join(' ') : (variant?.hashtags || ''));

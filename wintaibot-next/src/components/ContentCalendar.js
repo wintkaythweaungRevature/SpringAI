@@ -135,6 +135,19 @@ function postCalendarDate(post) {
   return new Date(postCalendarTimestamp(post));
 }
 
+/** True when the post is still scheduled / not yet published (for day-cell border). */
+function isPostScheduled(post) {
+  const s = String(post?.status || '').toUpperCase();
+  if (s === 'SCHEDULED' || s === 'PENDING' || s === 'QUEUED' || s === 'PROCESSING') return true;
+  if (s === 'SUCCESS' || s === 'PUBLISHED' || s === 'FAILED' || s === 'COMPLETED') return false;
+  try {
+    const t = new Date(postCalendarTimestamp(post)).getTime();
+    return Number.isFinite(t) && t > Date.now();
+  } catch {
+    return false;
+  }
+}
+
 function pickFirstUrl(...vals) {
   for (const v of vals) {
     if (typeof v === 'string' && v.trim()) return v.trim();
@@ -557,6 +570,7 @@ export default function ContentCalendar() {
                   const dayPosts = postsByDay[key] || [];
                   const isToday = sameDay(day, today);
                   const isSelected = selectedDay && sameDay(day, selectedDay);
+                  const hasScheduledPost = dayPosts.some(isPostScheduled);
                   const platformColors = [...new Set(dayPosts.map(p => platformColor(p.platform)))].slice(0, 4);
 
                   return (
@@ -565,6 +579,7 @@ export default function ContentCalendar() {
                       style={{
                         ...s.calCell,
                         ...(isToday ? s.calCellToday : {}),
+                        ...(hasScheduledPost && !isSelected ? s.calCellHasScheduled : {}),
                         ...(isSelected ? s.calCellSelected : {}),
                         cursor: 'pointer',
                       }}
@@ -957,6 +972,7 @@ const s = {
   calDayHeader: { textAlign: 'center', fontSize: 11, fontWeight: 700, color: '#94a3b8', padding: '6px 0', textTransform: 'uppercase', letterSpacing: '0.05em' },
   calCell: { minHeight: 72, padding: '6px', borderRadius: 8, border: '1px solid #e2e8f0', transition: 'all 0.15s', position: 'relative', background: '#fff' },
   calCellToday: { border: '1.5px solid #6366f133', background: '#f5f3ff' },
+  calCellHasScheduled: { border: '1.5px solid #fde68a' },
   calCellSelected: { background: '#ede9fe', border: '1.5px solid #6366f1' },
   calDayNum: { fontSize: 13, fontWeight: 600, color: '#334155', lineHeight: 1, marginBottom: 4 },
   dotRow: { display: 'flex', gap: 3, flexWrap: 'wrap', marginTop: 4 },

@@ -175,8 +175,9 @@ function IconXCircle({ size = 16, color = '#dc2626' }) {
 
 function HBar({ label, value, max, color, icon, platform, barHeight = 10 }) {
   const pct = max > 0 ? Math.max(4, Math.round((value / max) * 100)) : 4;
+  const rowMb = barHeight >= 12 ? 12 : 10;
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: `${rowMb}px` }}>
       <span style={{ width: '24px', height: '24px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {platform ? <PlatformIcon platform={platform} size={22} /> : <span style={{ fontSize: '16px' }}>{icon}</span>}
       </span>
@@ -403,6 +404,14 @@ export default function AnalyticsDashboard() {
 
   return (
     <div style={{ width: '100%', maxWidth: '100%', margin: 0, boxSizing: 'border-box', fontFamily: "'Inter',-apple-system,sans-serif" }}>
+      <style>{`
+        .adh-shared-by-platform-row { display: grid; gap: 14px; margin-bottom: 14px; grid-template-columns: 1fr; }
+        @media (min-width: 640px) {
+          .adh-shared-by-platform-row { grid-template-columns: 1fr 1fr; }
+          .adh-shared-by-platform-spacer { display: block !important; }
+        }
+        .adh-shared-by-platform-spacer { display: none; min-height: 0; }
+      `}</style>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap', marginBottom: '14px' }}>
         <p style={{ margin: 0, fontSize: '13px', color: '#475569', lineHeight: 1.55, maxWidth: '520px' }}>Live metrics from connected social accounts. Use Overview for a combined view or open a single platform.</p>
         <button type="button" onClick={load} disabled={loading} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 14px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#fff', color: '#334155', fontWeight: 600, fontSize: '13px', cursor: loading ? 'wait' : 'pointer', boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)', flexShrink: 0, fontFamily: 'inherit' }}>
@@ -476,9 +485,38 @@ export default function AnalyticsDashboard() {
               </div>
 
               {Object.keys(byPlatform).length > 0 && (
-                <div style={{ background: '#fff', borderRadius: '12px', padding: '18px 20px', marginBottom: '14px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)' }}>
-                  <div style={{ fontWeight: 700, fontSize: '14px', color: '#1e293b', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}><IconChart size={18} color="#6366f1" />Content shared by platform</div>
-                  {Object.entries(byPlatform).sort((a, b) => Number(b[1]) - Number(a[1])).map(([pid, cnt]) => { const p = PLATFORMS.find((x) => x.id === pid); return <HBar key={pid} label={p?.label ?? pid} value={Number(cnt)} max={maxCount} color={p?.color ?? '#6366f1'} icon={p?.emoji ?? '📤'} platform={p} barHeight={10} />; })}
+                <div className="adh-shared-by-platform-row">
+                  <div className="adh-shared-by-platform-spacer" aria-hidden="true" />
+                  <div
+                    style={{
+                      background: '#fff',
+                      borderRadius: '12px',
+                      padding: '20px 22px',
+                      border: '1px solid #e2e8f0',
+                      boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+                      minWidth: 0,
+                    }}
+                  >
+                    <div style={{ fontWeight: 700, fontSize: '15px', color: '#1e293b', marginBottom: '18px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <IconChart size={20} color="#6366f1" />
+                      Content shared by platform
+                    </div>
+                    {Object.entries(byPlatform).sort((a, b) => Number(b[1]) - Number(a[1])).map(([pid, cnt]) => {
+                      const p = PLATFORMS.find((x) => x.id === pid);
+                      return (
+                        <HBar
+                          key={pid}
+                          label={p?.label ?? pid}
+                          value={Number(cnt)}
+                          max={maxCount}
+                          color={p?.color ?? '#6366f1'}
+                          icon={p?.emoji ?? '📤'}
+                          platform={p}
+                          barHeight={14}
+                        />
+                      );
+                    })}
+                  </div>
                 </div>
               )}
 

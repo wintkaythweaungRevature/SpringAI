@@ -126,6 +126,172 @@ function engagementPrimary(data) {
   return '—';
 }
 
+/** Prefer nested `messaging` object (Meta-style payload), then top-level keys. */
+function pickMetricMessaging(data, keys) {
+  const m = data?.messaging;
+  if (m && typeof m === 'object') {
+    const v = pickMetric(m, keys);
+    if (v !== null) return v;
+  }
+  return pickMetric(data, keys);
+}
+
+function pickDeltaPct(data, keys) {
+  const v = pickMetric(data, keys);
+  if (v === null) return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+/** Mini area sparkline — `values` optional (7–28 points); placeholder if missing. */
+function InsightSparkline({ values, color = '#1877F2' }) {
+  const gid = React.useId().replace(/:/g, '');
+  const arr = Array.isArray(values) && values.length > 1
+    ? values.map((x) => Number(x) || 0)
+    : [2, 3, 2, 4, 6, 11, 8, 7, 9, 14, 12];
+  const max = Math.max(...arr, 1);
+  const min = Math.min(...arr, 0);
+  const w = 108;
+  const h = 44;
+  const pad = 3;
+  const linePts = arr.map((v, i) => {
+    const x = pad + (i / Math.max(arr.length - 1, 1)) * (w - 2 * pad);
+    const y = h - pad - ((v - min) / (max - min || 1)) * (h - 2 * pad);
+    return `${x},${y}`;
+  });
+  const [x0, y0] = linePts[0].split(',').map(Number);
+  const [xn] = linePts[linePts.length - 1].split(',').map(Number);
+  const linePathD = `M ${x0} ${y0} ${linePts.slice(1).map((p) => `L ${p.replace(',', ' ')}`).join(' ')}`;
+  const areaPathD = `M ${x0} ${h} L ${linePts.map((p) => p.replace(',', ' ')).join(' L ')} L ${xn} ${h} Z`;
+
+  return (
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{ flexShrink: 0 }} aria-hidden>
+      <defs>
+        <linearGradient id={`insg-${gid}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.28" />
+          <stop offset="100%" stopColor={color} stopOpacity="0.02" />
+        </linearGradient>
+      </defs>
+      <path d={areaPathD} fill={`url(#insg-${gid})`} />
+      <path d={linePathD} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function DeltaBadge({ pct }) {
+  if (pct == null || !Number.isFinite(Number(pct))) return null;
+  const n = Number(pct);
+  const pos = n >= 0;
+  return (
+    <span style={{ fontSize: 12, fontWeight: 700, color: pos ? '#16a34a' : '#dc2626', whiteSpace: 'nowrap' }}>
+      {pos ? '↑' : '↓'} {Math.abs(Math.round(n * 10) / 10)}%
+    </span>
+  );
+}
+
+/** Meta Business Suite–style card (Overview / Messaging inspired). */
+function MetaInsightCard({ title, value, deltaPct, sub, sparkValues, accent = '#1877F2' }) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        gap: 12,
+        alignItems: 'stretch',
+        padding: '16px 14px',
+        background: '#fff',
+        border: '1px solid #e8ecf1',
+        borderRadius: 12,
+        boxShadow: '0 1px 3px rgba(15, 23, 42, 0.06)',
+        minHeight: 112,
+      }}
+    >
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: '#64748b', marginBottom: 4 }}>{title}</div>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 26, fontWeight: 800, color: '#0f172a', letterSpacing: '-0.03em', lineHeight: 1 }}>{value}</span>
+          <DeltaBadge pct={deltaPct} />
+        </div>
+        {sub && (
+          <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 8, lineHeight: 1.45 }}>{sub}</div>
+        )}
+      </div>
+      <InsightSparkline values={sparkValues} color={accent} />
+    </div>
+  );
+}
+
+/** Facebook: Meta-like grid — messages, interactions, visits, follows (maps API + optional `messaging` subtree). */
+function FacebookMetaInsightsGrid({ data }) {
+  const fb = '#1877F2';
+  const m = data?.messaging && typeof data.messaging === 'object' ? data.messaging : {};
+
+  const messages = pickMetricMessaging(data, ['messagesTotal', 'totalMessages', 'conversations', 'threads', 'inboxMessages']);
+  const interactions = pickMetricMessaging(data, ['messagingInteractions', 'contentInteractions', 'interactions', 'repliesSent']);
+  const visits = pickMetric(data, ['pageVisits', 'facebookVisits', 'profileVisits', 'visits']);
+  const follows = pickMetric(data, ['netFollows', 'newFollows', 'follows', 'pageFollows']);
+
+  const fmtVal = (v) => (v !== null && v !== undefined ? fmt(v) : '—');
+
+  const dMsg = pickDeltaPct(m, ['messagesDeltaPct', 'messages_delta_pct', 'messagesChangePct']) ?? pickDeltaPct(data, ['messagesDeltaPct']);
+  const dInt = pickDeltaPct(m, ['interactionsDeltaPct', 'interactions_delta_pct']) ?? pickDeltaPct(data, ['interactionsDeltaPct']);
+  const dVis = pickDeltaPct(data, ['visitsDeltaPct', 'pageVisitsDeltaPct']);
+  const dFol = pickDeltaPct(data, ['followsDeltaPct', 'netFollowsDeltaPct']);
+
+  const sparkMsg = Array.isArray(m.messagesTrend) ? m.messagesTrend : m.messages_spark;
+  const sparkInt = Array.isArray(m.interactionsTrend) ? m.interactionsTrend : m.interactions_spark;
+  const sparkVis = Array.isArray(data.pageVisitsTrend) ? data.pageVisitsTrend : data.visits_spark;
+  const sparkFol = Array.isArray(data.followsTrend) ? data.followsTrend : data.follows_spark;
+
+  return (
+    <div>
+      <div style={{ fontSize: 13, fontWeight: 700, color: '#1e293b', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <IconBubble size={18} color={fb} />
+        Page and messaging performance
+      </div>
+      <p style={{ fontSize: 11, color: '#94a3b8', marginBottom: 12, lineHeight: 1.5, maxWidth: 'min(100%, 920px)' }}>
+        Similar layout to Meta Business Suite Insights. Numbers and trends appear when <code style={{ fontSize: 10 }}>platforms.facebook</code> includes these fields (optional nested <code style={{ fontSize: 10 }}>messaging</code> for inbox metrics).
+      </p>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12 }}>
+        <MetaInsightCard
+          title="Messages"
+          value={fmtVal(messages)}
+          deltaPct={dMsg}
+          sub={pickMetric(m, ['fromFollowersPct']) != null ? `From followers ${pickMetric(m, ['fromFollowersPct'])}%` : null}
+          sparkValues={sparkMsg}
+          accent={fb}
+        />
+        <MetaInsightCard
+          title="Interactions"
+          value={fmtVal(interactions)}
+          deltaPct={dInt}
+          sub={pickMetric(m, ['interactionsFromFollowers']) != null ? `From followers ${fmt(pickMetric(m, ['interactionsFromFollowers']))}` : null}
+          sparkValues={sparkInt}
+          accent="#7c3aed"
+        />
+        <MetaInsightCard
+          title="Page visits"
+          value={fmtVal(visits)}
+          deltaPct={dVis}
+          sparkValues={sparkVis}
+          accent="#0891b2"
+        />
+        <MetaInsightCard
+          title="Follows"
+          value={fmtVal(follows)}
+          deltaPct={dFol}
+          sub={
+            pickMetric(data, ['unfollows']) != null
+              ? `Unfollows ${fmt(pickMetric(data, ['unfollows']))}`
+              : null
+          }
+          sparkValues={sparkFol}
+          accent="#ea580c"
+        />
+      </div>
+    </div>
+  );
+}
+
 /** Summary metric — white card + tinted icon (consistent with Messages inbox). */
 function StatTile({ icon, label, value, sub, accent = '#6366f1' }) {
   return (
@@ -344,7 +510,13 @@ function PlatformCard({ platform, data }) {
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '10px' }}>
+          {platform === 'facebook' && (
+            <div style={{ gridColumn: '1 / -1' }}>
+              <FacebookMetaInsightsGrid data={data} />
+            </div>
+          )}
           {/* Always show reach metrics (maps multiple API field names; shows — until backend sends data) */}
+          {platform !== 'facebook' && (
           <div style={{ gridColumn: '1 / -1', display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '10px' }}>
             <div style={{ background: '#f1f5f9', borderRadius: '10px', padding: '10px', textAlign: 'center', border: '1px solid #e2e8f0' }}>
               <div style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a' }}>
@@ -378,6 +550,7 @@ function PlatformCard({ platform, data }) {
               <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>Engagement</div>
             </div>
           </div>
+          )}
 
           {/* Followers / Subscribers / Fans */}
           {(data.followers !== undefined || data.subscribers !== undefined || data.fans !== undefined) && (
@@ -875,7 +1048,7 @@ export default function AnalyticsDashboard() {
 
           {/* ── SINGLE PLATFORM TAB ── */}
           {tab !== 'overview' && platforms[tab] && (
-            <div style={{ maxWidth: '640px' }}>
+            <div style={{ maxWidth: tab === 'facebook' ? 'min(100%, 920px)' : '640px' }}>
               <PlatformCard platform={tab} data={platforms[tab]} />
             </div>
           )}

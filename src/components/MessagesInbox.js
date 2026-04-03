@@ -89,10 +89,22 @@ function coalesceMessagesApiPayload(data) {
   const empty = { conversations: [], comments: [] };
   if (!data || typeof data !== 'object') return empty;
 
-  const root = data.payload && typeof data.payload === 'object' ? data.payload : data;
+  // Prefer top-level arrays; only then payload.* — never use payload alone as root (empty {} would hide conversations/comments).
+  const pl =
+    data.payload != null && typeof data.payload === 'object' && !Array.isArray(data.payload)
+      ? data.payload
+      : null;
 
-  let conversations = root.conversations ?? root.directMessages;
-  let comments = root.comments ?? root.pageComments;
+  let conversations =
+    data.conversations ??
+    data.directMessages ??
+    pl?.conversations ??
+    pl?.directMessages;
+  let comments =
+    data.comments ??
+    data.pageComments ??
+    pl?.comments ??
+    pl?.pageComments;
 
   const convLen = Array.isArray(conversations) ? conversations.length : 0;
   const comLen = Array.isArray(comments) ? comments.length : 0;
@@ -104,7 +116,15 @@ function coalesceMessagesApiPayload(data) {
     };
   }
 
-  const unified = root.messages ?? root.items ?? root.inbox ?? root.threads;
+  const unified =
+    data.messages ??
+    data.items ??
+    data.inbox ??
+    data.threads ??
+    pl?.messages ??
+    pl?.items ??
+    pl?.inbox ??
+    pl?.threads;
   if (!Array.isArray(unified)) return empty;
 
   const convs = [];
@@ -951,20 +971,16 @@ export default function MessagesInbox({ onOpenConnectedAccounts, onOpenAutoReply
   }, [platformTab, typeTab]);
 
   const conversations = useMemo(() => {
-    const root = data?.payload && typeof data.payload === 'object' ? data.payload : data;
-    const { conversations: c0 } = coalesceMessagesApiPayload(root || {});
+    const { conversations: c0 } = coalesceMessagesApiPayload(data || {});
     return c0.map(normalizeInboxPlatform);
   }, [data]);
 
   const comments = useMemo(() => {
-    const root = data?.payload && typeof data.payload === 'object' ? data.payload : data;
-    const { comments: cm0 } = coalesceMessagesApiPayload(root || {});
+    const { comments: cm0 } = coalesceMessagesApiPayload(data || {});
     return cm0.map(normalizeInboxPlatform);
   }, [data]);
 
-  const totalUnread = Number(
-    data?.totalUnread ?? (data?.payload && typeof data.payload === 'object' ? data.payload.totalUnread : undefined) ?? 0,
-  );
+  const totalUnread = Number(data?.totalUnread ?? data?.payload?.totalUnread ?? 0);
 
   // Per-platform counts for stat cards
   const byPlatform = (list, p) => list.filter(x => x.platform === p);

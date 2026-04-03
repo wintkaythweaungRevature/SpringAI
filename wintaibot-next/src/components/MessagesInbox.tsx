@@ -84,11 +84,13 @@ function coalesceMessagesApiPayload(data: unknown): { conversations: InboxCoales
   if (!data || typeof data !== 'object') return empty;
 
   const top = data as Record<string, unknown>;
-  const root =
-    top.payload && typeof top.payload === 'object' ? (top.payload as Record<string, unknown>) : top;
+  const pl =
+    top.payload != null && typeof top.payload === 'object' && !Array.isArray(top.payload)
+      ? (top.payload as Record<string, unknown>)
+      : null;
 
-  let conversations = (root.conversations ?? root.directMessages) as unknown;
-  let comments = (root.comments ?? root.pageComments) as unknown;
+  let conversations = (top.conversations ?? top.directMessages ?? pl?.conversations ?? pl?.directMessages) as unknown;
+  let comments = (top.comments ?? top.pageComments ?? pl?.comments ?? pl?.pageComments) as unknown;
 
   const convLen = Array.isArray(conversations) ? conversations.length : 0;
   const comLen = Array.isArray(comments) ? comments.length : 0;
@@ -100,7 +102,8 @@ function coalesceMessagesApiPayload(data: unknown): { conversations: InboxCoales
     };
   }
 
-  const unified = (root.messages ?? root.items ?? root.inbox ?? root.threads) as unknown;
+  const unified = (top.messages ?? top.items ?? top.inbox ?? top.threads
+    ?? pl?.messages ?? pl?.items ?? pl?.inbox ?? pl?.threads) as unknown;
   if (!Array.isArray(unified)) return empty;
 
   const convs: InboxCoalesceRow[] = [];
@@ -188,19 +191,13 @@ export default function MessagesInbox() {
       });
       if (!res.ok) throw new Error(`Server error ${res.status}`);
       const payload = (await res.json()) as Record<string, unknown>;
-      const root =
-        payload?.payload && typeof payload.payload === 'object'
-          ? (payload.payload as Record<string, unknown>)
-          : payload;
-      const { conversations: c0, comments: cm0 } = coalesceMessagesApiPayload(root);
+      const { conversations: c0, comments: cm0 } = coalesceMessagesApiPayload(payload);
       setData({
         conversations: c0.map((c) => normalizeInboxPlatform(c as Conversation)),
         comments: cm0.map((c) => normalizeInboxPlatform(c as CommentItem)),
         totalUnread: Number(
-          payload?.totalUnread
-            ?? (payload?.payload && typeof payload.payload === 'object'
-              ? (payload.payload as { totalUnread?: number }).totalUnread
-              : undefined)
+          payload.totalUnread
+            ?? (payload.payload as { totalUnread?: number } | undefined)?.totalUnread
             ?? 0,
         ),
       });

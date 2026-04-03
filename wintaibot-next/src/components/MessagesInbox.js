@@ -81,6 +81,83 @@ function normalizeInboxPlatform(item) {
   return item;
 }
 
+/**
+ * Some backends return { messages: [...] } where each row may be a DM plus nested `comments`.
+ * The inbox UI expects top-level `conversations` and `comments` arrays.
+ */
+function coalesceMessagesApiPayload(data) {
+  const empty = { conversations: [], comments: [] };
+  if (!data || typeof data !== 'object') return empty;
+
+  const root = data.payload && typeof data.payload === 'object' ? data.payload : data;
+
+  let conversations = root.conversations ?? root.directMessages;
+  let comments = root.comments ?? root.pageComments;
+
+  const convLen = Array.isArray(conversations) ? conversations.length : 0;
+  const comLen = Array.isArray(comments) ? comments.length : 0;
+
+  if (convLen > 0 || comLen > 0) {
+    return {
+      conversations: Array.isArray(conversations) ? conversations : [],
+      comments: Array.isArray(comments) ? comments : [],
+    };
+  }
+
+  const unified = root.messages ?? root.items ?? root.inbox ?? root.threads;
+  if (!Array.isArray(unified)) return empty;
+
+  const convs = [];
+  const comms = [];
+
+  for (const row of unified) {
+    if (!row || typeof row !== 'object') continue;
+
+    const nested = row.comments;
+    if (Array.isArray(nested) && nested.length > 0) {
+      const parentPlatform = row.platform;
+      const parentId = row.id;
+      const parentCaption = row.snippet || row.message || row.text || '';
+      for (const c of nested) {
+        if (!c || typeof c !== 'object') continue;
+        comms.push({
+          ...c,
+          platform: c.platform || parentPlatform,
+          source:
+            c.source
+            || (String(parentPlatform || '').toLowerCase() === 'instagram'
+              ? 'instagram_comment'
+              : 'facebook_comment'),
+          postId: c.postId != null ? c.postId : parentId,
+          postCaption: c.postCaption != null ? c.postCaption : parentCaption,
+        });
+      }
+    }
+
+    const type = String(row.type || '').toLowerCase();
+    const src = String(row.source || '').toLowerCase();
+    const looksDm =
+      type === 'message'
+      || type === 'dm'
+      || src.includes('messenger')
+      || src.includes('_dm');
+
+    if (looksDm) {
+      const { comments: _omit, ...asConv } = row;
+      convs.push(asConv);
+    } else if (
+      (type === 'comment' || src.includes('comment'))
+      && !(Array.isArray(nested) && nested.length > 0)
+    ) {
+      comms.push(row);
+    } else if (!looksDm && row.text != null && row.id != null && !nested) {
+      comms.push(row);
+    }
+  }
+
+  return { conversations: convs, comments: comms };
+}
+
 const META_BUSINESS_INBOX_URL = 'https://business.facebook.com/latest/inbox';
 
 function timeAgo(iso) {
@@ -872,9 +949,21 @@ export default function MessagesInbox({ onOpenVideoPublisher, onOpenConnectedAcc
     setSelection(null);
   }, [platformTab, typeTab]);
 
-  const conversations = data?.conversations ?? data?.directMessages ?? [];
-  const comments      = data?.comments      ?? data?.pageComments ?? [];
-  const totalUnread   = Number(data?.totalUnread ?? 0);
+  const conversations = useMemo(() => {
+    const root = data?.payload && typeof data.payload === 'object' ? data.payload : data;
+    const { conversations: c0 } = coalesceMessagesApiPayload(root || {});
+    return c0.map(normalizeInboxPlatform);
+  }, [data]);
+
+  const comments = useMemo(() => {
+    const root = data?.payload && typeof data.payload === 'object' ? data.payload : data;
+    const { comments: cm0 } = coalesceMessagesApiPayload(root || {});
+    return cm0.map(normalizeInboxPlatform);
+  }, [data]);
+
+  const totalUnread = Number(
+    data?.totalUnread ?? (data?.payload && typeof data.payload === 'object' ? data.payload.totalUnread : undefined) ?? 0,
+  );
 
   // Per-platform counts for stat cards
   const byPlatform = (list, p) => list.filter(x => x.platform === p);

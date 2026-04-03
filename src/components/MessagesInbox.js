@@ -81,6 +81,83 @@ function normalizeInboxPlatform(item) {
   return item;
 }
 
+/**
+ * Some backends return { messages: [...] } where each row may be a DM plus nested `comments`
+ * (post/thread comments). The inbox UI expects top-level `conversations` and `comments` arrays.
+ */
+function coalesceMessagesApiPayload(data) {
+  const empty = { conversations: [], comments: [] };
+  if (!data || typeof data !== 'object') return empty;
+
+  const root = data.payload && typeof data.payload === 'object' ? data.payload : data;
+
+  let conversations = root.conversations ?? root.directMessages;
+  let comments = root.comments ?? root.pageComments;
+
+  const convLen = Array.isArray(conversations) ? conversations.length : 0;
+  const comLen = Array.isArray(comments) ? comments.length : 0;
+
+  if (convLen > 0 || comLen > 0) {
+    return {
+      conversations: Array.isArray(conversations) ? conversations : [],
+      comments: Array.isArray(comments) ? comments : [],
+    };
+  }
+
+  const unified = root.messages ?? root.items ?? root.inbox ?? root.threads;
+  if (!Array.isArray(unified)) return empty;
+
+  const convs = [];
+  const comms = [];
+
+  for (const row of unified) {
+    if (!row || typeof row !== 'object') continue;
+
+    const nested = row.comments;
+    if (Array.isArray(nested) && nested.length > 0) {
+      const parentPlatform = row.platform;
+      const parentId = row.id;
+      const parentCaption = row.snippet || row.message || row.text || '';
+      for (const c of nested) {
+        if (!c || typeof c !== 'object') continue;
+        comms.push({
+          ...c,
+          platform: c.platform || parentPlatform,
+          source:
+            c.source
+            || (String(parentPlatform || '').toLowerCase() === 'instagram'
+              ? 'instagram_comment'
+              : 'facebook_comment'),
+          postId: c.postId != null ? c.postId : parentId,
+          postCaption: c.postCaption != null ? c.postCaption : parentCaption,
+        });
+      }
+    }
+
+    const type = String(row.type || '').toLowerCase();
+    const src = String(row.source || '').toLowerCase();
+    const looksDm =
+      type === 'message'
+      || type === 'dm'
+      || src.includes('messenger')
+      || src.includes('_dm');
+
+    if (looksDm) {
+      const { comments: _omit, ...asConv } = row;
+      convs.push(asConv);
+    } else if (
+      (type === 'comment' || src.includes('comment'))
+      && !(Array.isArray(nested) && nested.length > 0)
+    ) {
+      comms.push(row);
+    } else if (!looksDm && row.text != null && row.id != null && !nested) {
+      comms.push(row);
+    }
+  }
+
+  return { conversations: convs, comments: comms };
+}
+
 /** Page inbox at Meta (reply to Messenger / Instagram DMs outside W!ntAi until API permissions are complete). */
 const META_BUSINESS_INBOX_URL = 'https://business.facebook.com/latest/inbox';
 
@@ -873,15 +950,21 @@ export default function MessagesInbox({ onOpenConnectedAccounts, onOpenAutoReply
     setSelection(null);
   }, [platformTab, typeTab]);
 
-  const conversations = useMemo(
-    () => (data?.conversations ?? data?.directMessages ?? []).map(normalizeInboxPlatform),
-    [data],
+  const conversations = useMemo(() => {
+    const root = data?.payload && typeof data.payload === 'object' ? data.payload : data;
+    const { conversations: c0 } = coalesceMessagesApiPayload(root || {});
+    return c0.map(normalizeInboxPlatform);
+  }, [data]);
+
+  const comments = useMemo(() => {
+    const root = data?.payload && typeof data.payload === 'object' ? data.payload : data;
+    const { comments: cm0 } = coalesceMessagesApiPayload(root || {});
+    return cm0.map(normalizeInboxPlatform);
+  }, [data]);
+
+  const totalUnread = Number(
+    data?.totalUnread ?? (data?.payload && typeof data.payload === 'object' ? data.payload.totalUnread : undefined) ?? 0,
   );
-  const comments = useMemo(
-    () => (data?.comments ?? data?.pageComments ?? []).map(normalizeInboxPlatform),
-    [data],
-  );
-  const totalUnread   = Number(data?.totalUnread ?? 0);
 
   // Per-platform counts for stat cards
   const byPlatform = (list, p) => list.filter(x => x.platform === p);
@@ -1206,8 +1289,22 @@ export default function MessagesInbox({ onOpenConnectedAccounts, onOpenAutoReply
         <div style={{
           background: '#fef3c7', border: '1px solid #fcd34d', borderRadius: 8,
           padding: '10px 14px', fontSize: 13, color: '#92400e', margin: '0 0 12px',
+          display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
         }}>
-          ⚠️ {data.platformErrors[platformTab]} — go to <b>Settings → Connected Accounts</b> to reconnect.
+          <span style={{ flex: 1 }}>⚠️ {data.platformErrors[platformTab]}</span>
+          {typeof onOpenConnectedAccounts === 'function' && (
+            <button
+              type="button"
+              onClick={onOpenConnectedAccounts}
+              style={{
+                padding: '5px 14px', borderRadius: 16, border: '1.5px solid #f59e0b',
+                background: '#fff', color: '#92400e', fontWeight: 700, fontSize: 12, cursor: 'pointer',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              🔗 Reconnect
+            </button>
+          )}
         </div>
       )}
 
@@ -1319,28 +1416,38 @@ export default function MessagesInbox({ onOpenConnectedAccounts, onOpenAutoReply
                         : 'Try choosing All platforms or All types, or pick a different combination.')
                     : 'New comments and messages from connected accounts will appear here.'}
                 </div>
-                {filteredView && (platformTab === 'instagram' || platformTab === 'youtube') && (
-                  <div
-                    style={{
-                      marginTop: '16px',
-                      padding: '12px 14px',
-                      textAlign: 'left',
-                      background: '#fffbeb',
-                      border: '1px solid #fde68a',
-                      borderRadius: '10px',
-                      fontSize: '12px',
-                      color: '#78350f',
-                      lineHeight: 1.55,
-                    }}
-                  >
-                    {platformTab === 'instagram' ? (
-                      <>
-                        <strong>Why Instagram can look empty:</strong> Comments here are loaded by the API from Instagram (Graph) for your Instagram Business account tied to your Page. Connecting or reconnecting an account does not by itself import comments. If the Instagram tile stays at 0, the server may not be syncing Instagram comments yet, required Meta permissions may be missing, or there are no comments on your posts.
-                      </>
-                    ) : (
-                      <>
-                        <strong>Why YouTube can look empty:</strong> Comments are loaded from the YouTube Data API for your channel. Reconnecting Google does not create inbox rows—there must be comments on your videos, and the backend must sync them. If this stays at 0, YouTube comment sync may not be enabled server-side yet.
-                      </>
+                {filteredView && ['instagram', 'youtube', 'linkedin', 'tiktok'].includes(platformTab) && (
+                  <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+                    <div style={{
+                      padding: '10px 14px', textAlign: 'left',
+                      background: '#f8fafc', border: '1px solid #e2e8f0',
+                      borderRadius: 10, fontSize: 12, color: '#475569', lineHeight: 1.55, width: '100%',
+                    }}>
+                      {platformTab === 'instagram' && (
+                        <><strong>Instagram</strong> — Comments load from your Instagram Business account via the Meta Graph API. If this stays empty, required Meta permissions may be missing or there are no comments on your posts.</>
+                      )}
+                      {platformTab === 'youtube' && (
+                        <><strong>YouTube</strong> — Comments load from the YouTube Data API for your connected channel. There must be comments on your videos for them to appear here.</>
+                      )}
+                      {platformTab === 'linkedin' && (
+                        <><strong>LinkedIn</strong> — Comments load via the LinkedIn API. The <code>r_member_social</code> permission is required. Reconnect your LinkedIn account to grant it.</>
+                      )}
+                      {platformTab === 'tiktok' && (
+                        <><strong>TikTok</strong> — Comments load from the TikTok API for your connected account. Make sure your account is reconnected and has recent videos with comments.</>
+                      )}
+                    </div>
+                    {typeof onOpenConnectedAccounts === 'function' && (
+                      <button
+                        type="button"
+                        onClick={onOpenConnectedAccounts}
+                        style={{
+                          padding: '9px 22px', borderRadius: 20,
+                          background: '#6366f1', color: '#fff', border: 'none',
+                          fontWeight: 700, fontSize: 13, cursor: 'pointer',
+                        }}
+                      >
+                        🔗 Reconnect {PLATFORM_META[platformTab]?.label || platformTab}
+                      </button>
                     )}
                   </div>
                 )}

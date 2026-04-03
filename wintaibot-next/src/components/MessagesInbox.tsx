@@ -68,6 +68,93 @@ function normalizeInboxPlatform<T extends { platform?: string; source?: string }
   return item;
 }
 
+type InboxCoalesceRow = Record<string, unknown> & {
+  comments?: unknown;
+  type?: string;
+  source?: string;
+  platform?: string;
+  id?: string;
+  snippet?: string;
+  message?: string;
+  text?: string;
+};
+
+function coalesceMessagesApiPayload(data: unknown): { conversations: InboxCoalesceRow[]; comments: InboxCoalesceRow[] } {
+  const empty = { conversations: [] as InboxCoalesceRow[], comments: [] as InboxCoalesceRow[] };
+  if (!data || typeof data !== 'object') return empty;
+
+  const top = data as Record<string, unknown>;
+  const root =
+    top.payload && typeof top.payload === 'object' ? (top.payload as Record<string, unknown>) : top;
+
+  let conversations = (root.conversations ?? root.directMessages) as unknown;
+  let comments = (root.comments ?? root.pageComments) as unknown;
+
+  const convLen = Array.isArray(conversations) ? conversations.length : 0;
+  const comLen = Array.isArray(comments) ? comments.length : 0;
+
+  if (convLen > 0 || comLen > 0) {
+    return {
+      conversations: Array.isArray(conversations) ? (conversations as InboxCoalesceRow[]) : [],
+      comments: Array.isArray(comments) ? (comments as InboxCoalesceRow[]) : [],
+    };
+  }
+
+  const unified = (root.messages ?? root.items ?? root.inbox ?? root.threads) as unknown;
+  if (!Array.isArray(unified)) return empty;
+
+  const convs: InboxCoalesceRow[] = [];
+  const comms: InboxCoalesceRow[] = [];
+
+  for (const row of unified as InboxCoalesceRow[]) {
+    if (!row || typeof row !== 'object') continue;
+
+    const nested = row.comments;
+    if (Array.isArray(nested) && nested.length > 0) {
+      const parentPlatform = row.platform;
+      const parentId = row.id;
+      const parentCaption = row.snippet || row.message || row.text || '';
+      for (const c of nested) {
+        if (!c || typeof c !== 'object') continue;
+        const cc = c as InboxCoalesceRow;
+        comms.push({
+          ...cc,
+          platform: (cc.platform as string | undefined) || parentPlatform,
+          source:
+            cc.source
+            || (String(parentPlatform || '').toLowerCase() === 'instagram'
+              ? 'instagram_comment'
+              : 'facebook_comment'),
+          postId: cc.postId != null ? cc.postId : parentId,
+          postCaption: cc.postCaption != null ? cc.postCaption : parentCaption,
+        });
+      }
+    }
+
+    const type = String(row.type || '').toLowerCase();
+    const src = String(row.source || '').toLowerCase();
+    const looksDm =
+      type === 'message'
+      || type === 'dm'
+      || src.includes('messenger')
+      || src.includes('_dm');
+
+    if (looksDm) {
+      const { comments: _omit, ...asConv } = row;
+      convs.push(asConv);
+    } else if (
+      (type === 'comment' || src.includes('comment'))
+      && !(Array.isArray(nested) && nested.length > 0)
+    ) {
+      comms.push(row);
+    } else if (!looksDm && row.text != null && row.id != null && !nested) {
+      comms.push(row);
+    }
+  }
+
+  return { conversations: convs, comments: comms };
+}
+
 function timeAgo(iso?: string) {
   if (!iso) return '';
   const diff = Date.now() - new Date(iso).getTime();
@@ -100,13 +187,22 @@ export default function MessagesInbox() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error(`Server error ${res.status}`);
-      const payload = await res.json();
-      const convs = Array.isArray(payload?.conversations) ? payload.conversations : [];
-      const coms = Array.isArray(payload?.comments) ? payload.comments : [];
+      const payload = (await res.json()) as Record<string, unknown>;
+      const root =
+        payload?.payload && typeof payload.payload === 'object'
+          ? (payload.payload as Record<string, unknown>)
+          : payload;
+      const { conversations: c0, comments: cm0 } = coalesceMessagesApiPayload(root);
       setData({
-        conversations: convs.map((c: Conversation) => normalizeInboxPlatform(c)),
-        comments: coms.map((c: CommentItem) => normalizeInboxPlatform(c)),
-        totalUnread: Number(payload?.totalUnread || 0),
+        conversations: c0.map((c) => normalizeInboxPlatform(c as Conversation)),
+        comments: cm0.map((c) => normalizeInboxPlatform(c as CommentItem)),
+        totalUnread: Number(
+          payload?.totalUnread
+            ?? (payload?.payload && typeof payload.payload === 'object'
+              ? (payload.payload as { totalUnread?: number }).totalUnread
+              : undefined)
+            ?? 0,
+        ),
       });
     } catch (e) {
       setError((e as Error).message || 'Failed to load');

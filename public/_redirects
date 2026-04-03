@@ -1,5 +1,0 @@
-# Serve sitemap and robots as static files (must come before SPA fallback)
-/sitemap.xml  /sitemap.xml  200
-/robots.txt   /robots.txt   200
-# SPA fallback - serve index.html for all other routes
-/*            /index.html   200

@@ -271,11 +271,19 @@ export default function VideoPublisher() {
 
   const scheduleVariant = async (variantId, platform, scheduledAt) => {
     if (!variantId) return false;
+    const scheduledIso = (() => {
+      try {
+        const d = new Date(String(scheduledAt));
+        return Number.isNaN(d.getTime()) ? String(scheduledAt) : d.toISOString();
+      } catch {
+        return String(scheduledAt);
+      }
+    })();
     try {
       const res = await fetch(api(`/variants/${variantId}/schedule`), {
         method: 'POST',
         headers: { ...authHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ platform, scheduledAt }),
+        body: JSON.stringify({ platform, scheduledAt: scheduledIso }),
       });
       return res.ok;
     } catch (e) { return false; }

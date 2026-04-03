@@ -263,14 +263,18 @@ function HeroEightPlatformsMotion() {
           style={{ animationDelay: `${-i * 0.42}s` }}
         >
           <span className="ls-hero-platform-dance__tile">
-            <img
-              src={`${SI}/${p.logo}/${p.color.replace('#', '')}`}
-              alt=""
-              width={22}
-              height={22}
-              loading="lazy"
-              decoding="async"
-            />
+            {p.id === 'linkedin' ? (
+              <LinkedInLogo size={22} color={p.color} />
+            ) : (
+              <img
+                src={`${SI}/${p.logo}/${p.color.replace('#', '')}`}
+                alt=""
+                width={22}
+                height={22}
+                loading="lazy"
+                decoding="async"
+              />
+            )}
           </span>
         </span>
       ))}
@@ -302,14 +306,18 @@ function HeroPlatformsUnderNote() {
           style={{ animationDelay: `${-i * 0.42}s` }}
         >
           <span className="ls-hero-under-note__tile">
-            <img
-              src={`${SI}/${p.logo}/${p.color.replace('#', '')}`}
-              alt=""
-              width={18}
-              height={18}
-              loading="lazy"
-              decoding="async"
-            />
+            {p.id === 'linkedin' ? (
+              <LinkedInLogo size={18} color={p.color} />
+            ) : (
+              <img
+                src={`${SI}/${p.logo}/${p.color.replace('#', '')}`}
+                alt=""
+                width={18}
+                height={18}
+                loading="lazy"
+                decoding="async"
+              />
+            )}
           </span>
         </span>
       ))}

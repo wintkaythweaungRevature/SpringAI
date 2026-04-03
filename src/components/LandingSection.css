@@ -345,7 +345,8 @@
   justify-content: center;
 }
 
-.ls-hero-under-note__tile img {
+.ls-hero-under-note__tile img,
+.ls-hero-under-note__tile svg {
   width: 18px;
   height: 18px;
   object-fit: contain;
@@ -651,7 +652,8 @@
   justify-content: center;
 }
 
-.ls-hero-platform-dance__tile img {
+.ls-hero-platform-dance__tile img,
+.ls-hero-platform-dance__tile svg {
   width: 22px;
   height: 22px;
   object-fit: contain;

@@ -720,7 +720,16 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
     if (!platform || !scheduledAt) return { ok: false, error: 'Missing schedule fields' };
     try {
       const fd = new FormData();
-      fd.append('scheduledAt', scheduledAt);
+      // datetime-local is wall-clock local; convert to ISO UTC so the API stores one unambiguous instant.
+      const scheduledIso = (() => {
+        try {
+          const d = new Date(String(scheduledAt));
+          return Number.isNaN(d.getTime()) ? String(scheduledAt) : d.toISOString();
+        } catch {
+          return String(scheduledAt);
+        }
+      })();
+      fd.append('scheduledAt', scheduledIso);
       fd.append('caption', variant?.caption || '');
       fd.append('hashtags', variant?.hashtags?.join ? variant.hashtags.join(' ') : (variant?.hashtags || ''));
       fd.append('postType', postType || 'video');

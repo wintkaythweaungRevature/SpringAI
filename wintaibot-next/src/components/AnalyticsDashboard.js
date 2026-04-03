@@ -106,6 +106,26 @@ function fmt(n) {
   return n.toString();
 }
 
+function pickMetric(data, keys) {
+  if (!data) return null;
+  for (const k of keys) {
+    const v = data[k];
+    if (v !== undefined && v !== null && v !== '') {
+      const num = Number(v);
+      if (!Number.isNaN(num)) return num;
+    }
+  }
+  return null;
+}
+
+function engagementPrimary(data) {
+  const rate = pickMetric(data, ['engagementRate', 'engagement_rate', 'engagementPercent', 'engagement_percent']);
+  if (rate !== null) return `${rate}%`;
+  const score = pickMetric(data, ['engagement', 'engagementScore', 'engagement_score', 'totalEngagement']);
+  if (score !== null) return fmt(score);
+  return '—';
+}
+
 function StatTile({ icon, label, value, sub, accent = '#6366f1' }) {
   return (
     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '16px 18px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)', flex: 1, minWidth: '140px' }}>
@@ -232,6 +252,39 @@ function PlatformCard({ platform, data }) {
         <div style={{ fontSize: '12px', color: '#94a3b8', background: '#f8fafc', borderRadius: '8px', padding: '10px', lineHeight: 1.5 }}>⚠️ {data.error}</div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '10px' }}>
+          <div style={{ gridColumn: '1 / -1', display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '10px' }}>
+            <div style={{ background: '#f1f5f9', borderRadius: '10px', padding: '10px', textAlign: 'center', border: '1px solid #e2e8f0' }}>
+              <div style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a' }}>
+                {(() => {
+                  const v = pickMetric(data, ['totalViews', 'views', 'pageViews', 'impressions', 'videoViews', 'profileViews']);
+                  return v !== null ? fmt(v) : '—';
+                })()}
+              </div>
+              <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>Views</div>
+            </div>
+            <div style={{ background: '#fffbeb', borderRadius: '10px', padding: '10px', textAlign: 'center', border: '1px solid #fde68a' }}>
+              <div style={{ fontSize: '18px', fontWeight: 800, color: '#b45309' }}>
+                {(() => {
+                  const v = pickMetric(data, ['totalLikes', 'recentLikes', 'likes', 'pageLikes']);
+                  return v !== null ? fmt(v) : '—';
+                })()}
+              </div>
+              <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>Likes</div>
+            </div>
+            <div style={{ background: '#ecfeff', borderRadius: '10px', padding: '10px', textAlign: 'center', border: '1px solid #a5f3fc' }}>
+              <div style={{ fontSize: '18px', fontWeight: 800, color: '#0e7490' }}>
+                {(() => {
+                  const v = pickMetric(data, ['shares', 'totalShares', 'shareCount', 'reposts']);
+                  return v !== null ? fmt(v) : '—';
+                })()}
+              </div>
+              <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>Shares</div>
+            </div>
+            <div style={{ background: '#fff7ed', borderRadius: '10px', padding: '10px', textAlign: 'center', border: '1px solid #fed7aa' }}>
+              <div style={{ fontSize: '18px', fontWeight: 800, color: '#c2410c' }}>{engagementPrimary(data)}</div>
+              <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>Engagement</div>
+            </div>
+          </div>
           {(data.followers !== undefined || data.subscribers !== undefined || data.fans !== undefined) && (
             <div style={{ background: '#f8fafc', borderRadius: '10px', padding: '10px', textAlign: 'center' }}>
               <div style={{ fontSize: '18px', fontWeight: 800, color: p.color }}>{fmt(data.followers ?? data.subscribers ?? data.fans ?? 0)}</div>
@@ -250,18 +303,6 @@ function PlatformCard({ platform, data }) {
               <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>{data.tweets !== undefined ? 'Tweets' : 'Posts'}</div>
             </div>
           )}
-          {data.totalViews !== undefined && (
-            <div style={{ background: '#f8fafc', borderRadius: '10px', padding: '10px', textAlign: 'center' }}>
-              <div style={{ fontSize: '18px', fontWeight: 800, color: '#374151' }}>{fmt(data.totalViews)}</div>
-              <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>Total Views</div>
-            </div>
-          )}
-          {(data.recentLikes !== undefined || data.totalLikes !== undefined) && (
-            <div style={{ background: '#fef9f0', borderRadius: '10px', padding: '10px', textAlign: 'center' }}>
-              <div style={{ fontSize: '18px', fontWeight: 800, color: '#d97706' }}>{fmt(data.recentLikes ?? data.totalLikes ?? 0)}</div>
-              <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>{data.totalLikes !== undefined ? 'Total Likes' : 'Recent Likes'}</div>
-            </div>
-          )}
           {data.recentComments !== undefined && (
             <div style={{ background: '#f0fdf4', borderRadius: '10px', padding: '10px', textAlign: 'center' }}>
               <div style={{ fontSize: '18px', fontWeight: 800, color: '#16a34a' }}>{fmt(data.recentComments)}</div>
@@ -272,18 +313,6 @@ function PlatformCard({ platform, data }) {
             <div style={{ background: '#eff6ff', borderRadius: '10px', padding: '10px', textAlign: 'center' }}>
               <div style={{ fontSize: '18px', fontWeight: 800, color: '#2563eb' }}>{fmt(data.talkingAbout)}</div>
               <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>Talking About</div>
-            </div>
-          )}
-          {data.profileViews !== undefined && data.profileViews > 0 && (
-            <div style={{ background: '#f5f3ff', borderRadius: '10px', padding: '10px', textAlign: 'center' }}>
-              <div style={{ fontSize: '18px', fontWeight: 800, color: '#7c3aed' }}>{fmt(data.profileViews)}</div>
-              <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>Profile Views</div>
-            </div>
-          )}
-          {data.engagementRate !== undefined && (
-            <div style={{ background: '#fff7ed', borderRadius: '10px', padding: '10px', textAlign: 'center', gridColumn: '1 / -1' }}>
-              <div style={{ fontSize: '18px', fontWeight: 800, color: '#ea580c' }}>{data.engagementRate}%</div>
-              <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>Engagement Rate (last 10 posts)</div>
             </div>
           )}
         </div>
@@ -490,7 +519,7 @@ export default function AnalyticsDashboard() {
             </>
           )}
 
-          {tab !== 'overview' && platforms[tab] && <div style={{ maxWidth: '560px' }}><PlatformCard platform={tab} data={platforms[tab]} /></div>}
+          {tab !== 'overview' && platforms[tab] && <div style={{ maxWidth: '640px' }}><PlatformCard platform={tab} data={platforms[tab]} /></div>}
           {tab !== 'overview' && !platforms[tab] && <div style={{ background: '#f8fafc', borderRadius: '14px', padding: '40px', textAlign: 'center', color: '#94a3b8', fontSize: '14px' }}>No analytics data available for this platform yet.</div>}
         </>
       )}

@@ -47,6 +47,7 @@ function fmtDate(iso) {
   } catch { return ''; }
 }
 
+/** First non-empty string among API variants (camelCase / snake_case). */
 function firstNonEmptyStr(...vals) {
   for (const v of vals) {
     if (v != null && String(v).trim() !== '') return String(v).trim();
@@ -54,26 +55,78 @@ function firstNonEmptyStr(...vals) {
   return '';
 }
 
+/**
+ * Best effort: scheduled wall/UTC instant from API (string, ISO, or ms epoch).
+ * Omits generic publishAt unless nothing else matches (some backends overload it).
+ */
+function scheduledTimeFromPost(post) {
+  const raw = post?.job && typeof post.job === 'object' ? post.job : null;
+  const candidates = [
+    post?.scheduledAt,
+    post?.scheduled_at,
+    post?.scheduledTime,
+    post?.scheduled_time,
+    post?.scheduledFor,
+    post?.scheduled_for,
+    post?.executeAt,
+    post?.execute_at,
+    post?.runAt,
+    post?.run_at,
+    post?.dateTime,
+    post?.date_time,
+    raw?.scheduledAt,
+    raw?.scheduled_at,
+    post?.publishAt,
+    post?.publish_at,
+  ];
+  for (const v of candidates) {
+    if (v == null || (typeof v === 'string' && v.trim() === '')) continue;
+    if (typeof v === 'number' && Number.isFinite(v)) {
+      const d = new Date(v);
+      if (Number.isFinite(d.getTime())) return d.toISOString();
+      continue;
+    }
+    const s = String(v).trim();
+    if (s) return s;
+  }
+  return '';
+}
+
+function normalizePostListPayload(raw) {
+  if (Array.isArray(raw)) return raw;
+  if (raw && Array.isArray(raw.posts)) return raw.posts;
+  if (raw && Array.isArray(raw.data)) return raw.data;
+  return [];
+}
+
+/**
+ * Which instant to plot on the calendar.
+ * If we have a valid scheduled time, use it unless the post clearly finished and publishedAt is on/after that time.
+ * (Fixes rows where status=SUCCESS but the job is still future-dated, or scheduledAt was ignored in favor of createdAt.)
+ */
 function postCalendarTimestamp(post) {
-  const scheduled = firstNonEmptyStr(post?.scheduledAt, post?.scheduled_at);
+  const scheduled = scheduledTimeFromPost(post);
   const created = firstNonEmptyStr(post?.createdAt, post?.created_at);
   const published = firstNonEmptyStr(post?.publishedAt, post?.published_at);
   const s = String(post?.status || '').toUpperCase();
+
+  const schedMs = scheduled ? new Date(scheduled).getTime() : NaN;
+  const hasScheduled = Number.isFinite(schedMs);
+
+  if (hasScheduled) {
+    const pubMs = published ? new Date(published).getTime() : NaN;
+    const terminalDone = s === 'SUCCESS' || s === 'PUBLISHED' || s === 'COMPLETED';
+    if (terminalDone && Number.isFinite(pubMs) && pubMs >= schedMs - 60_000) {
+      return published;
+    }
+    return scheduled;
+  }
 
   if (s === 'SUCCESS' || s === 'PUBLISHED' || s === 'FAILED' || s === 'COMPLETED') {
     return published || created || scheduled;
   }
   if (s === 'SCHEDULED' || s === 'PENDING' || s === 'QUEUED') {
     return scheduled || created;
-  }
-  if (scheduled && created) {
-    try {
-      const tsS = new Date(scheduled).getTime();
-      const tsC = new Date(created).getTime();
-      if (Number.isFinite(tsS) && Number.isFinite(tsC)) {
-        return tsS >= tsC ? scheduled : (created || scheduled);
-      }
-    } catch (_) {}
   }
   return scheduled || created;
 }
@@ -117,6 +170,9 @@ function getPostPreview(post) {
 }
 
 function postMergeKey(post) {
+  if (post?.id != null && String(post.id).trim() !== '') {
+    return `id:${String(post.id)}`;
+  }
   const platform = String(post?.platform || '').toLowerCase();
   const caption = String(post?.caption || '').trim().slice(0, 80).toLowerCase();
   const rawTs = postCalendarTimestamp(post);
@@ -125,42 +181,58 @@ function postMergeKey(post) {
   return `${platform}|${caption}|${minuteBucket}`;
 }
 
+function mergeOneRow(p, src) {
+  return {
+    ...src,
+    ...p,
+    scheduledAt: firstNonEmptyStr(
+      scheduledTimeFromPost(p),
+      scheduledTimeFromPost(src),
+    ),
+    createdAt: firstNonEmptyStr(p?.createdAt, p?.created_at, src?.createdAt, src?.created_at),
+    publishedAt: firstNonEmptyStr(p?.publishedAt, p?.published_at, src?.publishedAt, src?.published_at),
+    status:
+      p?.status != null && String(p.status).trim() !== ''
+        ? p.status
+        : src?.status,
+    mediaUrl: pickFirstUrl(p?.mediaUrl, src?.mediaUrl),
+    thumbnailUrl: pickFirstUrl(
+      p?.thumbnailUrl,
+      src?.thumbnailUrl,
+      src?.thumbnail,
+      src?.thumbUrl,
+      src?.posterUrl,
+      src?.previewImageUrl,
+      src?.previewUrl,
+      src?.imageUrl,
+      src?.coverUrl,
+    ),
+    imageUrl: pickFirstUrl(p?.imageUrl, src?.imageUrl),
+  };
+}
+
 function mergeRecentWithHistory(recentActivity, historyPosts) {
-  const recent = Array.isArray(recentActivity) ? recentActivity : [];
-  const history = Array.isArray(historyPosts) ? historyPosts : [];
+  const recent = normalizePostListPayload(recentActivity);
+  const history = normalizePostListPayload(historyPosts);
 
   const historyById = new Map(history.filter(p => p?.id != null).map(p => [String(p.id), p]));
   const historyByKey = new Map(history.map(p => [postMergeKey(p), p]));
 
-  return recent.map((p) => {
+  const merged = recent.map((p) => {
     const byId = p?.id != null ? historyById.get(String(p.id)) : null;
     const byKey = historyByKey.get(postMergeKey(p));
     const src = byId || byKey || {};
-    return {
-      ...src,
-      ...p,
-      scheduledAt: firstNonEmptyStr(p?.scheduledAt, p?.scheduled_at, src?.scheduledAt, src?.scheduled_at),
-      createdAt: firstNonEmptyStr(p?.createdAt, p?.created_at, src?.createdAt, src?.created_at),
-      publishedAt: firstNonEmptyStr(p?.publishedAt, p?.published_at, src?.publishedAt, src?.published_at),
-      status:
-        p?.status != null && String(p.status).trim() !== ''
-          ? p.status
-          : src?.status,
-      mediaUrl: pickFirstUrl(p?.mediaUrl, src?.mediaUrl),
-      thumbnailUrl: pickFirstUrl(
-        p?.thumbnailUrl,
-        src?.thumbnailUrl,
-        src?.thumbnail,
-        src?.thumbUrl,
-        src?.posterUrl,
-        src?.previewImageUrl,
-        src?.previewUrl,
-        src?.imageUrl,
-        src?.coverUrl,
-      ),
-      imageUrl: pickFirstUrl(p?.imageUrl, src?.imageUrl),
-    };
+    return mergeOneRow(p, src);
   });
+
+  const seenIds = new Set(
+    merged.map((p) => (p?.id != null ? String(p.id) : null)).filter(Boolean),
+  );
+  const extras = history
+    .filter((h) => h?.id != null && !seenIds.has(String(h.id)))
+    .map((h) => mergeOneRow(h, historyById.get(String(h.id)) || {}));
+
+  return [...merged, ...extras];
 }
 
 function sameDay(a, b) {
@@ -186,7 +258,7 @@ function buildCalendarDays(year, month) {
 /* ── Scheduled post modal ───────────────────────────────────────────────── */
 function DayModal({ date, posts, onClose, onRetryFailed, retryingIds = {} }) {
   const dayPosts = posts.filter(p => {
-    try { return sameDay(new Date(p.createdAt || p.scheduledAt), date); } catch { return false; }
+    try { return sameDay(postCalendarDate(p), date); } catch { return false; }
   });
   return (
     <div style={ms.overlay} onClick={onClose}>
@@ -325,8 +397,9 @@ export default function ContentCalendar() {
 
       if (!overviewRes.ok) throw new Error('Failed');
       const data = await overviewRes.json();
-      const activity = data?.recentActivity || [];
-      const history = historyRes.ok ? await historyRes.json() : [];
+      const activity = normalizePostListPayload(data?.recentActivity);
+      const historyRaw = historyRes.ok ? await historyRes.json() : [];
+      const history = normalizePostListPayload(historyRaw);
       const enriched = mergeRecentWithHistory(activity, history);
       setPosts(enriched);
     } catch {

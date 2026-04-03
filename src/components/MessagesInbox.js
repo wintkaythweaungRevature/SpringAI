@@ -44,6 +44,43 @@ function sameInboxId(a, b) {
   return String(a) === String(b);
 }
 
+const CANONICAL_INBOX_PLATFORMS = new Set(['instagram', 'facebook', 'youtube', 'linkedin', 'tiktok', 'x']);
+
+/**
+ * API may use mixed casing or omit platform; infer from source when needed so filters match.
+ */
+function normalizeInboxPlatform(item) {
+  if (!item || typeof item !== 'object') return item;
+  const raw = item.platform;
+  if (typeof raw === 'string' && raw.trim()) {
+    const s = raw.trim().toLowerCase();
+    const aliases = {
+      ig: 'instagram',
+      insta: 'instagram',
+      fb: 'facebook',
+      yt: 'youtube',
+      li: 'linkedin',
+      tt: 'tiktok',
+      twitter: 'x',
+    };
+    const resolved = aliases[s] || s;
+    if (CANONICAL_INBOX_PLATFORMS.has(resolved)) {
+      return { ...item, platform: resolved };
+    }
+  }
+  const src = String(item.source || '').toLowerCase();
+  const inferred =
+    src.includes('instagram') ? 'instagram'
+      : (src.includes('facebook') || src.includes('messenger')) ? 'facebook'
+        : src.includes('youtube') ? 'youtube'
+          : src.includes('linkedin') ? 'linkedin'
+            : src.includes('tiktok') ? 'tiktok'
+              : (src.includes('x_') || src.includes('twitter')) ? 'x'
+                : '';
+  if (inferred) return { ...item, platform: inferred };
+  return item;
+}
+
 /** Page inbox at Meta (reply to Messenger / Instagram DMs outside W!ntAi until API permissions are complete). */
 const META_BUSINESS_INBOX_URL = 'https://business.facebook.com/latest/inbox';
 
@@ -836,8 +873,14 @@ export default function MessagesInbox({ onOpenConnectedAccounts, onOpenAutoReply
     setSelection(null);
   }, [platformTab, typeTab]);
 
-  const conversations = data?.conversations ?? data?.directMessages ?? [];
-  const comments      = data?.comments      ?? data?.pageComments ?? [];
+  const conversations = useMemo(
+    () => (data?.conversations ?? data?.directMessages ?? []).map(normalizeInboxPlatform),
+    [data],
+  );
+  const comments = useMemo(
+    () => (data?.comments ?? data?.pageComments ?? []).map(normalizeInboxPlatform),
+    [data],
+  );
   const totalUnread   = Number(data?.totalUnread ?? 0);
 
   // Per-platform counts for stat cards
@@ -874,6 +917,22 @@ export default function MessagesInbox({ onOpenConnectedAccounts, onOpenAutoReply
   }, [selection, conversations, comments]);
 
   const filteredView = platformTab !== 'all' || typeTab !== 'all';
+  const hasAnyInboxData = conversations.length > 0 || comments.length > 0;
+  const listTotalCount = displayConvs.length + displayComments.length;
+
+  const listSectionHeaderStyle = {
+    padding: '12px 16px 8px',
+    fontSize: '11px',
+    fontWeight: 700,
+    color: '#94a3b8',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+    background: '#f8fafc',
+    borderBottom: '1px solid #f1f5f9',
+    position: 'sticky',
+    top: 0,
+    zIndex: 2,
+  };
 
   return (
     <div style={{ maxWidth: 'none', width: '100%', margin: 0, fontFamily: "'Inter',-apple-system,sans-serif" }}>
@@ -1143,6 +1202,15 @@ export default function MessagesInbox({ onOpenConnectedAccounts, onOpenAutoReply
         </div>
       </div>
 
+      {platformTab !== 'all' && data?.platformErrors?.[platformTab] && (
+        <div style={{
+          background: '#fef3c7', border: '1px solid #fcd34d', borderRadius: 8,
+          padding: '10px 14px', fontSize: 13, color: '#92400e', margin: '0 0 12px',
+        }}>
+          ⚠️ {data.platformErrors[platformTab]} — go to <b>Settings → Connected Accounts</b> to reconnect.
+        </div>
+      )}
+
       {loading && !data && (
         <div style={{ textAlign: 'center', padding: '56px 24px', color: '#64748b', fontSize: '14px' }}>Loading inbox…</div>
       )}
@@ -1176,10 +1244,25 @@ export default function MessagesInbox({ onOpenConnectedAccounts, onOpenAutoReply
             }}
           >
             <div style={{ overflowY: 'auto', flex: 1, minHeight: 0, WebkitOverflowScrolling: 'touch' }}>
+            {listTotalCount > 4 && (
+              <div
+                style={{
+                  padding: '8px 12px',
+                  fontSize: '12px',
+                  color: '#475569',
+                  background: '#f1f5f9',
+                  borderBottom: '1px solid #e2e8f0',
+                  textAlign: 'center',
+                  lineHeight: 1.45,
+                }}
+              >
+                {listTotalCount} items in this list — <strong style={{ fontWeight: 700 }}>scroll inside the box</strong> to see DMs and every comment.
+              </div>
+            )}
             {/* Conversations */}
             {displayConvs.length > 0 && (
               <>
-                <div style={{ padding: '12px 16px 8px', fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', background: '#f8fafc', borderBottom: '1px solid #f1f5f9' }}>
+                <div style={listSectionHeaderStyle}>
                   Direct Messages ({displayConvs.length})
                 </div>
                 {displayConvs.map(item => (
@@ -1198,7 +1281,7 @@ export default function MessagesInbox({ onOpenConnectedAccounts, onOpenAutoReply
             {/* Comments */}
             {displayComments.length > 0 && (
               <>
-                <div style={{ padding: '12px 16px 8px', fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', background: '#f8fafc', borderBottom: '1px solid #f1f5f9' }}>
+                <div style={listSectionHeaderStyle}>
                   Comments ({displayComments.length})
                 </div>
                 {displayComments.map((item, i) => (
@@ -1236,6 +1319,57 @@ export default function MessagesInbox({ onOpenConnectedAccounts, onOpenAutoReply
                         : 'Try choosing All platforms or All types, or pick a different combination.')
                     : 'New comments and messages from connected accounts will appear here.'}
                 </div>
+                {filteredView && (platformTab === 'instagram' || platformTab === 'youtube') && (
+                  <div
+                    style={{
+                      marginTop: '16px',
+                      padding: '12px 14px',
+                      textAlign: 'left',
+                      background: '#fffbeb',
+                      border: '1px solid #fde68a',
+                      borderRadius: '10px',
+                      fontSize: '12px',
+                      color: '#78350f',
+                      lineHeight: 1.55,
+                    }}
+                  >
+                    {platformTab === 'instagram' ? (
+                      <>
+                        <strong>Why Instagram can look empty:</strong> Comments here are loaded by the API from Instagram (Graph) for your Instagram Business account tied to your Page. Connecting or reconnecting an account does not by itself import comments. If the Instagram tile stays at 0, the server may not be syncing Instagram comments yet, required Meta permissions may be missing, or there are no comments on your posts.
+                      </>
+                    ) : (
+                      <>
+                        <strong>Why YouTube can look empty:</strong> Comments are loaded from the YouTube Data API for your channel. Reconnecting Google does not create inbox rows—there must be comments on your videos, and the backend must sync them. If this stays at 0, YouTube comment sync may not be enabled server-side yet.
+                      </>
+                    )}
+                  </div>
+                )}
+                {filteredView && hasAnyInboxData && (
+                  <div style={{ marginTop: '18px' }}>
+                    <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#475569', lineHeight: 1.55 }}>
+                      You still have data in this inbox — the platform you picked has nothing that matches (check the counts in the row above).
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPlatformTab('all');
+                        setTypeTab('all');
+                      }}
+                      style={{
+                        padding: '8px 14px',
+                        borderRadius: '8px',
+                        border: '1px solid #0f172a',
+                        background: '#0f172a',
+                        color: '#fff',
+                        fontWeight: 600,
+                        fontSize: '13px',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Show all platforms &amp; types
+                    </button>
+                  </div>
+                )}
               </div>
             )}
             </div>

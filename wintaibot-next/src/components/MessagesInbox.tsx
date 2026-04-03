@@ -34,6 +34,40 @@ type CommentItem = {
   timestamp?: string;
 };
 
+const CANONICAL_INBOX_PLATFORMS = new Set(['instagram', 'facebook', 'youtube', 'linkedin', 'tiktok', 'x']);
+
+function normalizeInboxPlatform<T extends { platform?: string; source?: string }>(item: T): T {
+  if (!item || typeof item !== 'object') return item;
+  const raw = item.platform;
+  if (typeof raw === 'string' && raw.trim()) {
+    const s = raw.trim().toLowerCase();
+    const aliases: Record<string, string> = {
+      ig: 'instagram',
+      insta: 'instagram',
+      fb: 'facebook',
+      yt: 'youtube',
+      li: 'linkedin',
+      tt: 'tiktok',
+      twitter: 'x',
+    };
+    const resolved = aliases[s] || s;
+    if (CANONICAL_INBOX_PLATFORMS.has(resolved)) {
+      return { ...item, platform: resolved };
+    }
+  }
+  const src = String(item.source || '').toLowerCase();
+  const inferred =
+    src.includes('instagram') ? 'instagram'
+      : (src.includes('facebook') || src.includes('messenger')) ? 'facebook'
+        : src.includes('youtube') ? 'youtube'
+          : src.includes('linkedin') ? 'linkedin'
+            : src.includes('tiktok') ? 'tiktok'
+              : (src.includes('x_') || src.includes('twitter')) ? 'x'
+                : '';
+  if (inferred) return { ...item, platform: inferred };
+  return item;
+}
+
 function timeAgo(iso?: string) {
   if (!iso) return '';
   const diff = Date.now() - new Date(iso).getTime();
@@ -67,9 +101,11 @@ export default function MessagesInbox() {
       });
       if (!res.ok) throw new Error(`Server error ${res.status}`);
       const payload = await res.json();
+      const convs = Array.isArray(payload?.conversations) ? payload.conversations : [];
+      const coms = Array.isArray(payload?.comments) ? payload.comments : [];
       setData({
-        conversations: Array.isArray(payload?.conversations) ? payload.conversations : [],
-        comments: Array.isArray(payload?.comments) ? payload.comments : [],
+        conversations: convs.map((c: Conversation) => normalizeInboxPlatform(c)),
+        comments: coms.map((c: CommentItem) => normalizeInboxPlatform(c)),
         totalUnread: Number(payload?.totalUnread || 0),
       });
     } catch (e) {

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import PlatformIcon from './PlatformIcon';
 import PostDetailModal from './PostDetailModal';
+import ComposePostModal from './ComposePostModal';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    ContentCalendar — Visual Calendar & Feed Planner
@@ -267,7 +268,7 @@ function buildCalendarDays(year, month) {
 }
 
 /* ── Scheduled post modal ───────────────────────────────────────────────── */
-function DayModal({ date, posts, onClose, onRetryFailed, retryingIds = {} }) {
+function DayModal({ date, posts, onClose, onRetryFailed, retryingIds = {}, onCancelJob, onRescheduleJob, reschedulingJob, newDateTime, setNewDateTime, setReschedulingJob }) {
   const dayPosts = posts.filter(p => {
     try { return sameDay(postCalendarDate(p), date); } catch { return false; }
   });
@@ -292,6 +293,8 @@ function DayModal({ date, posts, onClose, onRetryFailed, retryingIds = {} }) {
               const isVideo = String(p.mediaType || '').toLowerCase() === 'video';
               const canRetry = String(p.status || '').toUpperCase() === 'FAILED' && p.id != null;
               const retrying = canRetry && !!retryingIds[String(p.id)];
+              const isScheduled = ['SCHEDULED','PENDING'].includes(String(p.status || '').toUpperCase());
+              const jobId = p.jobId || p.id;
               return (
                 <div key={i} style={{ ...ms.postCard, borderLeft: `3px solid ${platformColor(p.platform)}` }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
@@ -340,18 +343,48 @@ function DayModal({ date, posts, onClose, onRetryFailed, retryingIds = {} }) {
                             onClick={() => onRetryFailed && onRetryFailed(p.id)}
                             disabled={retrying}
                             style={{
-                              padding: '6px 10px',
-                              borderRadius: 8,
+                              padding: '6px 10px', borderRadius: 8,
                               border: '1px solid #dc2626',
                               background: retrying ? '#fee2e2' : '#fff',
-                              color: '#dc2626',
-                              fontSize: 11,
-                              fontWeight: 700,
+                              color: '#dc2626', fontSize: 11, fontWeight: 700,
                               cursor: retrying ? 'wait' : 'pointer',
                             }}
                           >
                             {retrying ? 'Retrying…' : '↻ Retry failed post'}
                           </button>
+                        </div>
+                      )}
+                      {isScheduled && (
+                        <div style={{ marginTop: 8, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                          {reschedulingJob === jobId ? (
+                            <>
+                              <input
+                                type="datetime-local"
+                                value={newDateTime}
+                                onChange={e => setNewDateTime(e.target.value)}
+                                style={{ padding: '5px 8px', borderRadius: 6, border: '1px solid #cbd5e1', fontSize: 12 }}
+                              />
+                              <button onClick={() => onRescheduleJob && onRescheduleJob(jobId, newDateTime)} style={{
+                                padding: '5px 10px', borderRadius: 6, border: 'none',
+                                background: '#6366f1', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                              }}>Save</button>
+                              <button onClick={() => setReschedulingJob(null)} style={{
+                                padding: '5px 10px', borderRadius: 6, border: '1px solid #e2e8f0',
+                                background: '#fff', fontSize: 11, cursor: 'pointer',
+                              }}>Cancel</button>
+                            </>
+                          ) : (
+                            <>
+                              <button onClick={() => { setReschedulingJob(jobId); setNewDateTime(p.scheduledAt ? p.scheduledAt.slice(0,16) : ''); }} style={{
+                                padding: '5px 10px', borderRadius: 6, border: '1px solid #6366f1',
+                                background: '#f0f0ff', color: '#6366f1', fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                              }}>🗓 Reschedule</button>
+                              <button onClick={() => onCancelJob && onCancelJob(jobId)} style={{
+                                padding: '5px 10px', borderRadius: 6, border: '1px solid #f87171',
+                                background: '#fff5f5', color: '#dc2626', fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                              }}>✕ Cancel post</button>
+                            </>
+                          )}
                         </div>
                       )}
                     </div>
@@ -395,6 +428,10 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
   const [retryingIds, setRetryingIds] = useState({});
   const [actionMsg, setActionMsg] = useState('');
   const [hoverPreview, setHoverPreview] = useState(null); // { post, x, y }
+  const [composeOpen, setComposeOpen]   = useState(false);
+  const [composeDate, setComposeDate]   = useState(null); // pre-fill date when clicking a day
+  const [reschedulingJob, setReschedulingJob] = useState(null); // { jobId, current }
+  const [newDateTime, setNewDateTime]   = useState('');
 
   const loadPosts = useCallback(async () => {
     if (!token) return;
@@ -440,6 +477,42 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
     } finally {
       setRetryingIds(prev => ({ ...prev, [sid]: false }));
       setTimeout(() => setActionMsg(''), 3500);
+    }
+  };
+
+  const cancelJob = async (jobId) => {
+    if (!jobId || !token) return;
+    try {
+      const res = await fetch(`${base}/api/analytics/job/${jobId}/cancel`, {
+        method: 'POST', headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Cancel failed');
+      setActionMsg('Post cancelled.');
+      await loadPosts();
+    } catch (_) {
+      setActionMsg('Could not cancel this post.');
+    } finally {
+      setSelectedDay(null);
+      setTimeout(() => setActionMsg(''), 3000);
+    }
+  };
+
+  const rescheduleJob = async (jobId, dt) => {
+    if (!jobId || !dt || !token) return;
+    try {
+      const res = await fetch(`${base}/api/analytics/job/${jobId}/reschedule`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newDateTime: dt }),
+      });
+      if (!res.ok) throw new Error('Reschedule failed');
+      setActionMsg('Post rescheduled.');
+      setReschedulingJob(null);
+      await loadPosts();
+    } catch (_) {
+      setActionMsg('Could not reschedule this post.');
+    } finally {
+      setTimeout(() => setActionMsg(''), 3000);
     }
   };
 
@@ -493,6 +566,17 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
           <p style={s.pageSub}>Visual overview of your published and scheduled posts across all platforms.</p>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          {/* New Post button */}
+          <button
+            onClick={() => { setComposeDate(null); setComposeOpen(true); }}
+            style={{
+              padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer',
+              background: '#6366f1', color: '#fff', fontWeight: 700, fontSize: 13,
+              display: 'flex', alignItems: 'center', gap: 6,
+            }}
+          >
+            + New Post
+          </button>
           {/* View toggle */}
           <div style={s.viewToggle}>
             <button style={{ ...s.viewBtn, ...(view === 'calendar' ? s.viewBtnActive : {}) }} onClick={() => setView('calendar')}>
@@ -899,8 +983,22 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
           onRetryFailed={retryFailedPost}
           retryingIds={retryingIds}
           onClose={() => setSelectedDay(null)}
+          onCancelJob={cancelJob}
+          onRescheduleJob={rescheduleJob}
+          reschedulingJob={reschedulingJob}
+          newDateTime={newDateTime}
+          setNewDateTime={setNewDateTime}
+          setReschedulingJob={setReschedulingJob}
         />
       )}
+
+      {/* Compose post modal */}
+      <ComposePostModal
+        open={composeOpen}
+        onClose={() => setComposeOpen(false)}
+        defaultDate={composeDate}
+        onPosted={() => { loadPosts(); }}
+      />
 
       {feedDetailPost && (
         <PostDetailModal

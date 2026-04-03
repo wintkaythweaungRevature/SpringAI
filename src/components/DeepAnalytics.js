@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import PlatformIcon from './PlatformIcon';
+import ComposePostModal from './ComposePostModal';
 
 const API = process.env.REACT_APP_API_URL || 'https://api.wintaibot.com';
 
@@ -1301,6 +1302,7 @@ function TrendsCalendar({ authHeaders }) {
   const [rangeView, setRangeView] = useState('monthly'); // 'monthly' | 'yearly'
   const [yearSummary, setYearSummary] = useState({});
   const [yearSummaryLoading, setYearSummaryLoading] = useState(false);
+  const [composeOpen, setComposeOpen] = useState(false);
 
   const loadCalendar = useCallback(() => {
     setLoading(true);
@@ -1507,10 +1509,24 @@ function TrendsCalendar({ authHeaders }) {
     }
   };
 
+  const cancelJob = async (jobId) => {
+    if (!jobId) return;
+    try {
+      const res = await fetch(`${API}/api/analytics/job/${jobId}/cancel`, {
+        method: 'POST', headers: authHeaders(),
+      });
+      if (!res.ok) { setReschMsg('Cancel failed'); return; }
+      setReschMsg('Post cancelled.');
+      setTimeout(() => { setReschMsg(''); loadCalendar(); }, 1000);
+    } catch {
+      setReschMsg('Cancel failed');
+    }
+  };
+
   return (
     <div>
-      {/* Sub-view toggle */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+      {/* Sub-view toggle + New Post button */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20, alignItems: 'center', flexWrap: 'wrap' }}>
         {[['posts','📌 My Posts'],['besttime','🕐 Best Times']].map(([id, label]) => (
           <button key={id} onClick={() => setCalView(id)} style={{
             padding: '7px 18px', borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: 'pointer',
@@ -1519,6 +1535,10 @@ function TrendsCalendar({ authHeaders }) {
             border: `1.5px solid ${calView === id ? '#6366f1' : '#e2e8f0'}`,
           }}>{label}</button>
         ))}
+        <button onClick={() => setComposeOpen(true)} style={{
+          marginLeft: 'auto', padding: '7px 16px', borderRadius: 20, fontSize: 12,
+          fontWeight: 700, cursor: 'pointer', background: '#6366f1', color: '#fff', border: 'none',
+        }}>+ New Post</button>
       </div>
 
       {calView === 'besttime' && (
@@ -2060,6 +2080,155 @@ function TrendsCalendar({ authHeaders }) {
           )}
         </div>
       )}
+      {/* Past Posts + Upcoming Posts lists */}
+      {rangeView === 'monthly' && !loading && data && (
+        <div style={{ marginTop: 24, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          {/* Past Posts */}
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 13, color: '#1e293b', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ color: '#10b981' }}>✓</span> Past Posts{' '}
+              <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 400 }}>({(data.posts || []).length})</span>
+            </div>
+            {(data.posts || []).length === 0 ? (
+              <p style={{ fontSize: 12, color: '#94a3b8' }}>No published posts this month.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {[...(data.posts || [])].sort((a, b) => {
+                  const da = a.dateTime || a.date || '';
+                  const db = b.dateTime || b.date || '';
+                  return db.localeCompare(da);
+                }).map((p, i) => {
+                  const rowPc = PLATFORMS.find((x) => x.id === (p.platform || '').toLowerCase());
+                  return (
+                    <div key={i} style={{ background: '#fff', borderRadius: 10, border: '1px solid #e2e8f0', padding: '10px 12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, flexWrap: 'wrap' }}>
+                        {rowPc && <PlatformIcon platform={rowPc} size={18} />}
+                        <span style={{
+                          background: PLATFORM_COLORS[p.platform] || '#6366f1',
+                          color: '#fff', borderRadius: 20, padding: '2px 8px', fontSize: 10, fontWeight: 700, textTransform: 'capitalize',
+                        }}>{rowPc?.label || p.platform}</span>
+                        <span style={{ background: '#f1f5f9', color: '#475569', borderRadius: 20, padding: '2px 8px', fontSize: 10, fontWeight: 600, textTransform: 'capitalize' }}>
+                          {(p.mediaType || p.postType || 'post').toString()}
+                        </span>
+                        {(p.dateTime || p.date) && (
+                          <span style={{ marginLeft: 'auto', fontSize: 10, color: '#94a3b8' }}>
+                            {p.dateTime ? new Date(p.dateTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : p.date}
+                          </span>
+                        )}
+                      </div>
+                      <p style={{ margin: 0, fontSize: 12, color: '#475569', lineHeight: 1.5,
+                                   overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                        {p.caption || <em style={{ color: '#94a3b8' }}>No caption</em>}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Upcoming Scheduled Posts */}
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 13, color: '#1e293b', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ color: '#f59e0b' }}>⏰</span> Upcoming Scheduled{' '}
+              <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 400 }}>({(data.scheduled || []).length})</span>
+            </div>
+            {(data.scheduled || []).length === 0 ? (
+              <p style={{ fontSize: 12, color: '#94a3b8' }}>No scheduled posts this month.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {[...(data.scheduled || [])].sort((a, b) => {
+                  const da = a.dateTime || a.scheduledAt || a.date || '';
+                  const db = b.dateTime || b.scheduledAt || b.date || '';
+                  return da.localeCompare(db);
+                }).map((j, i) => {
+                  const rowPc = PLATFORMS.find((x) => x.id === (j.platform || '').toLowerCase());
+                  const jobId = j.jobId ?? j.id;
+                  const canModify = j.status === 'SCHEDULED' || j.status === 'PENDING' || !j.status;
+                  return (
+                    <div key={i} style={{ background: '#fff', borderRadius: 10, border: '1px solid #fde68a', padding: '10px 12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, flexWrap: 'wrap' }}>
+                        {rowPc && <PlatformIcon platform={rowPc} size={18} />}
+                        <span style={{
+                          background: PLATFORM_COLORS[j.platform] || '#f59e0b',
+                          color: '#fff', borderRadius: 20, padding: '2px 8px', fontSize: 10, fontWeight: 700, textTransform: 'capitalize',
+                        }}>{rowPc?.label || j.platform}</span>
+                        <span style={{ background: '#fff7ed', color: '#c2410c', borderRadius: 20, padding: '2px 8px', fontSize: 10, fontWeight: 600 }}>
+                          ⏰ {j.status || 'SCHEDULED'}
+                        </span>
+                        {(j.dateTime || j.scheduledAt || j.date) && (
+                          <span style={{ marginLeft: 'auto', fontSize: 10, color: '#94a3b8' }}>
+                            {j.dateTime
+                              ? new Date(j.dateTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+                              : j.date}
+                          </span>
+                        )}
+                      </div>
+                      <p style={{ margin: 0, fontSize: 12, color: '#475569', lineHeight: 1.5,
+                                   overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                        {j.caption || <em style={{ color: '#94a3b8' }}>No caption</em>}
+                      </p>
+                      {canModify && (
+                        rescheduleJob?.job?.jobId === jobId ? (
+                          <div style={{ marginTop: 8 }}>
+                            <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
+                              <input type="date"
+                                value={rescheduleJob.newDate}
+                                onChange={e => setRescheduleJob(r => ({ ...r, newDate: e.target.value }))}
+                                style={{ flex: 1, padding: '4px 6px', fontSize: 11, border: '1px solid #e2e8f0', borderRadius: 6 }}
+                              />
+                              <input type="time"
+                                value={rescheduleJob.newTime}
+                                onChange={e => setRescheduleJob(r => ({ ...r, newTime: e.target.value }))}
+                                style={{ flex: 1, padding: '4px 6px', fontSize: 11, border: '1px solid #e2e8f0', borderRadius: 6 }}
+                              />
+                            </div>
+                            <div style={{ display: 'flex', gap: 6 }}>
+                              <button onClick={handleReschedule} style={{
+                                flex: 1, background: '#6366f1', color: '#fff', border: 'none',
+                                borderRadius: 6, padding: '5px 0', fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                              }}>Confirm</button>
+                              <button onClick={() => setRescheduleJob(null)} style={{
+                                flex: 1, background: '#f1f5f9', color: '#475569', border: 'none',
+                                borderRadius: 6, padding: '5px 0', fontSize: 11, cursor: 'pointer',
+                              }}>Cancel</button>
+                            </div>
+                            {reschMsg && <div style={{ fontSize: 11, color: '#6366f1', marginTop: 4 }}>{reschMsg}</div>}
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                            <button onClick={() => setRescheduleJob({
+                              job: j,
+                              newDate: j.date || '',
+                              newTime: j.dateTime ? j.dateTime.slice(11, 16) : '12:00',
+                            })} style={{
+                              flex: 1, background: '#fff7ed', color: '#c2410c',
+                              border: '1px solid #fed7aa', borderRadius: 6,
+                              padding: '5px 0', fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                            }}>⏱ Reschedule</button>
+                            <button onClick={() => cancelJob(jobId)} style={{
+                              flex: 1, background: '#fef2f2', color: '#dc2626',
+                              border: '1px solid #fca5a5', borderRadius: 6,
+                              padding: '5px 0', fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                            }}>✕ Cancel</button>
+                          </div>
+                        )
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      <ComposePostModal
+        open={composeOpen}
+        onClose={() => setComposeOpen(false)}
+        onPosted={loadCalendar}
+      />
+
       {calTip && typeof document !== 'undefined' && (
         <div
           style={{

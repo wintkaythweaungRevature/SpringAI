@@ -2387,9 +2387,7 @@ function CompetitorTab({ authHeaders }) {
 
   // ── Google Trends state ───────────────────────────────────────
   const [trendsInput,    setTrendsInput]    = useState('');
-  const [trendsLoading,  setTrendsLoading]  = useState(false);
-  const [trendsData,     setTrendsData]     = useState(null);
-  const [trendsError,    setTrendsError]    = useState('');
+  const [trendsKeywords, setTrendsKeywords] = useState([]);
 
   // Cleaned query shown as a hint when user pastes a YouTube URL
   const cleanedQuery = useMemo(() => parseYouTubeInput(query), [query]);
@@ -2473,28 +2471,11 @@ function CompetitorTab({ authHeaders }) {
   };
 
   // ── Google Trends function ───────────────────────────────────
-  const doTrendsSearch = async () => {
+  const doTrendsSearch = () => {
     const raw = trendsInput.trim();
     if (!raw) return;
-    setTrendsLoading(true); setTrendsData(null); setTrendsError('');
-    try {
-      const kw = encodeURIComponent(raw);
-      const res = await fetch(`${API}/api/analytics/competitors/trends?keywords=${kw}`, { headers: authHeaders() });
-      const data = await res.json();
-      if (!res.ok || data.error) {
-        const msg = data.error || 'Failed to fetch trends';
-        const isRateLimited = msg === 'rate_limited' || msg.includes('429') || msg.toLowerCase().includes('rate');
-        setTrendsError(isRateLimited
-          ? 'Google Trends is temporarily rate-limited. Please wait a minute and try again.'
-          : msg);
-        return;
-      }
-      setTrendsData(data);
-    } catch {
-      setTrendsError('Could not reach Google Trends. Try again.');
-    } finally {
-      setTrendsLoading(false);
-    }
+    const kws = raw.split(',').map(k => k.trim()).filter(Boolean).slice(0, 5);
+    setTrendsKeywords(kws);
   };
 
   const redditOrange = '#FF4500';
@@ -2829,94 +2810,61 @@ function CompetitorTab({ authHeaders }) {
                 value={trendsInput}
                 onChange={e => setTrendsInput(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && doTrendsSearch()}
-                placeholder="e.g. instagram, tiktok, youtube (comma-separated)"
+                placeholder="e.g. toyota, honda, ford (comma-separated)"
                 style={{ flex: 1, padding: '10px 14px', border: '1.5px solid #e2e8f0', borderRadius: 10, fontSize: 13, color: '#1e293b', outline: 'none' }}
               />
-              <button onClick={doTrendsSearch} disabled={trendsLoading || !trendsInput.trim()} style={{
+              <button onClick={doTrendsSearch} disabled={!trendsInput.trim()} style={{
                 padding: '10px 20px', background: '#4285F4', color: '#fff', border: 'none',
                 borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                opacity: trendsLoading || !trendsInput.trim() ? 0.6 : 1,
+                opacity: !trendsInput.trim() ? 0.6 : 1,
               }}>
-                {trendsLoading ? '⏳' : '🔍 Search'}
+                🔍 Search
               </button>
             </div>
           </div>
 
-          {trendsError && <div style={{ background: '#eff6ff', color: '#1d4ed8', borderRadius: 8, padding: '10px 14px', fontSize: 13, marginBottom: 16 }}>{trendsError}</div>}
-
-          {trendsData && (
-            <div>
-              {/* Keyword pills */}
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
-                {(trendsData.keywords || []).map((kw, i) => {
-                  const colors = ['#4285F4','#EA4335','#FBBC04','#34A853','#FF6D00'];
-                  return (
-                    <span key={i} style={{ background: colors[i % colors.length], color: '#fff', borderRadius: 20, padding: '4px 12px', fontSize: 12, fontWeight: 700 }}>
+          {trendsKeywords.length > 0 && (() => {
+            const colors = ['#4285F4','#EA4335','#FBBC04','#34A853','#FF6D00'];
+            const trendsUrl = `https://trends.google.com/trends/explore?q=${trendsKeywords.map(k => encodeURIComponent(k)).join(',')}&date=today+12-m`;
+            return (
+              <div>
+                {/* Keyword pills */}
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
+                  {trendsKeywords.map((kw, i) => (
+                    <span key={i} style={{ background: colors[i % colors.length], color: '#fff', borderRadius: 20, padding: '4px 14px', fontSize: 13, fontWeight: 700 }}>
                       {kw}
                     </span>
-                  );
-                })}
+                  ))}
+                </div>
+
+                {/* Open in Google Trends card */}
+                <div style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: 16, padding: '28px 24px', textAlign: 'center' }}>
+                  <img src="https://cdn.simpleicons.org/google/4285F4" alt="Google" width={40} height={40} style={{ marginBottom: 16 }} />
+                  <div style={{ fontSize: 16, fontWeight: 700, color: '#1e293b', marginBottom: 6 }}>
+                    View Interest Over Time on Google Trends
+                  </div>
+                  <div style={{ fontSize: 13, color: '#64748b', marginBottom: 20 }}>
+                    See how <strong>{trendsKeywords.join(', ')}</strong> compare over the last 12 months — charts, regional data, and rising searches.
+                  </div>
+                  <a
+                    href={trendsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 8,
+                      background: '#4285F4', color: '#fff', borderRadius: 10,
+                      padding: '12px 28px', fontSize: 14, fontWeight: 700,
+                      textDecoration: 'none', boxShadow: '0 2px 8px rgba(66,133,244,0.3)',
+                    }}
+                  >
+                    <img src="https://cdn.simpleicons.org/google/ffffff" alt="" width={16} height={16} />
+                    Open Google Trends →
+                  </a>
+                  <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 12 }}>Opens in a new tab · No account required</div>
+                </div>
               </div>
-
-              {/* Interest over time table */}
-              {trendsData.timeline?.length > 0 && (
-                <div style={{ background: '#fff', border: '1.5px solid #e2e8f0', borderRadius: 16, overflow: 'hidden', marginBottom: 20 }}>
-                  <div style={{ padding: '14px 20px', borderBottom: '1px solid #e2e8f0', fontWeight: 700, fontSize: 14, color: '#1e293b' }}>
-                    📈 Interest Over Time (0–100 scale)
-                  </div>
-                  <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                      <thead>
-                        <tr style={{ background: '#f8fafc' }}>
-                          <th style={{ padding: '8px 16px', textAlign: 'left', color: '#64748b', fontWeight: 600, fontSize: 11, borderBottom: '1px solid #e2e8f0' }}>Month</th>
-                          {(trendsData.keywords || []).map((kw, i) => {
-                            const colors = ['#4285F4','#EA4335','#FBBC04','#34A853','#FF6D00'];
-                            return <th key={i} style={{ padding: '8px 16px', textAlign: 'center', color: colors[i % colors.length], fontWeight: 700, fontSize: 11, borderBottom: '1px solid #e2e8f0' }}>{kw}</th>;
-                          })}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {trendsData.timeline.map((row, i) => (
-                          <tr key={i} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                            <td style={{ padding: '8px 16px', color: '#475569', fontWeight: 500 }}>{row.date}</td>
-                            {(row.values || []).map((v, j) => {
-                              const colors = ['#4285F4','#EA4335','#FBBC04','#34A853','#FF6D00'];
-                              const pct = Number(v);
-                              return (
-                                <td key={j} style={{ padding: '8px 16px', textAlign: 'center' }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                                    <div style={{ width: Math.max(4, pct * 0.6), height: 8, background: colors[j % colors.length], borderRadius: 4, opacity: 0.7 }} />
-                                    <span style={{ fontWeight: 700, color: colors[j % colors.length], minWidth: 24 }}>{pct}</span>
-                                  </div>
-                                </td>
-                              );
-                            })}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-
-              {/* Rising queries */}
-              {trendsData.rising?.length > 0 && (
-                <div style={{ background: '#fff', border: '1.5px solid #e2e8f0', borderRadius: 16, overflow: 'hidden' }}>
-                  <div style={{ padding: '14px 20px', borderBottom: '1px solid #e2e8f0', fontWeight: 700, fontSize: 14, color: '#1e293b' }}>
-                    🚀 Rising Searches
-                  </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, padding: '16px 20px' }}>
-                    {trendsData.rising.map((r, i) => (
-                      <div key={i} style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '6px 12px', display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <span style={{ fontSize: 13, fontWeight: 600, color: '#166534' }}>{r.query}</span>
-                        {r.formattedValue && <span style={{ fontSize: 11, color: '#16a34a', fontWeight: 700 }}>{r.formattedValue}</span>}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+            );
+          })()}
         </div>
       )}
     </div>

@@ -432,6 +432,8 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
   const [composeDate, setComposeDate]   = useState(null); // pre-fill date when clicking a day
   const [reschedulingJob, setReschedulingJob] = useState(null); // { jobId, current }
   const [newDateTime, setNewDateTime]   = useState('');
+  const [dragPost,    setDragPost]      = useState(null); // post being drag-rescheduled
+  const [dragOverKey, setDragOverKey]   = useState(null); // day key hovered during drag
 
   const loadPosts = useCallback(async () => {
     if (!token) return;
@@ -663,9 +665,24 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
                         ...(isToday ? s.calCellToday : {}),
                         ...(hasScheduledPost && !isSelected ? s.calCellHasScheduled : {}),
                         ...(isSelected ? s.calCellSelected : {}),
-                        cursor: 'pointer',
+                        ...(dragPost && dragOverKey === key ? { outline: '2px dashed #6366f1', background: '#eef2ff' } : {}),
+                        cursor: dragPost ? 'copy' : 'pointer',
                       }}
-                      onClick={() => setSelectedDay(isSelected ? null : day)}
+                      onClick={() => !dragPost && setSelectedDay(isSelected ? null : day)}
+                      onDragOver={(e) => { if (dragPost) { e.preventDefault(); setDragOverKey(key); } }}
+                      onDragLeave={() => setDragOverKey(null)}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        if (!dragPost) return;
+                        const ts = postCalendarTimestamp(dragPost);
+                        const orig = ts ? new Date(ts) : null;
+                        const newDate = new Date(day);
+                        newDate.setHours(orig ? orig.getHours() : 9, orig ? orig.getMinutes() : 0, 0, 0);
+                        const jobId = dragPost.jobId ?? dragPost.id;
+                        if (jobId) rescheduleJob(jobId, newDate.toISOString());
+                        setDragPost(null);
+                        setDragOverKey(null);
+                      }}
                     >
                       <button
                         type="button"
@@ -699,7 +716,10 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
                               <button
                                 key={`${key}-${i}`}
                                 type="button"
-                                style={s.dayPostChip}
+                                draggable={isPostScheduled(p)}
+                                onDragStart={(e) => { e.stopPropagation(); setDragPost(p); }}
+                                onDragEnd={() => { setDragPost(null); setDragOverKey(null); }}
+                                style={{ ...s.dayPostChip, ...(isPostScheduled(p) ? { cursor: 'grab' } : {}) }}
                                 onMouseEnter={(e) => {
                                   const rect = e.currentTarget.getBoundingClientRect();
                                   setHoverPreview({
@@ -797,9 +817,16 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
                           )}
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={s.upcomingTop}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <div
+                                style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}
+                                title={`Filter calendar by ${p.platform}`}
+                                onClick={() => setFilterPlatform(prev => prev === p.platform?.toLowerCase() ? 'all' : p.platform?.toLowerCase())}
+                              >
                                 {pInfo && <PlatformIcon platform={pInfo} size={14} />}
-                                <span style={{ fontWeight: 700, fontSize: 12, color: platformColor(p.platform), textTransform: 'capitalize' }}>{p.platform}</span>
+                                <span style={{ fontWeight: 700, fontSize: 12, color: platformColor(p.platform), textTransform: 'capitalize',
+                                  textDecoration: filterPlatform === p.platform?.toLowerCase() ? 'underline' : 'none' }}>
+                                  {p.platform}
+                                </span>
                               </div>
                               <span style={{
                                 fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 99,

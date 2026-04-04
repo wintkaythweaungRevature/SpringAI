@@ -2223,6 +2223,59 @@ function TrendsCalendar({ authHeaders }) {
         </div>
       )}
 
+      {/* ── Growth Insights ── */}
+      {rangeView === 'monthly' && !loading && data?.bestTimeOverlay && (() => {
+        const heatmap = data.bestTimeOverlay; // 7×24 array [dayOfWeek][hour]
+        const DAY_NAMES = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+        const HOUR_LABELS = Array.from({length:24},(_,h) => {
+          const ampm = h < 12 ? 'AM' : 'PM';
+          const hr = h === 0 ? 12 : h > 12 ? h - 12 : h;
+          return `${hr}${ampm}`;
+        });
+        // Most active day
+        const dayTotals = heatmap.map(row => row.reduce((s,v) => s + v, 0));
+        const bestDayIdx = dayTotals.indexOf(Math.max(...dayTotals));
+        const bestDayCount = dayTotals[bestDayIdx];
+        // Peak hour (across all days)
+        const hourTotals = Array.from({length:24}, (_,h) => heatmap.reduce((s,row) => s + (row[h]||0), 0));
+        const bestHourIdx = hourTotals.indexOf(Math.max(...hourTotals));
+        // Best slot (day + hour combo)
+        let bestSlotVal = 0, bestSlotDay = 0, bestSlotHour = 9;
+        heatmap.forEach((row, d) => row.forEach((v, h) => { if (v > bestSlotVal) { bestSlotVal = v; bestSlotDay = d; bestSlotHour = h; } }));
+        const totalPosts = dayTotals.reduce((s,v) => s+v, 0);
+        if (totalPosts === 0) return null;
+        const insights = [
+          { icon: '🔥', label: 'Most Active Day', value: DAY_NAMES[bestDayIdx], sub: `${bestDayCount} post${bestDayCount !== 1 ? 's' : ''}`, color: '#f59e0b' },
+          { icon: '⏰', label: 'Peak Hour', value: HOUR_LABELS[bestHourIdx], sub: `${hourTotals[bestHourIdx]} post${hourTotals[bestHourIdx] !== 1 ? 's' : ''}`, color: '#6366f1' },
+          { icon: '🎯', label: 'Best Posting Slot', value: `${DAY_NAMES[bestSlotDay]} ${HOUR_LABELS[bestSlotHour]}`, sub: `Highest engagement window`, color: '#10b981' },
+          { icon: '📊', label: 'Total This Period', value: `${totalPosts}`, sub: `posts published`, color: '#3b82f6' },
+        ];
+        return (
+          <div style={{ marginTop: 20, background: '#fff', borderRadius: 14, border: '1px solid #e2e8f0', padding: '16px 20px' }}>
+            <div style={{ fontWeight: 700, fontSize: 13, color: '#1e293b', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
+              💡 Growth Insights
+              <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 400 }}>based on your posting history</span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10 }}>
+              {insights.map((ins, i) => (
+                <div key={i} style={{ background: '#f8fafc', borderRadius: 10, padding: '12px 14px', borderLeft: `3px solid ${ins.color}` }}>
+                  <div style={{ fontSize: 18, marginBottom: 4 }}>{ins.icon}</div>
+                  <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 2 }}>{ins.label}</div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: '#1e293b' }}>{ins.value}</div>
+                  <div style={{ fontSize: 10, color: '#64748b', marginTop: 2 }}>{ins.sub}</div>
+                </div>
+              ))}
+            </div>
+            {bestSlotVal > 0 && (
+              <div style={{ marginTop: 12, padding: '10px 14px', background: '#f0fdf4', borderRadius: 10, fontSize: 12, color: '#166534', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 16 }}>💚</span>
+                <span><strong>High Engagement Prediction:</strong> Try posting on <strong>{DAY_NAMES[bestSlotDay]}s at {HOUR_LABELS[bestSlotHour]}</strong> — that's your historically strongest slot with {bestSlotVal} post{bestSlotVal !== 1 ? 's' : ''} at peak.</span>
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
       <ComposePostModal
         open={composeOpen}
         onClose={() => setComposeOpen(false)}

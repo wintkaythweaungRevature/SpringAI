@@ -518,6 +518,24 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
     }
   };
 
+  const reschedulePost = async (postId, dt) => {
+    if (!postId || !dt || !token) return;
+    try {
+      const res = await fetch(`${base}/api/analytics/post/${postId}/reschedule`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newDateTime: dt }),
+      });
+      if (!res.ok) throw new Error('Reschedule failed');
+      setActionMsg('Post rescheduled.');
+      await loadPosts();
+    } catch (_) {
+      setActionMsg('Could not reschedule this post.');
+    } finally {
+      setTimeout(() => setActionMsg(''), 3000);
+    }
+  };
+
   const prevMonth = () => {
     if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1); }
     else setViewMonth(m => m - 1);
@@ -667,11 +685,12 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
                         const orig = ts ? new Date(ts) : null;
                         const newDate = new Date(day);
                         newDate.setHours(orig ? orig.getHours() : 9, orig ? orig.getMinutes() : 0, 0, 0);
-                        const jobId = dragPost.jobId; // only PublishJob records have jobId
-                        if (jobId) {
-                          const pad = n => String(n).padStart(2, '0');
-                          const localDt = `${newDate.getFullYear()}-${pad(newDate.getMonth()+1)}-${pad(newDate.getDate())}T${pad(newDate.getHours())}:${pad(newDate.getMinutes())}:00`;
-                          rescheduleJob(jobId, localDt);
+                        const pad = n => String(n).padStart(2, '0');
+                        const localDt = `${newDate.getFullYear()}-${pad(newDate.getMonth()+1)}-${pad(newDate.getDate())}T${pad(newDate.getHours())}:${pad(newDate.getMinutes())}:00`;
+                        if (dragPost.jobId) {
+                          rescheduleJob(dragPost.jobId, localDt);
+                        } else if (dragPost.id) {
+                          reschedulePost(dragPost.id, localDt);
                         }
                         setDragPost(null);
                         setDragOverKey(null);
@@ -709,10 +728,10 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
                               <button
                                 key={`${key}-${i}`}
                                 type="button"
-                                draggable={isPostScheduled(p) && p.jobId != null}
+                                draggable={isPostScheduled(p) && (p.jobId != null || p.id != null)}
                                 onDragStart={(e) => { e.stopPropagation(); setDragPost(p); }}
                                 onDragEnd={() => { setDragPost(null); setDragOverKey(null); }}
-                                style={{ ...s.dayPostChip, ...(isPostScheduled(p) && p.jobId != null ? { cursor: 'grab' } : {}) }}
+                                style={{ ...s.dayPostChip, ...(isPostScheduled(p) ? { cursor: 'grab' } : {}) }}
                                 onMouseEnter={(e) => {
                                   const rect = e.currentTarget.getBoundingClientRect();
                                   setHoverPreview({

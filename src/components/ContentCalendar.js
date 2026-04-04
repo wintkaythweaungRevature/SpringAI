@@ -293,8 +293,8 @@ function DayModal({ date, posts, onClose, onRetryFailed, retryingIds = {}, onCan
               const isVideo = String(p.mediaType || '').toLowerCase() === 'video';
               const canRetry = String(p.status || '').toUpperCase() === 'FAILED' && p.id != null;
               const retrying = canRetry && !!retryingIds[String(p.id)];
-              const isScheduled = ['SCHEDULED','PENDING'].includes(String(p.status || '').toUpperCase());
-              const jobId = p.jobId || p.id;
+              const isScheduled = ['SCHEDULED','PENDING'].includes(String(p.status || '').toUpperCase()) && p.jobId != null;
+              const jobId = p.jobId; // only PublishJob records have jobId; don't fall back to SocialPost id
               return (
                 <div key={i} style={{ ...ms.postCard, borderLeft: `3px solid ${platformColor(p.platform)}` }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
@@ -678,8 +678,12 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
                         const orig = ts ? new Date(ts) : null;
                         const newDate = new Date(day);
                         newDate.setHours(orig ? orig.getHours() : 9, orig ? orig.getMinutes() : 0, 0, 0);
-                        const jobId = dragPost.jobId ?? dragPost.id;
-                        if (jobId) rescheduleJob(jobId, newDate.toISOString());
+                        const jobId = dragPost.jobId; // only PublishJob records have jobId
+                        if (jobId) {
+                          const pad = n => String(n).padStart(2, '0');
+                          const localDt = `${newDate.getFullYear()}-${pad(newDate.getMonth()+1)}-${pad(newDate.getDate())}T${pad(newDate.getHours())}:${pad(newDate.getMinutes())}:00`;
+                          rescheduleJob(jobId, localDt);
+                        }
                         setDragPost(null);
                         setDragOverKey(null);
                       }}
@@ -716,10 +720,10 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
                               <button
                                 key={`${key}-${i}`}
                                 type="button"
-                                draggable={isPostScheduled(p)}
+                                draggable={isPostScheduled(p) && p.jobId != null}
                                 onDragStart={(e) => { e.stopPropagation(); setDragPost(p); }}
                                 onDragEnd={() => { setDragPost(null); setDragOverKey(null); }}
-                                style={{ ...s.dayPostChip, ...(isPostScheduled(p) ? { cursor: 'grab' } : {}) }}
+                                style={{ ...s.dayPostChip, ...(isPostScheduled(p) && p.jobId != null ? { cursor: 'grab' } : {}) }}
                                 onMouseEnter={(e) => {
                                   const rect = e.currentTarget.getBoundingClientRect();
                                   setHoverPreview({

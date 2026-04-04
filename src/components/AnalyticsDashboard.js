@@ -1165,26 +1165,28 @@ export default function AnalyticsDashboard() {
                               platform={p}
                               barHeight={14}
                             />
-                            {hoveredPlatform === pid && platformPosts.length > 0 && (
+                            {hoveredPlatform === pid && (
                               <div style={{
-                                position: 'absolute', left: 0, top: '100%', zIndex: 50,
+                                position: 'absolute', right: 0, top: '100%', zIndex: 50,
                                 background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10,
                                 boxShadow: '0 4px 16px rgba(0,0,0,0.12)', padding: '10px 14px',
-                                minWidth: 260, maxWidth: 320,
+                                minWidth: 280, maxWidth: 340,
                               }}>
                                 <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                                   Recent posts — {p?.label ?? pid}
                                 </div>
-                                {platformPosts.slice(0, 4).map((post, i) => (
+                                {platformPosts.length === 0 ? (
+                                  <div style={{ fontSize: 12, color: '#94a3b8', padding: '4px 0' }}>No recent posts yet</div>
+                                ) : platformPosts.slice(0, 4).map((post, i) => (
                                   <div key={i} style={{ padding: '6px 0', borderBottom: i < Math.min(platformPosts.length, 4) - 1 ? '1px solid #f1f5f9' : 'none' }}>
                                     <div style={{ fontSize: 12, color: '#1e293b', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                       {safeDecodeCaption(post.caption) || '(no caption)'}
                                     </div>
                                     <div style={{ display: 'flex', gap: 10, marginTop: 3, fontSize: 11, color: '#64748b' }}>
-                                      {post.likes      != null && <span>❤️ {post.likes}</span>}
-                                      {post.commentsCount != null && <span>💬 {post.commentsCount}</span>}
-                                      {post.views      != null && <span>👁 {post.views}</span>}
-                                      {post.shares     != null && <span>🔁 {post.shares}</span>}
+                                      <span>❤️ {post.likes ?? '—'}</span>
+                                      <span>💬 {post.commentsCount ?? '—'}</span>
+                                      <span>👁 {post.views ?? '—'}</span>
+                                      <span>🔁 {post.shares ?? '—'}</span>
                                     </div>
                                   </div>
                                 ))}

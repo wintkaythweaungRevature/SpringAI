@@ -1016,8 +1016,8 @@ export default function AnalyticsDashboard() {
             <>
               <PerformanceInsightsGrid platform="overview" analyticsData={data} />
 
-              {/* Three-column: followers | content created | content shared */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))', gap: '14px', marginBottom: '14px' }}>
+              {/* Three-column: 25% | 50% | 25% */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1fr', gap: '14px', marginBottom: '14px' }}>
 
                 {/* Followers per platform */}
                 <div style={{ background: '#fff', borderRadius: '12px', padding: '18px 20px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)' }}>

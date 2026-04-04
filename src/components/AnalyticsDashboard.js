@@ -919,14 +919,6 @@ export default function AnalyticsDashboard() {
 
   return (
     <div style={{ width: '100%', maxWidth: '100%', margin: 0, boxSizing: 'border-box', fontFamily: "'Inter',-apple-system,sans-serif" }}>
-      <style>{`
-        .adh-shared-by-platform-row { display: grid; gap: 14px; margin-bottom: 14px; grid-template-columns: 1fr; }
-        @media (min-width: 640px) {
-          .adh-shared-by-platform-row { grid-template-columns: 1fr 1fr; }
-          .adh-shared-by-platform-spacer { display: block !important; }
-        }
-        .adh-shared-by-platform-spacer { display: none; min-height: 0; }
-      `}</style>
 
       {/* Subtitle + refresh (page title is in the app shell) */}
       <div
@@ -1024,8 +1016,8 @@ export default function AnalyticsDashboard() {
             <>
               <PerformanceInsightsGrid platform="overview" analyticsData={data} />
 
-              {/* Two-column: followers bar + content type donut */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: '14px', marginBottom: '14px' }}>
+              {/* Three-column: followers | content created | content shared */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))', gap: '14px', marginBottom: '14px' }}>
 
                 {/* Followers per platform */}
                 <div style={{ background: '#fff', borderRadius: '12px', padding: '18px 20px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)' }}>
@@ -1126,24 +1118,12 @@ export default function AnalyticsDashboard() {
                     })}
                   </div>
                 </div>
-              </div>
 
-              {/* Posts per platform bar — right column only (aligned with Content created donut above) */}
-              {Object.keys(byPlatform).length > 0 && (
-                <div className="adh-shared-by-platform-row">
-                  <div className="adh-shared-by-platform-spacer" aria-hidden="true" />
-                  <div
-                    style={{
-                      background: '#fff',
-                      borderRadius: '12px',
-                      padding: '20px 22px',
-                      border: '1px solid #e2e8f0',
-                      boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
-                      minWidth: 0,
-                    }}
-                  >
-                    <div style={{ fontWeight: 700, fontSize: '15px', color: '#1e293b', marginBottom: '18px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <IconChart size={20} color="#6366f1" />
+                {/* Content shared by platform — 3rd column */}
+                {Object.keys(byPlatform).length > 0 && (
+                  <div style={{ background: '#fff', borderRadius: '12px', padding: '18px 20px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)', minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, fontSize: '14px', color: '#1e293b', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <IconChart size={18} color="#6366f1" />
                       Content shared by platform
                     </div>
                     <div style={{ position: 'relative' }}>
@@ -1170,7 +1150,7 @@ export default function AnalyticsDashboard() {
                                 position: 'absolute', right: 0, top: '100%', zIndex: 50,
                                 background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10,
                                 boxShadow: '0 4px 16px rgba(0,0,0,0.12)', padding: '10px 14px',
-                                minWidth: 280, maxWidth: 340,
+                                minWidth: 240, maxWidth: 300,
                               }}>
                                 <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                                   Recent posts — {p?.label ?? pid}
@@ -1197,8 +1177,8 @@ export default function AnalyticsDashboard() {
                       })}
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
 
               {/* 🏆 Top Performing Posts */}
               {topPosts?.posts?.length > 0 && (

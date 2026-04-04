@@ -2481,7 +2481,14 @@ function CompetitorTab({ authHeaders }) {
       const kw = encodeURIComponent(raw);
       const res = await fetch(`${API}/api/analytics/competitors/trends?keywords=${kw}`, { headers: authHeaders() });
       const data = await res.json();
-      if (!res.ok || data.error) { setTrendsError(data.error || 'Failed to fetch trends'); return; }
+      if (!res.ok || data.error) {
+        const msg = data.error || 'Failed to fetch trends';
+        const isRateLimited = msg === 'rate_limited' || msg.includes('429') || msg.toLowerCase().includes('rate');
+        setTrendsError(isRateLimited
+          ? 'Google Trends is temporarily rate-limited. Please wait a minute and try again.'
+          : msg);
+        return;
+      }
       setTrendsData(data);
     } catch {
       setTrendsError('Could not reach Google Trends. Try again.');
@@ -2499,7 +2506,7 @@ function CompetitorTab({ authHeaders }) {
         {[
           { id: 'youtube', label: 'YouTube',       logo: 'youtube',      color: '#FF0000' },
           { id: 'reddit',  label: 'Reddit',         logo: 'reddit',       color: '#FF4500' },
-          { id: 'trends',  label: 'Google Trends',  logo: 'googletrends', color: '#4285F4' },
+          { id: 'trends',  label: 'Google Trends',  logo: 'google',       color: '#4285F4' },
         ].map(pl => (
           <button key={pl.id} onClick={() => setCompetitorPlatform(pl.id)} style={{
             display: 'flex', alignItems: 'center', gap: 6,

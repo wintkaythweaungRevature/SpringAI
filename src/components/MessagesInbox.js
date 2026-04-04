@@ -933,7 +933,7 @@ function InboxDetailPanel({ item, kind, commentReplyExtras, onClose, onOpenAutoR
 
 /* ─────────────────────────────────────────────────────────── */
 export default function MessagesInbox({ onOpenConnectedAccounts, onOpenAutoReply }) {
-  const { apiBase, token } = useAuth();
+  const { apiBase, token, user } = useAuth();
   const base = apiBase || 'https://api.wintaibot.com';
 
   const [data,      setData]      = useState(null);
@@ -944,27 +944,33 @@ export default function MessagesInbox({ onOpenConnectedAccounts, onOpenAutoReply
   /** Separate DM vs comment so IDs never collide; fixes wrong pane when filtering comments. */
   const [selection, setSelection]   = useState(null); // { kind: 'dm' | 'comment', id: string } | null
   const [commentReplyExtras, setCommentReplyExtras] = useState({}); // commentId -> locally sent replies
+  const [showAll, setShowAll] = useState(false); // true = ignore lastSeen, fetch full history
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (ignoreLastSeen = false) => {
     if (!token) {
       setLoading(false);
       return;
     }
     setLoading(true); setError(null);
     try {
-      const res = await fetch(`${base}/api/analytics/messages`, {
+      const storageKey = `wintai_inbox_last_seen_${user?.id}`;
+      const lastSeen = ignoreLastSeen ? '' : (localStorage.getItem(storageKey) ?? '');
+      const url = `${base}/api/analytics/messages${lastSeen ? `?since=${encodeURIComponent(lastSeen)}` : ''}`;
+      const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error(`Server error ${res.status}`);
       setData(await res.json());
+      // Update lastSeen to now after a successful "new only" fetch
+      if (!ignoreLastSeen) localStorage.setItem(storageKey, new Date().toISOString());
     } catch (e) {
       setError(e.message);
     } finally {
       setLoading(false);
     }
-  }, [base, token]);
+  }, [base, token, user]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(showAll); }, [load, showAll]);
 
   useEffect(() => {
     setSelection(null);
@@ -1072,9 +1078,26 @@ export default function MessagesInbox({ onOpenConnectedAccounts, onOpenAutoReply
           )}
         </div>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          {/* Show new / Show all toggle */}
+          <span style={{ fontSize: 11, color: '#94a3b8' }}>
+            {showAll ? 'Showing all history' : 'New since last visit'}
+          </span>
           <button
             type="button"
-            onClick={load}
+            onClick={() => setShowAll(v => !v)}
+            disabled={loading}
+            style={{
+              padding: '6px 12px', borderRadius: '8px',
+              border: '1px solid #e2e8f0', background: showAll ? '#f1f5f9' : '#fff',
+              color: '#6366f1', fontWeight: 600, fontSize: '12px',
+              cursor: loading ? 'wait' : 'pointer', flexShrink: 0,
+            }}
+          >
+            {showAll ? 'New only' : 'Show all'}
+          </button>
+          <button
+            type="button"
+            onClick={() => load(showAll)}
             disabled={loading}
             style={{
               display: 'inline-flex',

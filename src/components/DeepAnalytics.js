@@ -14,6 +14,7 @@ const PLATFORMS = [
   { id: 'x',         label: 'X',         color: '#000000', emoji: '🐦', logo: 'x'         },
   { id: 'threads',   label: 'Threads',   color: '#101010', emoji: '🧵', logo: 'threads'   },
   { id: 'pinterest', label: 'Pinterest', color: '#E60023', emoji: '📌', logo: 'pinterest' },
+  { id: 'reddit',    label: 'Reddit',    color: '#FF4500', emoji: '🤝', logo: 'reddit'    },
 ];
 
 const PLATFORM_COLORS = {
@@ -2363,197 +2364,420 @@ function parseYouTubeInput(raw) {
 }
 
 function CompetitorTab({ authHeaders }) {
-  const [query,       setQuery]       = useState('');
-  const [searching,   setSearching]   = useState(false);
-  const [channels,    setChannels]    = useState(null);
-  const [selectedCh,  setSelectedCh]  = useState(null);
-  const [analysis,    setAnalysis]    = useState(null);
-  const [loadAnalysis,setLoadAnalysis]= useState(false);
-  const [error,       setError]       = useState('');
+  // ── Platform switcher ─────────────────────────────────────────
+  const [competitorPlatform, setCompetitorPlatform] = useState('youtube');
 
-  // Cleaned query shown as a hint when user pastes a URL
+  // ── YouTube state ─────────────────────────────────────────────
+  const [query,        setQuery]        = useState('');
+  const [searching,    setSearching]    = useState(false);
+  const [channels,     setChannels]     = useState(null);
+  const [selectedCh,   setSelectedCh]   = useState(null);
+  const [analysis,     setAnalysis]     = useState(null);
+  const [loadAnalysis, setLoadAnalysis] = useState(false);
+  const [ytError,      setYtError]      = useState('');
+
+  // ── Reddit state ──────────────────────────────────────────────
+  const [redditQuery,      setRedditQuery]      = useState('');
+  const [searchingReddit,  setSearchingReddit]  = useState(false);
+  const [subreddits,       setSubreddits]       = useState(null);
+  const [selectedSub,      setSelectedSub]      = useState(null);
+  const [subAnalysis,      setSubAnalysis]      = useState(null);
+  const [loadSubAnalysis,  setLoadSubAnalysis]  = useState(false);
+  const [redditError,      setRedditError]      = useState('');
+
+  // Cleaned query shown as a hint when user pastes a YouTube URL
   const cleanedQuery = useMemo(() => parseYouTubeInput(query), [query]);
   const isUrlInput   = /^https?:\/\//i.test(query.trim());
 
+  // ── YouTube functions ─────────────────────────────────────────
   const doSearch = async () => {
     const q = cleanedQuery || query.trim();
     if (!q) return;
-    setSearching(true); setChannels(null); setSelectedCh(null); setAnalysis(null); setError('');
+    setSearching(true); setChannels(null); setSelectedCh(null); setAnalysis(null); setYtError('');
     try {
       const res = await fetch(`${API}/api/analytics/competitors/youtube?query=${encodeURIComponent(q)}`,
         { headers: authHeaders() });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || 'Search failed'); return; }
+      if (!res.ok) { setYtError(data.error || 'Search failed'); return; }
       setChannels(data.channels || []);
     } catch {
-      setError('Search failed. Make sure your YouTube account is connected.');
+      setYtError('Search failed. Make sure your YouTube account is connected.');
     } finally {
       setSearching(false);
     }
   };
 
   const doAnalyze = async (channelId) => {
-    setSelectedCh(channelId); setLoadAnalysis(true); setAnalysis(null); setError('');
+    setSelectedCh(channelId); setLoadAnalysis(true); setAnalysis(null); setYtError('');
     try {
       const res = await fetch(`${API}/api/analytics/competitors/youtube/${channelId}`,
         { headers: authHeaders() });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || 'Analysis failed'); return; }
+      if (!res.ok) { setYtError(data.error || 'Analysis failed'); return; }
       setAnalysis(data);
     } catch {
-      setError('Analysis failed.');
+      setYtError('Analysis failed.');
     } finally {
       setLoadAnalysis(false);
     }
   };
 
+  // ── Reddit functions ──────────────────────────────────────────
+  function parseRedditInput(raw) {
+    if (!raw) return '';
+    let s = raw.trim();
+    // Strip reddit.com/r/... URL
+    const urlMatch = s.match(/reddit\.com\/r\/([A-Za-z0-9_]+)/i);
+    if (urlMatch) return urlMatch[1];
+    // Strip "r/" prefix
+    if (s.startsWith('r/')) return s.slice(2);
+    return s;
+  }
+
+  const doRedditSearch = async () => {
+    const q = parseRedditInput(redditQuery);
+    if (!q) return;
+    setSearchingReddit(true); setSubreddits(null); setSelectedSub(null); setSubAnalysis(null); setRedditError('');
+    try {
+      const res = await fetch(`${API}/api/analytics/competitors/reddit?query=${encodeURIComponent(q)}`,
+        { headers: authHeaders() });
+      const data = await res.json();
+      if (!res.ok) { setRedditError(data.error || 'Search failed'); return; }
+      setSubreddits(data.subreddits || []);
+    } catch {
+      setRedditError('Search failed.');
+    } finally {
+      setSearchingReddit(false);
+    }
+  };
+
+  const doSubredditAnalyze = async (name) => {
+    setSelectedSub(name); setLoadSubAnalysis(true); setSubAnalysis(null); setRedditError('');
+    try {
+      const res = await fetch(`${API}/api/analytics/competitors/reddit/${encodeURIComponent(name)}`,
+        { headers: authHeaders() });
+      const data = await res.json();
+      if (!res.ok) { setRedditError(data.error || 'Analysis failed'); return; }
+      setSubAnalysis(data);
+    } catch {
+      setRedditError('Analysis failed.');
+    } finally {
+      setLoadSubAnalysis(false);
+    }
+  };
+
+  const redditOrange = '#FF4500';
+
   return (
     <div>
-      <p style={{ fontSize: 13, color: '#64748b', marginBottom: 16 }}>
-        Search any YouTube channel to see their stats, recent videos, and engagement — compared to your channel.
-        <strong style={{ color: '#e74c3c' }}> Requires YouTube account connected.</strong>
-      </p>
-
-      {/* Search bar */}
-      <div style={{ marginBottom: 20 }}>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <input
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && doSearch()}
-            placeholder="Channel name, @handle, or paste a YouTube URL"
-            style={{
-              flex: 1, padding: '10px 14px',
-              border: `1.5px solid ${isUrlInput ? '#818cf8' : '#e2e8f0'}`,
-              borderRadius: 10, fontSize: 13, color: '#1e293b', outline: 'none',
-            }}
-          />
-        <button onClick={doSearch} disabled={searching || !query.trim()} style={{
-          padding: '10px 20px', background: '#6366f1', color: '#fff', border: 'none',
-          borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer',
-          opacity: searching || !query.trim() ? 0.6 : 1,
-        }}>
-          {searching ? '⏳' : '🔍 Search'}
-        </button>
-        </div>
-        {/* URL detected hint */}
-        {isUrlInput && cleanedQuery && (
-          <div style={{ marginTop: 6, fontSize: 12, color: '#6366f1', display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span>🔗 YouTube URL detected — will search as:</span>
-            <strong>{cleanedQuery}</strong>
-          </div>
-        )}
-        {isUrlInput && !cleanedQuery && (
-          <div style={{ marginTop: 6, fontSize: 12, color: '#dc2626' }}>
-            Could not extract a channel name from this URL. Try pasting just the @handle or channel name.
-          </div>
-        )}
+      {/* ── Platform switcher ── */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+        {[
+          { id: 'youtube', label: 'YouTube',  logo: 'youtube',  color: '#FF0000' },
+          { id: 'reddit',  label: 'Reddit',   logo: 'reddit',   color: '#FF4500' },
+        ].map(pl => (
+          <button key={pl.id} onClick={() => setCompetitorPlatform(pl.id)} style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            padding: '7px 16px', borderRadius: 20, border: 'none', cursor: 'pointer',
+            fontWeight: 600, fontSize: 13,
+            background: competitorPlatform === pl.id ? pl.color : '#f1f5f9',
+            color: competitorPlatform === pl.id ? '#fff' : '#475569',
+            transition: 'all 0.15s',
+          }}>
+            <img
+              src={`https://cdn.simpleicons.org/${pl.logo}/${competitorPlatform === pl.id ? 'ffffff' : pl.color.replace('#', '')}`}
+              alt={pl.label} width={14} height={14}
+              onError={e => { e.target.style.display = 'none'; }}
+            />
+            {pl.label}
+          </button>
+        ))}
       </div>
 
-      {error && <div style={{ background: '#fef2f2', color: '#dc2626', borderRadius: 8, padding: '10px 14px', fontSize: 13, marginBottom: 16 }}>{error}</div>}
+      {/* ════════════ YOUTUBE ════════════ */}
+      {competitorPlatform === 'youtube' && (
+        <div>
+          <p style={{ fontSize: 13, color: '#64748b', marginBottom: 16 }}>
+            Search any YouTube channel to see their stats, recent videos, and engagement.
+            <strong style={{ color: '#e74c3c' }}> Requires YouTube account connected.</strong>
+          </p>
 
-      {/* Channel results */}
-      {channels && channels.length === 0 && !searching && (
-        <p style={{ color: '#94a3b8', fontSize: 13 }}>No channels found. Try a different search term or paste the full YouTube channel URL.</p>
-      )}
-      {channels && channels.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
-          {channels.map(ch => (
-            <div key={ch.channelId}
-              onClick={() => doAnalyze(ch.channelId)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 14,
-                background: selectedCh === ch.channelId ? '#ede9fe' : '#fff',
-                border: `1.5px solid ${selectedCh === ch.channelId ? '#6366f1' : '#e2e8f0'}`,
-                borderRadius: 12, padding: '12px 16px', cursor: 'pointer',
-                transition: 'all 0.15s',
+          {/* Search bar */}
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && doSearch()}
+                placeholder="Channel name, @handle, or paste a YouTube URL"
+                style={{
+                  flex: 1, padding: '10px 14px',
+                  border: `1.5px solid ${isUrlInput ? '#818cf8' : '#e2e8f0'}`,
+                  borderRadius: 10, fontSize: 13, color: '#1e293b', outline: 'none',
+                }}
+              />
+              <button onClick={doSearch} disabled={searching || !query.trim()} style={{
+                padding: '10px 20px', background: '#6366f1', color: '#fff', border: 'none',
+                borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                opacity: searching || !query.trim() ? 0.6 : 1,
               }}>
-              {ch.thumbnailUrl && (
-                <img src={ch.thumbnailUrl} alt={ch.title} style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
-              )}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 700, fontSize: 14, color: '#1e293b', marginBottom: 2 }}>{ch.title}</div>
-                <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: 12, color: '#64748b' }}>
-                    👥 {ch.hiddenSubscribers ? 'Hidden' : fmtNum(ch.subscriberCount)} subs
-                  </span>
-                  <span style={{ fontSize: 12, color: '#64748b' }}>🎬 {fmtNum(ch.videoCount)} videos</span>
-                  <span style={{ fontSize: 12, color: '#64748b' }}>👁 {fmtNum(ch.viewCount)} views</span>
+                {searching ? '⏳' : '🔍 Search'}
+              </button>
+            </div>
+            {isUrlInput && cleanedQuery && (
+              <div style={{ marginTop: 6, fontSize: 12, color: '#6366f1', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span>🔗 YouTube URL detected — will search as:</span>
+                <strong>{cleanedQuery}</strong>
+              </div>
+            )}
+            {isUrlInput && !cleanedQuery && (
+              <div style={{ marginTop: 6, fontSize: 12, color: '#dc2626' }}>
+                Could not extract a channel name from this URL. Try pasting just the @handle or channel name.
+              </div>
+            )}
+          </div>
+
+          {ytError && <div style={{ background: '#fef2f2', color: '#dc2626', borderRadius: 8, padding: '10px 14px', fontSize: 13, marginBottom: 16 }}>{ytError}</div>}
+
+          {channels && channels.length === 0 && !searching && (
+            <p style={{ color: '#94a3b8', fontSize: 13 }}>No channels found. Try a different search term or paste the full YouTube channel URL.</p>
+          )}
+          {channels && channels.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
+              {channels.map(ch => (
+                <div key={ch.channelId}
+                  onClick={() => doAnalyze(ch.channelId)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 14,
+                    background: selectedCh === ch.channelId ? '#ede9fe' : '#fff',
+                    border: `1.5px solid ${selectedCh === ch.channelId ? '#6366f1' : '#e2e8f0'}`,
+                    borderRadius: 12, padding: '12px 16px', cursor: 'pointer', transition: 'all 0.15s',
+                  }}>
+                  {ch.thumbnailUrl && (
+                    <img src={ch.thumbnailUrl} alt={ch.title} style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                  )}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, fontSize: 14, color: '#1e293b', marginBottom: 2 }}>{ch.title}</div>
+                    <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: 12, color: '#64748b' }}>👥 {ch.hiddenSubscribers ? 'Hidden' : fmtNum(ch.subscriberCount)} subs</span>
+                      <span style={{ fontSize: 12, color: '#64748b' }}>🎬 {fmtNum(ch.videoCount)} videos</span>
+                      <span style={{ fontSize: 12, color: '#64748b' }}>👁 {fmtNum(ch.viewCount)} views</span>
+                    </div>
+                  </div>
+                  <span style={{ color: '#6366f1', fontSize: 13, fontWeight: 600 }}>Analyze →</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {loadAnalysis && <div style={s.loadingRow}><div style={s.spinner} /> Loading analysis…</div>}
+          {analysis && (
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16, background: '#fff', border: '1.5px solid #e2e8f0', borderRadius: 16, padding: '20px 24px', marginBottom: 16 }}>
+                {analysis.channel?.thumbnailUrl && (
+                  <img src={analysis.channel.thumbnailUrl} alt="" style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover' }} />
+                )}
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 800, fontSize: 18, color: '#1e293b', marginBottom: 4 }}>{analysis.channel?.title}</div>
+                  {analysis.channel?.description && (
+                    <div style={{ fontSize: 12, color: '#64748b', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                      {analysis.channel.description}
+                    </div>
+                  )}
                 </div>
               </div>
-              <span style={{ color: '#6366f1', fontSize: 13, fontWeight: 600 }}>Analyze →</span>
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
+                {[
+                  ['👥 Subscribers', analysis.channel?.hiddenSubscribers ? 'Hidden' : fmtNum(analysis.channel?.subscriberCount)],
+                  ['🎬 Total Videos',    fmtNum(analysis.channel?.videoCount)],
+                  ['👁 Total Views',     fmtNum(analysis.channel?.viewCount)],
+                  ['📊 Avg Views/Video', fmtNum(analysis.avgViewsPerVideo)],
+                  ['❤️ Avg Likes/Video', fmtNum(analysis.avgLikesPerVideo)],
+                  ['💬 Avg Comments',    fmtNum(analysis.avgCommentsPerVideo)],
+                  ['📈 Avg Engagement',  `${analysis.avgEngagementRate}%`],
+                ].map(([label, value]) => (
+                  <div key={label} style={{ background: '#f8fafc', borderRadius: 12, padding: '12px 16px', minWidth: 120, flex: '1 1 120px', textAlign: 'center' }}>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: '#1e293b' }}>{value}</div>
+                    <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 2 }}>{label}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ background: '#fff', border: '1.5px solid #e2e8f0', borderRadius: 16, overflow: 'hidden' }}>
+                <div style={{ padding: '14px 20px', borderBottom: '1px solid #e2e8f0', fontWeight: 700, fontSize: 14, color: '#1e293b' }}>Recent Videos</div>
+                {(analysis.recentVideos || []).map((v, i) => (
+                  <div key={i} style={{
+                    display: 'flex', alignItems: 'center', gap: 12,
+                    padding: '12px 20px', borderBottom: i < analysis.recentVideos.length - 1 ? '1px solid #f1f5f9' : 'none',
+                  }}>
+                    {v.thumbnailUrl && <img src={v.thumbnailUrl} alt="" style={{ width: 72, height: 40, objectFit: 'cover', borderRadius: 6, flexShrink: 0 }} />}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', marginBottom: 4 }}>{v.title}</div>
+                      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: 11, color: '#64748b' }}>👁 {fmtNum(v.viewCount)}</span>
+                        <span style={{ fontSize: 11, color: '#64748b' }}>❤️ {fmtNum(v.likeCount)}</span>
+                        <span style={{ fontSize: 11, color: '#64748b' }}>💬 {fmtNum(v.commentCount)}</span>
+                        <span style={{ fontSize: 11, color: '#6366f1', fontWeight: 600 }}>{v.engagementRate}% eng.</span>
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 11, color: '#94a3b8', flexShrink: 0 }}>
+                      {v.publishedAt ? new Date(v.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-          ))}
+          )}
         </div>
       )}
 
-      {/* Deep analysis */}
-      {loadAnalysis && <div style={s.loadingRow}><div style={s.spinner} /> Loading analysis…</div>}
-      {analysis && (
+      {/* ════════════ REDDIT ════════════ */}
+      {competitorPlatform === 'reddit' && (
         <div>
-          {/* Channel header */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16, background: '#fff', border: '1.5px solid #e2e8f0', borderRadius: 16, padding: '20px 24px', marginBottom: 16 }}>
-            {analysis.channel?.thumbnailUrl && (
-              <img src={analysis.channel.thumbnailUrl} alt="" style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover' }} />
-            )}
-            <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 800, fontSize: 18, color: '#1e293b', marginBottom: 4 }}>{analysis.channel?.title}</div>
-              {analysis.channel?.description && (
-                <div style={{ fontSize: 12, color: '#64748b', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-                  {analysis.channel.description}
-                </div>
-              )}
-            </div>
-          </div>
+          <p style={{ fontSize: 13, color: '#64748b', marginBottom: 16 }}>
+            Search any subreddit to see its subscriber count, active users, and top posts from the last month.
+            <strong style={{ color: '#FF4500' }}> No Reddit account required.</strong>
+          </p>
 
-          {/* Stats row */}
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
-            {[
-              ['👥 Subscribers', analysis.channel?.hiddenSubscribers ? 'Hidden' : fmtNum(analysis.channel?.subscriberCount)],
-              ['🎬 Total Videos',   fmtNum(analysis.channel?.videoCount)],
-              ['👁 Total Views',    fmtNum(analysis.channel?.viewCount)],
-              ['📊 Avg Views/Video', fmtNum(analysis.avgViewsPerVideo)],
-              ['❤️ Avg Likes/Video', fmtNum(analysis.avgLikesPerVideo)],
-              ['💬 Avg Comments',   fmtNum(analysis.avgCommentsPerVideo)],
-              ['📈 Avg Engagement', `${analysis.avgEngagementRate}%`],
-            ].map(([label, value]) => (
-              <div key={label} style={{ background: '#f8fafc', borderRadius: 12, padding: '12px 16px', minWidth: 120, flex: '1 1 120px', textAlign: 'center' }}>
-                <div style={{ fontSize: 16, fontWeight: 800, color: '#1e293b' }}>{value}</div>
-                <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 2 }}>{label}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Recent videos table */}
-          <div style={{ background: '#fff', border: '1.5px solid #e2e8f0', borderRadius: 16, overflow: 'hidden' }}>
-            <div style={{ padding: '14px 20px', borderBottom: '1px solid #e2e8f0', fontWeight: 700, fontSize: 14, color: '#1e293b' }}>
-              Recent Videos
-            </div>
-            {(analysis.recentVideos || []).map((v, i) => (
-              <div key={i} style={{
-                display: 'flex', alignItems: 'center', gap: 12,
-                padding: '12px 20px', borderBottom: i < analysis.recentVideos.length - 1 ? '1px solid #f1f5f9' : 'none',
+          {/* Search bar */}
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input
+                value={redditQuery}
+                onChange={e => setRedditQuery(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && doRedditSearch()}
+                placeholder="e.g. r/reactjs, reactjs, or paste a Reddit URL"
+                style={{
+                  flex: 1, padding: '10px 14px',
+                  border: '1.5px solid #e2e8f0',
+                  borderRadius: 10, fontSize: 13, color: '#1e293b', outline: 'none',
+                }}
+              />
+              <button onClick={doRedditSearch} disabled={searchingReddit || !redditQuery.trim()} style={{
+                padding: '10px 20px', background: redditOrange, color: '#fff', border: 'none',
+                borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                opacity: searchingReddit || !redditQuery.trim() ? 0.6 : 1,
               }}>
-                {v.thumbnailUrl && (
-                  <img src={v.thumbnailUrl} alt="" style={{ width: 72, height: 40, objectFit: 'cover', borderRadius: 6, flexShrink: 0 }} />
-                )}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b', overflow: 'hidden',
-                                display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-                                marginBottom: 4 }}>{v.title}</div>
-                  <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: 11, color: '#64748b' }}>👁 {fmtNum(v.viewCount)}</span>
-                    <span style={{ fontSize: 11, color: '#64748b' }}>❤️ {fmtNum(v.likeCount)}</span>
-                    <span style={{ fontSize: 11, color: '#64748b' }}>💬 {fmtNum(v.commentCount)}</span>
-                    <span style={{ fontSize: 11, color: '#6366f1', fontWeight: 600 }}>{v.engagementRate}% eng.</span>
+                {searchingReddit ? '⏳' : '🔍 Search'}
+              </button>
+            </div>
+          </div>
+
+          {redditError && <div style={{ background: '#fff5f0', color: '#c0392b', borderRadius: 8, padding: '10px 14px', fontSize: 13, marginBottom: 16 }}>{redditError}</div>}
+
+          {subreddits && subreddits.length === 0 && !searchingReddit && (
+            <p style={{ color: '#94a3b8', fontSize: 13 }}>No subreddits found. Try a different search term.</p>
+          )}
+          {subreddits && subreddits.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
+              {subreddits.map(sub => (
+                <div key={sub.name}
+                  onClick={() => doSubredditAnalyze(sub.name)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 14,
+                    background: selectedSub === sub.name ? '#fff5f0' : '#fff',
+                    border: `1.5px solid ${selectedSub === sub.name ? redditOrange : '#e2e8f0'}`,
+                    borderRadius: 12, padding: '12px 16px', cursor: 'pointer', transition: 'all 0.15s',
+                  }}>
+                  {sub.iconUrl ? (
+                    <img src={sub.iconUrl} alt={sub.displayName} style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                  ) : (
+                    <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#ff4500', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <img src="https://cdn.simpleicons.org/reddit/ffffff" alt="reddit" width={26} height={26} />
+                    </div>
+                  )}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, fontSize: 14, color: '#1e293b', marginBottom: 2 }}>{sub.displayName}</div>
+                    {sub.description && (
+                      <div style={{ fontSize: 12, color: '#64748b', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{sub.description}</div>
+                    )}
+                    <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 4 }}>
+                      <span style={{ fontSize: 12, color: '#64748b' }}>👥 {fmtNum(sub.subscribers)} members</span>
+                      <span style={{ fontSize: 12, color: '#22c55e' }}>🟢 {fmtNum(sub.activeUsers)} online</span>
+                    </div>
                   </div>
+                  <span style={{ color: redditOrange, fontSize: 13, fontWeight: 600 }}>Analyze →</span>
                 </div>
-                <div style={{ fontSize: 11, color: '#94a3b8', flexShrink: 0 }}>
-                  {v.publishedAt ? new Date(v.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}
+              ))}
+            </div>
+          )}
+
+          {loadSubAnalysis && <div style={s.loadingRow}><div style={s.spinner} /> Loading analysis…</div>}
+          {subAnalysis && (
+            <div>
+              {/* Subreddit header */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16, background: '#fff', border: `1.5px solid ${redditOrange}22`, borderRadius: 16, padding: '20px 24px', marginBottom: 16 }}>
+                {subAnalysis.subreddit?.iconUrl ? (
+                  <img src={subAnalysis.subreddit.iconUrl} alt="" style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover' }} />
+                ) : (
+                  <div style={{ width: 64, height: 64, borderRadius: '50%', background: redditOrange, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <img src="https://cdn.simpleicons.org/reddit/ffffff" alt="reddit" width={36} height={36} />
+                  </div>
+                )}
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 800, fontSize: 18, color: '#1e293b', marginBottom: 4 }}>{subAnalysis.subreddit?.displayName}</div>
+                  {subAnalysis.subreddit?.title && (
+                    <div style={{ fontSize: 12, color: '#64748b', marginBottom: 4 }}>{subAnalysis.subreddit.title}</div>
+                  )}
+                  {subAnalysis.subreddit?.description && (
+                    <div style={{ fontSize: 12, color: '#94a3b8', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                      {subAnalysis.subreddit.description}
+                    </div>
+                  )}
                 </div>
               </div>
-            ))}
-          </div>
+
+              {/* Stats row */}
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
+                {[
+                  ['👥 Members',       fmtNum(subAnalysis.subreddit?.subscribers)],
+                  ['🟢 Online Now',    fmtNum(subAnalysis.subreddit?.activeUsers)],
+                  ['📅 Created',       subAnalysis.subreddit?.createdAt ? new Date(subAnalysis.subreddit.createdAt).getFullYear() : '—'],
+                  ['📊 Avg Score',     fmtNum(subAnalysis.avgScore)],
+                  ['💬 Avg Comments',  fmtNum(subAnalysis.avgComments)],
+                  ['⬆️ Avg Upvote %',  `${subAnalysis.avgUpvoteRatio}%`],
+                ].map(([label, value]) => (
+                  <div key={label} style={{ background: '#f8fafc', borderRadius: 12, padding: '12px 16px', minWidth: 120, flex: '1 1 120px', textAlign: 'center' }}>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: '#1e293b' }}>{value}</div>
+                    <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 2 }}>{label}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Top posts table */}
+              <div style={{ background: '#fff', border: '1.5px solid #e2e8f0', borderRadius: 16, overflow: 'hidden' }}>
+                <div style={{ padding: '14px 20px', borderBottom: '1px solid #e2e8f0', fontWeight: 700, fontSize: 14, color: '#1e293b' }}>
+                  Top Posts — Last 30 Days
+                </div>
+                {(subAnalysis.topPosts || []).map((p, i) => (
+                  <div key={i} style={{
+                    display: 'flex', alignItems: 'flex-start', gap: 12,
+                    padding: '12px 20px', borderBottom: i < subAnalysis.topPosts.length - 1 ? '1px solid #f1f5f9' : 'none',
+                  }}>
+                    <div style={{ minWidth: 48, textAlign: 'center', paddingTop: 2 }}>
+                      <div style={{ fontSize: 14, fontWeight: 800, color: redditOrange }}>{fmtNum(p.score)}</div>
+                      <div style={{ fontSize: 10, color: '#94a3b8' }}>score</div>
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <a href={p.url} target="_blank" rel="noreferrer"
+                        style={{ fontSize: 13, fontWeight: 600, color: '#1e293b', textDecoration: 'none',
+                                 overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                        {p.title}
+                      </a>
+                      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 4 }}>
+                        <span style={{ fontSize: 11, color: '#64748b' }}>💬 {fmtNum(p.commentCount)}</span>
+                        <span style={{ fontSize: 11, color: '#22c55e' }}>⬆️ {Math.round((p.upvoteRatio || 0) * 100)}%</span>
+                        {p.flair && <span style={{ fontSize: 11, background: '#f1f5f9', color: '#475569', borderRadius: 4, padding: '1px 6px' }}>{p.flair}</span>}
+                        <span style={{ fontSize: 11, color: '#94a3b8' }}>{p.author}</span>
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 11, color: '#94a3b8', flexShrink: 0 }}>
+                      {p.publishedAt ? new Date(p.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -2844,7 +3068,7 @@ export default function DeepAnalytics() {
       {/* ── COMPETITOR ── */}
       <section id="trends-competitor" style={{ scrollMarginTop: 12 }}>
         <div style={s.card}>
-          <h3 style={s.cardTitle}>🔍 YouTube Competitor Analysis</h3>
+          <h3 style={s.cardTitle}>🔍 Competitor Analysis</h3>
           <CompetitorTab authHeaders={authHeaders} />
         </div>
       </section>

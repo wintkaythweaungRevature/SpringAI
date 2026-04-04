@@ -568,17 +568,6 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
           <p style={s.pageSub}>Visual overview of your published and scheduled posts across all platforms.</p>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          {/* New Post button */}
-          <button
-            onClick={() => { setComposeDate(null); setComposeOpen(true); }}
-            style={{
-              padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer',
-              background: '#6366f1', color: '#fff', fontWeight: 700, fontSize: 13,
-              display: 'flex', alignItems: 'center', gap: 6,
-            }}
-          >
-            + New Post
-          </button>
           {/* View toggle */}
           <div style={s.viewToggle}>
             <button style={{ ...s.viewBtn, ...(view === 'calendar' ? s.viewBtnActive : {}) }} onClick={() => setView('calendar')}>
@@ -803,7 +792,10 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
                     const canRetry = String(p.status || '').toUpperCase() === 'FAILED' && p.id != null;
                     const retrying = canRetry && !!retryingIds[String(p.id)];
                     return (
-                      <div key={i} style={{ ...s.upcomingItem, borderLeft: `3px solid ${platformColor(p.platform)}` }}>
+                      <div key={i}
+                        style={{ ...s.upcomingItem, borderLeft: `3px solid ${platformColor(p.platform)}`, cursor: 'pointer' }}
+                        onDoubleClick={() => setFeedDetailPost(p)}
+                        title="Double-click to view details">
                         <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                           {/* Thumbnail */}
                           {p.mediaUrl && (

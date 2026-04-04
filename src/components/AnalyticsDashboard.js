@@ -783,6 +783,14 @@ export default function AnalyticsDashboard() {
   const [tab,     setTab]     = useState('overview'); // 'overview' | platform id
   const [hiddenActivityIds, setHiddenActivityIds] = useState(() => new Set());
 
+  const [topPosts,        setTopPosts]        = useState(null);
+  const [topMetricTab,    setTopMetricTab]    = useState('views');
+  const [hoveredPlatform, setHoveredPlatform] = useState(null);
+  const [monthlyStats,    setMonthlyStats]    = useState(null);
+  const [loadMonthly,     setLoadMonthly]     = useState(false);
+  const [monthlyFrom,     setMonthlyFrom]     = useState('');
+  const [monthlyTo,       setMonthlyTo]       = useState('');
+
   useEffect(() => {
     if (user?.id != null) {
       setHiddenActivityIds(loadHiddenActivityIds(user.id));
@@ -806,6 +814,35 @@ export default function AnalyticsDashboard() {
   }, [base, token]);
 
   useEffect(() => { load(); }, [load]);
+
+  const loadTopPosts = useCallback(async () => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${base}/api/analytics/top-posts?limit=40`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) setTopPosts(await res.json());
+    } catch {}
+  }, [base, token]);
+
+  const loadMonthlyStats = useCallback(async (from, to) => {
+    if (!token) return;
+    setLoadMonthly(true);
+    try {
+      const q = new URLSearchParams();
+      if (from) q.set('from', from);
+      if (to)   q.set('to', to);
+      const res = await fetch(`${base}/api/analytics/monthly-stats?${q}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) setMonthlyStats(await res.json());
+    } catch {} finally {
+      setLoadMonthly(false);
+    }
+  }, [base, token]);
+
+  useEffect(() => { loadTopPosts(); }, [loadTopPosts]);
+  useEffect(() => { loadMonthlyStats('', ''); }, [loadMonthlyStats]);
 
   /* ── derived values ── */
   const connected   = data?.connectedPlatforms ?? [];
@@ -1103,24 +1140,171 @@ export default function AnalyticsDashboard() {
                       <IconChart size={20} color="#6366f1" />
                       Content shared by platform
                     </div>
-                    {Object.entries(byPlatform).sort((a, b) => Number(b[1]) - Number(a[1])).map(([pid, cnt]) => {
-                      const p = PLATFORMS.find(x => x.id === pid);
-                      return (
-                        <HBar
-                          key={pid}
-                          label={p?.label ?? pid}
-                          value={Number(cnt)}
-                          max={maxCount}
-                          color={p?.color ?? '#6366f1'}
-                          icon={p?.emoji ?? '📤'}
-                          platform={p}
-                          barHeight={14}
-                        />
-                      );
-                    })}
+                    <div style={{ position: 'relative' }}>
+                      {Object.entries(byPlatform).sort((a, b) => Number(b[1]) - Number(a[1])).map(([pid, cnt]) => {
+                        const p = PLATFORMS.find(x => x.id === pid);
+                        const platformPosts = topPosts?.posts?.filter(post => (post.platform ?? '').toLowerCase() === pid) ?? [];
+                        return (
+                          <div key={pid}
+                            onMouseEnter={() => setHoveredPlatform(pid)}
+                            onMouseLeave={() => setHoveredPlatform(null)}
+                            style={{ position: 'relative' }}
+                          >
+                            <HBar
+                              label={p?.label ?? pid}
+                              value={Number(cnt)}
+                              max={maxCount}
+                              color={p?.color ?? '#6366f1'}
+                              icon={p?.emoji ?? '📤'}
+                              platform={p}
+                              barHeight={14}
+                            />
+                            {hoveredPlatform === pid && platformPosts.length > 0 && (
+                              <div style={{
+                                position: 'absolute', left: 0, top: '100%', zIndex: 50,
+                                background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10,
+                                boxShadow: '0 4px 16px rgba(0,0,0,0.12)', padding: '10px 14px',
+                                minWidth: 260, maxWidth: 320,
+                              }}>
+                                <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                  Recent posts — {p?.label ?? pid}
+                                </div>
+                                {platformPosts.slice(0, 4).map((post, i) => (
+                                  <div key={i} style={{ padding: '6px 0', borderBottom: i < Math.min(platformPosts.length, 4) - 1 ? '1px solid #f1f5f9' : 'none' }}>
+                                    <div style={{ fontSize: 12, color: '#1e293b', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                      {post.caption || '(no caption)'}
+                                    </div>
+                                    <div style={{ display: 'flex', gap: 10, marginTop: 3, fontSize: 11, color: '#64748b' }}>
+                                      {post.likes      != null && <span>❤️ {post.likes}</span>}
+                                      {post.commentsCount != null && <span>💬 {post.commentsCount}</span>}
+                                      {post.views      != null && <span>👁 {post.views}</span>}
+                                      {post.shares     != null && <span>🔁 {post.shares}</span>}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               )}
+
+              {/* 🏆 Top Performing Posts */}
+              {topPosts?.posts?.length > 0 && (
+                <div style={{ background: '#fff', borderRadius: 12, padding: '20px 22px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(15,23,42,0.04)' }}>
+                  <div style={{ fontWeight: 700, fontSize: 15, color: '#1e293b', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    🏆 Top Performing Posts
+                  </div>
+                  {/* Metric tabs */}
+                  <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
+                    {[
+                      { key: 'views',          label: '👁 Views' },
+                      { key: 'likes',          label: '❤️ Likes' },
+                      { key: 'commentsCount',  label: '💬 Comments' },
+                      { key: 'engagementRate', label: '📊 Engagement' },
+                      { key: 'shares',         label: '🔁 Shares' },
+                    ].map(m => (
+                      <button key={m.key} onClick={() => setTopMetricTab(m.key)} style={{
+                        padding: '5px 12px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600,
+                        background: topMetricTab === m.key ? '#6366f1' : '#f1f5f9',
+                        color: topMetricTab === m.key ? '#fff' : '#475569',
+                      }}>{m.label}</button>
+                    ))}
+                  </div>
+                  {/* Top 4 grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
+                    {[...topPosts.posts]
+                      .filter(p => p[topMetricTab] != null)
+                      .sort((a, b) => Number(b[topMetricTab]) - Number(a[topMetricTab]))
+                      .slice(0, 4)
+                      .map((post, i) => {
+                        const pl = PLATFORMS.find(x => x.id === (post.platform ?? '').toLowerCase());
+                        return (
+                          <div key={i} style={{ background: '#f8fafc', borderRadius: 10, padding: '12px 14px', border: '1px solid #e2e8f0' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                              <span style={{ fontSize: 16 }}>{pl?.emoji ?? '📤'}</span>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: pl?.color ?? '#6366f1', textTransform: 'uppercase' }}>{pl?.label ?? post.platform}</span>
+                              <span style={{ marginLeft: 'auto', fontSize: 10, background: '#e0e7ff', color: '#4f46e5', borderRadius: 6, padding: '2px 6px', fontWeight: 600 }}>{post.mediaType ?? 'post'}</span>
+                            </div>
+                            <div style={{ fontSize: 12, color: '#334155', marginBottom: 8, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                              {post.caption || '(no caption)'}
+                            </div>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: '#6366f1' }}>
+                              {topMetricTab === 'engagementRate'
+                                ? `${Number(post[topMetricTab]).toFixed(2)}%`
+                                : Number(post[topMetricTab]).toLocaleString()}
+                            </div>
+                          </div>
+                        );
+                    })}
+                    {[...topPosts.posts].filter(p => p[topMetricTab] != null).length === 0 && (
+                      <div style={{ gridColumn: '1/-1', color: '#94a3b8', fontSize: 13, textAlign: 'center', padding: '20px 0' }}>
+                        Metrics will appear once platform data is available.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* 📅 Month-by-Month Stats */}
+              <div style={{ background: '#fff', borderRadius: 12, padding: '20px 22px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(15,23,42,0.04)' }}>
+                <div style={{ fontWeight: 700, fontSize: 15, color: '#1e293b', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  📅 Month-by-Month Stats
+                </div>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginBottom: 16 }}>
+                  <input type="date" value={monthlyFrom} onChange={e => setMonthlyFrom(e.target.value)}
+                    style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 13, color: '#334155' }} />
+                  <span style={{ color: '#94a3b8', fontSize: 13 }}>to</span>
+                  <input type="date" value={monthlyTo} onChange={e => setMonthlyTo(e.target.value)}
+                    style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 13, color: '#334155' }} />
+                  <button onClick={() => loadMonthlyStats(monthlyFrom, monthlyTo)} disabled={loadMonthly}
+                    style={{ padding: '6px 16px', borderRadius: 8, border: 'none', background: '#6366f1', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer', opacity: loadMonthly ? 0.6 : 1 }}>
+                    {loadMonthly ? 'Loading…' : 'Apply'}
+                  </button>
+                </div>
+                {monthlyStats?.months?.length > 0 ? (
+                  <>
+                    <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
+                      {[
+                        { label: 'Total Posts',    value: monthlyStats.totalPosts },
+                        { label: 'Total Likes',    value: monthlyStats.months.reduce((s, m) => s + (m.likes ?? 0), 0) },
+                        { label: 'Total Comments', value: monthlyStats.months.reduce((s, m) => s + (m.commentsCount ?? 0), 0) },
+                      ].map(stat => (
+                        <div key={stat.label} style={{ background: '#f8fafc', borderRadius: 10, padding: '10px 16px', border: '1px solid #e2e8f0', minWidth: 120 }}>
+                          <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>{stat.label}</div>
+                          <div style={{ fontSize: 20, fontWeight: 700, color: '#1e293b' }}>{Number(stat.value).toLocaleString()}</div>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'flex-end', overflowX: 'auto', paddingBottom: 8 }}>
+                      {(() => {
+                        const maxPosts = Math.max(...monthlyStats.months.map(m => m.postCount ?? 0), 1);
+                        return monthlyStats.months.map((m, i) => (
+                          <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 40 }}>
+                            <div style={{ fontSize: 10, color: '#6366f1', fontWeight: 700, marginBottom: 2 }}>{m.postCount}</div>
+                            <div style={{ width: 32, height: Math.max(4, Math.round(80 * (m.postCount ?? 0) / maxPosts)), background: '#6366f1', borderRadius: '4px 4px 0 0', position: 'relative' }}>
+                              {(m.likes ?? 0) > 0 && (
+                                <div style={{ position: 'absolute', top: -6, left: '50%', transform: 'translateX(-50%)', width: 8, height: 8, borderRadius: '50%', background: '#ec4899' }} title={`❤️ ${m.likes} likes`} />
+                              )}
+                            </div>
+                            <div style={{ fontSize: 9, color: '#94a3b8', marginTop: 4, writingMode: 'vertical-rl', transform: 'rotate(180deg)', height: 36, overflow: 'hidden' }}>{m.month}</div>
+                          </div>
+                        ));
+                      })()}
+                    </div>
+                    <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>
+                      Pink dot = months with likes data &nbsp;·&nbsp; Bar height = post count
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ color: '#94a3b8', fontSize: 13, textAlign: 'center', padding: '24px 0' }}>
+                    {loadMonthly ? 'Loading…' : 'No data for selected range. Start publishing to see monthly stats.'}
+                  </div>
+                )}
+              </div>
 
               {/* Recent activity */}
               {recentVisible.length > 0 && (

@@ -1218,7 +1218,7 @@ export default function AnalyticsDashboard() {
                           return (
                             <div key={i} style={{ background: '#f8fafc', borderRadius: 10, padding: '12px 14px', border: '1px solid #e2e8f0' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                                <span style={{ fontSize: 16 }}>{pl?.emoji ?? '📤'}</span>
+                                {pl ? <PlatformIcon platform={pl} size={18} /> : <span style={{ fontSize: 16 }}>📤</span>}
                                 <span style={{ fontSize: 11, fontWeight: 700, color: pl?.color ?? '#6366f1', textTransform: 'uppercase' }}>{pl?.label ?? post.platform}</span>
                                 <span style={{ marginLeft: 'auto', fontSize: 10, background: '#e0e7ff', color: '#4f46e5', borderRadius: 6, padding: '2px 6px', fontWeight: 600 }}>{post.mediaType ?? 'post'}</span>
                               </div>

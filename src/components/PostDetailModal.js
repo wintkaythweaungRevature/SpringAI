@@ -49,7 +49,8 @@ export default function PostDetailModal({ post, onClose, platform }) {
   }
 
   const link = pickUrl(post);
-  const caption = post.caption != null ? String(post.caption) : '';
+  const rawCaption = post.caption != null ? String(post.caption) : '';
+  const caption = (() => { try { return decodeURIComponent(rawCaption); } catch { return rawCaption; } })();
   let hashtags = post.hashtags;
   if (Array.isArray(hashtags)) hashtags = hashtags.join(' ');
   else if (hashtags == null) hashtags = '';

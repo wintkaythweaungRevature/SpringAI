@@ -4,6 +4,11 @@ import PlatformIcon from './PlatformIcon';
 import PostDetailModal from './PostDetailModal';
 import ComposePostModal from './ComposePostModal';
 
+function safeDecodeCaption(s) {
+  if (!s) return s;
+  try { return decodeURIComponent(s); } catch { return s; }
+}
+
 /* ─────────────────────────────────────────────────────────────────────────────
    ContentCalendar — Visual Calendar & Feed Planner
    Shows scheduled + published posts on a month calendar with:
@@ -334,7 +339,7 @@ function DayModal({ date, posts, onClose, onRetryFailed, retryingIds = {}, onCan
 
                       {/* Caption */}
                       <div style={{ fontSize: 13, color: '#334155', lineHeight: 1.45 }}>
-                        {p.caption || <em style={{ color: '#94a3b8' }}>(no caption)</em>}
+                        {safeDecodeCaption(p.caption) || <em style={{ color: '#94a3b8' }}>(no caption)</em>}
                       </div>
                       {canRetry && (
                         <div style={{ marginTop: 8 }}>
@@ -849,7 +854,7 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
                                 color: p.status === 'SUCCESS' ? '#16a34a' : '#dc2626',
                               }}>{p.status}</span>
                             </div>
-                            <div style={s.upcomingCaption}>{p.caption || '(no caption)'}</div>
+                            <div style={s.upcomingCaption}>{safeDecodeCaption(p.caption) || '(no caption)'}</div>
                             <div style={s.upcomingMeta}>
                               {fmtDate(postCalendarTimestamp(p))} · {p.mediaType || 'post'}
                             </div>
@@ -976,7 +981,7 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
                       </div>
                       {/* Caption */}
                       <div style={s.feedCaption}>
-                        {(p.caption || '(no caption)').slice(0, 80)}{p.caption?.length > 80 ? '…' : ''}
+                        {(safeDecodeCaption(p.caption) || '(no caption)').slice(0, 80)}{(safeDecodeCaption(p.caption) || '').length > 80 ? '…' : ''}
                       </div>
                       <div style={s.feedMeta}>
                         <span style={{ textTransform: 'capitalize' }}>{p.platform}</span>
@@ -1069,7 +1074,7 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
           <div style={s.hoverBody}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 13, color: '#1f2937', lineHeight: 1.45 }}>
-                {(hoverPreview.post.caption || '(no caption)').slice(0, 180)}
+                {(safeDecodeCaption(hoverPreview.post.caption) || '(no caption)').slice(0, 180)}
               </div>
               <div style={{ marginTop: 8, display: 'flex', gap: 12, fontSize: 11, color: '#64748b' }}>
                 <span>{hoverPreview.post.impressions ?? 0} Impressions</span>

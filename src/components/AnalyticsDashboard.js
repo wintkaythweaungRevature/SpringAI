@@ -11,6 +11,12 @@ const PLATFORMS = [
   { id: 'linkedin',  label: 'LinkedIn',  emoji: '💼', color: '#0A66C2', logo: 'linkedin' },
 ];
 
+/** Safely decode URL-encoded text (e.g. %E0%A4%87 → इ). Falls back to original if decode fails. */
+function safeDecodeCaption(s) {
+  if (!s) return s;
+  try { return decodeURIComponent(s); } catch { return s; }
+}
+
 /** Small UI icons (not brand logos) */
 function IconChart({ size = 26, color = '#6366f1' }) {
   return (
@@ -1172,7 +1178,7 @@ export default function AnalyticsDashboard() {
                                 {platformPosts.slice(0, 4).map((post, i) => (
                                   <div key={i} style={{ padding: '6px 0', borderBottom: i < Math.min(platformPosts.length, 4) - 1 ? '1px solid #f1f5f9' : 'none' }}>
                                     <div style={{ fontSize: 12, color: '#1e293b', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                      {post.caption || '(no caption)'}
+                                      {safeDecodeCaption(post.caption) || '(no caption)'}
                                     </div>
                                     <div style={{ display: 'flex', gap: 10, marginTop: 3, fontSize: 11, color: '#64748b' }}>
                                       {post.likes      != null && <span>❤️ {post.likes}</span>}
@@ -1235,7 +1241,7 @@ export default function AnalyticsDashboard() {
                                 <span style={{ marginLeft: 'auto', fontSize: 10, background: '#e0e7ff', color: '#4f46e5', borderRadius: 6, padding: '2px 6px', fontWeight: 600 }}>{post.mediaType ?? 'post'}</span>
                               </div>
                               <div style={{ fontSize: 12, color: '#334155', marginBottom: 8, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-                                {post.caption || '(no caption)'}
+                                {safeDecodeCaption(post.caption) || '(no caption)'}
                               </div>
                               <div style={{ fontSize: 13, fontWeight: 700, color: '#6366f1' }}>
                                 {metricVal == null ? '—'
@@ -1349,7 +1355,7 @@ export default function AnalyticsDashboard() {
                           </span>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {post.caption || '(no caption)'}
+                              {safeDecodeCaption(post.caption) || '(no caption)'}
                             </div>
                             <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
                               {p?.label ?? post.platform} · {post.mediaType} · {d}

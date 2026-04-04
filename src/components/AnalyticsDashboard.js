@@ -1216,34 +1216,36 @@ export default function AnalyticsDashboard() {
                   </div>
                   {/* Top 4 grid */}
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
-                    {[...topPosts.posts]
-                      .filter(p => p[topMetricTab] != null)
-                      .sort((a, b) => Number(b[topMetricTab]) - Number(a[topMetricTab]))
-                      .slice(0, 4)
-                      .map((post, i) => {
-                        const pl = PLATFORMS.find(x => x.id === (post.platform ?? '').toLowerCase());
-                        return (
-                          <div key={i} style={{ background: '#f8fafc', borderRadius: 10, padding: '12px 14px', border: '1px solid #e2e8f0' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                              <span style={{ fontSize: 16 }}>{pl?.emoji ?? '📤'}</span>
-                              <span style={{ fontSize: 11, fontWeight: 700, color: pl?.color ?? '#6366f1', textTransform: 'uppercase' }}>{pl?.label ?? post.platform}</span>
-                              <span style={{ marginLeft: 'auto', fontSize: 10, background: '#e0e7ff', color: '#4f46e5', borderRadius: 6, padding: '2px 6px', fontWeight: 600 }}>{post.mediaType ?? 'post'}</span>
-                            </div>
-                            <div style={{ fontSize: 12, color: '#334155', marginBottom: 8, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-                              {post.caption || '(no caption)'}
-                            </div>
-                            <div style={{ fontSize: 13, fontWeight: 700, color: '#6366f1' }}>
-                              {topMetricTab === 'engagementRate'
-                                ? `${Number(post[topMetricTab]).toFixed(2)}%`
-                                : Number(post[topMetricTab]).toLocaleString()}
-                            </div>
-                          </div>
-                        );
-                    })}
-                    {[...topPosts.posts].filter(p => p[topMetricTab] != null).length === 0 && (
+                    {topPosts.posts.length === 0 ? (
                       <div style={{ gridColumn: '1/-1', color: '#94a3b8', fontSize: 13, textAlign: 'center', padding: '20px 0' }}>
-                        Metrics will appear once platform data is available.
+                        No posts yet.
                       </div>
+                    ) : (
+                      [...topPosts.posts]
+                        .sort((a, b) => (b[topMetricTab] ?? -1) - (a[topMetricTab] ?? -1))
+                        .slice(0, 4)
+                        .map((post, i) => {
+                          const pl = PLATFORMS.find(x => x.id === (post.platform ?? '').toLowerCase());
+                          const metricVal = post[topMetricTab];
+                          return (
+                            <div key={i} style={{ background: '#f8fafc', borderRadius: 10, padding: '12px 14px', border: '1px solid #e2e8f0' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                                <span style={{ fontSize: 16 }}>{pl?.emoji ?? '📤'}</span>
+                                <span style={{ fontSize: 11, fontWeight: 700, color: pl?.color ?? '#6366f1', textTransform: 'uppercase' }}>{pl?.label ?? post.platform}</span>
+                                <span style={{ marginLeft: 'auto', fontSize: 10, background: '#e0e7ff', color: '#4f46e5', borderRadius: 6, padding: '2px 6px', fontWeight: 600 }}>{post.mediaType ?? 'post'}</span>
+                              </div>
+                              <div style={{ fontSize: 12, color: '#334155', marginBottom: 8, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                                {post.caption || '(no caption)'}
+                              </div>
+                              <div style={{ fontSize: 13, fontWeight: 700, color: '#6366f1' }}>
+                                {metricVal == null ? '—'
+                                  : topMetricTab === 'engagementRate'
+                                    ? `${Number(metricVal).toFixed(2)}%`
+                                    : Number(metricVal).toLocaleString()}
+                              </div>
+                            </div>
+                          );
+                        })
                     )}
                   </div>
                 </div>

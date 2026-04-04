@@ -1287,24 +1287,27 @@ export default function AnalyticsDashboard() {
                         </div>
                       ))}
                     </div>
-                    <div style={{ display: 'flex', gap: 6, alignItems: 'flex-end', overflowX: 'auto', paddingBottom: 8 }}>
-                      {(() => {
-                        const maxPosts = Math.max(...monthlyStats.months.map(m => m.postCount ?? 0), 1);
-                        return monthlyStats.months.map((m, i) => (
-                          <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 40 }}>
-                            <div style={{ fontSize: 10, color: '#6366f1', fontWeight: 700, marginBottom: 2 }}>{m.postCount}</div>
-                            <div style={{ width: 32, height: Math.max(4, Math.round(80 * (m.postCount ?? 0) / maxPosts)), background: '#6366f1', borderRadius: '4px 4px 0 0', position: 'relative' }}>
-                              {(m.likes ?? 0) > 0 && (
-                                <div style={{ position: 'absolute', top: -6, left: '50%', transform: 'translateX(-50%)', width: 8, height: 8, borderRadius: '50%', background: '#ec4899' }} title={`❤️ ${m.likes} likes`} />
-                              )}
-                            </div>
-                            <div style={{ fontSize: 9, color: '#94a3b8', marginTop: 4, writingMode: 'vertical-rl', transform: 'rotate(180deg)', height: 36, overflow: 'hidden' }}>{m.month}</div>
-                          </div>
-                        ));
-                      })()}
-                    </div>
-                    <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>
-                      Pink dot = months with likes data &nbsp;·&nbsp; Bar height = post count
+                    {/* Month table */}
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                        <thead>
+                          <tr style={{ background: '#f8fafc' }}>
+                            {['Month', 'Posts', 'Likes', 'Comments'].map(h => (
+                              <th key={h} style={{ padding: '8px 12px', textAlign: h === 'Month' ? 'left' : 'center', color: '#64748b', fontWeight: 600, fontSize: 11, borderBottom: '1px solid #e2e8f0' }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {monthlyStats.months.map((m, i) => (
+                            <tr key={i} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                              <td style={{ padding: '10px 12px', fontWeight: 600, color: '#1e293b' }}>{m.month}</td>
+                              <td style={{ padding: '10px 12px', textAlign: 'center', color: '#6366f1', fontWeight: 700 }}>{m.postCount ?? 0}</td>
+                              <td style={{ padding: '10px 12px', textAlign: 'center', color: '#ec4899', fontWeight: 700 }}>{(m.likes ?? 0) > 0 ? Number(m.likes).toLocaleString() : <span style={{ color: '#cbd5e1' }}>—</span>}</td>
+                              <td style={{ padding: '10px 12px', textAlign: 'center', color: '#22c55e', fontWeight: 700 }}>{(m.commentsCount ?? 0) > 0 ? Number(m.commentsCount).toLocaleString() : <span style={{ color: '#cbd5e1' }}>—</span>}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
                   </>
                 ) : (

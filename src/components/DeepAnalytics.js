@@ -2385,6 +2385,12 @@ function CompetitorTab({ authHeaders }) {
   const [loadSubAnalysis,  setLoadSubAnalysis]  = useState(false);
   const [redditError,      setRedditError]      = useState('');
 
+  // ── Google Trends state ───────────────────────────────────────
+  const [trendsInput,    setTrendsInput]    = useState('');
+  const [trendsLoading,  setTrendsLoading]  = useState(false);
+  const [trendsData,     setTrendsData]     = useState(null);
+  const [trendsError,    setTrendsError]    = useState('');
+
   // Cleaned query shown as a hint when user pastes a YouTube URL
   const cleanedQuery = useMemo(() => parseYouTubeInput(query), [query]);
   const isUrlInput   = /^https?:\/\//i.test(query.trim());
@@ -2466,15 +2472,34 @@ function CompetitorTab({ authHeaders }) {
     }
   };
 
+  // ── Google Trends function ───────────────────────────────────
+  const doTrendsSearch = async () => {
+    const raw = trendsInput.trim();
+    if (!raw) return;
+    setTrendsLoading(true); setTrendsData(null); setTrendsError('');
+    try {
+      const kw = encodeURIComponent(raw);
+      const res = await fetch(`${API}/api/analytics/competitors/trends?keywords=${kw}`, { headers: authHeaders() });
+      const data = await res.json();
+      if (!res.ok || data.error) { setTrendsError(data.error || 'Failed to fetch trends'); return; }
+      setTrendsData(data);
+    } catch {
+      setTrendsError('Could not reach Google Trends. Try again.');
+    } finally {
+      setTrendsLoading(false);
+    }
+  };
+
   const redditOrange = '#FF4500';
 
   return (
     <div>
       {/* ── Platform switcher ── */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
         {[
-          { id: 'youtube', label: 'YouTube',  logo: 'youtube',  color: '#FF0000' },
-          { id: 'reddit',  label: 'Reddit',   logo: 'reddit',   color: '#FF4500' },
+          { id: 'youtube', label: 'YouTube',       logo: 'youtube',      color: '#FF0000' },
+          { id: 'reddit',  label: 'Reddit',         logo: 'reddit',       color: '#FF4500' },
+          { id: 'trends',  label: 'Google Trends',  logo: 'googletrends', color: '#4285F4' },
         ].map(pl => (
           <button key={pl.id} onClick={() => setCompetitorPlatform(pl.id)} style={{
             display: 'flex', alignItems: 'center', gap: 6,
@@ -2776,6 +2801,113 @@ function CompetitorTab({ authHeaders }) {
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ════════════ GOOGLE TRENDS ════════════ */}
+      {competitorPlatform === 'trends' && (
+        <div>
+          <p style={{ fontSize: 13, color: '#64748b', marginBottom: 16 }}>
+            Compare keyword interest over the last 12 months using Google Trends.
+            Enter up to 5 keywords separated by commas.
+            <strong style={{ color: '#4285F4' }}> No account required.</strong>
+          </p>
+
+          {/* Search bar */}
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input
+                value={trendsInput}
+                onChange={e => setTrendsInput(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && doTrendsSearch()}
+                placeholder="e.g. instagram, tiktok, youtube (comma-separated)"
+                style={{ flex: 1, padding: '10px 14px', border: '1.5px solid #e2e8f0', borderRadius: 10, fontSize: 13, color: '#1e293b', outline: 'none' }}
+              />
+              <button onClick={doTrendsSearch} disabled={trendsLoading || !trendsInput.trim()} style={{
+                padding: '10px 20px', background: '#4285F4', color: '#fff', border: 'none',
+                borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                opacity: trendsLoading || !trendsInput.trim() ? 0.6 : 1,
+              }}>
+                {trendsLoading ? '⏳' : '🔍 Search'}
+              </button>
+            </div>
+          </div>
+
+          {trendsError && <div style={{ background: '#eff6ff', color: '#1d4ed8', borderRadius: 8, padding: '10px 14px', fontSize: 13, marginBottom: 16 }}>{trendsError}</div>}
+
+          {trendsData && (
+            <div>
+              {/* Keyword pills */}
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
+                {(trendsData.keywords || []).map((kw, i) => {
+                  const colors = ['#4285F4','#EA4335','#FBBC04','#34A853','#FF6D00'];
+                  return (
+                    <span key={i} style={{ background: colors[i % colors.length], color: '#fff', borderRadius: 20, padding: '4px 12px', fontSize: 12, fontWeight: 700 }}>
+                      {kw}
+                    </span>
+                  );
+                })}
+              </div>
+
+              {/* Interest over time table */}
+              {trendsData.timeline?.length > 0 && (
+                <div style={{ background: '#fff', border: '1.5px solid #e2e8f0', borderRadius: 16, overflow: 'hidden', marginBottom: 20 }}>
+                  <div style={{ padding: '14px 20px', borderBottom: '1px solid #e2e8f0', fontWeight: 700, fontSize: 14, color: '#1e293b' }}>
+                    📈 Interest Over Time (0–100 scale)
+                  </div>
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                      <thead>
+                        <tr style={{ background: '#f8fafc' }}>
+                          <th style={{ padding: '8px 16px', textAlign: 'left', color: '#64748b', fontWeight: 600, fontSize: 11, borderBottom: '1px solid #e2e8f0' }}>Month</th>
+                          {(trendsData.keywords || []).map((kw, i) => {
+                            const colors = ['#4285F4','#EA4335','#FBBC04','#34A853','#FF6D00'];
+                            return <th key={i} style={{ padding: '8px 16px', textAlign: 'center', color: colors[i % colors.length], fontWeight: 700, fontSize: 11, borderBottom: '1px solid #e2e8f0' }}>{kw}</th>;
+                          })}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {trendsData.timeline.map((row, i) => (
+                          <tr key={i} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                            <td style={{ padding: '8px 16px', color: '#475569', fontWeight: 500 }}>{row.date}</td>
+                            {(row.values || []).map((v, j) => {
+                              const colors = ['#4285F4','#EA4335','#FBBC04','#34A853','#FF6D00'];
+                              const pct = Number(v);
+                              return (
+                                <td key={j} style={{ padding: '8px 16px', textAlign: 'center' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                                    <div style={{ width: Math.max(4, pct * 0.6), height: 8, background: colors[j % colors.length], borderRadius: 4, opacity: 0.7 }} />
+                                    <span style={{ fontWeight: 700, color: colors[j % colors.length], minWidth: 24 }}>{pct}</span>
+                                  </div>
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Rising queries */}
+              {trendsData.rising?.length > 0 && (
+                <div style={{ background: '#fff', border: '1.5px solid #e2e8f0', borderRadius: 16, overflow: 'hidden' }}>
+                  <div style={{ padding: '14px 20px', borderBottom: '1px solid #e2e8f0', fontWeight: 700, fontSize: 14, color: '#1e293b' }}>
+                    🚀 Rising Searches
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, padding: '16px 20px' }}>
+                    {trendsData.rising.map((r, i) => (
+                      <div key={i} style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '6px 12px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: '#166534' }}>{r.query}</span>
+                        {r.formattedValue && <span style={{ fontSize: 11, color: '#16a34a', fontWeight: 700 }}>{r.formattedValue}</span>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

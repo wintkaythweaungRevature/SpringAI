@@ -934,7 +934,7 @@ export default function MessagesInbox({ onOpenConnectedAccounts, onOpenAutoReply
   const [selection, setSelection]   = useState(null); // { kind: 'dm' | 'comment', id: string } | null
   const [commentReplyExtras, setCommentReplyExtras] = useState({}); // commentId -> locally sent replies
   const [showAll, setShowAll] = useState(false); // true = ignore lastSeen, fetch full history
-  /** `null` = loading or failed (show all networks); `Set` = loaded. */
+  /** `null` = loading or failed to load status; `Set` = loaded — sidebar lists only connected IDs. */
   const [connectedPlatformIds, setConnectedPlatformIds] = useState(null);
 
   useEffect(() => {
@@ -966,7 +966,7 @@ export default function MessagesInbox({ onOpenConnectedAccounts, onOpenAutoReply
 
   const sidebarPlatforms = useMemo(() => {
     const list = Object.values(PLATFORM_META);
-    if (connectedPlatformIds === null) return list;
+    if (connectedPlatformIds === null) return [];
     if (connectedPlatformIds.size === 0) return [];
     return list.filter((p) => connectedPlatformIds.has(p.id));
   }, [connectedPlatformIds]);
@@ -1227,174 +1227,219 @@ export default function MessagesInbox({ onOpenConnectedAccounts, onOpenAutoReply
               padding: '12px 8px',
               display: 'flex',
               flexDirection: 'column',
-              alignItems: 'center',
-              gap: 8,
-              overflowY: 'auto',
-              overflowX: 'hidden',
-              overscrollBehavior: 'contain',
-              WebkitOverflowScrolling: 'touch',
+              alignItems: 'stretch',
+              gap: 0,
+              height: '100%',
               minHeight: 0,
+              overflow: 'hidden',
             }}
           >
             <div
+              aria-label="Connected platforms"
               style={{
-                fontSize: 9,
-                fontWeight: 700,
-                color: '#94a3b8',
-                textTransform: 'uppercase',
-                letterSpacing: '0.08em',
-                textAlign: 'center',
+                flex: '1 1 0',
+                minHeight: 0,
                 width: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 8,
+                overflowY: 'auto',
+                overflowX: 'hidden',
+                overscrollBehavior: 'contain',
+                WebkitOverflowScrolling: 'touch',
+                paddingBottom: 4,
               }}
             >
-              Networks
-            </div>
-            <SidebarPlatformButton
-              active={platformTab === 'all'}
-              onClick={() => handlePlatformTab('all')}
-              title="All platforms"
-              unreadBadge={totalUnread}
-              accent="#334155"
-            >
-              <span style={{ fontSize: 11, fontWeight: 800, color: '#334155', letterSpacing: '0.02em' }}>All</span>
-            </SidebarPlatformButton>
-            {sidebarPlatforms.map((p) => {
-              const unread =
-                p.id === 'instagram'
-                  ? igConvs.filter((c) => Number(c.unread) > 0).length
-                  : p.id === 'facebook'
-                    ? fbConvs.filter((c) => Number(c.unread) > 0).length
-                    : 0;
-              const cnt =
-                p.id === 'instagram'
-                  ? igComments.length
-                  : p.id === 'facebook'
-                    ? fbConvs.length + fbComments.length
-                    : p.id === 'youtube'
-                      ? ytComments.length
-                      : p.id === 'linkedin'
-                        ? liConvs.length + liComments.length
-                        : p.id === 'tiktok'
-                          ? ttComments.length
-                          : xComments.length;
-              return (
-                <SidebarPlatformButton
-                  key={p.id}
-                  active={platformTab === p.id}
-                  onClick={() => handlePlatformTab(p.id)}
-                  title={p.label}
-                  accent={p.color}
-                  unreadBadge={unread}
-                  countBadge={unread > 0 ? undefined : cnt}
+              <div
+                style={{
+                  fontSize: 9,
+                  fontWeight: 700,
+                  color: '#94a3b8',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                  textAlign: 'center',
+                  width: '100%',
+                  flexShrink: 0,
+                }}
+              >
+                Networks
+              </div>
+              <SidebarPlatformButton
+                active={platformTab === 'all'}
+                onClick={() => handlePlatformTab('all')}
+                title="All platforms"
+                unreadBadge={totalUnread}
+                accent="#334155"
+              >
+                <span style={{ fontSize: 11, fontWeight: 800, color: '#334155', letterSpacing: '0.02em' }}>All</span>
+              </SidebarPlatformButton>
+              {connectedPlatformIds === null && (
+                <div style={{ fontSize: 10, color: '#94a3b8', textAlign: 'center', padding: '2px 0' }}>Loading…</div>
+              )}
+              {connectedPlatformIds !== null && sidebarPlatforms.length === 0 && (
+                <div
+                  style={{
+                    fontSize: 9,
+                    color: '#94a3b8',
+                    textAlign: 'center',
+                    padding: '2px 4px',
+                    lineHeight: 1.35,
+                  }}
                 >
-                  <PlatformIcon platform={p} size={22} />
-                </SidebarPlatformButton>
-              );
-            })}
-
-            <div
-              style={{
-                width: '100%',
-                height: 1,
-                background: '#e2e8f0',
-                margin: '4px 0 6px',
-              }}
-            />
-
-            <div
-              style={{
-                fontSize: 9,
-                fontWeight: 700,
-                color: '#94a3b8',
-                textTransform: 'uppercase',
-                letterSpacing: '0.08em',
-                textAlign: 'center',
-                width: '100%',
-              }}
-            >
-              View
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, width: '100%' }}>
-              {['all', 'comments', 'messages'].map((t) => {
-                const supported = PLATFORM_TYPES[platformTab] || ['all'];
-                const disabled = !supported.includes(t);
-                const badge =
-                  t === 'messages'
-                    ? platConvs.filter((c) => Number(c.unread) > 0).length
-                    : t === 'comments'
-                      ? platComments.length
+                  No accounts connected
+                </div>
+              )}
+              {sidebarPlatforms.map((p) => {
+                const unread =
+                  p.id === 'instagram'
+                    ? igConvs.filter((c) => Number(c.unread) > 0).length
+                    : p.id === 'facebook'
+                      ? fbConvs.filter((c) => Number(c.unread) > 0).length
                       : 0;
+                const cnt =
+                  p.id === 'instagram'
+                    ? igComments.length
+                    : p.id === 'facebook'
+                      ? fbConvs.length + fbComments.length
+                      : p.id === 'youtube'
+                        ? ytComments.length
+                        : p.id === 'linkedin'
+                          ? liConvs.length + liComments.length
+                          : p.id === 'tiktok'
+                            ? ttComments.length
+                            : xComments.length;
                 return (
-                  <SidebarTypeButton
-                    key={t}
-                    label={TYPE_TAB_LABELS[t] || t}
-                    active={typeTab === t}
-                    disabled={disabled}
-                    badge={badge}
-                    onClick={() => {
-                      if (!disabled) setTypeTab(t);
-                    }}
-                  />
+                  <SidebarPlatformButton
+                    key={p.id}
+                    active={platformTab === p.id}
+                    onClick={() => handlePlatformTab(p.id)}
+                    title={p.label}
+                    accent={p.color}
+                    unreadBadge={unread}
+                    countBadge={unread > 0 ? undefined : cnt}
+                  >
+                    <PlatformIcon platform={p} size={22} />
+                  </SidebarPlatformButton>
                 );
               })}
             </div>
 
-            {(typeof onOpenConnectedAccounts === 'function' || typeof onOpenAutoReply === 'function') && (
+            <div
+              style={{
+                flexShrink: 0,
+                width: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 8,
+                paddingTop: 4,
+              }}
+            >
               <div
                 style={{
-                  marginTop: 8,
-                  paddingTop: 10,
-                  borderTop: '1px solid #e2e8f0',
                   width: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 6,
+                  height: 1,
+                  background: '#e2e8f0',
+                  margin: '4px 0 6px',
+                }}
+              />
+
+              <div
+                style={{
+                  fontSize: 9,
+                  fontWeight: 700,
+                  color: '#94a3b8',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                  textAlign: 'center',
+                  width: '100%',
                 }}
               >
-                {typeof onOpenConnectedAccounts === 'function' && (
-                  <button
-                    type="button"
-                    title="Connected accounts"
-                    onClick={onOpenConnectedAccounts}
-                    style={{
-                      width: '100%',
-                      padding: '8px 6px',
-                      borderRadius: 8,
-                      border: '1px solid #e2e8f0',
-                      background: '#f8fafc',
-                      color: '#334155',
-                      fontWeight: 600,
-                      fontSize: 10,
-                      lineHeight: 1.2,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    🔗 Accounts
-                  </button>
-                )}
-                {typeof onOpenAutoReply === 'function' && (
-                  <button
-                    type="button"
-                    title="Auto reply"
-                    onClick={onOpenAutoReply}
-                    style={{
-                      width: '100%',
-                      padding: '8px 6px',
-                      borderRadius: 8,
-                      border: '1px solid #e2e8f0',
-                      background: '#f8fafc',
-                      color: '#334155',
-                      fontWeight: 600,
-                      fontSize: 10,
-                      lineHeight: 1.2,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    🤖 Auto
-                  </button>
-                )}
+                View
               </div>
-            )}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, width: '100%' }}>
+                {['all', 'comments', 'messages'].map((t) => {
+                  const supported = PLATFORM_TYPES[platformTab] || ['all'];
+                  const disabled = !supported.includes(t);
+                  const badge =
+                    t === 'messages'
+                      ? platConvs.filter((c) => Number(c.unread) > 0).length
+                      : t === 'comments'
+                        ? platComments.length
+                        : 0;
+                  return (
+                    <SidebarTypeButton
+                      key={t}
+                      label={TYPE_TAB_LABELS[t] || t}
+                      active={typeTab === t}
+                      disabled={disabled}
+                      badge={badge}
+                      onClick={() => {
+                        if (!disabled) setTypeTab(t);
+                      }}
+                    />
+                  );
+                })}
+              </div>
+
+              {(typeof onOpenConnectedAccounts === 'function' || typeof onOpenAutoReply === 'function') && (
+                <div
+                  style={{
+                    marginTop: 8,
+                    paddingTop: 10,
+                    borderTop: '1px solid #e2e8f0',
+                    width: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 6,
+                  }}
+                >
+                  {typeof onOpenConnectedAccounts === 'function' && (
+                    <button
+                      type="button"
+                      title="Connected accounts"
+                      onClick={onOpenConnectedAccounts}
+                      style={{
+                        width: '100%',
+                        padding: '8px 6px',
+                        borderRadius: 8,
+                        border: '1px solid #e2e8f0',
+                        background: '#f8fafc',
+                        color: '#334155',
+                        fontWeight: 600,
+                        fontSize: 10,
+                        lineHeight: 1.2,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      🔗 Accounts
+                    </button>
+                  )}
+                  {typeof onOpenAutoReply === 'function' && (
+                    <button
+                      type="button"
+                      title="Auto reply"
+                      onClick={onOpenAutoReply}
+                      style={{
+                        width: '100%',
+                        padding: '8px 6px',
+                        borderRadius: 8,
+                        border: '1px solid #e2e8f0',
+                        background: '#f8fafc',
+                        color: '#334155',
+                        fontWeight: 600,
+                        fontSize: 10,
+                        lineHeight: 1.2,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      🤖 Auto
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           </aside>
 
           <div

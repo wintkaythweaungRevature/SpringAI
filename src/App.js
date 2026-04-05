@@ -246,6 +246,7 @@ function App() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   // authMode: 'login' | 'signup' | 'forgot-password' | 'forgot-username'
   const [authMode, setAuthMode] = useState('login');
+  const [verifiedBanner, setVerifiedBanner] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const { user, logout, loading, token, apiBase, refetchUser } = useAuth();
   const isMobile = useMediaQuery('(max-width: 768px)');
@@ -299,7 +300,17 @@ function App() {
     if (params.get('social_connect') === 'success' && params.get('platform')) {
       go('video-publisher');
     }
-    // Reset flow uses /reset-password?token= (handled by Root)
+    // Email verified → show success banner + open login
+    if (params.get('verified') === 'true') {
+      setVerifiedBanner(true);
+      setAuthMode('login');
+      setShowAuthModal(true);
+      window.history.replaceState({}, '', '/');
+    }
+    if (params.get('verified') === 'false') {
+      setVerifiedBanner('error');
+      window.history.replaceState({}, '', '/');
+    }
   }, [go]);
 
   useEffect(() => {
@@ -503,6 +514,29 @@ function App() {
           {activeTab === 'calendar'        && <MemberGate featureName="Content Calendar"><ContentCalendar onOpenVideoPublisher={() => go('video-publisher')} /></MemberGate>}
         </div>
       </div>
+
+      {/* ═══════════════ EMAIL VERIFIED BANNER ═══════════════ */}
+      {verifiedBanner && (
+        <div style={{
+          position: 'fixed', top: 20, left: '50%', transform: 'translateX(-50%)',
+          zIndex: 99999, borderRadius: 14, padding: '14px 24px',
+          background: verifiedBanner === 'error' ? '#fef2f2' : '#f0fdf4',
+          border: `1.5px solid ${verifiedBanner === 'error' ? '#fca5a5' : '#86efac'}`,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
+          display: 'flex', alignItems: 'center', gap: 12, minWidth: 300,
+        }}>
+          <span style={{ fontSize: 22 }}>{verifiedBanner === 'error' ? '❌' : '✅'}</span>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 14, color: verifiedBanner === 'error' ? '#dc2626' : '#15803d' }}>
+              {verifiedBanner === 'error' ? 'Verification failed' : 'Email verified!'}
+            </div>
+            <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
+              {verifiedBanner === 'error' ? 'Link may have expired. Try registering again.' : 'Your account is confirmed. Sign in below.'}
+            </div>
+          </div>
+          <button onClick={() => setVerifiedBanner(false)} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: 16 }}>✕</button>
+        </div>
+      )}
 
       {/* ═══════════════ AUTH MODAL ═══════════════ */}
       {showAuthModal && !user && (

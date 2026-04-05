@@ -330,6 +330,12 @@ function App() {
     window.addEventListener('wintaibot:go', handler);
     return () => window.removeEventListener('wintaibot:go', handler);
   }, [go]);
+
+  useEffect(() => {
+    const handler = () => { setAuthMode('login'); setShowAuthModal(true); };
+    window.addEventListener('wintaibot:openLogin', handler);
+    return () => window.removeEventListener('wintaibot:openLogin', handler);
+  }, []);
   const userDisplayName = user?.firstName || user?.lastName
     ? [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim()
     : (user?.email || '').split('@')[0] || '';
@@ -402,15 +408,13 @@ function App() {
           <NavItem icon={<HiChatBubbleLeftRight size={17} />} label="Reply Enchanter" active={activeTab === 'Content'} onClick={() => go('Content')} />
           <NavItem icon={<HiDocumentText size={17} />}        label="Career Alchemist"  active={activeTab === 'Resume'}  onClick={() => go('Resume')} />
 
-          {user && (
-            <div style={s.navFooterBlock}>
-              <div style={s.navDividerStrong} role="separator" aria-hidden="true" />
-              <div style={s.groupLabelFooter}>{SIDEBAR_GROUPS.settings}</div>
-              <NavItem icon={<HiCog6Tooth size={17} />} label="Account" active={activeTab === 'account'} onClick={() => go('account')} hasArrow />
-              <NavItem icon={<HiCreditCard size={17} />} label="Pricing" active={activeTab === 'pricing'} onClick={() => go('pricing')} />
-              <NavItem icon={<HiQuestionMarkCircle size={17} />} label="Help & Support" active={activeTab === 'help'} onClick={() => go('help')} />
-            </div>
-          )}
+          <div style={s.navFooterBlock}>
+            <div style={s.navDividerStrong} role="separator" aria-hidden="true" />
+            <div style={s.groupLabelFooter}>{SIDEBAR_GROUPS.settings}</div>
+            {user && <NavItem icon={<HiCog6Tooth size={17} />} label="Account" active={activeTab === 'account'} onClick={() => go('account')} hasArrow />}
+            {user && <NavItem icon={<HiCreditCard size={17} />} label="Pricing" active={activeTab === 'pricing'} onClick={() => go('pricing')} />}
+            <NavItem icon={<HiQuestionMarkCircle size={17} />} label="Help & Support" active={activeTab === 'help'} onClick={() => go('help')} />
+          </div>
         </nav>
 
         {/* Explore Tools */}

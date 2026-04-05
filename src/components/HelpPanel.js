@@ -3,11 +3,11 @@ import { useAuth } from '../context/AuthContext';
 
 const ADMIN_EMAIL = 'breezegirl6@gmail.com';
 
-// Plan tier limits
+// Plan tier limits — Help & Support is open to everyone (no ticket limits)
 const PLAN_LIMITS = {
-  FREE:    { maxTickets: 1,         label: 'Free',     priority: false },
-  MEMBER:  { maxTickets: 3,         label: 'Member',   priority: false },
-  STARTER: { maxTickets: 3,         label: 'Starter',  priority: false },
+  FREE:    { maxTickets: Infinity,  label: 'Free',     priority: false },
+  MEMBER:  { maxTickets: Infinity,  label: 'Member',   priority: false },
+  STARTER: { maxTickets: Infinity,  label: 'Starter',  priority: false },
   PRO:     { maxTickets: Infinity,  label: 'Pro',      priority: true  },
   GROWTH:  { maxTickets: Infinity,  label: 'Growth',   priority: true  },
 };
@@ -43,7 +43,26 @@ export default function HelpPanel() {
   const bottomRef = useRef(null);
   const textareaRef = useRef(null);
 
-  useEffect(() => { loadTickets(); }, []);
+  useEffect(() => { if (user) loadTickets(); }, [user]);
+
+  // Not logged in — show sign-in prompt
+  if (!user) {
+    return (
+      <div style={{ minHeight: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(180deg,#0c1222 0%,#0f172a 100%)', padding: '40px 20px' }}>
+        <div style={{ fontSize: 36, marginBottom: 16 }}>💬</div>
+        <h2 style={{ color: '#f1f5f9', fontSize: 20, fontWeight: 700, margin: '0 0 8px', textAlign: 'center' }}>Help & Support</h2>
+        <p style={{ color: '#64748b', fontSize: 14, textAlign: 'center', maxWidth: 320, lineHeight: 1.6, margin: '0 0 24px' }}>
+          Sign in to send us a message. We're here to help with any questions or issues.
+        </p>
+        <button
+          onClick={() => window.dispatchEvent(new CustomEvent('wintaibot:openLogin'))}
+          style={{ padding: '11px 32px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg,#4f46e5,#7c3aed)', color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}
+        >
+          Sign in to get help →
+        </button>
+      </div>
+    );
+  }
 
   useEffect(() => {
     if (bottomRef.current) bottomRef.current.scrollIntoView({ behavior: 'smooth' });

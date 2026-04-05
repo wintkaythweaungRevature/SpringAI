@@ -359,7 +359,7 @@ function App() {
           <div style={s.navDivider} role="separator" aria-hidden="true" />
           <div style={s.groupLabel}>{SIDEBAR_GROUPS.socialHq}</div>
           <NavItem icon={<HiPhoto size={17} />}                    label="Content Calendar"   active={activeTab === 'calendar'}         onClick={() => go('calendar')} />
-          <NavItem icon={<HiChatBubbleOvalLeft size={17} />}       label="Messages"           active={activeTab === 'messages'}         onClick={() => go('messages')} />
+          <NavItem icon={<HiChatBubbleOvalLeft size={17} />}       label="Inbox"           active={activeTab === 'messages'}         onClick={() => go('messages')} />
           <NavItem icon={<HiArrowTrendingUp size={17} />}          label="Growth Planner"     active={activeTab === 'trends'}           onClick={() => go('trends')} />
           <NavItem icon={<HiCpuChip size={17} />}                  label="Social AI"          active={activeTab === 'social-ai'}        onClick={() => go('social-ai')} />
 

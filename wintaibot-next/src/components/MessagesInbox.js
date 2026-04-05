@@ -340,77 +340,6 @@ function SidebarTypeButton({ label, active, disabled, onClick, badge, title }) {
   );
 }
 
-/** Unified metric tile — white card + tinted icon (no mixed solid fills). */
-function StatTile({ icon, label, value, accent, onClick }) {
-  const interactive = typeof onClick === 'function';
-  const tint = accent ? `${accent}14` : '#f1f5f9';
-  const content = (
-    <>
-      <div
-        style={{
-          width: '40px',
-          height: '40px',
-          borderRadius: '10px',
-          background: tint,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-          color: accent || '#64748b',
-          fontSize: '18px',
-        }}
-        aria-hidden
-      >
-        {icon}
-      </div>
-      <div style={{ minWidth: 0 }}>
-        <div style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>{value}</div>
-        <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', marginTop: '2px', letterSpacing: '0.02em' }}>
-          {label}
-        </div>
-      </div>
-    </>
-  );
-  const baseStyle = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    padding: '14px 16px',
-    background: '#fff',
-    border: '1px solid #e2e8f0',
-    borderRadius: '12px',
-    textAlign: 'left',
-    transition: 'border-color 0.15s, box-shadow 0.15s',
-    boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
-    width: '100%',
-    fontFamily: 'inherit',
-  };
-  if (interactive) {
-    return (
-      <button
-        type="button"
-        onClick={onClick}
-        style={{ ...baseStyle, cursor: 'pointer' }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.borderColor = accent || '#cbd5e1';
-          e.currentTarget.style.boxShadow = '0 2px 8px rgba(15, 23, 42, 0.06)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.borderColor = '#e2e8f0';
-          e.currentTarget.style.boxShadow = '0 1px 2px rgba(15, 23, 42, 0.04)';
-        }}
-      >
-        {content}
-      </button>
-    );
-  }
-  return (
-    <div role="status" style={{ ...baseStyle, cursor: 'default' }}>
-      {content}
-    </div>
-  );
-}
-
 function RefreshIcon({ size = 14 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
@@ -421,32 +350,6 @@ function RefreshIcon({ size = 14 }) {
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-    </svg>
-  );
-}
-
-function UnreadDotIcon({ color = '#dc2626' }) {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden>
-      <circle cx="12" cy="12" r="8" fill={color} opacity="0.2" />
-      <circle cx="12" cy="12" r="4" fill={color} />
-    </svg>
-  );
-}
-
-function StatEnvelopeIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <rect x="3" y="5" width="18" height="14" rx="2" />
-      <path d="M3 7l9 6 9-6" />
-    </svg>
-  );
-}
-
-function StatCommentIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8.5z" />
     </svg>
   );
 }
@@ -1208,30 +1111,74 @@ export default function MessagesInbox({ onOpenVideoPublisher, onOpenConnectedAcc
       )}
 
       {data && (
-        <div
-          style={{
-            display: 'flex',
-            gap: '14px',
-            alignItems: 'flex-start',
-            width: '100%',
-          }}
-        >
-          <aside
-            aria-label="Networks and view"
+        <>
+          {platformTab !== 'all' && data?.platformErrors?.[platformTab] && (
+            <div
+              style={{
+                background: '#fef3c7',
+                border: '1px solid #fcd34d',
+                borderRadius: 8,
+                padding: '10px 14px',
+                marginBottom: 12,
+                fontSize: 13,
+                color: '#92400e',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                flexWrap: 'wrap',
+              }}
+            >
+              <span style={{ flex: 1 }}>⚠️ {data.platformErrors[platformTab]}</span>
+              {typeof onOpenConnectedAccounts === 'function' && (
+                <button
+                  type="button"
+                  onClick={onOpenConnectedAccounts}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: 6,
+                    border: '1px solid #d97706',
+                    background: '#fff',
+                    fontWeight: 600,
+                    fontSize: 12,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Connect
+                </button>
+              )}
+            </div>
+          )}
+          <div
             style={{
-              position: 'sticky',
-              top: 8,
-              flexShrink: 0,
-              width: 104,
+              display: 'grid',
+              gridTemplateColumns:
+                selection && selectedItem
+                  ? '104px minmax(240px, 1fr) minmax(280px, 1.15fr)'
+                  : '104px minmax(0, 1fr)',
+              width: '100%',
+              minHeight: 0,
+              height: 'min(72vh, 880px)',
+              maxHeight: 'min(72vh, 880px)',
               background: '#fff',
               border: '1px solid #e2e8f0',
               borderRadius: 14,
+              overflow: 'hidden',
+              boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+            }}
+          >
+          <aside
+            aria-label="Networks and view"
+            style={{
+              alignSelf: 'stretch',
+              borderRight: '1px solid #e2e8f0',
+              background: '#f8fafc',
               padding: '12px 8px',
-              boxShadow: '0 1px 3px rgba(15, 23, 42, 0.06)',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               gap: 8,
+              overflowY: 'auto',
+              minHeight: 0,
             }}
           >
             <div
@@ -1397,87 +1344,11 @@ export default function MessagesInbox({ onOpenVideoPublisher, onOpenConnectedAcc
 
           <div
             style={{
-              flex: 1,
               minWidth: 0,
+              minHeight: 0,
               display: 'flex',
               flexDirection: 'column',
-              gap: 14,
-              minHeight: 0,
-            }}
-          >
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-                gap: 12,
-              }}
-            >
-              <StatTile icon={<StatEnvelopeIcon />} label="Total DMs" value={conversations.length} accent="#2563eb" />
-              <StatTile icon={<UnreadDotIcon />} label="Unread" value={totalUnread} accent="#dc2626" />
-              <StatTile icon={<StatCommentIcon />} label="Comments" value={comments.length} accent="#d97706" />
-            </div>
-
-            {platformTab !== 'all' && data?.platformErrors?.[platformTab] && (
-              <div
-                style={{
-                  background: '#fef3c7',
-                  border: '1px solid #fcd34d',
-                  borderRadius: 8,
-                  padding: '10px 14px',
-                  fontSize: 13,
-                  color: '#92400e',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 12,
-                  flexWrap: 'wrap',
-                }}
-              >
-                <span style={{ flex: 1 }}>⚠️ {data.platformErrors[platformTab]}</span>
-                {typeof onOpenConnectedAccounts === 'function' && (
-                  <button
-                    type="button"
-                    onClick={onOpenConnectedAccounts}
-                    style={{
-                      padding: '6px 12px',
-                      borderRadius: 6,
-                      border: '1px solid #d97706',
-                      background: '#fff',
-                      fontWeight: 600,
-                      fontSize: 12,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Connect
-                  </button>
-                )}
-              </div>
-            )}
-
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: selection ? 'minmax(280px, 1fr) minmax(320px, 1.15fr)' : '1fr',
-                gap: '16px',
-                alignItems: 'stretch',
-                minHeight: 0,
-                height: 'min(72vh, 880px)',
-                maxHeight: 'min(72vh, 880px)',
-              }}
-            >
-
-          {/* Left: List */}
-          <div
-            style={{
-              background: '#fff',
-              borderRadius: '14px',
-              overflow: 'hidden',
-              boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-              border: '1px solid #e2e8f0',
-              minHeight: 0,
-              height: '100%',
-              maxHeight: '100%',
-              display: 'flex',
-              flexDirection: 'column',
+              borderRight: selection && selectedItem ? '1px solid #e2e8f0' : undefined,
             }}
           >
             <div style={{ overflowY: 'auto', flex: 1, minHeight: 0, WebkitOverflowScrolling: 'touch' }}>
@@ -1612,20 +1483,29 @@ export default function MessagesInbox({ onOpenVideoPublisher, onOpenConnectedAcc
             </div>
           </div>
 
-          {/* Right: Detail — full thread (DM messages or comment + replies) */}
           {selection && selectedItem && (
-            <InboxDetailPanel
-              item={selectedItem}
-              kind={selection.kind}
-              commentReplyExtras={commentReplyExtras}
-              onClose={() => setSelection(null)}
-              onOpenAutoReply={onOpenAutoReply}
-              onOpenConnectedAccounts={onOpenConnectedAccounts}
-            />
-          )}
+            <div
+              style={{
+                minWidth: 0,
+                minHeight: 0,
+                overflow: 'auto',
+                display: 'flex',
+                flexDirection: 'column',
+                background: '#fff',
+              }}
+            >
+              <InboxDetailPanel
+                item={selectedItem}
+                kind={selection.kind}
+                commentReplyExtras={commentReplyExtras}
+                onClose={() => setSelection(null)}
+                onOpenAutoReply={onOpenAutoReply}
+                onOpenConnectedAccounts={onOpenConnectedAccounts}
+              />
             </div>
+          )}
           </div>
-        </div>
+        </>
       )}
     </div>
   );

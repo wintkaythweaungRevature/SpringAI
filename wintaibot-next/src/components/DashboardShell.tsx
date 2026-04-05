@@ -158,7 +158,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
           <div style={s.groupLabel}>{SIDEBAR_GROUPS.socialHq}</div>
           <NavItem
             emoji="💬"
-            label="Messages"
+            label="Inbox"
             href="/messages"
             active={pathname === '/messages'}
           />

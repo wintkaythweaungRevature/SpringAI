@@ -5,6 +5,7 @@ import PlatformIcon from './PlatformIcon';
 import VideoTrimmer from './VideoTrimmer';
 import PostDetailModal from './PostDetailModal';
 import CaptionIdeasPanel from './CaptionIdeasPanel';
+import ThumbnailIdeasPanel from './ThumbnailIdeasPanel';
 
 /* ─── Constants ─────────────────────────────────────────────── */
 const PLATFORMS = [
@@ -1866,7 +1867,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
                   <div style={s.sectionTitle}>🖼️ Thumbnail</div>
                   <div style={{ display: 'flex', gap: 6 }}>
-                    {[{ id: 'scrub', label: '🎯 Scrub & Pick' }, { id: 'ai', label: '✨ AI Suggested' }].map(m => (
+                    {[{ id: 'scrub', label: '🎯 Scrub & Pick' }, { id: 'ai', label: '✨ AI Suggested' }, { id: 'ideas', label: '💡 Ideas' }].map(m => (
                       <button key={m.id} onClick={() => {
                         setThumbnailMode(m.id);
                         if (m.id === 'ai' && uploadedVideoId && frames.length === 0 && !framesLoading) {
@@ -1891,6 +1892,18 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
                       if (uploadedVideoId) uploadFrameThumbnail(uploadedVideoId, file, preview);
                       else setThumbnailUrl(preview);
                     }}
+                  />
+                )}
+
+                {thumbnailMode === 'ideas' && (
+                  <ThumbnailIdeasPanel
+                    captionText={variants[activeVariant]?.caption || textCaption}
+                    platform={activeVariant || 'youtube'}
+                    apiBase={base}
+                    token={token}
+                    currentThumbnailUrl={thumbnailUrl}
+                    uploadedVideoId={uploadedVideoId}
+                    onImageSelected={(file, previewUrl) => uploadFrameThumbnail(uploadedVideoId, file, previewUrl)}
                   />
                 )}
 

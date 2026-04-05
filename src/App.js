@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import './App.css';
 import { useMediaQuery } from './hooks/useMediaQuery';
 
@@ -251,7 +251,28 @@ function App() {
   const isMobile = useMediaQuery('(max-width: 768px)');
   const isTablet = useMediaQuery('(max-width: 1024px)');
 
-  const go = (tab) => setActiveTab(tab);
+  const navStackRef = useRef([]);
+
+  const go = useCallback((tab) => {
+    setActiveTab((prev) => {
+      if (tab === null) {
+        navStackRef.current = [];
+      } else if (tab !== prev) {
+        navStackRef.current.push(prev);
+      }
+      return tab;
+    });
+  }, []);
+
+  const goBack = useCallback(() => {
+    const stack = navStackRef.current;
+    if (stack.length > 0) {
+      const prev = stack.pop();
+      setActiveTab(prev ?? null);
+    } else {
+      setActiveTab(null);
+    }
+  }, []);
   const handleChoosePlan = async (plan) => {
     if (!user) { setAuthMode('signup'); setShowAuthModal(true); return; }
     const base = apiBase || 'https://api.wintaibot.com';
@@ -276,10 +297,10 @@ function App() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('social_connect') === 'success' && params.get('platform')) {
-      setActiveTab('video-publisher');
+      go('video-publisher');
     }
     // Reset flow uses /reset-password?token= (handled by Root)
-  }, []);
+  }, [go]);
 
   useEffect(() => {
     if (loading || user) return;
@@ -295,7 +316,7 @@ function App() {
     const handler = (e) => go(e.detail);
     window.addEventListener('wintaibot:go', handler);
     return () => window.removeEventListener('wintaibot:go', handler);
-  }, []);
+  }, [go]);
   const userDisplayName = user?.firstName || user?.lastName
     ? [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim()
     : (user?.email || '').split('@')[0] || '';
@@ -397,6 +418,17 @@ function App() {
         {user && (
           <header style={s.topBar}>
             <button style={s.menuBtn} onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>
+            {activeTab != null && (
+              <button
+                type="button"
+                style={s.backBtn}
+                onClick={goBack}
+                aria-label="Go back to previous page"
+                title="Back"
+              >
+                ←
+              </button>
+            )}
 
             <div style={{ flex: 1 }} />
 
@@ -643,6 +675,18 @@ const s = {
     fontSize: '18px', cursor: 'pointer', padding: '4px 6px',
     borderRadius: '6px', flexShrink: 0, lineHeight: 1,
   },
+  backBtn: {
+    background: 'rgba(255,255,255,0.06)',
+    border: '1px solid rgba(148, 163, 184, 0.25)',
+    color: '#e2e8f0',
+    fontSize: '18px',
+    cursor: 'pointer',
+    padding: '4px 10px',
+    borderRadius: '8px',
+    flexShrink: 0,
+    lineHeight: 1,
+    fontWeight: 600,
+  },
   searchBox: {
     display: 'flex', alignItems: 'center', gap: '8px',
     background: 'rgba(255,255,255,0.06)',
@@ -697,8 +741,15 @@ const s = {
 
   /* Content */
   content: {
-    flex: 1, overflowY: 'auto', overflowX: 'hidden',
-    padding: '16px',
+    flex: 1,
+    minHeight: 0,
     minWidth: 0,
+    overflowY: 'auto',
+    overflowX: 'hidden',
+    overscrollBehavior: 'contain',
+    WebkitOverflowScrolling: 'touch',
+    padding: '16px',
+    display: 'flex',
+    flexDirection: 'column',
   },
 };

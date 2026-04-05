@@ -1162,11 +1162,13 @@ export default function AnalyticsDashboard() {
                                     <div style={{ fontSize: 12, color: '#1e293b', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                       {safeDecodeCaption(post.caption) || '(no caption)'}
                                     </div>
-                                    <div style={{ display: 'flex', gap: 10, marginTop: 3, fontSize: 11, color: '#64748b' }}>
+                                    <div style={{ display: 'flex', gap: 8, marginTop: 3, fontSize: 11, color: '#64748b', flexWrap: 'wrap' }}>
                                       <span>❤️ {post.likes ?? '—'}</span>
                                       <span>💬 {post.commentsCount ?? '—'}</span>
                                       <span>👁 {post.views ?? '—'}</span>
                                       <span>🔁 {post.shares ?? '—'}</span>
+                                      <span>📣 {post.impressions ?? '—'}</span>
+                                      <span>🎯 {post.reach ?? '—'}</span>
                                     </div>
                                   </div>
                                 ))}
@@ -1194,6 +1196,8 @@ export default function AnalyticsDashboard() {
                       { key: 'commentsCount',  label: '💬 Comments' },
                       { key: 'engagementRate', label: '📊 Engagement' },
                       { key: 'shares',         label: '🔁 Shares' },
+                      { key: 'impressions',    label: '📣 Impressions' },
+                      { key: 'reach',          label: '🎯 Reach' },
                     ].map(m => (
                       <button key={m.key} onClick={() => setTopMetricTab(m.key)} style={{
                         padding: '5px 12px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600,

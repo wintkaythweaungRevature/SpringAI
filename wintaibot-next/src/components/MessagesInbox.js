@@ -48,6 +48,15 @@ function sameInboxId(a, b) {
 
 const CANONICAL_INBOX_PLATFORMS = new Set(['instagram', 'facebook', 'youtube', 'linkedin', 'tiktok', 'x']);
 
+/** Map `/api/social/status` `connected` ids to inbox sidebar platform keys. */
+function normalizeSocialStatusPlatformId(raw) {
+  if (raw == null) return null;
+  const s = String(raw).toLowerCase().trim();
+  if (s === 'twitter') return 'x';
+  if (CANONICAL_INBOX_PLATFORMS.has(s)) return s;
+  return null;
+}
+
 /** API may use mixed casing or omit platform; infer from source when needed so filters match. */
 function normalizeInboxPlatform(item) {
   if (!item || typeof item !== 'object') return item;
@@ -922,6 +931,42 @@ export default function MessagesInbox({ onOpenVideoPublisher, onOpenConnectedAcc
   /** Separate DM vs comment so IDs never collide; fixes wrong pane when filtering comments. */
   const [selection, setSelection]   = useState(null); // { kind: 'dm' | 'comment', id: string } | null
   const [commentReplyExtras, setCommentReplyExtras] = useState({}); // commentId -> locally sent replies
+  /** `null` = still loading or request failed (show all networks); `Set` (possibly empty) = loaded. */
+  const [connectedPlatformIds, setConnectedPlatformIds] = useState(null);
+
+  useEffect(() => {
+    if (!token) {
+      setConnectedPlatformIds(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`${base}/api/social/status`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error('social status');
+        const j = await res.json();
+        const raw = Array.isArray(j.connected) ? j.connected : [];
+        const next = new Set();
+        for (const x of raw) {
+          const id = normalizeSocialStatusPlatformId(x);
+          if (id) next.add(id);
+        }
+        if (!cancelled) setConnectedPlatformIds(next);
+      } catch {
+        if (!cancelled) setConnectedPlatformIds(null);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [base, token]);
+
+  const sidebarPlatforms = useMemo(() => {
+    const list = Object.values(PLATFORM_META);
+    if (connectedPlatformIds === null) return list;
+    if (connectedPlatformIds.size === 0) return [];
+    return list.filter((p) => connectedPlatformIds.has(p.id));
+  }, [connectedPlatformIds]);
 
   const load = useCallback(async () => {
     if (!token) {
@@ -947,6 +992,11 @@ export default function MessagesInbox({ onOpenVideoPublisher, onOpenConnectedAcc
   useEffect(() => {
     setSelection(null);
   }, [platformTab, typeTab]);
+
+  useEffect(() => {
+    if (connectedPlatformIds === null || platformTab === 'all') return;
+    if (!connectedPlatformIds.has(platformTab)) setPlatformTab('all');
+  }, [connectedPlatformIds, platformTab]);
 
   const conversations = useMemo(() => {
     const { conversations: c0 } = coalesceMessagesApiPayload(data || {});
@@ -1012,7 +1062,19 @@ export default function MessagesInbox({ onOpenVideoPublisher, onOpenConnectedAcc
   };
 
   return (
-    <div style={{ maxWidth: 'none', width: '100%', margin: 0, fontFamily: "'Inter',-apple-system,sans-serif" }}>
+    <div
+      style={{
+        maxWidth: 'none',
+        width: '100%',
+        margin: 0,
+        flex: 1,
+        minHeight: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        fontFamily: "'Inter',-apple-system,sans-serif",
+      }}
+    >
 
       {/* Toolbar (page title lives in app shell — subtitle only here) */}
       <div
@@ -1178,6 +1240,9 @@ export default function MessagesInbox({ onOpenVideoPublisher, onOpenConnectedAcc
               alignItems: 'center',
               gap: 8,
               overflowY: 'auto',
+              overflowX: 'hidden',
+              overscrollBehavior: 'contain',
+              WebkitOverflowScrolling: 'touch',
               minHeight: 0,
             }}
           >
@@ -1203,7 +1268,7 @@ export default function MessagesInbox({ onOpenVideoPublisher, onOpenConnectedAcc
             >
               <span style={{ fontSize: 11, fontWeight: 800, color: '#334155', letterSpacing: '0.02em' }}>All</span>
             </SidebarPlatformButton>
-            {Object.values(PLATFORM_META).map((p) => {
+            {sidebarPlatforms.map((p) => {
               const unread =
                 p.id === 'instagram'
                   ? igConvs.filter((c) => Number(c.unread) > 0).length
@@ -1351,7 +1416,16 @@ export default function MessagesInbox({ onOpenVideoPublisher, onOpenConnectedAcc
               borderRight: selection && selectedItem ? '1px solid #e2e8f0' : undefined,
             }}
           >
-            <div style={{ overflowY: 'auto', flex: 1, minHeight: 0, WebkitOverflowScrolling: 'touch' }}>
+            <div
+              style={{
+                overflowY: 'auto',
+                overflowX: 'hidden',
+                flex: 1,
+                minHeight: 0,
+                overscrollBehavior: 'contain',
+                WebkitOverflowScrolling: 'touch',
+              }}
+            >
             {listTotalCount > 4 && (
               <div
                 style={{
@@ -1489,6 +1563,9 @@ export default function MessagesInbox({ onOpenVideoPublisher, onOpenConnectedAcc
                 minWidth: 0,
                 minHeight: 0,
                 overflow: 'auto',
+                overflowX: 'hidden',
+                overscrollBehavior: 'contain',
+                WebkitOverflowScrolling: 'touch',
                 display: 'flex',
                 flexDirection: 'column',
                 background: '#fff',

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useAuth } from '@/context/AuthContext';
 import Login from './Login';
@@ -53,6 +53,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const { user, logout, loading } = useAuth();
   const pathname = usePathname();
+  const router = useRouter();
   const isMobile = useMediaQuery('(max-width: 768px)');
   const isTablet = useMediaQuery('(max-width: 1024px)');
 
@@ -73,6 +74,21 @@ export default function DashboardShell({ children }: { children: React.ReactNode
 
   const userInitials = user?.email ? user.email.slice(0, 2).toUpperCase() : '??';
   const showDashboardChrome = Boolean(user);
+  const isDashboardHome = pathname === '/' || pathname === '/analytics';
+  const showBackButton = showDashboardChrome && !isDashboardHome;
+
+  const handleDashboardBack = () => {
+    if (typeof window === 'undefined') {
+      router.push('/');
+      return;
+    }
+    const len = window.history.length;
+    if (len > 1) {
+      router.back();
+    } else {
+      router.push('/');
+    }
+  };
 
   const mainShellBg =
     'linear-gradient(165deg, #060a14 0%, #0f172a 35%, #111d36 50%, #0a1020 100%)';
@@ -205,6 +221,17 @@ export default function DashboardShell({ children }: { children: React.ReactNode
           <button style={s.menuBtn} onClick={() => setSidebarOpen(!sidebarOpen)}>
             ☰
           </button>
+          {showBackButton && (
+            <button
+              type="button"
+              style={s.backBtn}
+              onClick={handleDashboardBack}
+              aria-label="Go back to previous page"
+              title="Back"
+            >
+              ←
+            </button>
+          )}
 
           <div style={s.searchBox}>
             <span style={{ opacity: 0.4, fontSize: '14px' }}>🔍</span>
@@ -508,6 +535,18 @@ const s: Record<string, any> = {
     flexShrink: 0,
     lineHeight: 1,
   },
+  backBtn: {
+    background: 'rgba(255,255,255,0.06)',
+    border: '1px solid rgba(148, 163, 184, 0.25)',
+    color: '#e2e8f0',
+    fontSize: '18px',
+    cursor: 'pointer',
+    padding: '4px 10px',
+    borderRadius: '8px',
+    flexShrink: 0,
+    lineHeight: 1,
+    fontWeight: 600,
+  },
   searchBox: {
     display: 'flex',
     alignItems: 'center',
@@ -615,9 +654,14 @@ const s: Record<string, any> = {
   },
   content: {
     flex: 1,
-    overflowY: 'auto',
-    overflowX: 'hidden',
-    padding: '16px',
+    minHeight: 0,
     minWidth: 0,
+    overflowX: 'hidden',
+    overflowY: 'auto',
+    overscrollBehavior: 'contain',
+    WebkitOverflowScrolling: 'touch',
+    padding: '16px',
+    display: 'flex',
+    flexDirection: 'column',
   },
 };

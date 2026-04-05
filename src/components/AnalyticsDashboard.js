@@ -1262,6 +1262,8 @@ export default function AnalyticsDashboard() {
                         { label: 'Total Posts',    value: monthlyStats.totalPosts },
                         { label: 'Total Likes',    value: monthlyStats.months.reduce((s, m) => s + (m.likes ?? 0), 0) },
                         { label: 'Total Comments', value: monthlyStats.months.reduce((s, m) => s + (m.commentsCount ?? 0), 0) },
+                        { label: 'Total Views',    value: monthlyStats.months.reduce((s, m) => s + (m.views ?? 0), 0) },
+                        { label: 'Total Shares',   value: monthlyStats.months.reduce((s, m) => s + (m.shares ?? 0), 0) },
                       ].map(stat => (
                         <div key={stat.label} style={{ background: '#f8fafc', borderRadius: 10, padding: '10px 16px', border: '1px solid #e2e8f0', minWidth: 120 }}>
                           <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>{stat.label}</div>
@@ -1274,20 +1276,27 @@ export default function AnalyticsDashboard() {
                       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                         <thead>
                           <tr style={{ background: '#f8fafc' }}>
-                            {['Month', 'Posts', 'Likes', 'Comments'].map(h => (
+                            {['Month', 'Posts', 'Likes', 'Comments', 'Views', 'Shares'].map(h => (
                               <th key={h} style={{ padding: '8px 12px', textAlign: h === 'Month' ? 'left' : 'center', color: '#64748b', fontWeight: 600, fontSize: 11, borderBottom: '1px solid #e2e8f0' }}>{h}</th>
                             ))}
                           </tr>
                         </thead>
                         <tbody>
-                          {monthlyStats.months.map((m, i) => (
+                          {monthlyStats.months.map((m, i) => {
+                            const cell = (val, color) => (val ?? 0) > 0
+                              ? <span style={{ color, fontWeight: 700 }}>{Number(val).toLocaleString()}</span>
+                              : <span style={{ color: '#cbd5e1' }}>—</span>;
+                            return (
                             <tr key={i} style={{ borderBottom: '1px solid #f1f5f9' }}>
                               <td style={{ padding: '10px 12px', fontWeight: 600, color: '#1e293b' }}>{m.month}</td>
                               <td style={{ padding: '10px 12px', textAlign: 'center', color: '#6366f1', fontWeight: 700 }}>{m.postCount ?? 0}</td>
-                              <td style={{ padding: '10px 12px', textAlign: 'center', color: '#ec4899', fontWeight: 700 }}>{(m.likes ?? 0) > 0 ? Number(m.likes).toLocaleString() : <span style={{ color: '#cbd5e1' }}>—</span>}</td>
-                              <td style={{ padding: '10px 12px', textAlign: 'center', color: '#22c55e', fontWeight: 700 }}>{(m.commentsCount ?? 0) > 0 ? Number(m.commentsCount).toLocaleString() : <span style={{ color: '#cbd5e1' }}>—</span>}</td>
+                              <td style={{ padding: '10px 12px', textAlign: 'center' }}>{cell(m.likes,         '#ec4899')}</td>
+                              <td style={{ padding: '10px 12px', textAlign: 'center' }}>{cell(m.commentsCount, '#22c55e')}</td>
+                              <td style={{ padding: '10px 12px', textAlign: 'center' }}>{cell(m.views,         '#6366f1')}</td>
+                              <td style={{ padding: '10px 12px', textAlign: 'center' }}>{cell(m.shares,        '#f59e0b')}</td>
                             </tr>
-                          ))}
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>

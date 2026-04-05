@@ -220,43 +220,120 @@ function mergedCommentReplies(item, localExtra) {
   return [...api, ...local];
 }
 
-function TabBtn({ label, active, badge, onClick }) {
+/** Compact platform toggle for left inbox sidebar (logo + optional count badge). */
+function SidebarPlatformButton({ active, onClick, title, countBadge, unreadBadge, accent, children }) {
+  const showCount = countBadge != null && countBadge > 0;
+  const showUnread = unreadBadge != null && unreadBadge > 0;
   return (
     <button
       type="button"
+      title={title}
       onClick={onClick}
       style={{
-        padding: '8px 14px',
-        borderRadius: '8px',
-        border: active ? '1px solid #0f172a' : '1px solid #e2e8f0',
+        position: 'relative',
+        width: 48,
+        height: 48,
+        borderRadius: 12,
+        border: active ? `2px solid ${accent || '#0f172a'}` : '1px solid #e2e8f0',
+        background: active ? (accent ? `${accent}20` : '#e2e8f0') : '#f8fafc',
         cursor: 'pointer',
-        fontWeight: active ? 600 : 500,
-        fontSize: '13px',
-        whiteSpace: 'nowrap',
-        background: active ? '#0f172a' : '#fff',
-        color: active ? '#fff' : '#475569',
-        display: 'inline-flex',
+        display: 'flex',
         alignItems: 'center',
-        gap: '6px',
-        transition: 'background 0.15s, border-color 0.15s, color 0.15s',
-        boxShadow: active ? 'none' : '0 1px 2px rgba(15, 23, 42, 0.04)',
+        justifyContent: 'center',
+        padding: 0,
+        flexShrink: 0,
+        transition: 'border-color 0.15s, background 0.15s',
       }}
     >
-      {label}
+      {showUnread && (
+        <span
+          style={{
+            position: 'absolute',
+            top: -3,
+            right: -3,
+            minWidth: 16,
+            height: 16,
+            padding: '0 4px',
+            borderRadius: 8,
+            background: '#dc2626',
+            color: '#fff',
+            fontSize: 9,
+            fontWeight: 800,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            lineHeight: 1,
+            zIndex: 2,
+          }}
+        >
+          {unreadBadge > 99 ? '99+' : unreadBadge}
+        </span>
+      )}
+      {showCount && !showUnread && (
+        <span
+          style={{
+            position: 'absolute',
+            top: -3,
+            right: -3,
+            minWidth: 16,
+            height: 16,
+            padding: '0 4px',
+            borderRadius: 8,
+            background: '#0f172a',
+            color: '#fff',
+            fontSize: 9,
+            fontWeight: 800,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            lineHeight: 1,
+            zIndex: 1,
+          }}
+        >
+          {countBadge > 99 ? '99+' : countBadge}
+        </span>
+      )}
+      {children}
+    </button>
+  );
+}
+
+/** Inbox type filter: All / Comments / Messages (sidebar). */
+function SidebarTypeButton({ label, active, disabled, onClick, badge, title }) {
+  return (
+    <button
+      type="button"
+      title={title || (disabled ? 'Not available for this network' : undefined)}
+      disabled={disabled}
+      onClick={onClick}
+      style={{
+        width: '100%',
+        padding: '9px 8px',
+        borderRadius: 10,
+        border: active ? '1px solid #0f172a' : '1px solid #e2e8f0',
+        background: active ? '#0f172a' : '#fff',
+        color: active ? '#fff' : disabled ? '#94a3b8' : '#334155',
+        fontWeight: active ? 600 : 500,
+        fontSize: 12,
+        lineHeight: 1.2,
+        textAlign: 'center',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        opacity: disabled ? 0.5 : 1,
+        transition: 'background 0.15s, border-color 0.15s, color 0.15s',
+      }}
+    >
+      <span style={{ display: 'block' }}>{label}</span>
       {badge > 0 && (
         <span
           style={{
-            background: active ? 'rgba(255,255,255,0.2)' : '#fee2e2',
-            color: active ? '#fff' : '#b91c1c',
-            borderRadius: '6px',
-            padding: '1px 6px',
-            fontSize: '10px',
+            display: 'inline-block',
+            marginTop: 4,
+            fontSize: 10,
             fontWeight: 700,
-            minWidth: '18px',
-            textAlign: 'center',
+            color: active ? '#fecaca' : '#dc2626',
           }}
         >
-          {badge}
+          {badge > 99 ? '99+' : badge}
         </span>
       )}
     </button>
@@ -1126,203 +1203,6 @@ export default function MessagesInbox({ onOpenVideoPublisher, onOpenConnectedAcc
         </div>
       )}
 
-      {/* Summary — unified StatTile style */}
-      {data && (
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(152px, 1fr))',
-            gap: '12px',
-            marginBottom: '14px',
-          }}
-        >
-          <StatTile icon={<StatEnvelopeIcon />} label="Total DMs" value={conversations.length} accent="#2563eb" />
-          <StatTile icon={<UnreadDotIcon />} label="Unread" value={totalUnread} accent="#dc2626" />
-          <StatTile icon={<StatCommentIcon />} label="Comments" value={comments.length} accent="#d97706" />
-          <StatTile
-            icon={<PlatformIcon platform={PLATFORM_META.instagram} size={20} />}
-            label="Instagram"
-            value={igComments.length}
-            accent={PLATFORM_META.instagram.color}
-            onClick={() => handlePlatformTab('instagram')}
-          />
-          <StatTile
-            icon={<PlatformIcon platform={PLATFORM_META.facebook} size={20} />}
-            label="Facebook"
-            value={fbConvs.length + fbComments.length}
-            accent={PLATFORM_META.facebook.color}
-            onClick={() => handlePlatformTab('facebook')}
-          />
-          <StatTile
-            icon={<PlatformIcon platform={PLATFORM_META.youtube} size={20} />}
-            label="YouTube"
-            value={ytComments.length}
-            accent={PLATFORM_META.youtube.color}
-            onClick={() => handlePlatformTab('youtube')}
-          />
-          <StatTile
-            icon={<PlatformIcon platform={PLATFORM_META.linkedin} size={20} />}
-            label="LinkedIn"
-            value={liConvs.length + liComments.length}
-            accent={PLATFORM_META.linkedin.color}
-            onClick={() => handlePlatformTab('linkedin')}
-          />
-          <StatTile
-            icon={<PlatformIcon platform={PLATFORM_META.tiktok} size={20} />}
-            label="TikTok"
-            value={ttComments.length}
-            accent={PLATFORM_META.tiktok.color}
-            onClick={() => handlePlatformTab('tiktok')}
-          />
-          <StatTile
-            icon={<PlatformIcon platform={PLATFORM_META.x} size={20} />}
-            label="X"
-            value={xComments.length}
-            accent="#000000"
-            onClick={() => handlePlatformTab('x')}
-          />
-        </div>
-      )}
-
-      {/* Filters */}
-      <div
-        style={{
-          background: '#f8fafc',
-          border: '1px solid #e2e8f0',
-          borderRadius: '12px',
-          padding: '12px 14px',
-          marginBottom: '14px',
-        }}
-      >
-        <div
-          style={{
-            fontSize: '10px',
-            fontWeight: 700,
-            color: '#64748b',
-            letterSpacing: '0.06em',
-            textTransform: 'uppercase',
-            marginBottom: '8px',
-          }}
-        >
-          Platform
-        </div>
-        <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', flexWrap: 'wrap', paddingBottom: '2px' }}>
-          <TabBtn label="All" active={platformTab === 'all'} badge={totalUnread} onClick={() => handlePlatformTab('all')} />
-          {Object.values(PLATFORM_META).map(p => (
-            <TabBtn
-              key={p.id}
-              label={(
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                  <PlatformIcon platform={{ ...p, color: platformTab === p.id ? '#fff' : p.color }} size={14} />
-                  {p.label}
-                </span>
-              )}
-              active={platformTab === p.id}
-              badge={p.id === 'instagram' ? igConvs.filter(c => Number(c.unread) > 0).length
-                : p.id === 'facebook' ? fbConvs.filter(c => Number(c.unread) > 0).length
-                  : 0}
-              onClick={() => handlePlatformTab(p.id)}
-            />
-          ))}
-        </div>
-        <div
-          style={{
-            marginTop: '12px',
-            display: 'flex',
-            flexWrap: 'wrap',
-            alignItems: 'flex-end',
-            justifyContent: 'space-between',
-            gap: '12px',
-          }}
-        >
-          <div style={{ flex: '1 1 200px', minWidth: 0 }}>
-            <div
-              style={{
-                fontSize: '10px',
-                fontWeight: 700,
-                color: '#64748b',
-                letterSpacing: '0.06em',
-                textTransform: 'uppercase',
-                marginBottom: '8px',
-              }}
-            >
-              Type
-            </div>
-            <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', flexWrap: 'wrap' }}>
-              {(PLATFORM_TYPES[platformTab] || ['all']).map(t => (
-                <TabBtn
-                  key={t}
-                  label={TYPE_TAB_LABELS[t] || t}
-                  active={typeTab === t}
-                  badge={t === 'messages' ? platConvs.filter(c => Number(c.unread) > 0).length
-                    : t === 'comments' ? platComments.length
-                      : 0}
-                  onClick={() => setTypeTab(t)}
-                />
-              ))}
-            </div>
-          </div>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              flexWrap: 'wrap',
-              flexShrink: 0,
-            }}
-          >
-            {typeof onOpenConnectedAccounts === 'function' && (
-              <button
-                type="button"
-                onClick={onOpenConnectedAccounts}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '8px 12px',
-                  borderRadius: '8px',
-                  border: '1px solid #e2e8f0',
-                  background: '#fff',
-                  color: '#334155',
-                  fontWeight: 600,
-                  fontSize: '13px',
-                  cursor: 'pointer',
-                  boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
-                  flexShrink: 0,
-                }}
-              >
-                <span aria-hidden>🔗</span>
-                Connected Accounts
-              </button>
-            )}
-            {typeof onOpenAutoReply === 'function' && (
-              <button
-                type="button"
-                onClick={onOpenAutoReply}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '8px 12px',
-                  borderRadius: '8px',
-                  border: '1px solid #e2e8f0',
-                  background: '#fff',
-                  color: '#334155',
-                  fontWeight: 600,
-                  fontSize: '13px',
-                  cursor: 'pointer',
-                  boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
-                  flexShrink: 0,
-                }}
-              >
-                <span aria-hidden>🤖</span>
-                Auto Reply
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
       {loading && !data && (
         <div style={{ textAlign: 'center', padding: '56px 24px', color: '#64748b', fontSize: '14px' }}>Loading inbox…</div>
       )}
@@ -1330,15 +1210,260 @@ export default function MessagesInbox({ onOpenVideoPublisher, onOpenConnectedAcc
       {data && (
         <div
           style={{
-            display: 'grid',
-            gridTemplateColumns: selection ? 'minmax(280px, 1fr) minmax(320px, 1.15fr)' : '1fr',
-            gap: '16px',
-            alignItems: 'stretch',
-            minHeight: 0,
-            height: 'min(72vh, 880px)',
-            maxHeight: 'min(72vh, 880px)',
+            display: 'flex',
+            gap: '14px',
+            alignItems: 'flex-start',
+            width: '100%',
           }}
         >
+          <aside
+            aria-label="Networks and view"
+            style={{
+              position: 'sticky',
+              top: 8,
+              flexShrink: 0,
+              width: 104,
+              background: '#fff',
+              border: '1px solid #e2e8f0',
+              borderRadius: 14,
+              padding: '12px 8px',
+              boxShadow: '0 1px 3px rgba(15, 23, 42, 0.06)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 8,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 9,
+                fontWeight: 700,
+                color: '#94a3b8',
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                textAlign: 'center',
+                width: '100%',
+              }}
+            >
+              Networks
+            </div>
+            <SidebarPlatformButton
+              active={platformTab === 'all'}
+              onClick={() => handlePlatformTab('all')}
+              title="All platforms"
+              unreadBadge={totalUnread}
+              accent="#334155"
+            >
+              <span style={{ fontSize: 11, fontWeight: 800, color: '#334155', letterSpacing: '0.02em' }}>All</span>
+            </SidebarPlatformButton>
+            {Object.values(PLATFORM_META).map((p) => {
+              const unread =
+                p.id === 'instagram'
+                  ? igConvs.filter((c) => Number(c.unread) > 0).length
+                  : p.id === 'facebook'
+                    ? fbConvs.filter((c) => Number(c.unread) > 0).length
+                    : 0;
+              const cnt =
+                p.id === 'instagram'
+                  ? igComments.length
+                  : p.id === 'facebook'
+                    ? fbConvs.length + fbComments.length
+                    : p.id === 'youtube'
+                      ? ytComments.length
+                      : p.id === 'linkedin'
+                        ? liConvs.length + liComments.length
+                        : p.id === 'tiktok'
+                          ? ttComments.length
+                          : xComments.length;
+              return (
+                <SidebarPlatformButton
+                  key={p.id}
+                  active={platformTab === p.id}
+                  onClick={() => handlePlatformTab(p.id)}
+                  title={p.label}
+                  accent={p.color}
+                  unreadBadge={unread}
+                  countBadge={unread > 0 ? undefined : cnt}
+                >
+                  <PlatformIcon platform={p} size={22} />
+                </SidebarPlatformButton>
+              );
+            })}
+
+            <div
+              style={{
+                width: '100%',
+                height: 1,
+                background: '#e2e8f0',
+                margin: '4px 0 6px',
+              }}
+            />
+
+            <div
+              style={{
+                fontSize: 9,
+                fontWeight: 700,
+                color: '#94a3b8',
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                textAlign: 'center',
+                width: '100%',
+              }}
+            >
+              View
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, width: '100%' }}>
+              {['all', 'comments', 'messages'].map((t) => {
+                const supported = PLATFORM_TYPES[platformTab] || ['all'];
+                const disabled = !supported.includes(t);
+                const badge =
+                  t === 'messages'
+                    ? platConvs.filter((c) => Number(c.unread) > 0).length
+                    : t === 'comments'
+                      ? platComments.length
+                      : 0;
+                return (
+                  <SidebarTypeButton
+                    key={t}
+                    label={TYPE_TAB_LABELS[t] || t}
+                    active={typeTab === t}
+                    disabled={disabled}
+                    badge={badge}
+                    onClick={() => {
+                      if (!disabled) setTypeTab(t);
+                    }}
+                  />
+                );
+              })}
+            </div>
+
+            {(typeof onOpenConnectedAccounts === 'function' || typeof onOpenAutoReply === 'function') && (
+              <div
+                style={{
+                  marginTop: 8,
+                  paddingTop: 10,
+                  borderTop: '1px solid #e2e8f0',
+                  width: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 6,
+                }}
+              >
+                {typeof onOpenConnectedAccounts === 'function' && (
+                  <button
+                    type="button"
+                    title="Connected accounts"
+                    onClick={onOpenConnectedAccounts}
+                    style={{
+                      width: '100%',
+                      padding: '8px 6px',
+                      borderRadius: 8,
+                      border: '1px solid #e2e8f0',
+                      background: '#f8fafc',
+                      color: '#334155',
+                      fontWeight: 600,
+                      fontSize: 10,
+                      lineHeight: 1.2,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    🔗 Accounts
+                  </button>
+                )}
+                {typeof onOpenAutoReply === 'function' && (
+                  <button
+                    type="button"
+                    title="Auto reply"
+                    onClick={onOpenAutoReply}
+                    style={{
+                      width: '100%',
+                      padding: '8px 6px',
+                      borderRadius: 8,
+                      border: '1px solid #e2e8f0',
+                      background: '#f8fafc',
+                      color: '#334155',
+                      fontWeight: 600,
+                      fontSize: 10,
+                      lineHeight: 1.2,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    🤖 Auto
+                  </button>
+                )}
+              </div>
+            )}
+          </aside>
+
+          <div
+            style={{
+              flex: 1,
+              minWidth: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 14,
+              minHeight: 0,
+            }}
+          >
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                gap: 12,
+              }}
+            >
+              <StatTile icon={<StatEnvelopeIcon />} label="Total DMs" value={conversations.length} accent="#2563eb" />
+              <StatTile icon={<UnreadDotIcon />} label="Unread" value={totalUnread} accent="#dc2626" />
+              <StatTile icon={<StatCommentIcon />} label="Comments" value={comments.length} accent="#d97706" />
+            </div>
+
+            {platformTab !== 'all' && data?.platformErrors?.[platformTab] && (
+              <div
+                style={{
+                  background: '#fef3c7',
+                  border: '1px solid #fcd34d',
+                  borderRadius: 8,
+                  padding: '10px 14px',
+                  fontSize: 13,
+                  color: '#92400e',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  flexWrap: 'wrap',
+                }}
+              >
+                <span style={{ flex: 1 }}>⚠️ {data.platformErrors[platformTab]}</span>
+                {typeof onOpenConnectedAccounts === 'function' && (
+                  <button
+                    type="button"
+                    onClick={onOpenConnectedAccounts}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: 6,
+                      border: '1px solid #d97706',
+                      background: '#fff',
+                      fontWeight: 600,
+                      fontSize: 12,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Connect
+                  </button>
+                )}
+              </div>
+            )}
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: selection ? 'minmax(280px, 1fr) minmax(320px, 1.15fr)' : '1fr',
+                gap: '16px',
+                alignItems: 'stretch',
+                minHeight: 0,
+                height: 'min(72vh, 880px)',
+                maxHeight: 'min(72vh, 880px)',
+              }}
+            >
 
           {/* Left: List */}
           <div
@@ -1459,7 +1584,7 @@ export default function MessagesInbox({ onOpenVideoPublisher, onOpenConnectedAcc
                 {filteredView && hasAnyInboxData && (
                   <div style={{ marginTop: '18px' }}>
                     <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#475569', lineHeight: 1.55 }}>
-                      You still have data in this inbox — the platform you picked has nothing that matches (check the counts in the row above).
+                      You still have data in this inbox — the platform you picked has nothing that matches (check the counts on the left).
                     </p>
                     <button
                       type="button"
@@ -1498,6 +1623,8 @@ export default function MessagesInbox({ onOpenVideoPublisher, onOpenConnectedAcc
               onOpenConnectedAccounts={onOpenConnectedAccounts}
             />
           )}
+            </div>
+          </div>
         </div>
       )}
     </div>

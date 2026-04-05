@@ -20,7 +20,7 @@
   position: absolute;
   inset: -8%;
   z-index: 0;
-  background: url('/paywall-feature-mock.svg') center center / cover no-repeat;
+  background: radial-gradient(ellipse 70% 50% at 50% 50%, rgba(99,102,241,0.18) 0%, transparent 70%);
   filter: blur(28px) saturate(1.15);
   opacity: 0.72;
   transform: scale(1.06);

@@ -451,45 +451,32 @@ function PerformanceInsightsGrid({ platform, data, analyticsData, monthlyStats, 
           </div>
           {customizeBtn}
         </div>
-        {/* Summary stat pills */}
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16 }}>
+        {/* 4 charts — 2×2 grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           {[
-            { label: 'Views',        value: fmtVal(totalViews),      color: '#3b82f6' },
-            { label: 'Interactions', value: fmtVal(totalEngagement), color: '#8b5cf6' },
-            { label: 'Visits',       value: fmtVal(totalVisits),     color: '#06b6d4' },
-            { label: 'Audience',     value: fmtVal(totalFollowers),  color: '#10b981' },
-          ].map(s => (
-            <div key={s.label} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, padding: '8px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 8, height: 8, borderRadius: '50%', background: s.color }} />
-              <span style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>{s.label}</span>
-              <span style={{ fontSize: 14, fontWeight: 800, color: '#0f172a' }}>{s.value}</span>
+            { label: 'Views',        color: '#3b82f6', key: 'views',      value: fmtVal(totalViews)      },
+            { label: 'Interactions', color: '#8b5cf6', key: 'likes',      value: fmtVal(totalEngagement) },
+            { label: 'Posts',        color: '#06b6d4', key: 'postCount',  value: fmtVal(ownPosts.totalPublished ?? 0) },
+            { label: 'Shares',       color: '#10b981', key: 'shares',     value: fmtVal(totalViews > 0 ? 0 : 0)      },
+          ].map(({ label, color, key, value }) => (
+            <div key={label} style={{ background: '#0f172a', borderRadius: 14, padding: '14px 14px 8px', overflow: 'hidden' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: color, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</div>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: '#f1f5f9', lineHeight: 1.2, marginTop: 2 }}>
+                    {(monthlyStats?.months || []).reduce((s, m) => s + (m[key] ?? 0), 0).toLocaleString()}
+                  </div>
+                </div>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, boxShadow: `0 0 8px ${color}` }} />
+              </div>
+              <AnimatedLineChart
+                data={(monthlyStats?.months || []).map(m => ({ label: m.month, value: m[key] ?? 0 }))}
+                color={color}
+                title={label}
+                compact
+              />
             </div>
           ))}
-        </div>
-
-        {/* Animated trend chart */}
-        <div style={{ background: '#0f172a', borderRadius: 14, padding: '16px 16px 10px', overflow: 'hidden' }}>
-          <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
-            {['Views', 'Interactions', 'Posts', 'Shares'].map(t => (
-              <button key={t} onClick={() => setActiveChartTab && setActiveChartTab(t)} style={{
-                padding: '4px 12px', borderRadius: 7, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600,
-                background: activeChartTab === t ? '#3b82f6' : '#1e3a5f',
-                color: activeChartTab === t ? '#fff' : '#94a3b8',
-              }}>{t}</button>
-            ))}
-          </div>
-          <AnimatedLineChart
-            data={(monthlyStats?.months || []).map(m => ({
-              label: m.month,
-              value: activeChartTab === 'Views'        ? (m.views     ?? 0)
-                   : activeChartTab === 'Interactions' ? (m.likes     ?? 0)
-                   : activeChartTab === 'Posts'        ? (m.postCount ?? 0)
-                   :                                    (m.shares     ?? 0),
-            }))}
-            color="#3b82f6"
-            title={activeChartTab || 'Views'}
-            compact
-          />
         </div>
       </div>
     );
@@ -1023,8 +1010,6 @@ export default function AnalyticsDashboard() {
                 platform="overview"
                 analyticsData={data}
                 monthlyStats={monthlyStats}
-                activeChartTab={activeChartTab}
-                setActiveChartTab={setActiveChartTab}
               />
 
               {/* Three-column: 25% | 50% | 25% */}

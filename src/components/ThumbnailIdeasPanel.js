@@ -52,7 +52,7 @@ export default function ThumbnailIdeasPanel({
     }
   };
 
-  const useAsThumb = async (idx, imageUrl) => {
+  const applyAsThumb = async (idx, imageUrl) => {
     if (!uploadedVideoId) { setError('Upload a video first.'); return; }
     setApplyingIdx(idx); setError('');
     try {
@@ -145,7 +145,7 @@ export default function ThumbnailIdeasPanel({
                         <div style={{ padding: '6px 8px' }}>
                           <div style={{ fontSize: '11px', fontWeight: 700, color: '#1e293b', marginBottom: '4px' }}>{idea.title}</div>
                           <button
-                            onClick={() => useAsThumb(idx, genImg)}
+                            onClick={() => applyAsThumb(idx, genImg)}
                             disabled={isApply}
                             style={{
                               width: '100%', padding: '5px 0', borderRadius: '6px', border: 'none',

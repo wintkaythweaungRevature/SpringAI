@@ -7,7 +7,8 @@ import { HiHome, HiChatBubbleLeftRight, HiPhoto, HiSparkles } from 'react-icons/
 import { HiDocumentText, HiMicrophone } from 'react-icons/hi2';
 import { HiChatBubbleOvalLeft, HiArrowTrendingUp, HiCpuChip } from 'react-icons/hi2';
 import { HiPencilSquare, HiDocumentMagnifyingGlass } from 'react-icons/hi2';
-import { HiCog6Tooth, HiCreditCard } from 'react-icons/hi2';
+import { HiCog6Tooth, HiCreditCard, HiQuestionMarkCircle } from 'react-icons/hi2';
+import HelpPanel from './components/HelpPanel';
 import ImageGenerator from './components/ImageGenerator';
 import ChatComponent from './components/ChatComponent';
 import ReceipeGenerator from './components/ReceipeGenerator';
@@ -406,6 +407,7 @@ function App() {
               <div style={s.groupLabelFooter}>{SIDEBAR_GROUPS.settings}</div>
               <NavItem icon={<HiCog6Tooth size={17} />} label="Account" active={activeTab === 'account'} onClick={() => go('account')} hasArrow />
               <NavItem icon={<HiCreditCard size={17} />} label="Pricing" active={activeTab === 'pricing'} onClick={() => go('pricing')} />
+              <NavItem icon={<HiQuestionMarkCircle size={17} />} label="Help & Support" active={activeTab === 'help'} onClick={() => go('help')} />
             </div>
           )}
         </nav>
@@ -510,6 +512,7 @@ function App() {
           {activeTab === 'trends'          && <MemberGate featureName="Growth Planner"><ProGate featureName="Growth Planner"><DeepAnalytics /></ProGate></MemberGate>}
           {activeTab === 'social-ai'       && <MemberGate featureName="Social AI"><ProGate featureName="Social AI"><SocialAIChat /></ProGate></MemberGate>}
           {activeTab === 'pricing'         && <PricingPage onClose={() => go(null)} />}
+          {activeTab === 'help'            && <HelpPanel />}
           {activeTab === 'auto-reply'      && <MemberGate featureName="Auto Reply"><ProGate featureName="Auto Reply"><AutoReplySettings /></ProGate></MemberGate>}
           {activeTab === 'calendar'        && <MemberGate featureName="Content Calendar"><ContentCalendar onOpenVideoPublisher={() => go('video-publisher')} /></MemberGate>}
         </div>

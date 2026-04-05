@@ -5,7 +5,7 @@ WORKDIR /app
 
 RUN apk add --no-cache bash git
 COPY package*.json ./
-# ဒီစာကြောင်းကို အောက်ပါအတိုင်း ပြင်လိုက်ပါ
+# Install deps (legacy-peer-deps for older transitive peer ranges)
 RUN npm install --legacy-peer-deps
 
 COPY . .

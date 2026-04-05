@@ -19,7 +19,7 @@ const response = await fetch(`https://api.wintkaythweaung.com/api/ai/ask-ai?prom
         {/* --- LEFT SIDE: PROFILE --- */}
         <section className="profile-sidebar">
           <div className="profile-image-container">
-            {/* မင်းရဲ့ပုံကို src ထဲထည့်ပြီး ဒီမှာ လမ်းကြောင်းပေးပါ */}
+            {/* Put your image in public/ and reference the path here */}
             <img src="/my-profile.jpg" alt="Wint Kay" className="circle-image" />
           </div>
           <div className="bio">
@@ -66,7 +66,7 @@ const response = await fetch(`https://api.wintkaythweaung.com/api/ai/ask-ai?prom
           <div className="hobby-item">
             <h3>My Videos</h3>
             <div className="video-container">
-               {/* YouTube video သို့မဟုတ် local video ထည့်ရန် */}
+               {/* Embed a YouTube iframe or a local video here */}
                <p>Video content goes here...</p>
             </div>
           </div>

@@ -238,9 +238,16 @@ describe('Auth Integration: MemberGate access control', () => {
   });
 
   test('Feature: free user sees upgrade prompt, not member content', async () => {
-    global.fetch.mockResolvedValue(
-      makeOkResponse({ email: 'free@example.com', membershipType: 'FREE', emailVerified: true })
-    );
+    localStorage.setItem('authToken', 'free-token');
+    global.fetch.mockImplementation((url) => {
+      const u = String(url);
+      if (u.includes('/subscription/current')) {
+        return Promise.resolve(makeOkResponse({ starterTrialEligible: false, plan: null }));
+      }
+      return Promise.resolve(
+        makeOkResponse({ email: 'free@example.com', membershipType: 'FREE', emailVerified: true })
+      );
+    });
 
     await act(async () => {
       render(
@@ -252,8 +259,10 @@ describe('Auth Integration: MemberGate access control', () => {
       );
     });
 
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /unlock pro features/i })).toBeInTheDocument();
+    });
     expect(screen.queryByText('member only content')).not.toBeInTheDocument();
-    expect(screen.getByText(/member subscription required/i)).toBeInTheDocument();
   });
 
   test('Feature: subscribed user sees protected content', async () => {

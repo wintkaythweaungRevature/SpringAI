@@ -308,7 +308,7 @@ describe('Subscription Integration: MemberGate upgrade flow', () => {
     });
 
     await waitFor(() =>
-      expect(screen.getByText(/member subscription required/i)).toBeInTheDocument()
+      expect(screen.getByRole('heading', { name: /unlock pro features/i })).toBeInTheDocument()
     );
 
     global.fetch.mockResolvedValueOnce(

@@ -304,11 +304,6 @@ export default function AutoReplySettings() {
   return (
     <div style={s.page}>
       <div style={s.header}>
-        <h2 style={s.title}>AI Auto-Reply</h2>
-        <p style={s.subtitle}>
-          Automatically reply to new comments (and, where supported, Messenger DMs) using AI. The backend polls about every 5 minutes for comment-style channels (scheduled Graph API checks—not a customer-hosted webhook).
-          <strong> Facebook</strong> has two toggles: <strong>Facebook (comments)</strong> for post comments and <strong>Facebook Messenger</strong> for DMs—enable each one you need. Use <strong>Enable all</strong> to turn on every row at once (connect each account in Social / Video Publisher first; Facebook OAuth must use the API redirect URI under Connected Accounts).
-        </p>
         <div style={s.bulkActions}>
           <button
             type="button"
@@ -778,9 +773,7 @@ const s = {
     fontFamily: 'inherit',
     boxSizing: 'border-box',
   },
-  header: { marginBottom: 28 },
-  title: { margin: 0, fontSize: 30, fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em' },
-  subtitle: { margin: '8px 0 0', color: '#64748b', fontSize: 16, lineHeight: 1.55, maxWidth: 720 },
+  header: { marginBottom: 20, display: 'flex', justifyContent: 'flex-end', flexWrap: 'wrap' },
   bulkActions: { display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 16 },
   bulkEnableBtn: {
     background: '#0f172a', color: '#fff', border: 'none', borderRadius: 10,

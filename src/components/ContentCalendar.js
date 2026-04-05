@@ -584,14 +584,8 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
   return (
     <div style={s.page}>
 
-      {/* ── Header ── */}
       <div style={s.pageHeader}>
-        <div>
-          <h2 style={s.pageTitle}>📅 Content Calendar</h2>
-          <p style={s.pageSub}>Visual overview of your published and scheduled posts across all platforms.</p>
-        </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          {/* View toggle */}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginLeft: 'auto' }}>
           <div style={s.viewToggle}>
             <button style={{ ...s.viewBtn, ...(view === 'calendar' ? s.viewBtnActive : {}) }} onClick={() => setView('calendar')}>
               🗓 Calendar
@@ -1105,9 +1099,7 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
 const s = {
   page: { maxWidth: 1100, margin: '0 auto', padding: '20px 16px', fontFamily: 'inherit' },
 
-  pageHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20, flexWrap: 'wrap', gap: 12 },
-  pageTitle: { margin: 0, fontSize: 22, fontWeight: 800, color: '#0f172a' },
-  pageSub: { margin: '4px 0 0', fontSize: 13, color: '#64748b' },
+  pageHeader: { display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 },
 
   viewToggle: { display: 'flex', background: '#f1f5f9', borderRadius: 10, padding: 3, gap: 2 },
   viewBtn: { background: 'none', border: 'none', borderRadius: 8, padding: '7px 14px', fontSize: 13, fontWeight: 600, color: '#64748b', cursor: 'pointer' },

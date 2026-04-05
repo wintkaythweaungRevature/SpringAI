@@ -920,20 +920,16 @@ export default function AnalyticsDashboard() {
   return (
     <div style={{ width: '100%', maxWidth: '100%', margin: 0, boxSizing: 'border-box', fontFamily: "'Inter',-apple-system,sans-serif" }}>
 
-      {/* Subtitle + refresh (page title is in the app shell) */}
       <div
         style={{
           display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'space-between',
+          alignItems: 'center',
+          justifyContent: 'flex-end',
           gap: '16px',
           flexWrap: 'wrap',
           marginBottom: '14px',
         }}
       >
-        <p style={{ margin: 0, fontSize: '13px', color: '#475569', lineHeight: 1.55, maxWidth: '520px' }}>
-          Live metrics from connected social accounts. Use Overview for a combined view or open a single platform.
-        </p>
         <button
           type="button"
           onClick={load}

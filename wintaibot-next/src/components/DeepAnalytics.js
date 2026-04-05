@@ -340,13 +340,9 @@ function BestTimeGuidancePanel({ resolved, platformLabel, platformColor }) {
         <span style={{ color: platformColor }}>{formatHour12(resolved.bestHour)}</span>
         <span style={{ fontSize: 13, fontWeight: 600, color: '#64748b' }}> ({tz})</span>
       </p>
-      <p style={{ margin: '0 0 14px', fontSize: 13, color: '#475569', lineHeight: 1.55 }}>
-        Based on <strong>{resolved.totalPosts}</strong> post{resolved.totalPosts !== 1 ? 's' : ''} we counted for{' '}
-        <strong>{platformLabel}</strong>
-        {resolved.inferredFromDetail
-          ? ' (timestamps from your post list — heatmap was empty in the API response).'
-          : ' (when you usually publish in W!ntAi).'}
-        {' '}This is <strong>your</strong> rhythm, not a guarantee of reach — use it as a starting point.
+      <p style={{ margin: '0 0 14px', fontSize: 13, color: '#475569', lineHeight: 1.45 }}>
+        <strong>{resolved.totalPosts}</strong> post{resolved.totalPosts !== 1 ? 's' : ''} on <strong>{platformLabel}</strong>
+        {resolved.inferredFromDetail ? ' (from your post list).' : '.'}
       </p>
       {extras.length > 0 && (
         <div style={{ marginBottom: 14 }}>
@@ -360,34 +356,6 @@ function BestTimeGuidancePanel({ resolved, platformLabel, platformColor }) {
           </ul>
         </div>
       )}
-      <div
-        style={{
-          fontSize: 12,
-          fontWeight: 700,
-          color: '#1e293b',
-          marginBottom: 8,
-          paddingTop: 12,
-          borderTop: '1px solid rgba(148,163,184,0.35)',
-        }}
-      >
-        How to use this
-      </div>
-      <ol style={{ margin: 0, paddingLeft: 20, fontSize: 12, color: '#475569', lineHeight: 1.65 }}>
-        <li>
-          Schedule the next post near this day &amp; hour using <strong>Video Publisher</strong> (left menu) or{' '}
-          <strong>Content Calendar</strong>.
-        </li>
-        <li>
-          Keep publishing for a few weeks, then check this heatmap again — patterns get clearer with more data.
-        </li>
-        <li>
-          Open <a href="#trends-calendar">Posts Calendar (section 4 below)</a> → <strong>My Posts</strong> to see scheduled
-          items on the grid.
-        </li>
-        <li>
-          Click any <strong>non-empty</strong> cell in the heatmap to see which posts fell in that slot.
-        </li>
-      </ol>
     </div>
   );
 }
@@ -2471,12 +2439,6 @@ export default function DeepAnalytics() {
   return (
     <div style={s.wrap}>
 
-      {/* ── HEADER ── */}
-      <div style={s.header}>
-        <h2 style={s.title}>📈 Trends & Analytics</h2>
-        <p style={s.sub}>Follower growth, best posting times, competitor research, and your content calendar</p>
-      </div>
-
       {/* ── Jump links (all sections below on one page) ── */}
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16, alignItems: 'center' }}>
         <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', marginRight: 4 }}>Jump to</span>
@@ -2502,9 +2464,6 @@ export default function DeepAnalytics() {
 
       {/* ── PLATFORM (sections 1–3: growth, best time, breakdown) ── */}
       <div style={{ marginBottom: 20 }}>
-        <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 8, fontWeight: 600 }}>
-          Platform for follower growth, best time & breakdown
-        </div>
         <div style={s.tabs}>
           {PLATFORMS.map(p => (
             <button key={p.id} type="button" onClick={() => setPlatform(p.id)} style={{
@@ -2540,15 +2499,6 @@ export default function DeepAnalytics() {
             </div>
           </div>
           {snapMsg && <div style={s.snapMsg}>{snapMsg}</div>}
-          <div style={{
-            display: 'flex', flexWrap: 'wrap', gap: '10px 18px', marginBottom: 14,
-            fontSize: 11, color: '#64748b', lineHeight: 1.45,
-          }}>
-            <span><strong style={{ color: '#6366f1' }}>1.</strong> Pick {platformConfig.label}</span>
-            <span><strong style={{ color: '#6366f1' }}>2.</strong> Choose 7 / 30 / 90 days</span>
-            <span><strong style={{ color: '#6366f1' }}>3.</strong> Refresh Now to snapshot</span>
-            <span><strong style={{ color: '#6366f1' }}>4.</strong> Read the trend line</span>
-          </div>
           {loadHistory ? (
             <div style={s.loadingRow}><div style={s.spinner} /> Loading…</div>
           ) : (
@@ -2586,14 +2536,6 @@ export default function DeepAnalytics() {
       <section id="trends-besttime" style={{ scrollMarginTop: 12 }}>
         <div style={s.card}>
           <h3 style={s.cardTitle}>⏰ Your posting times — {platformConfig.label}</h3>
-          <p style={{ fontSize: 12, color: '#64748b', marginBottom: 8, lineHeight: 1.55 }}>
-            This heatmap is <strong>your</strong> activity on <strong>{platformConfig.label}</strong> (posts tracked in W!ntAi),
-            not the same as a general best-time recommendation for everyone on that network.
-          </p>
-          <p style={{ fontSize: 12, color: '#94a3b8', marginBottom: 16, lineHeight: 1.5 }}>
-            Darker cells = more of your posts went out at that day and hour (your local timezone). Click a cell with posts
-            to see them listed.
-          </p>
           {loadBestTime ? (
             <div style={s.loadingRow}><div style={s.spinner} /> Loading…</div>
           ) : !bestTime ? (
@@ -2630,18 +2572,9 @@ export default function DeepAnalytics() {
           ) : postPerf && Object.keys(postPerf.byType || {}).length > 0 ? (
             <div style={s.perfRow}>
               <div style={{ flex: '1 1 300px', minWidth: 0 }}>
-                <p style={{ fontSize: 12, color: '#64748b', marginBottom: 8, lineHeight: 1.5 }}>
-                  <strong>Video</strong>, <strong>Image</strong>, and <strong>Text</strong> each get a tower with{' '}
-                  <strong>multi-color platform stacks</strong> (same behavior for all three). The pale frame uses{' '}
-                  <strong style={{ color: platformConfig.color }}>{platformConfig.label}</strong> tint; band colors are each network&apos;s brand.
-                  Bottom % is that type&apos;s share of video+image+text.
-                </p>
                 <TypeTowersChart postPerf={postPerf} platformColor={platformConfig.color} />
               </div>
               <div style={{ flex: '2 1 360px', minWidth: 0 }}>
-                <p style={{ fontSize: 12, color: '#64748b', marginBottom: 12, lineHeight: 1.45 }}>
-                  <strong>Posts by platform</strong> — totals across <em>all</em> connected networks (not filtered by the tab above).
-                </p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {Object.entries(postPerf.byPlatform || {}).map(([plat, count]) => {
                     const pc  = PLATFORMS.find(p => p.id === plat);
@@ -2672,10 +2605,6 @@ export default function DeepAnalytics() {
       <section id="trends-calendar" style={{ scrollMarginTop: 12 }}>
         <div style={s.card}>
           <h3 style={s.cardTitle}>📅 Posts Calendar</h3>
-          <p style={{ fontSize: 12, color: '#94a3b8', marginBottom: 16, lineHeight: 1.55 }}>
-            View all your published and scheduled posts by month. The <strong>Best Time</strong> section above shows which days and hours you post most often.{' '}
-            <span style={{ color: '#64748b' }}>Dots = published for that day; squares = scheduled jobs—see the legend below.</span>
-          </p>
           <TrendsCalendar authHeaders={authHeaders} />
         </div>
       </section>
@@ -2701,9 +2630,6 @@ const s = {
   },
   chartStretch: { width: '100%', minHeight: 200 },
   perfRow: { display: 'flex', flexWrap: 'wrap', gap: 40, alignItems: 'flex-start', justifyContent: 'space-between' },
-  header:    { marginBottom: 20 },
-  title:     { fontSize: 22, fontWeight: 700, color: '#1e293b', margin: 0 },
-  sub:       { fontSize: 13, color: '#64748b', marginTop: 4 },
   tabs:      { display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 },
   tab: {
     padding: '6px 14px', borderRadius: 20, fontSize: 12, fontWeight: 600,

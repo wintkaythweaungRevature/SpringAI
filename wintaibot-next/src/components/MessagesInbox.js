@@ -1076,42 +1076,31 @@ export default function MessagesInbox({ onOpenVideoPublisher, onOpenConnectedAcc
       }}
     >
 
-      {/* Toolbar (page title lives in app shell — subtitle only here) */}
       <div
         style={{
           display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'space-between',
+          alignItems: 'center',
           gap: '16px',
           flexWrap: 'wrap',
           marginBottom: '14px',
         }}
       >
-        <div style={{ flex: '1 1 240px', minWidth: 0 }}>
-          <p style={{ margin: 0, fontSize: '13px', color: '#475569', lineHeight: 1.55 }}>
-            Comments and direct messages from connected accounts in one place.
-          </p>
-          <p style={{ margin: '6px 0 0', fontSize: '12px', color: '#94a3b8', lineHeight: 1.5 }}>
-            Instagram · Facebook · YouTube · LinkedIn · TikTok · X — comments &amp; messages
-          </p>
-          {totalUnread > 0 && (
-            <span
-              style={{
-                display: 'inline-block',
-                marginTop: '10px',
-                background: '#dc2626',
-                color: '#fff',
-                borderRadius: '8px',
-                padding: '4px 10px',
-                fontSize: '12px',
-                fontWeight: 700,
-              }}
-            >
-              {totalUnread} unread
-            </span>
-          )}
-        </div>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+        {totalUnread > 0 && (
+          <span
+            style={{
+              display: 'inline-block',
+              background: '#dc2626',
+              color: '#fff',
+              borderRadius: '8px',
+              padding: '4px 10px',
+              fontSize: '12px',
+              fontWeight: 700,
+            }}
+          >
+            {totalUnread} unread
+          </span>
+        )}
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginLeft: 'auto' }}>
           {typeof onOpenVideoPublisher === 'function' && (
             <button
               type="button"

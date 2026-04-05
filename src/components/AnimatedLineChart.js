@@ -56,8 +56,9 @@ export default function AnimatedLineChart({ data = [], color = '#3b82f6', title 
   const svgRef  = useRef(null);
 
   const values = data.map(d => d.value);
-  const maxVal = Math.max(...values, 1);
-  const minVal = Math.min(...values, 0);
+  const rawMax = Math.max(...values, 0);
+  const maxVal = rawMax === 0 ? 10 : rawMax;   // avoid flat-zero chart
+  const minVal = 0;
   const range  = maxVal - minVal || 1;
 
   const points = data.map((d, i) => ({
@@ -113,8 +114,20 @@ export default function AnimatedLineChart({ data = [], color = '#3b82f6', title 
   const gradId = `alc-grad-${title.replace(/\s/g, '')}`;
   const clipId = `alc-clip-${title.replace(/\s/g, '')}`;
 
+  const allZero = values.length > 0 && values.every(v => v === 0);
+
   return (
     <div style={{ position: 'relative', width: '100%' }}>
+      {allZero && (
+        <div style={{
+          position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 2, pointerEvents: 'none',
+        }}>
+          <div style={{ background: 'rgba(15,23,42,0.85)', borderRadius: 10, padding: '8px 18px', color: '#64748b', fontSize: 13, fontWeight: 600 }}>
+            No data yet for this metric
+          </div>
+        </div>
+      )}
       <svg
         ref={svgRef}
         viewBox={`0 0 ${W} ${H}`}

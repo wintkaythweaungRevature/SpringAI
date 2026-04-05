@@ -698,21 +698,6 @@ export default function LandingSection() {
 
         <div className="ls-plans">
           <article className="ls-plan">
-            <div className="ls-plan-name">Free</div>
-            <div className="ls-plan-price">
-              $0 <span>/ forever</span>
-            </div>
-            <ul className="ls-plan-features">
-              <li>Ask AI chatbot (unlimited)</li>
-              <li>Recipe Generator (unlimited)</li>
-              <li>No credit card required</li>
-            </ul>
-            <Link href="/chat" className="ls-btn-outline">
-              Try Free Trial
-            </Link>
-          </article>
-
-          <article className="ls-plan">
             <div className="ls-plan-name">Starter</div>
             <div className="ls-plan-price">
               $19 <span>/ month</span>
@@ -721,7 +706,7 @@ export default function LandingSection() {
               <strong>$15/mo</strong> billed annually (<strong>$180/yr</strong>)
             </p>
             <ul className="ls-plan-features">
-              <li>Everything in Free</li>
+              <li>Ask AI &amp; Recipe Generator (unlimited)</li>
               <li>Premium AI: DocuWizard, EchoScribe, Image Gen, Email, Resume</li>
               <li>Video Publisher: <strong>5</strong> connected platforms</li>
               <li>

@@ -786,7 +786,7 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
       {/* ── PRICING ─────────────────────────────────────────── */}
       <section className="ls-section ls-pricing" id="pricing" aria-labelledby="pricing-heading">
         <h2 id="pricing-heading">Simple, Transparent Pricing</h2>
-        <p className="ls-section-sub">Start free. Upgrade when you need more — annual billing saves up to ~21%.</p>
+        <p className="ls-section-sub">Try free trial, then upgrade when you need more — annual billing saves up to ~21%.</p>
 
         <div className="ls-pricing-why" aria-labelledby="why-pricing-heading">
           <h3 id="why-pricing-heading">Why these numbers?</h3>
@@ -818,22 +818,11 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
         <div className="ls-plans">
 
           <div className="ls-plan">
-            <div className="ls-plan-name">Free</div>
-            <div className="ls-plan-price">$0 <span>/ forever</span></div>
-            <ul className="ls-plan-features">
-              <li>Ask AI chatbot (unlimited)</li>
-              <li>Recipe Generator (unlimited)</li>
-              <li>No credit card required</li>
-            </ul>
-            <button type="button" className="ls-btn-outline" onClick={onGetStarted}>Try Free Trial</button>
-          </div>
-
-          <div className="ls-plan">
             <div className="ls-plan-name">Starter</div>
             <div className="ls-plan-price">$19 <span>/ month</span></div>
             <p className="ls-plan-annual"><strong>$15/mo</strong> billed annually (<strong>$180/yr</strong>)</p>
             <ul className="ls-plan-features">
-              <li>Everything in Free</li>
+              <li>Ask AI &amp; Recipe Generator (unlimited)</li>
               <li>Premium AI: DocuWizard, EchoScribe, Image Gen, Reply Enchanter, Resume Warlock</li>
               <li>Video Publisher: <strong>3</strong> connected platforms</li>
               <li><strong>10</strong> videos / month · <strong>30</strong> scheduled posts / month</li>

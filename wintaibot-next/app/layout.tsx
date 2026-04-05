@@ -98,13 +98,6 @@ const structuredData = {
     offers: [
       {
         '@type': 'Offer',
-        name: 'Free',
-        price: '0',
-        priceCurrency: 'USD',
-        description: 'Includes AI chatbot and recipe generator',
-      },
-      {
-        '@type': 'Offer',
         name: 'Starter',
         price: '19',
         priceCurrency: 'USD',

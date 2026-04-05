@@ -14,8 +14,8 @@ const ROUTE_META = {
     description: 'DocuWizard, EchoScribe, AI Image Generator, Reply Enchanter, Resume Warlock, Video Publisher, Ask AI, Recipe Generator. All in one dashboard.',
   },
   '/pricing': {
-    title: 'Pricing – Free, Starter $19, Pro $39, Growth $79 | W!ntAi',
-    description: 'Start free. Paid plans from $19/mo ($15/mo annual) with video publisher limits; Pro $39 and Growth $79 with annual savings. Compare features and why we priced this way.',
+    title: 'Pricing – Starter $19, Pro $39, Growth $79 | W!ntAi',
+    description: 'Paid plans from $19/mo ($15/mo annual) with video publisher limits; Pro $39 and Growth $79 with annual savings. Compare features and why we priced this way.',
   },
   '/use-cases': {
     title: 'Who Uses W!ntAi – Job Seekers, Professionals, Creators | W!ntAi',

@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { useAuth } from '../context/AuthContext';
 import PlatformIcon from './PlatformIcon';
 
 function pickUrl(post) {
@@ -10,20 +11,103 @@ function pickUrl(post) {
   return '';
 }
 
-function fmtDate(iso) {
-  if (!iso) return null;
-  try { return new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }); }
-  catch { return String(iso); }
+function firstNonEmptyStr(...vals) {
+  for (const v of vals) {
+    if (v != null && String(v).trim() !== '') return String(v).trim();
+  }
+  return '';
 }
 
-export default function PostDetailModal({ post, onClose, platform }) {
-  useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+function scheduledIsoFromPost(post) {
+  const raw = post?.job && typeof post.job === 'object' ? post.job : null;
+  const candidates = [
+    post?.scheduledAt,
+    post?.scheduled_at,
+    post?.scheduledTime,
+    post?.scheduled_for,
+    raw?.scheduledAt,
+    post?.publishAt,
+    post?.publish_at,
+  ];
+  for (const v of candidates) {
+    if (v == null || (typeof v === 'string' && v.trim() === '')) continue;
+    try {
+      const d = new Date(v);
+      if (Number.isFinite(d.getTime())) return d.toISOString();
+    } catch {
+      /* ignore */
+    }
+  }
+  return '';
+}
 
+/** Prefer job API for unpublished queue items when job id exists. */
+export function resolveEditTarget(post) {
   if (!post) return null;
+  const status = String(post?.status || '').toUpperCase();
+  const terminal = status === 'SUCCESS' || status === 'PUBLISHED' || status === 'COMPLETED';
+  const jobId = post?.jobId ?? post?.job?.id ?? post?.job_id;
+  const postId = post?.id ?? post?.postId;
+  if (jobId && !terminal) {
+    return { kind: 'job', id: String(jobId) };
+  }
+  if (postId != null && String(postId).trim() !== '') {
+    return { kind: 'post', id: String(postId) };
+  }
+  if (jobId) {
+    return { kind: 'job', id: String(jobId) };
+  }
+  return null;
+}
+
+function buildPatchUrl(apiBase, target) {
+  const b = (apiBase || 'https://api.wintaibot.com').replace(/\/$/, '');
+  if (target.kind === 'job') {
+    return `${b}/api/social/post/jobs/${encodeURIComponent(target.id)}`;
+  }
+  return `${b}/api/social/post/${encodeURIComponent(target.id)}`;
+}
+
+function isPublishedPost(post) {
+  const s = String(post?.status || '').toUpperCase();
+  return s === 'SUCCESS' || s === 'PUBLISHED' || s === 'COMPLETED';
+}
+
+function toDatetimeLocalValue(iso) {
+  if (!iso) return '';
+  try {
+    const d = new Date(iso);
+    if (!Number.isFinite(d.getTime())) return '';
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  } catch {
+    return '';
+  }
+}
+
+function fromDatetimeLocalToIso(local) {
+  if (!local || !local.trim()) return null;
+  const d = new Date(local);
+  return Number.isFinite(d.getTime()) ? d.toISOString() : null;
+}
+
+/**
+ * Post detail + edit modal: caption, hashtags, schedule, media URL; DELETE / PATCH to API.
+ */
+export default function PostDetailModal({ post, onClose, platform, onSaved }) {
+  const { token, apiBase } = useAuth();
+  const base =
+    (apiBase || (typeof process !== 'undefined' && process.env?.REACT_APP_API_BASE) || '').replace(/\/$/, '') ||
+    'https://api.wintaibot.com';
+
+  const [caption, setCaption] = useState('');
+  const [hashtags, setHashtags] = useState('');
+  const [publishType, setPublishType] = useState('text');
+  const [scheduledLocal, setScheduledLocal] = useState('');
+  const [mediaUrlEdit, setMediaUrlEdit] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [errMsg, setErrMsg] = useState('');
 
   const p = platform || {
     id: String(post.platform || 'unknown').toLowerCase(),
@@ -33,190 +117,498 @@ export default function PostDetailModal({ post, onClose, platform }) {
     logo: null,
   };
 
-  const status    = String(post.status || 'SCHEDULED').toUpperCase();
-  const statusOk  = status === 'SUCCESS' || status === 'PUBLISHED';
-  const statusErr = status === 'FAILED';
-  const statusClr = statusOk ? '#15803d' : statusErr ? '#dc2626' : '#a16207';
-  const statusBg  = statusOk ? '#dcfce7'  : statusErr ? '#fee2e2'  : '#fef9c3';
+  const target = useMemo(() => resolveEditTarget(post), [post]);
+  const readOnly = isPublishedPost(post);
+  const canMutate = !!target && !readOnly;
 
-  const rawCaption = post.caption != null ? String(post.caption) : '';
-  const caption    = (() => { try { return decodeURIComponent(rawCaption); } catch { return rawCaption; } })();
-  let hashtags = post.hashtags;
-  if (Array.isArray(hashtags)) hashtags = hashtags.join(' ');
-  else if (hashtags == null) hashtags = '';
+  const syncFromPost = useCallback(() => {
+    if (!post) return;
+    const cap = post.caption != null ? String(post.caption) : '';
+    setCaption(cap);
+    let ht = post.hashtags;
+    if (Array.isArray(ht)) ht = ht.join(' ');
+    else if (ht == null) ht = '';
+    setHashtags(String(ht));
+    const mt = String(post.mediaType || 'text').toLowerCase();
+    setPublishType(mt === 'video' ? 'video' : mt === 'image' ? 'image' : 'text');
+    const sched = scheduledIsoFromPost(post);
+    setScheduledLocal(toDatetimeLocalValue(sched) || toDatetimeLocalValue(post?.createdAt));
+    setMediaUrlEdit(
+      firstNonEmptyStr(post?.mediaUrl, post?.videoUrl, post?.imageUrl, post?.thumbnailUrl, post?.url) || ''
+    );
+    setErrMsg('');
+  }, [post]);
 
-  const link      = pickUrl(post);
-  const createdAt = fmtDate(post.createdAt);
-  const scheduledAt = post.scheduledAt && post.scheduledAt !== post.createdAt ? fmtDate(post.scheduledAt) : null;
+  useEffect(() => {
+    syncFromPost();
+  }, [syncFromPost]);
 
-  const likes    = post.likes          ?? 0;
-  const comments = post.commentsCount  ?? post.comments ?? 0;
-  const shares   = post.shares         ?? 0;
-  const views    = post.views          ?? 0;
-  const impressions  = post.impressions ?? 0;
-  const engageRate   = post.engagementRate ?? null;
-  const isScheduled  = status === 'SCHEDULED' || status === 'PENDING';
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
 
-  const mediaType = String(post.mediaType || '').toLowerCase();
-  const mediaKeys = ['mediaUrl', 'thumbnailUrl', 'imageUrl', 'videoUrl'];
-  let mediaPreview = null;
-  for (const k of mediaKeys) {
-    if (post[k]) { mediaPreview = { url: post[k], kind: mediaType === 'video' ? 'video' : 'image' }; break; }
+  if (!post) return null;
+
+  const status = post.status || '—';
+  const statusOk = status === 'SUCCESS' || status === 'PUBLISHED';
+  const statusColor = statusOk ? '#16a34a' : status === 'FAILED' ? '#dc2626' : '#d97706';
+  const statusBg = statusOk ? '#f0fdf4' : status === 'FAILED' ? '#fef2f2' : '#fffbeb';
+
+  const created = post.createdAt || post.created_at;
+  let createdStr = '';
+  try {
+    createdStr = created
+      ? new Date(created).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
+      : '';
+  } catch {
+    createdStr = String(created || '');
   }
+
+  const scheduledDisplay = scheduledIsoFromPost(post);
+  let scheduledStr = '';
+  try {
+    scheduledStr = scheduledDisplay
+      ? new Date(scheduledDisplay).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
+      : '';
+  } catch {
+    scheduledStr = scheduledDisplay || '';
+  }
+
+  const link = pickUrl(post);
+  const previewUrl =
+    firstNonEmptyStr(mediaUrlEdit, post?.thumbnailUrl, post?.mediaUrl, post?.videoUrl, post?.imageUrl) || '';
+
+  const authHeaders = () => ({
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json',
+  });
+
+  const handleSave = async () => {
+    if (!token || !canMutate || !target) return;
+    setSaving(true);
+    setErrMsg('');
+    try {
+      const url = buildPatchUrl(base, target);
+      const scheduledAt = fromDatetimeLocalToIso(scheduledLocal);
+      const body = {
+        caption: caption.trim(),
+        hashtags: hashtags.trim(),
+        publishType: publishType || 'text',
+      };
+      if (scheduledAt) body.scheduledAt = scheduledAt;
+      if (mediaUrlEdit.trim()) body.mediaUrl = mediaUrlEdit.trim();
+
+      const res = await fetch(url, {
+        method: 'PATCH',
+        headers: authHeaders(),
+        body: JSON.stringify(body),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setErrMsg(data.error || data.message || `Update failed (${res.status})`);
+        return;
+      }
+      if (typeof onSaved === 'function') onSaved();
+      onClose();
+    } catch (e) {
+      setErrMsg((e && e.message) || 'Network error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!token || !canMutate || !target) return;
+    if (!window.confirm('Delete this scheduled post? This cannot be undone.')) return;
+    setDeleting(true);
+    setErrMsg('');
+    try {
+      const url = buildPatchUrl(base, target);
+      const res = await fetch(url, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setErrMsg(data.error || data.message || `Delete failed (${res.status})`);
+        return;
+      }
+      if (typeof onSaved === 'function') onSaved();
+      onClose();
+    } catch (e) {
+      setErrMsg((e && e.message) || 'Network error');
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
     <div
-      style={{ position: 'fixed', inset: 0, zIndex: 10060, background: 'rgba(2,6,23,0.65)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px 16px', boxSizing: 'border-box' }}
-      role="dialog" aria-modal="true" aria-labelledby="post-detail-title"
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 10060,
+        background: 'rgba(15, 23, 42, 0.45)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '24px 16px',
+        boxSizing: 'border-box',
+      }}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="post-detail-title"
       onClick={onClose}
     >
       <div
-        style={{ background: '#fff', borderRadius: 22, boxShadow: '0 32px 80px rgba(0,0,0,0.32)', maxWidth: 'min(540px,100%)', width: '100%', maxHeight: 'min(88vh,760px)', overflow: 'auto', boxSizing: 'border-box', display: 'flex', flexDirection: 'column' }}
-        onClick={e => e.stopPropagation()}
+        style={{
+          background: '#fff',
+          borderRadius: 16,
+          boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
+          maxWidth: 'min(560px, 100%)',
+          width: '100%',
+          maxHeight: 'min(90vh, 800px)',
+          overflow: 'auto',
+          padding: '22px 24px 24px',
+          boxSizing: 'border-box',
+        }}
+        onClick={(e) => e.stopPropagation()}
       >
-        {/* ── Coloured header band ── */}
-        <div style={{ background: `linear-gradient(135deg, ${p.color}22 0%, ${p.color}08 100%)`, borderBottom: `1px solid ${p.color}28`, padding: '20px 22px 18px', position: 'relative' }}>
-          {/* top accent */}
-          <div style={{ position: 'absolute', top: 0, left: 22, right: 22, height: 3, background: p.color, borderRadius: '0 0 4px 4px' }} />
-
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-            {/* Platform info */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
-              <div style={{ width: 48, height: 48, borderRadius: 14, background: '#fff', boxShadow: `0 2px 12px ${p.color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <PlatformIcon platform={p} size={28} />
-              </div>
-              <div>
-                <div id="post-detail-title" style={{ fontSize: 17, fontWeight: 800, color: '#0f172a', marginBottom: 2 }}>{p.label || post.platform}</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 9px', borderRadius: 99, background: statusBg, color: statusClr, letterSpacing: '0.04em' }}>{status}</span>
-                  {mediaType && <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 99, background: '#f1f5f9', color: '#64748b', textTransform: 'capitalize' }}>{mediaType || 'post'}</span>}
-                </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+            <div
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 12,
+                background: `${p.color || '#6366f1'}18`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <PlatformIcon platform={p} size={26} />
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <h2 id="post-detail-title" style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#0f172a', lineHeight: 1.25 }}>
+                {p.label || post.platform}
+              </h2>
+              <div style={{ fontSize: 12, fontWeight: 600, color: '#64748b', marginTop: 4, textTransform: 'capitalize' }}>
+                {publishType || 'text'}
               </div>
             </div>
-            {/* Close */}
-            <button type="button" onClick={onClose} aria-label="Close" style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748b', flexShrink: 0, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 800,
+                padding: '4px 10px',
+                borderRadius: 20,
+                background: statusBg,
+                color: statusColor,
+              }}
+            >
+              {String(status).toUpperCase()}
+            </span>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                border: 'none',
+                background: '#f1f5f9',
+                color: '#475569',
+                width: 40,
+                height: 40,
+                borderRadius: 10,
+                fontSize: 18,
+                cursor: 'pointer',
+                lineHeight: 1,
+                flexShrink: 0,
+              }}
+              aria-label="Close"
+            >
+              ✕
             </button>
           </div>
         </div>
 
-        {/* ── Body ── */}
-        <div style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 18 }}>
-
-          {/* Media preview */}
-          {mediaPreview && (
-            <div style={{ borderRadius: 12, overflow: 'hidden', maxHeight: 220, background: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              {mediaPreview.kind === 'video'
-                ? <video src={mediaPreview.url} controls muted style={{ maxWidth: '100%', maxHeight: 220 }} />
-                : <img src={mediaPreview.url} alt="post media" style={{ maxWidth: '100%', maxHeight: 220, objectFit: 'contain' }} />
-              }
-            </div>
-          )}
-
-          {/* Caption */}
-          <div>
-            <div style={{ fontSize: 10, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Caption</div>
-            <div style={{ fontSize: 14, lineHeight: 1.65, color: '#1e293b', whiteSpace: 'pre-wrap', wordBreak: 'break-word', background: '#f8fafc', borderRadius: 12, padding: '13px 15px', border: '1px solid #e2e8f0', minHeight: 52 }}>
-              {caption.trim() || <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>(no caption)</span>}
-            </div>
+        {!canMutate && !readOnly && (
+          <div style={{ marginBottom: 12, fontSize: 13, color: '#b45309', background: '#fffbeb', padding: '10px 12px', borderRadius: 10, border: '1px solid #fcd34d' }}>
+            This item has no post or job id — editing may not be available.
           </div>
+        )}
 
-          {/* Hashtags */}
-          {hashtags && (
+        {errMsg && (
+          <div style={{ marginBottom: 12, fontSize: 13, color: '#b91c1c', background: '#fef2f2', padding: '10px 12px', borderRadius: 10, border: '1px solid #fecaca' }}>
+            {errMsg}
+          </div>
+        )}
+
+        <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+          Caption
+        </div>
+        {readOnly ? (
+          <div
+            style={{
+              fontSize: 14,
+              lineHeight: 1.6,
+              color: '#1e293b',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word',
+              background: '#f8fafc',
+              borderRadius: 10,
+              padding: '12px 14px',
+              border: '1px solid #e2e8f0',
+              marginBottom: 14,
+              minHeight: 48,
+            }}
+          >
+            {caption.trim() ? caption : '(no caption)'}
+          </div>
+        ) : (
+          <textarea
+            value={caption}
+            onChange={(e) => setCaption(e.target.value)}
+            rows={5}
+            style={{
+              width: '100%',
+              boxSizing: 'border-box',
+              fontSize: 14,
+              lineHeight: 1.6,
+              color: '#1e293b',
+              background: '#fff',
+              borderRadius: 10,
+              padding: '12px 14px',
+              border: '1px solid #cbd5e1',
+              marginBottom: 14,
+              resize: 'vertical',
+              fontFamily: 'inherit',
+            }}
+            placeholder="Caption and main text…"
+          />
+        )}
+
+        <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+          Hashtags
+        </div>
+        {readOnly ? (
+          <div style={{ fontSize: 13, color: '#334155', marginBottom: 14, lineHeight: 1.5 }}>{hashtags || '—'}</div>
+        ) : (
+          <input
+            type="text"
+            value={hashtags}
+            onChange={(e) => setHashtags(e.target.value)}
+            style={{
+              width: '100%',
+              boxSizing: 'border-box',
+              padding: '10px 12px',
+              borderRadius: 10,
+              border: '1px solid #cbd5e1',
+              fontSize: 13,
+              marginBottom: 14,
+            }}
+            placeholder="#marketing #brand"
+          />
+        )}
+
+        {!readOnly && (
+          <>
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+              Post type
+            </div>
+            <select
+              value={publishType}
+              onChange={(e) => setPublishType(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                borderRadius: 10,
+                border: '1px solid #cbd5e1',
+                fontSize: 13,
+                marginBottom: 14,
+                background: '#fff',
+              }}
+            >
+              <option value="text">Text</option>
+              <option value="image">Image</option>
+              <option value="video">Video</option>
+            </select>
+
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+              Scheduled for
+            </div>
+            <input
+              type="datetime-local"
+              value={scheduledLocal}
+              onChange={(e) => setScheduledLocal(e.target.value)}
+              style={{
+                width: '100%',
+                boxSizing: 'border-box',
+                padding: '10px 12px',
+                borderRadius: 10,
+                border: '1px solid #cbd5e1',
+                fontSize: 13,
+                marginBottom: 14,
+              }}
+            />
+
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+              Media URL (optional)
+            </div>
+            <input
+              type="url"
+              value={mediaUrlEdit}
+              onChange={(e) => setMediaUrlEdit(e.target.value)}
+              style={{
+                width: '100%',
+                boxSizing: 'border-box',
+                padding: '10px 12px',
+                borderRadius: 10,
+                border: '1px solid #cbd5e1',
+                fontSize: 12,
+                marginBottom: 10,
+              }}
+              placeholder="https://… (replace image or video URL if your API supports it)"
+            />
+          </>
+        )}
+
+        {previewUrl && (
+          <div style={{ marginBottom: 14, borderRadius: 10, overflow: 'hidden', border: '1px solid #e2e8f0', background: '#0f172a' }}>
+            {publishType === 'video' || String(post?.mediaType || '').toLowerCase() === 'video' ? (
+              <video src={previewUrl} controls style={{ width: '100%', maxHeight: 220, display: 'block' }} />
+            ) : (
+              <img src={previewUrl} alt="" style={{ width: '100%', maxHeight: 220, objectFit: 'contain', display: 'block' }} />
+            )}
+          </div>
+        )}
+
+        {readOnly && (
+          <>
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+              Engagement
+            </div>
+            <div style={{ fontSize: 12, color: '#94a3b8', fontStyle: 'italic', marginBottom: 10 }}>Available after publishing</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 16 }}>
+              {[
+                ['👁', 'Views', post.impressions ?? 0],
+                ['❤️', 'Likes', post.likes ?? 0],
+                ['💬', 'Comments', post.recentComments ?? post.comments ?? 0],
+                ['↗', 'Shares', post.shares ?? 0],
+              ].map(([icon, label, val]) => (
+                <div key={label} style={{ background: '#f8fafc', borderRadius: 10, padding: '10px 8px', textAlign: 'center', border: '1px solid #e2e8f0' }}>
+                  <div style={{ fontSize: 16 }}>{icon}</div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: '#0f172a' }}>{val}</div>
+                  <div style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>{label}</div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        <div style={{ display: 'grid', gap: 6, fontSize: 13, color: '#475569', marginBottom: 16, paddingTop: 8, borderTop: '1px solid #f1f5f9' }}>
+          <div>
+            <strong style={{ color: '#64748b' }}>Created</strong> · {createdStr || '—'}
+          </div>
+          <div>
+            <strong style={{ color: '#64748b' }}>Scheduled</strong> · {scheduledStr || '—'}
+          </div>
+          {post.id != null && (
             <div>
-              <div style={{ fontSize: 10, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Hashtags</div>
-              <div style={{ fontSize: 13, color: '#3b82f6', lineHeight: 1.6, wordBreak: 'break-word' }}>{hashtags}</div>
+              <strong style={{ color: '#64748b' }}>Post ID</strong> ·{' '}
+              <span style={{ fontFamily: 'ui-monospace, monospace', fontSize: 12 }}>{String(post.id)}</span>
             </div>
-          )}
-
-          {/* ── Engagement Metrics ── */}
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-              <div style={{ fontSize: 10, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Engagement</div>
-              {isScheduled && <span style={{ fontSize: 10, color: '#94a3b8', fontStyle: 'italic' }}>Available after publishing</span>}
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
-              <div style={metricCard}>
-                <span style={{ fontSize: 20 }}>👁</span>
-                <div style={metricNum}>{views.toLocaleString()}</div>
-                <div style={metricLabel}>Views</div>
-              </div>
-              <div style={metricCard}>
-                <span style={{ fontSize: 20 }}>❤️</span>
-                <div style={metricNum}>{likes.toLocaleString()}</div>
-                <div style={metricLabel}>Likes</div>
-              </div>
-              <div style={metricCard}>
-                <span style={{ fontSize: 20 }}>💬</span>
-                <div style={metricNum}>{comments.toLocaleString()}</div>
-                <div style={metricLabel}>Comments</div>
-              </div>
-              <div style={metricCard}>
-                <span style={{ fontSize: 20 }}>↗️</span>
-                <div style={metricNum}>{shares.toLocaleString()}</div>
-                <div style={metricLabel}>Shares</div>
-              </div>
-            </div>
-            {engageRate !== null && (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, marginTop: 10 }}>
-                <div style={metricCard}>
-                  <span style={{ fontSize: 20 }}>📊</span>
-                  <div style={metricNum}>{impressions.toLocaleString()}</div>
-                  <div style={metricLabel}>Impressions</div>
-                </div>
-                <div style={metricCard}>
-                  <span style={{ fontSize: 20 }}>⚡</span>
-                  <div style={metricNum}>{Number(engageRate).toFixed(1)}%</div>
-                  <div style={metricLabel}>Eng. Rate</div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Meta info */}
-          <div style={{ background: '#f8fafc', borderRadius: 12, padding: '12px 15px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {createdAt && (
-              <div style={metaRow}>
-                <span style={metaLabel}>Created</span>
-                <span style={metaValue}>{createdAt}</span>
-              </div>
-            )}
-            {scheduledAt && (
-              <div style={metaRow}>
-                <span style={metaLabel}>Scheduled</span>
-                <span style={metaValue}>{scheduledAt}</span>
-              </div>
-            )}
-            {post.id != null && (
-              <div style={metaRow}>
-                <span style={metaLabel}>Post ID</span>
-                <span style={{ ...metaValue, fontFamily: 'ui-monospace, monospace', fontSize: 12 }}>{String(post.id)}</span>
-              </div>
-            )}
-          </div>
-
-          {/* Error message */}
-          {post.errorMessage && (
-            <div style={{ padding: '12px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 12, fontSize: 13, color: '#991b1b', lineHeight: 1.5 }}>
-              <strong>Error</strong><br />{post.errorMessage}
-            </div>
-          )}
-
-          {/* External link */}
-          {link && (
-            <a href={link} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#fff', background: p.color, padding: '9px 18px', borderRadius: 10, fontWeight: 700, fontSize: 13, textDecoration: 'none', alignSelf: 'flex-start' }}>
-              View on {p.label || 'platform'} ↗
-            </a>
           )}
         </div>
+
+        {post.errorMessage && (
+          <div
+            style={{
+              marginBottom: 14,
+              padding: '10px 12px',
+              background: '#fef2f2',
+              border: '1px solid #fecaca',
+              borderRadius: 10,
+              fontSize: 13,
+              color: '#991b1b',
+              lineHeight: 1.5,
+            }}
+          >
+            <strong>Error</strong>
+            <br />
+            {post.errorMessage}
+          </div>
+        )}
+
+        {link && readOnly && (
+          <div style={{ marginBottom: 12 }}>
+            <a href={link} target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', fontWeight: 600, fontSize: 14, wordBreak: 'break-all' }}>
+              Open link ↗
+            </a>
+          </div>
+        )}
+
+        {canMutate && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'flex-end', marginTop: 8 }}>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                padding: '10px 18px',
+                borderRadius: 10,
+                border: '1px solid #e2e8f0',
+                background: '#fff',
+                fontWeight: 600,
+                fontSize: 14,
+                cursor: 'pointer',
+                color: '#475569',
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={deleting || saving}
+              style={{
+                padding: '10px 18px',
+                borderRadius: 10,
+                border: '1px solid #fecaca',
+                background: deleting ? '#fee2e2' : '#fef2f2',
+                fontWeight: 700,
+                fontSize: 14,
+                cursor: deleting ? 'wait' : 'pointer',
+                color: '#b91c1c',
+              }}
+            >
+              {deleting ? 'Deleting…' : 'Delete'}
+            </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={saving || deleting}
+              style={{
+                padding: '10px 20px',
+                borderRadius: 10,
+                border: 'none',
+                background: saving ? '#93c5fd' : '#2563eb',
+                fontWeight: 700,
+                fontSize: 14,
+                cursor: saving ? 'wait' : 'pointer',
+                color: '#fff',
+              }}
+            >
+              {saving ? 'Saving…' : 'Save changes'}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
 }
-
-const metricCard = { background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: '12px 10px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, textAlign: 'center' };
-const metricNum  = { fontSize: 16, fontWeight: 800, color: '#0f172a' };
-const metricLabel = { fontSize: 10, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' };
-const metaRow   = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 };
-const metaLabel = { fontSize: 12, fontWeight: 700, color: '#94a3b8' };
-const metaValue = { fontSize: 12, color: '#334155', fontWeight: 600, textAlign: 'right' };

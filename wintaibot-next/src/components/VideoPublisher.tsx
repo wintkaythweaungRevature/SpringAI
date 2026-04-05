@@ -18,6 +18,9 @@ const PLATFORMS = [
   { id: 'pinterest', label: 'Pinterest', emoji: '📌',  color: '#E60023', maxLen: 500, logo: 'pinterest' },
 ];
 
+/** Inline “Connect your accounts” rows — keep in sync with Social Connect / `/api/social/status`. */
+const CONNECT_ACCOUNT_ROW_IDS = ['youtube', 'instagram', 'tiktok', 'linkedin', 'facebook', 'x', 'threads'] as const;
+
 const STEPS = ['upload', 'processing', 'review', 'published', 'analytics'];
 
 /** Avoid `toISOString()` `.000Z` — Java DateTimeFormatter often rejects trailing `Z` at index 23. */
@@ -542,7 +545,7 @@ export default function VideoPublisher() {
                 Link platforms to publish directly from here.
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {['youtube', 'instagram', 'tiktok', 'linkedin', 'facebook', 'x'].map(pid => {
+                {CONNECT_ACCOUNT_ROW_IDS.map((pid) => {
                   const p = PLATFORMS.find(x => x.id === pid);
                   if (!p) return null;
                   const connected = connectedAccounts[pid];

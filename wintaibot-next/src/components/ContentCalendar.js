@@ -269,7 +269,7 @@ function buildCalendarDays(year, month) {
 }
 
 /* ── Scheduled post modal ───────────────────────────────────────────────── */
-function DayModal({ date, posts, onClose, onRetryFailed, retryingIds = {} }) {
+function DayModal({ date, posts, onClose, onRetryFailed, onPostSelect, retryingIds = {} }) {
   const dayPosts = posts.filter(p => {
     try { return sameDay(postCalendarDate(p), date); } catch { return false; }
   });
@@ -295,7 +295,23 @@ function DayModal({ date, posts, onClose, onRetryFailed, retryingIds = {} }) {
               const canRetry = String(p.status || '').toUpperCase() === 'FAILED' && p.id != null;
               const retrying = canRetry && !!retryingIds[String(p.id)];
               return (
-                <div key={i} style={{ ...ms.postCard, borderLeft: `3px solid ${platformColor(p.platform)}` }}>
+                <div
+                  key={i}
+                  role={typeof onPostSelect === 'function' ? 'button' : undefined}
+                  tabIndex={typeof onPostSelect === 'function' ? 0 : undefined}
+                  style={{
+                    ...ms.postCard,
+                    borderLeft: `3px solid ${platformColor(p.platform)}`,
+                    ...(typeof onPostSelect === 'function' ? { cursor: 'pointer' } : {}),
+                  }}
+                  onClick={() => typeof onPostSelect === 'function' && onPostSelect(p)}
+                  onKeyDown={(e) => {
+                    if (typeof onPostSelect === 'function' && (e.key === 'Enter' || e.key === ' ')) {
+                      e.preventDefault();
+                      onPostSelect(p);
+                    }
+                  }}
+                >
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
                     <div style={{
                       width: 84, height: 84, borderRadius: 10, overflow: 'hidden', flexShrink: 0,
@@ -339,7 +355,10 @@ function DayModal({ date, posts, onClose, onRetryFailed, retryingIds = {} }) {
                         <div style={{ marginTop: 8 }}>
                           <button
                             type="button"
-                            onClick={() => onRetryFailed && onRetryFailed(p.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (onRetryFailed) onRetryFailed(p.id);
+                            }}
                             disabled={retrying}
                             style={{
                               padding: '6px 10px',
@@ -674,7 +693,23 @@ export default function ContentCalendar() {
                     const canRetry = String(p.status || '').toUpperCase() === 'FAILED' && p.id != null;
                     const retrying = canRetry && !!retryingIds[String(p.id)];
                     return (
-                      <div key={i} style={{ ...s.upcomingItem, borderLeft: `3px solid ${platformColor(p.platform)}` }}>
+                      <div
+                        key={i}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => setFeedDetailPost(p)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setFeedDetailPost(p);
+                          }
+                        }}
+                        style={{
+                          ...s.upcomingItem,
+                          borderLeft: `3px solid ${platformColor(p.platform)}`,
+                          cursor: 'pointer',
+                        }}
+                      >
                         <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                           {/* Thumbnail */}
                           {p.mediaUrl && (
@@ -709,7 +744,10 @@ export default function ContentCalendar() {
                             {canRetry && (
                               <button
                                 type="button"
-                                onClick={() => retryFailedPost(p.id)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  retryFailedPost(p.id);
+                                }}
                                 disabled={retrying}
                                 style={{
                                   marginTop: 6,
@@ -878,6 +916,10 @@ export default function ContentCalendar() {
           onRetryFailed={retryFailedPost}
           retryingIds={retryingIds}
           onClose={() => setSelectedDay(null)}
+          onPostSelect={(p) => {
+            setFeedDetailPost(p);
+            setSelectedDay(null);
+          }}
         />
       )}
 
@@ -886,6 +928,7 @@ export default function ContentCalendar() {
           post={feedDetailPost}
           platform={PLATFORM_MAP[feedDetailPost.platform?.toLowerCase()]}
           onClose={() => setFeedDetailPost(null)}
+          onSaved={loadPosts}
         />
       )}
 

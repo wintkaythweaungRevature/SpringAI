@@ -273,7 +273,7 @@ function buildCalendarDays(year, month) {
 }
 
 /* ── Scheduled post modal ───────────────────────────────────────────────── */
-function DayModal({ date, posts, onClose, onRetryFailed, retryingIds = {}, onCancelJob, onRescheduleJob, reschedulingJob, newDateTime, setNewDateTime, setReschedulingJob }) {
+function DayModal({ date, posts, onClose, onRetryFailed, retryingIds = {}, onCancelJob, onRescheduleJob, reschedulingJob, newDateTime, setNewDateTime, setReschedulingJob, onPostSelect }) {
   const dayPosts = posts.filter(p => {
     try { return sameDay(postCalendarDate(p), date); } catch { return false; }
   });
@@ -328,7 +328,22 @@ function DayModal({ date, posts, onClose, onRetryFailed, retryingIds = {}, onCan
               const hasMetrics = likes !== null || comments !== null || shares !== null || views !== null;
 
               return (
-                <div key={i} style={ms.postCard}>
+                <div
+                  key={i}
+                  role={typeof onPostSelect === 'function' ? 'button' : undefined}
+                  tabIndex={typeof onPostSelect === 'function' ? 0 : undefined}
+                  style={{
+                    ...ms.postCard,
+                    ...(typeof onPostSelect === 'function' ? { cursor: 'pointer' } : {}),
+                  }}
+                  onClick={() => typeof onPostSelect === 'function' && onPostSelect(p)}
+                  onKeyDown={(e) => {
+                    if (typeof onPostSelect === 'function' && (e.key === 'Enter' || e.key === ' ')) {
+                      e.preventDefault();
+                      onPostSelect(p);
+                    }
+                  }}
+                >
                   {/* top accent bar in platform color */}
                   <div style={{ height: 3, background: pColor, borderRadius: '8px 8px 0 0', margin: '-14px -14px 14px -14px' }} />
 
@@ -423,7 +438,7 @@ function DayModal({ date, posts, onClose, onRetryFailed, retryingIds = {}, onCan
                   {(canRetry || isScheduled) && (
                     <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #f1f5f9' }}>
                       {canRetry && (
-                        <button type="button" onClick={() => onRetryFailed && onRetryFailed(p.id)} disabled={retrying} style={{
+                        <button type="button" onClick={(e) => { e.stopPropagation(); if (onRetryFailed) onRetryFailed(p.id); }} disabled={retrying} style={{
                           padding: '6px 12px', borderRadius: 8, border: '1px solid #fca5a5',
                           background: retrying ? '#fee2e2' : '#fff5f5', color: '#dc2626',
                           fontSize: 11, fontWeight: 700, cursor: retrying ? 'wait' : 'pointer',
@@ -432,17 +447,17 @@ function DayModal({ date, posts, onClose, onRetryFailed, retryingIds = {}, onCan
                         </button>
                       )}
                       {isScheduled && (
-                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }} onClick={(e) => e.stopPropagation()}>
                           {reschedulingJob === jobId ? (
                             <>
                               <input type="datetime-local" value={newDateTime} onChange={e => setNewDateTime(e.target.value)} style={{ padding: '5px 8px', borderRadius: 6, border: '1px solid #cbd5e1', fontSize: 12 }} />
-                              <button onClick={() => onRescheduleJob && onRescheduleJob(jobId, newDateTime)} style={{ padding: '5px 12px', borderRadius: 6, border: 'none', background: '#6366f1', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Save</button>
-                              <button onClick={() => setReschedulingJob(null)} style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#fff', fontSize: 11, cursor: 'pointer' }}>Cancel</button>
+                              <button type="button" onClick={() => onRescheduleJob && onRescheduleJob(jobId, newDateTime)} style={{ padding: '5px 12px', borderRadius: 6, border: 'none', background: '#6366f1', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Save</button>
+                              <button type="button" onClick={() => setReschedulingJob(null)} style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#fff', fontSize: 11, cursor: 'pointer' }}>Cancel</button>
                             </>
                           ) : (
                             <>
-                              <button onClick={() => { setReschedulingJob(jobId); setNewDateTime(p.scheduledAt ? p.scheduledAt.slice(0,16) : ''); }} style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid #a5b4fc', background: '#eef2ff', color: '#4f46e5', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>🗓 Reschedule</button>
-                              <button onClick={() => onCancelJob && onCancelJob(jobId)} style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid #fca5a5', background: '#fff5f5', color: '#dc2626', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>✕ Cancel</button>
+                              <button type="button" onClick={() => { setReschedulingJob(jobId); setNewDateTime(p.scheduledAt ? p.scheduledAt.slice(0,16) : ''); }} style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid #a5b4fc', background: '#eef2ff', color: '#4f46e5', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>🗓 Reschedule</button>
+                              <button type="button" onClick={() => onCancelJob && onCancelJob(jobId)} style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid #fca5a5', background: '#fff5f5', color: '#dc2626', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>✕ Cancel</button>
                             </>
                           )}
                         </div>
@@ -862,10 +877,20 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
                     const canRetry = String(p.status || '').toUpperCase() === 'FAILED' && p.id != null;
                     const retrying = canRetry && !!retryingIds[String(p.id)];
                     return (
-                      <div key={i}
+                      <div
+                        key={i}
+                        role="button"
+                        tabIndex={0}
                         style={{ ...s.upcomingItem, borderLeft: `3px solid ${platformColor(p.platform)}`, cursor: 'pointer' }}
-                        onDoubleClick={() => setFeedDetailPost(p)}
-                        title="Double-click to view details">
+                        onClick={() => setFeedDetailPost(p)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setFeedDetailPost(p);
+                          }
+                        }}
+                        title="Click to view or edit"
+                      >
                         <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                           {/* Thumbnail */}
                           {p.mediaUrl && (
@@ -886,7 +911,10 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
                               <div
                                 style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}
                                 title={`Filter calendar by ${p.platform}`}
-                                onClick={() => setFilterPlatform(prev => prev === p.platform?.toLowerCase() ? 'all' : p.platform?.toLowerCase())}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setFilterPlatform(prev => prev === p.platform?.toLowerCase() ? 'all' : p.platform?.toLowerCase());
+                                }}
                               >
                                 {pInfo && <PlatformIcon platform={pInfo} size={14} />}
                                 <span style={{ fontWeight: 700, fontSize: 12, color: platformColor(p.platform), textTransform: 'capitalize',
@@ -907,7 +935,10 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
                             {canRetry && (
                               <button
                                 type="button"
-                                onClick={() => retryFailedPost(p.id)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  retryFailedPost(p.id);
+                                }}
                                 disabled={retrying}
                                 style={{
                                   marginTop: 6,
@@ -1082,6 +1113,10 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
           newDateTime={newDateTime}
           setNewDateTime={setNewDateTime}
           setReschedulingJob={setReschedulingJob}
+          onPostSelect={(p) => {
+            setFeedDetailPost(p);
+            setSelectedDay(null);
+          }}
         />
       )}
 
@@ -1098,6 +1133,7 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
           post={feedDetailPost}
           platform={PLATFORM_MAP[feedDetailPost.platform?.toLowerCase()]}
           onClose={() => setFeedDetailPost(null)}
+          onSaved={loadPosts}
         />
       )}
 

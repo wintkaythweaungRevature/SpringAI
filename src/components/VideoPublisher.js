@@ -30,6 +30,9 @@ const PLATFORM_ID_TO_BACKEND = {
   pinterest: 'Pinterest',
 };
 
+/** Inline “Connected accounts” rows — keep in sync with Social Connect / `/api/social/status`. */
+const CONNECT_ACCOUNT_ROW_IDS = ['youtube', 'instagram', 'tiktok', 'linkedin', 'facebook', 'x', 'threads'];
+
 const STEPS = ['upload', 'processing', 'review', 'publishing', 'analytics'];
 
 const MAX_FILE_SIZE_BYTES = 2 * 1024 * 1024 * 1024; // 2GB
@@ -1430,7 +1433,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
                 )}
               </div>
               {(() => {
-                const ids = ['youtube', 'instagram', 'tiktok', 'linkedin', 'facebook', 'x'];
+                const ids = CONNECT_ACCOUNT_ROW_IDS;
                 const n = ids.filter((pid) => connectedAccounts[pid]).length;
                 return (
                   <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 12px' }}>
@@ -1444,7 +1447,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
                 </div>
               )}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {['youtube', 'instagram', 'tiktok', 'linkedin', 'facebook', 'x'].map((pid) => {
+                {CONNECT_ACCOUNT_ROW_IDS.map((pid) => {
                   const p = PLATFORMS.find((x) => x.id === pid);
                   const connected = connectedAccounts[pid];
                   return (

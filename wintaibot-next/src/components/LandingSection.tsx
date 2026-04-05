@@ -410,30 +410,6 @@ const steps = [
   },
 ];
 
-const testimonials = [
-  {
-    name: 'Sarah K.',
-    role: 'HR Manager',
-    avatar: 'https://api.dicebear.com/7.x/notionists/svg?seed=sarahK&backgroundColor=e0e7ff',
-    quote:
-      'Resume Warlock helped me prep candidates before interviews. The AI-generated questions were spot-on for each resume. We cut interview prep time by half.',
-  },
-  {
-    name: 'James T.',
-    role: 'Freelance Developer',
-    avatar: 'https://api.dicebear.com/7.x/notionists/svg?seed=jamesT&backgroundColor=c7d2fe',
-    quote:
-      "I use Ask AI and Reply Enchanter every day. It's like having an assistant who never sleeps. The email drafts are professional and save me 30 minutes daily.",
-  },
-  {
-    name: 'Mei L.',
-    role: 'Graduate Student',
-    avatar: 'https://api.dicebear.com/7.x/notionists/svg?seed=meiL&backgroundColor=fce7f3',
-    quote:
-      'EchoScribe transcribes my lectures perfectly. I paste the transcript into Ask AI to get summaries and study notes. It\'s transformed how I study.',
-  },
-];
-
 const techStack = [
   { label: 'Spring AI', url: 'https://spring.io/projects/spring-ai' },
   { label: 'React 19', url: 'https://react.dev' },
@@ -707,17 +683,32 @@ export default function LandingSection() {
             </p>
             <ul className="ls-plan-features">
               <li>Ask AI &amp; Recipe Generator (unlimited)</li>
-              <li>Premium AI: DocuWizard, EchoScribe, Image Gen, Email, Resume</li>
+              <li>
+                <strong>AI captions</strong> for video &amp; social
+              </li>
+              <li>
+                <strong>AI ideas</strong> (basic — Ask AI)
+              </li>
+              <li>
+                <strong>DocuWizard</strong> — analyze PDFs &amp; statements
+              </li>
+              <li>
+                <strong>Resume Warlock</strong> — resume analyzer
+              </li>
+              <li>
+                <strong>Reply Enchanter</strong> — email responses
+              </li>
+              <li>
+                <strong>EchoScribe</strong> — voice transcription
+              </li>
+              <li>
+                <strong>AI-generated images</strong> — not included (upgrade to Pro)
+              </li>
               <li>Video Publisher: <strong>5</strong> connected platforms</li>
               <li>
                 <strong>10</strong> videos / month · <strong>30</strong> scheduled posts / month
               </li>
-              <li>AI captions, thumbnail picker, link-in-bio</li>
-              <li className="ls-li-off">Deep analytics</li>
-              <li className="ls-li-off">AI Social Chat (RAG)</li>
-              <li>
-                <strong>1</strong> seat
-              </li>
+              <li>Thumbnail picker, link-in-bio</li>
             </ul>
             <button type="button" className="ls-btn-outline" onClick={() => handlePlanCheckout('STARTER')} disabled={loadingPlan === 'STARTER'}>
               {loadingPlan === 'STARTER' ? 'Redirecting...' : 'Choose Starter'}
@@ -736,6 +727,12 @@ export default function LandingSection() {
             <ul className="ls-plan-features">
               <li>Everything in Starter</li>
               <li>
+                <strong>AI ideas</strong> (full — tied to video &amp; social workflows)
+              </li>
+              <li>
+                <strong>100</strong> AI-generated images / month
+              </li>
+              <li>
                 <strong>All 8</strong> platforms · <strong>30</strong> videos / month
               </li>
               <li>
@@ -744,9 +741,6 @@ export default function LandingSection() {
               <li>Deep analytics</li>
               <li>AI Social Chat (RAG)</li>
               <li>AI captions, thumbnail picker, link-in-bio</li>
-              <li>
-                <strong>1</strong> seat
-              </li>
             </ul>
             <button type="button" className="ls-btn-primary" onClick={() => handlePlanCheckout('PRO')} disabled={loadingPlan === 'PRO'}>
               {loadingPlan === 'PRO' ? 'Redirecting...' : 'Choose Pro'}
@@ -763,6 +757,9 @@ export default function LandingSection() {
             </p>
             <ul className="ls-plan-features">
               <li>Everything in Pro</li>
+              <li>
+                <strong>Unlimited</strong> AI-generated images
+              </li>
               <li>
                 <strong>Unlimited</strong> videos
               </li>
@@ -860,36 +857,64 @@ export default function LandingSection() {
               </tr>
             </tbody>
           </table>
-        </div>
-      </section>
 
-      <section
-        className="ls-section ls-testimonials"
-        id="testimonials"
-        aria-labelledby="testimonials-heading"
-      >
-        <h2 id="testimonials-heading">What Users Are Saying</h2>
-        <div className="ls-testimonial-grid">
-          {testimonials.map((t) => (
-            <blockquote className="ls-testimonial" key={t.name}>
-              <p className="ls-testimonial-quote">&quot;{t.quote}&quot;</p>
-              <footer className="ls-testimonial-author">
-                <img
-                  className="ls-testimonial-avatar"
-                  src={t.avatar}
-                  alt=""
-                  width={52}
-                  height={52}
-                  loading="lazy"
-                  decoding="async"
-                />
-                <div className="ls-testimonial-author-meta">
-                  <strong>{t.name}</strong>
-                  <span className="ls-testimonial-role">{t.role}</span>
-                </div>
-              </footer>
-            </blockquote>
-          ))}
+          <p className="ls-comparison-title" style={{ marginTop: 28 }}>
+            AI &amp; productivity — by plan
+          </p>
+          <table className="ls-comparison-table">
+            <thead>
+              <tr>
+                <th scope="col">Feature</th>
+                <th scope="col">Starter $19</th>
+                <th scope="col">Pro $39</th>
+                <th scope="col">Growth $79</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>AI captions (video &amp; social)</td>
+                <td className="ls-ok">✓</td>
+                <td className="ls-ok">✓</td>
+                <td className="ls-ok">✓</td>
+              </tr>
+              <tr>
+                <td>AI ideas</td>
+                <td>Basic (Ask AI)</td>
+                <td>Full</td>
+                <td>Full</td>
+              </tr>
+              <tr>
+                <td>AI-generated images</td>
+                <td className="ls-no">—</td>
+                <td>100 / mo</td>
+                <td>Unlimited</td>
+              </tr>
+              <tr>
+                <td>Analyze PDFs &amp; statements (DocuWizard)</td>
+                <td className="ls-ok">✓</td>
+                <td className="ls-ok">✓</td>
+                <td className="ls-ok">✓</td>
+              </tr>
+              <tr>
+                <td>Resume analyzer (Resume Warlock)</td>
+                <td className="ls-ok">✓</td>
+                <td className="ls-ok">✓</td>
+                <td className="ls-ok">✓</td>
+              </tr>
+              <tr>
+                <td>Email responses (Reply Enchanter)</td>
+                <td className="ls-ok">✓</td>
+                <td className="ls-ok">✓</td>
+                <td className="ls-ok">✓</td>
+              </tr>
+              <tr>
+                <td>Voice transcription (EchoScribe)</td>
+                <td className="ls-ok">✓</td>
+                <td className="ls-ok">✓</td>
+                <td className="ls-ok">✓</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </section>
 

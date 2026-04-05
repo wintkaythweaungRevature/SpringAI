@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { useAuth } from '@/context/AuthContext';
 import PlatformIcon from './PlatformIcon';
 
 function pickUrl(post) {
@@ -12,11 +13,136 @@ function pickUrl(post) {
   return '';
 }
 
+function firstNonEmptyStr(...vals) {
+  for (const v of vals) {
+    if (v != null && String(v).trim() !== '') return String(v).trim();
+  }
+  return '';
+}
+
+function scheduledIsoFromPost(post) {
+  const raw = post?.job && typeof post.job === 'object' ? post.job : null;
+  const candidates = [
+    post?.scheduledAt,
+    post?.scheduled_at,
+    post?.scheduledTime,
+    post?.scheduled_for,
+    raw?.scheduledAt,
+    post?.publishAt,
+    post?.publish_at,
+  ];
+  for (const v of candidates) {
+    if (v == null || (typeof v === 'string' && v.trim() === '')) continue;
+    try {
+      const d = new Date(v);
+      if (Number.isFinite(d.getTime())) return d.toISOString();
+    } catch {
+      /* ignore */
+    }
+  }
+  return '';
+}
+
+/** Prefer job API for unpublished queue items when job id exists. */
+export function resolveEditTarget(post) {
+  if (!post) return null;
+  const status = String(post?.status || '').toUpperCase();
+  const terminal = status === 'SUCCESS' || status === 'PUBLISHED' || status === 'COMPLETED';
+  const jobId = post?.jobId ?? post?.job?.id ?? post?.job_id;
+  const postId = post?.id ?? post?.postId;
+  if (jobId && !terminal) {
+    return { kind: 'job', id: String(jobId) };
+  }
+  if (postId != null && String(postId).trim() !== '') {
+    return { kind: 'post', id: String(postId) };
+  }
+  if (jobId) {
+    return { kind: 'job', id: String(jobId) };
+  }
+  return null;
+}
+
+function buildPatchUrl(apiBase, target) {
+  const b = (apiBase || 'https://api.wintaibot.com').replace(/\/$/, '');
+  if (target.kind === 'job') {
+    return `${b}/api/social/post/jobs/${encodeURIComponent(target.id)}`;
+  }
+  return `${b}/api/social/post/${encodeURIComponent(target.id)}`;
+}
+
+function isPublishedPost(post) {
+  const s = String(post?.status || '').toUpperCase();
+  return s === 'SUCCESS' || s === 'PUBLISHED' || s === 'COMPLETED';
+}
+
+function toDatetimeLocalValue(iso) {
+  if (!iso) return '';
+  try {
+    const d = new Date(iso);
+    if (!Number.isFinite(d.getTime())) return '';
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  } catch {
+    return '';
+  }
+}
+
+function fromDatetimeLocalToIso(local) {
+  if (!local || !local.trim()) return null;
+  const d = new Date(local);
+  return Number.isFinite(d.getTime()) ? d.toISOString() : null;
+}
+
 /**
- * Shared modal: full post caption + meta (history / feed).
- * @param {{ post: object, onClose: () => void, platform?: { id: string, label?: string, color?: string, logo?: string, emoji?: string } }} props
+ * Post detail + edit modal: caption, hashtags, schedule, media URL; DELETE / PATCH to API.
  */
-export default function PostDetailModal({ post, onClose, platform }) {
+export default function PostDetailModal({ post, onClose, platform, onSaved }) {
+  const { token, apiBase } = useAuth();
+  const base = (apiBase || (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_BASE) || '').replace(/\/$/, '') || 'https://api.wintaibot.com';
+
+  const [caption, setCaption] = useState('');
+  const [hashtags, setHashtags] = useState('');
+  const [publishType, setPublishType] = useState('text');
+  const [scheduledLocal, setScheduledLocal] = useState('');
+  const [mediaUrlEdit, setMediaUrlEdit] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [errMsg, setErrMsg] = useState('');
+
+  const p = platform || {
+    id: String(post.platform || 'unknown').toLowerCase(),
+    label: post.platform || 'Unknown',
+    color: '#64748b',
+    emoji: '📤',
+    logo: null,
+  };
+
+  const target = useMemo(() => resolveEditTarget(post), [post]);
+  const readOnly = isPublishedPost(post);
+  const canMutate = !!target && !readOnly;
+
+  const syncFromPost = useCallback(() => {
+    if (!post) return;
+    const cap = post.caption != null ? String(post.caption) : '';
+    setCaption(cap);
+    let ht = post.hashtags;
+    if (Array.isArray(ht)) ht = ht.join(' ');
+    else if (ht == null) ht = '';
+    setHashtags(String(ht));
+    const mt = String(post.mediaType || 'text').toLowerCase();
+    setPublishType(mt === 'video' ? 'video' : mt === 'image' ? 'image' : 'text');
+    const sched = scheduledIsoFromPost(post);
+    setScheduledLocal(toDatetimeLocalValue(sched) || toDatetimeLocalValue(post?.createdAt));
+    setMediaUrlEdit(
+      firstNonEmptyStr(post?.mediaUrl, post?.videoUrl, post?.imageUrl, post?.thumbnailUrl, post?.url) || ''
+    );
+    setErrMsg('');
+  }, [post]);
+
+  useEffect(() => {
+    syncFromPost();
+  }, [syncFromPost]);
+
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === 'Escape') onClose();
@@ -27,34 +153,98 @@ export default function PostDetailModal({ post, onClose, platform }) {
 
   if (!post) return null;
 
-  const p = platform || {
-    id: String(post.platform || 'unknown').toLowerCase(),
-    label: post.platform || 'Unknown',
-    color: '#64748b',
-    emoji: '📤',
-    logo: null,
-  };
-
   const status = post.status || '—';
   const statusOk = status === 'SUCCESS' || status === 'PUBLISHED';
   const statusColor = statusOk ? '#16a34a' : status === 'FAILED' ? '#dc2626' : '#d97706';
   const statusBg = statusOk ? '#f0fdf4' : status === 'FAILED' ? '#fef2f2' : '#fffbeb';
 
-  const created = post.createdAt || post.scheduledAt;
-  let when = '';
+  const created = post.createdAt || post.created_at;
+  let createdStr = '';
   try {
-    when = created
+    createdStr = created
       ? new Date(created).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
       : '';
   } catch {
-    when = String(created || '');
+    createdStr = String(created || '');
+  }
+
+  const scheduledDisplay = scheduledIsoFromPost(post);
+  let scheduledStr = '';
+  try {
+    scheduledStr = scheduledDisplay
+      ? new Date(scheduledDisplay).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
+      : '';
+  } catch {
+    scheduledStr = scheduledDisplay || '';
   }
 
   const link = pickUrl(post);
-  const caption = post.caption != null ? String(post.caption) : '';
-  let hashtags = post.hashtags;
-  if (Array.isArray(hashtags)) hashtags = hashtags.join(' ');
-  else if (hashtags == null) hashtags = '';
+  const previewUrl =
+    firstNonEmptyStr(mediaUrlEdit, post?.thumbnailUrl, post?.mediaUrl, post?.videoUrl, post?.imageUrl) || '';
+
+  const authHeaders = () => ({
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json',
+  });
+
+  const handleSave = async () => {
+    if (!token || !canMutate || !target) return;
+    setSaving(true);
+    setErrMsg('');
+    try {
+      const url = buildPatchUrl(base, target);
+      const scheduledAt = fromDatetimeLocalToIso(scheduledLocal);
+      const body = {
+        caption: caption.trim(),
+        hashtags: hashtags.trim(),
+        publishType: publishType || 'text',
+      };
+      if (scheduledAt) body.scheduledAt = scheduledAt;
+      if (mediaUrlEdit.trim()) body.mediaUrl = mediaUrlEdit.trim();
+
+      const res = await fetch(url, {
+        method: 'PATCH',
+        headers: authHeaders(),
+        body: JSON.stringify(body),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setErrMsg(data.error || data.message || `Update failed (${res.status})`);
+        return;
+      }
+      if (typeof onSaved === 'function') onSaved();
+      onClose();
+    } catch (e) {
+      setErrMsg((e && e.message) || 'Network error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!token || !canMutate || !target) return;
+    if (!window.confirm('Delete this scheduled post? This cannot be undone.')) return;
+    setDeleting(true);
+    setErrMsg('');
+    try {
+      const url = buildPatchUrl(base, target);
+      const res = await fetch(url, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setErrMsg(data.error || data.message || `Delete failed (${res.status})`);
+        return;
+      }
+      if (typeof onSaved === 'function') onSaved();
+      onClose();
+    } catch (e) {
+      setErrMsg((e && e.message) || 'Network error');
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
     <div
@@ -79,16 +269,16 @@ export default function PostDetailModal({ post, onClose, platform }) {
           background: '#fff',
           borderRadius: 16,
           boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
-          maxWidth: 'min(520px, 100%)',
+          maxWidth: 'min(560px, 100%)',
           width: '100%',
-          maxHeight: 'min(85vh, 720px)',
+          maxHeight: 'min(90vh, 800px)',
           overflow: 'auto',
           padding: '22px 24px 24px',
           boxSizing: 'border-box',
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
             <div
               style={{
@@ -106,101 +296,233 @@ export default function PostDetailModal({ post, onClose, platform }) {
             </div>
             <div style={{ minWidth: 0 }}>
               <h2 id="post-detail-title" style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#0f172a', lineHeight: 1.25 }}>
-                Post details
-              </h2>
-              <div style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginTop: 4 }}>
                 {p.label || post.platform}
+              </h2>
+              <div style={{ fontSize: 12, fontWeight: 600, color: '#64748b', marginTop: 4, textTransform: 'capitalize' }}>
+                {publishType || 'text'}
               </div>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              border: 'none',
-              background: '#f1f5f9',
-              color: '#475569',
-              width: 40,
-              height: 40,
-              borderRadius: 10,
-              fontSize: 18,
-              cursor: 'pointer',
-              lineHeight: 1,
-              flexShrink: 0,
-            }}
-            aria-label="Close"
-          >
-            ✕
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 800,
+                padding: '4px 10px',
+                borderRadius: 20,
+                background: statusBg,
+                color: statusColor,
+              }}
+            >
+              {String(status).toUpperCase()}
+            </span>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                border: 'none',
+                background: '#f1f5f9',
+                color: '#475569',
+                width: 40,
+                height: 40,
+                borderRadius: 10,
+                fontSize: 18,
+                cursor: 'pointer',
+                lineHeight: 1,
+                flexShrink: 0,
+              }}
+              aria-label="Close"
+            >
+              ✕
+            </button>
+          </div>
         </div>
 
-        <div style={{ marginBottom: 14 }}>
-          <span
-            style={{
-              fontSize: 11,
-              fontWeight: 700,
-              padding: '4px 10px',
-              borderRadius: 20,
-              background: statusBg,
-              color: statusColor,
-            }}
-          >
-            {status}
-          </span>
-        </div>
+        {!canMutate && !readOnly && (
+          <div style={{ marginBottom: 12, fontSize: 13, color: '#b45309', background: '#fffbeb', padding: '10px 12px', borderRadius: 10, border: '1px solid #fcd34d' }}>
+            This item has no post or job id — editing may not be available.
+          </div>
+        )}
+
+        {errMsg && (
+          <div style={{ marginBottom: 12, fontSize: 13, color: '#b91c1c', background: '#fef2f2', padding: '10px 12px', borderRadius: 10, border: '1px solid #fecaca' }}>
+            {errMsg}
+          </div>
+        )}
 
         <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
           Caption
         </div>
-        <div
-          style={{
-            fontSize: 14,
-            lineHeight: 1.6,
-            color: '#1e293b',
-            whiteSpace: 'pre-wrap',
-            wordBreak: 'break-word',
-            background: '#f8fafc',
-            borderRadius: 10,
-            padding: '12px 14px',
-            border: '1px solid #e2e8f0',
-            marginBottom: 14,
-            minHeight: 48,
-          }}
-        >
-          {caption.trim() ? caption : '(no caption)'}
-        </div>
+        {readOnly ? (
+          <div
+            style={{
+              fontSize: 14,
+              lineHeight: 1.6,
+              color: '#1e293b',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word',
+              background: '#f8fafc',
+              borderRadius: 10,
+              padding: '12px 14px',
+              border: '1px solid #e2e8f0',
+              marginBottom: 14,
+              minHeight: 48,
+            }}
+          >
+            {caption.trim() ? caption : '(no caption)'}
+          </div>
+        ) : (
+          <textarea
+            value={caption}
+            onChange={(e) => setCaption(e.target.value)}
+            rows={5}
+            style={{
+              width: '100%',
+              boxSizing: 'border-box',
+              fontSize: 14,
+              lineHeight: 1.6,
+              color: '#1e293b',
+              background: '#fff',
+              borderRadius: 10,
+              padding: '12px 14px',
+              border: '1px solid #cbd5e1',
+              marginBottom: 14,
+              resize: 'vertical',
+              fontFamily: 'inherit',
+            }}
+            placeholder="Caption and main text…"
+          />
+        )}
 
-        {hashtags && (
+        <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+          Hashtags
+        </div>
+        {readOnly ? (
+          <div style={{ fontSize: 13, color: '#334155', marginBottom: 14, lineHeight: 1.5 }}>{hashtags || '—'}</div>
+        ) : (
+          <input
+            type="text"
+            value={hashtags}
+            onChange={(e) => setHashtags(e.target.value)}
+            style={{
+              width: '100%',
+              boxSizing: 'border-box',
+              padding: '10px 12px',
+              borderRadius: 10,
+              border: '1px solid #cbd5e1',
+              fontSize: 13,
+              marginBottom: 14,
+            }}
+            placeholder="#marketing #brand"
+          />
+        )}
+
+        {!readOnly && (
           <>
             <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
-              Hashtags
+              Post type
             </div>
-            <div style={{ fontSize: 13, color: '#334155', marginBottom: 14, lineHeight: 1.5 }}>{hashtags}</div>
+            <select
+              value={publishType}
+              onChange={(e) => setPublishType(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                borderRadius: 10,
+                border: '1px solid #cbd5e1',
+                fontSize: 13,
+                marginBottom: 14,
+                background: '#fff',
+              }}
+            >
+              <option value="text">Text</option>
+              <option value="image">Image</option>
+              <option value="video">Video</option>
+            </select>
+
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+              Scheduled for
+            </div>
+            <input
+              type="datetime-local"
+              value={scheduledLocal}
+              onChange={(e) => setScheduledLocal(e.target.value)}
+              style={{
+                width: '100%',
+                boxSizing: 'border-box',
+                padding: '10px 12px',
+                borderRadius: 10,
+                border: '1px solid #cbd5e1',
+                fontSize: 13,
+                marginBottom: 14,
+              }}
+            />
+
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+              Media URL (optional)
+            </div>
+            <input
+              type="url"
+              value={mediaUrlEdit}
+              onChange={(e) => setMediaUrlEdit(e.target.value)}
+              style={{
+                width: '100%',
+                boxSizing: 'border-box',
+                padding: '10px 12px',
+                borderRadius: 10,
+                border: '1px solid #cbd5e1',
+                fontSize: 12,
+                marginBottom: 10,
+              }}
+              placeholder="https://… (replace image or video URL if your API supports it)"
+            />
           </>
         )}
 
-        <div style={{ display: 'grid', gap: 8, fontSize: 13, color: '#475569' }}>
-          <div>
-            <strong style={{ color: '#64748b' }}>Media</strong> · {post.mediaType || '—'}
+        {previewUrl && (
+          <div style={{ marginBottom: 14, borderRadius: 10, overflow: 'hidden', border: '1px solid #e2e8f0', background: '#0f172a' }}>
+            {publishType === 'video' || String(post?.mediaType || '').toLowerCase() === 'video' ? (
+              <video src={previewUrl} controls style={{ width: '100%', maxHeight: 220, display: 'block' }} />
+            ) : (
+              <img src={previewUrl} alt="" style={{ width: '100%', maxHeight: 220, objectFit: 'contain', display: 'block' }} />
+            )}
           </div>
-          <div>
-            <strong style={{ color: '#64748b' }}>Time</strong> · {when || '—'}
-          </div>
-          {post.scheduledAt && post.scheduledAt !== post.createdAt && (
-            <div>
-              <strong style={{ color: '#64748b' }}>Scheduled</strong> ·{' '}
-              {(() => {
-                try {
-                  return new Date(post.scheduledAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
-                } catch {
-                  return post.scheduledAt;
-                }
-              })()}
+        )}
+
+        {readOnly && (
+          <>
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+              Engagement
             </div>
-          )}
+            <div style={{ fontSize: 12, color: '#94a3b8', fontStyle: 'italic', marginBottom: 10 }}>Available after publishing</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 16 }}>
+              {[
+                ['👁', 'Views', post.impressions ?? 0],
+                ['❤️', 'Likes', post.likes ?? 0],
+                ['💬', 'Comments', post.recentComments ?? post.comments ?? 0],
+                ['↗', 'Shares', post.shares ?? 0],
+              ].map(([icon, label, val]) => (
+                <div key={label} style={{ background: '#f8fafc', borderRadius: 10, padding: '10px 8px', textAlign: 'center', border: '1px solid #e2e8f0' }}>
+                  <div style={{ fontSize: 16 }}>{icon}</div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: '#0f172a' }}>{val}</div>
+                  <div style={{ fontSize: 9, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>{label}</div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        <div style={{ display: 'grid', gap: 6, fontSize: 13, color: '#475569', marginBottom: 16, paddingTop: 8, borderTop: '1px solid #f1f5f9' }}>
+          <div>
+            <strong style={{ color: '#64748b' }}>Created</strong> · {createdStr || '—'}
+          </div>
+          <div>
+            <strong style={{ color: '#64748b' }}>Scheduled</strong> · {scheduledStr || '—'}
+          </div>
           {post.id != null && (
             <div>
-              <strong style={{ color: '#64748b' }}>ID</strong> · <span style={{ fontFamily: 'ui-monospace, monospace', fontSize: 12 }}>{String(post.id)}</span>
+              <strong style={{ color: '#64748b' }}>Post ID</strong> ·{' '}
+              <span style={{ fontFamily: 'ui-monospace, monospace', fontSize: 12 }}>{String(post.id)}</span>
             </div>
           )}
         </div>
@@ -208,7 +530,7 @@ export default function PostDetailModal({ post, onClose, platform }) {
         {post.errorMessage && (
           <div
             style={{
-              marginTop: 14,
+              marginBottom: 14,
               padding: '10px 12px',
               background: '#fef2f2',
               border: '1px solid #fecaca',
@@ -224,11 +546,66 @@ export default function PostDetailModal({ post, onClose, platform }) {
           </div>
         )}
 
-        {link && (
-          <div style={{ marginTop: 16 }}>
+        {link && readOnly && (
+          <div style={{ marginBottom: 12 }}>
             <a href={link} target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', fontWeight: 600, fontSize: 14, wordBreak: 'break-all' }}>
               Open link ↗
             </a>
+          </div>
+        )}
+
+        {canMutate && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'flex-end', marginTop: 8 }}>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                padding: '10px 18px',
+                borderRadius: 10,
+                border: '1px solid #e2e8f0',
+                background: '#fff',
+                fontWeight: 600,
+                fontSize: 14,
+                cursor: 'pointer',
+                color: '#475569',
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={deleting || saving}
+              style={{
+                padding: '10px 18px',
+                borderRadius: 10,
+                border: '1px solid #fecaca',
+                background: deleting ? '#fee2e2' : '#fef2f2',
+                fontWeight: 700,
+                fontSize: 14,
+                cursor: deleting ? 'wait' : 'pointer',
+                color: '#b91c1c',
+              }}
+            >
+              {deleting ? 'Deleting…' : 'Delete'}
+            </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={saving || deleting}
+              style={{
+                padding: '10px 20px',
+                borderRadius: 10,
+                border: 'none',
+                background: saving ? '#93c5fd' : '#2563eb',
+                fontWeight: 700,
+                fontSize: 14,
+                cursor: saving ? 'wait' : 'pointer',
+                color: '#fff',
+              }}
+            >
+              {saving ? 'Saving…' : 'Save changes'}
+            </button>
           </div>
         )}
       </div>

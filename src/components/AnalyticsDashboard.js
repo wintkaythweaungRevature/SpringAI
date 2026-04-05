@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import PlatformIcon from './PlatformIcon';
+import AnimatedLineChart from './AnimatedLineChart';
 
 const PLATFORMS = [
   { id: 'instagram', label: 'Instagram', emoji: '📸', color: '#E1306C', logo: 'instagram' },
@@ -793,6 +794,7 @@ export default function AnalyticsDashboard() {
   const [topMetricTab,    setTopMetricTab]    = useState('views');
   const [hoveredPlatform, setHoveredPlatform] = useState(null);
   const [monthlyStats,    setMonthlyStats]    = useState(null);
+  const [activeChartTab,  setActiveChartTab]  = useState('Views');
   const [loadMonthly,     setLoadMonthly]     = useState(false);
   const [monthlyFrom,     setMonthlyFrom]     = useState('');
   const [monthlyTo,       setMonthlyTo]       = useState('');
@@ -1010,6 +1012,31 @@ export default function AnalyticsDashboard() {
           {/* ── OVERVIEW TAB ── */}
           {tab === 'overview' && (
             <>
+              {/* Animated trend chart */}
+              <div style={{ background: '#0f172a', borderRadius: '16px', padding: '20px', marginBottom: '20px' }}>
+                <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+                  {['Views', 'Interactions', 'Posts', 'Shares'].map(t => (
+                    <button key={t} onClick={() => setActiveChartTab(t)} style={{
+                      padding: '6px 14px', borderRadius: 8, border: 'none', cursor: 'pointer',
+                      background: activeChartTab === t ? '#3b82f6' : '#1e3a5f',
+                      color: activeChartTab === t ? '#fff' : '#94a3b8',
+                      fontSize: 12, fontWeight: 600,
+                    }}>{t}</button>
+                  ))}
+                </div>
+                <AnimatedLineChart
+                  data={(monthlyStats?.months || []).map(m => ({
+                    label: m.month,
+                    value: activeChartTab === 'Views'        ? (m.views      ?? 0)
+                         : activeChartTab === 'Interactions' ? (m.likes      ?? 0)
+                         : activeChartTab === 'Posts'        ? (m.postCount  ?? 0)
+                         :                                     (m.shares     ?? 0),
+                  }))}
+                  color="#3b82f6"
+                  title={activeChartTab}
+                />
+              </div>
+
               <PerformanceInsightsGrid platform="overview" analyticsData={data} />
 
               {/* Three-column: 25% | 50% | 25% */}

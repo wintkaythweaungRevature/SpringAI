@@ -49,13 +49,13 @@ export default function PostDetailModal({ post, onClose, platform }) {
   const createdAt = fmtDate(post.createdAt);
   const scheduledAt = post.scheduledAt && post.scheduledAt !== post.createdAt ? fmtDate(post.scheduledAt) : null;
 
-  const likes    = post.likes          ?? null;
-  const comments = post.commentsCount  ?? post.comments ?? null;
-  const shares   = post.shares         ?? null;
-  const views    = post.views          ?? null;
-  const impressions  = post.impressions ?? null;
+  const likes    = post.likes          ?? 0;
+  const comments = post.commentsCount  ?? post.comments ?? 0;
+  const shares   = post.shares         ?? 0;
+  const views    = post.views          ?? 0;
+  const impressions  = post.impressions ?? 0;
   const engageRate   = post.engagementRate ?? null;
-  const hasMetrics   = [likes, comments, shares, views, impressions, engageRate].some(v => v !== null);
+  const isScheduled  = status === 'SCHEDULED' || status === 'PENDING';
 
   const mediaType = String(post.mediaType || '').toLowerCase();
   const mediaKeys = ['mediaUrl', 'thumbnailUrl', 'imageUrl', 'videoUrl'];
@@ -130,55 +130,48 @@ export default function PostDetailModal({ post, onClose, platform }) {
           )}
 
           {/* ── Engagement Metrics ── */}
-          {hasMetrics && (
-            <div>
-              <div style={{ fontSize: 10, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Engagement</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: 10 }}>
-                {views !== null && (
-                  <div style={metricCard}>
-                    <span style={{ fontSize: 20 }}>👁</span>
-                    <div style={metricNum}>{views.toLocaleString()}</div>
-                    <div style={metricLabel}>Views</div>
-                  </div>
-                )}
-                {likes !== null && (
-                  <div style={metricCard}>
-                    <span style={{ fontSize: 20 }}>❤️</span>
-                    <div style={metricNum}>{likes.toLocaleString()}</div>
-                    <div style={metricLabel}>Likes</div>
-                  </div>
-                )}
-                {comments !== null && (
-                  <div style={metricCard}>
-                    <span style={{ fontSize: 20 }}>💬</span>
-                    <div style={metricNum}>{comments.toLocaleString()}</div>
-                    <div style={metricLabel}>Comments</div>
-                  </div>
-                )}
-                {shares !== null && (
-                  <div style={metricCard}>
-                    <span style={{ fontSize: 20 }}>↗️</span>
-                    <div style={metricNum}>{shares.toLocaleString()}</div>
-                    <div style={metricLabel}>Shares</div>
-                  </div>
-                )}
-                {impressions !== null && (
-                  <div style={metricCard}>
-                    <span style={{ fontSize: 20 }}>📊</span>
-                    <div style={metricNum}>{impressions.toLocaleString()}</div>
-                    <div style={metricLabel}>Impressions</div>
-                  </div>
-                )}
-                {engageRate !== null && (
-                  <div style={metricCard}>
-                    <span style={{ fontSize: 20 }}>⚡</span>
-                    <div style={metricNum}>{Number(engageRate).toFixed(1)}%</div>
-                    <div style={metricLabel}>Eng. Rate</div>
-                  </div>
-                )}
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+              <div style={{ fontSize: 10, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Engagement</div>
+              {isScheduled && <span style={{ fontSize: 10, color: '#94a3b8', fontStyle: 'italic' }}>Available after publishing</span>}
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+              <div style={metricCard}>
+                <span style={{ fontSize: 20 }}>👁</span>
+                <div style={metricNum}>{views.toLocaleString()}</div>
+                <div style={metricLabel}>Views</div>
+              </div>
+              <div style={metricCard}>
+                <span style={{ fontSize: 20 }}>❤️</span>
+                <div style={metricNum}>{likes.toLocaleString()}</div>
+                <div style={metricLabel}>Likes</div>
+              </div>
+              <div style={metricCard}>
+                <span style={{ fontSize: 20 }}>💬</span>
+                <div style={metricNum}>{comments.toLocaleString()}</div>
+                <div style={metricLabel}>Comments</div>
+              </div>
+              <div style={metricCard}>
+                <span style={{ fontSize: 20 }}>↗️</span>
+                <div style={metricNum}>{shares.toLocaleString()}</div>
+                <div style={metricLabel}>Shares</div>
               </div>
             </div>
-          )}
+            {engageRate !== null && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, marginTop: 10 }}>
+                <div style={metricCard}>
+                  <span style={{ fontSize: 20 }}>📊</span>
+                  <div style={metricNum}>{impressions.toLocaleString()}</div>
+                  <div style={metricLabel}>Impressions</div>
+                </div>
+                <div style={metricCard}>
+                  <span style={{ fontSize: 20 }}>⚡</span>
+                  <div style={metricNum}>{Number(engageRate).toFixed(1)}%</div>
+                  <div style={metricLabel}>Eng. Rate</div>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Meta info */}
           <div style={{ background: '#f8fafc', borderRadius: 12, padding: '12px 15px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: 8 }}>

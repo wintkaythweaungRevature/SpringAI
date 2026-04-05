@@ -354,7 +354,7 @@ function sumVisitsAcrossPlatforms(platforms, connected) {
  * `platform === 'overview'` → pass `analyticsData` (full /api/analytics/overview JSON).
  * Else pass `data` = `platforms[platform]`.
  */
-function PerformanceInsightsGrid({ platform, data, analyticsData }) {
+function PerformanceInsightsGrid({ platform, data, analyticsData, monthlyStats, activeChartTab, setActiveChartTab }) {
   const fmtVal = (v) => (v !== null && v !== undefined ? fmt(v) : '—');
   const isOverview = platform === 'overview';
   const pMeta = isOverview ? null : PLATFORMS.find((x) => x.id === platform);
@@ -451,37 +451,44 @@ function PerformanceInsightsGrid({ platform, data, analyticsData }) {
           </div>
           {customizeBtn}
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 14 }}>
-          <MetaPerformanceCard
-            title="Views"
-            primaryValue={fmtVal(totalViews)}
-            deltaPct={dViews}
-            sparkValues={sparkViews}
-            breakdownRows={viewsBreakdownOv.length ? viewsBreakdownOv : undefined}
-          />
-          <MetaPerformanceCard
-            title="Interactions"
-            primaryValue={fmtVal(totalEngagement)}
-            deltaPct={dInt}
-            sparkValues={sparkInt}
-          />
-          <MetaPerformanceCard
-            title="Visits"
-            primaryValue={fmtVal(totalVisits)}
-            deltaPct={dVis}
-            sparkValues={sparkVis}
-            visitsSubLabel="Across connected accounts"
-          />
-          <MetaPerformanceCard
-            title={audienceCardTitle(platform, true)}
-            primaryValue={fmtVal(totalFollowers)}
-            deltaPct={dAud}
-            sparkValues={sparkAud}
-            footerRow={
-              ownPosts.totalPublished != null
-                ? { label: 'Posts published', valueText: fmt(ownPosts.totalPublished), deltaPct: null }
-                : undefined
-            }
+        {/* Summary stat pills */}
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16 }}>
+          {[
+            { label: 'Views',        value: fmtVal(totalViews),      color: '#3b82f6' },
+            { label: 'Interactions', value: fmtVal(totalEngagement), color: '#8b5cf6' },
+            { label: 'Visits',       value: fmtVal(totalVisits),     color: '#06b6d4' },
+            { label: 'Audience',     value: fmtVal(totalFollowers),  color: '#10b981' },
+          ].map(s => (
+            <div key={s.label} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, padding: '8px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: s.color }} />
+              <span style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>{s.label}</span>
+              <span style={{ fontSize: 14, fontWeight: 800, color: '#0f172a' }}>{s.value}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Animated trend chart */}
+        <div style={{ background: '#0f172a', borderRadius: 14, padding: '16px 16px 10px', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+            {['Views', 'Interactions', 'Posts', 'Shares'].map(t => (
+              <button key={t} onClick={() => setActiveChartTab && setActiveChartTab(t)} style={{
+                padding: '4px 12px', borderRadius: 7, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600,
+                background: activeChartTab === t ? '#3b82f6' : '#1e3a5f',
+                color: activeChartTab === t ? '#fff' : '#94a3b8',
+              }}>{t}</button>
+            ))}
+          </div>
+          <AnimatedLineChart
+            data={(monthlyStats?.months || []).map(m => ({
+              label: m.month,
+              value: activeChartTab === 'Views'        ? (m.views     ?? 0)
+                   : activeChartTab === 'Interactions' ? (m.likes     ?? 0)
+                   : activeChartTab === 'Posts'        ? (m.postCount ?? 0)
+                   :                                    (m.shares     ?? 0),
+            }))}
+            color="#3b82f6"
+            title={activeChartTab || 'Views'}
+            compact
           />
         </div>
       </div>
@@ -1012,32 +1019,13 @@ export default function AnalyticsDashboard() {
           {/* ── OVERVIEW TAB ── */}
           {tab === 'overview' && (
             <>
-              {/* Animated trend chart */}
-              <div style={{ background: '#0f172a', borderRadius: '16px', padding: '20px', marginBottom: '20px' }}>
-                <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-                  {['Views', 'Interactions', 'Posts', 'Shares'].map(t => (
-                    <button key={t} onClick={() => setActiveChartTab(t)} style={{
-                      padding: '6px 14px', borderRadius: 8, border: 'none', cursor: 'pointer',
-                      background: activeChartTab === t ? '#3b82f6' : '#1e3a5f',
-                      color: activeChartTab === t ? '#fff' : '#94a3b8',
-                      fontSize: 12, fontWeight: 600,
-                    }}>{t}</button>
-                  ))}
-                </div>
-                <AnimatedLineChart
-                  data={(monthlyStats?.months || []).map(m => ({
-                    label: m.month,
-                    value: activeChartTab === 'Views'        ? (m.views      ?? 0)
-                         : activeChartTab === 'Interactions' ? (m.likes      ?? 0)
-                         : activeChartTab === 'Posts'        ? (m.postCount  ?? 0)
-                         :                                     (m.shares     ?? 0),
-                  }))}
-                  color="#3b82f6"
-                  title={activeChartTab}
-                />
-              </div>
-
-              <PerformanceInsightsGrid platform="overview" analyticsData={data} />
+              <PerformanceInsightsGrid
+                platform="overview"
+                analyticsData={data}
+                monthlyStats={monthlyStats}
+                activeChartTab={activeChartTab}
+                setActiveChartTab={setActiveChartTab}
+              />
 
               {/* Three-column: 25% | 50% | 25% */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1fr', gap: '14px', marginBottom: '14px' }}>

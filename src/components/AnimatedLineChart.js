@@ -1,10 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 
 const W = 700;
-const H = 280;
-const PAD = { top: 20, right: 24, bottom: 36, left: 48 };
-const CW = W - PAD.left - PAD.right;
-const CH = H - PAD.top - PAD.bottom;
+const PAD_NORMAL  = { top: 20, right: 24, bottom: 36, left: 52 };
+const PAD_COMPACT = { top: 16, right: 20, bottom: 56, left: 52 }; // extra bottom for rotated labels
 
 function buildPath(points) {
   if (points.length < 2) return points.length === 1 ? `M${points[0].x},${points[0].y}` : '';
@@ -18,7 +16,12 @@ function buildPath(points) {
   return d;
 }
 
-export default function AnimatedLineChart({ data = [], color = '#3b82f6', title = '' }) {
+export default function AnimatedLineChart({ data = [], color = '#3b82f6', title = '', compact = false }) {
+  const H   = compact ? 200 : 280;
+  const PAD = compact ? PAD_COMPACT : PAD_NORMAL;
+  const CW = W - PAD.left - PAD.right;
+  const CH = H - PAD.top  - PAD.bottom;
+
   const [hoverIdx, setHoverIdx]     = useState(null);
   const [pathLen,  setPathLen]      = useState(0);
   const [animated, setAnimated]     = useState(false);
@@ -135,15 +138,29 @@ export default function AnimatedLineChart({ data = [], color = '#3b82f6', title 
           </g>
         ))}
 
-        {/* X-axis labels */}
+        {/* X-axis labels — rotated in compact mode */}
         {points.map((p, i) => (
-          <text
-            key={i}
-            x={p.x} y={PAD.top + CH + 22}
-            textAnchor="middle" fontSize="11" fill="#475569"
-          >
-            {p.label}
-          </text>
+          compact ? (
+            <text
+              key={i}
+              x={p.x}
+              y={PAD.top + CH + 10}
+              textAnchor="end"
+              fontSize="10"
+              fill="#64748b"
+              transform={`rotate(-55, ${p.x}, ${PAD.top + CH + 10})`}
+            >
+              {p.label}
+            </text>
+          ) : (
+            <text
+              key={i}
+              x={p.x} y={PAD.top + CH + 22}
+              textAnchor="middle" fontSize="11" fill="#475569"
+            >
+              {p.label}
+            </text>
+          )
         ))}
 
         {/* Area fill */}

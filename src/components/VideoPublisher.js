@@ -1760,14 +1760,6 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
                     </span>
                   </div>
 
-                  <CaptionIdeasPanel
-                    captionText={v.caption}
-                    platform={pid}
-                    apiBase={base}
-                    token={token}
-                    onApply={({ caption, hashtags }) => applyCaptionText(pid, hashtags ? `${caption}\n${hashtags}` : caption, false)}
-                  />
-
                   <div style={{ marginTop: '10px' }}>
                     <div style={{ fontSize: '11px', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>Quick rewrites</div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>

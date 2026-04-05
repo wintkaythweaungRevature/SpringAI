@@ -10,15 +10,15 @@ function pickUrl(post) {
   return '';
 }
 
-/**
- * Shared modal: full post caption + meta (history / feed).
- * @param {{ post: object, onClose: () => void, platform?: { id: string, label?: string, color?: string, logo?: string, emoji?: string } }} props
- */
+function fmtDate(iso) {
+  if (!iso) return null;
+  try { return new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }); }
+  catch { return String(iso); }
+}
+
 export default function PostDetailModal({ post, onClose, platform }) {
   useEffect(() => {
-    const onKey = (e) => {
-      if (e.key === 'Escape') onClose();
-    };
+    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
@@ -33,204 +33,197 @@ export default function PostDetailModal({ post, onClose, platform }) {
     logo: null,
   };
 
-  const status = post.status || '—';
-  const statusOk = status === 'SUCCESS' || status === 'PUBLISHED';
-  const statusColor = statusOk ? '#16a34a' : status === 'FAILED' ? '#dc2626' : '#d97706';
-  const statusBg = statusOk ? '#f0fdf4' : status === 'FAILED' ? '#fef2f2' : '#fffbeb';
+  const status    = String(post.status || 'SCHEDULED').toUpperCase();
+  const statusOk  = status === 'SUCCESS' || status === 'PUBLISHED';
+  const statusErr = status === 'FAILED';
+  const statusClr = statusOk ? '#15803d' : statusErr ? '#dc2626' : '#a16207';
+  const statusBg  = statusOk ? '#dcfce7'  : statusErr ? '#fee2e2'  : '#fef9c3';
 
-  const created = post.createdAt || post.scheduledAt;
-  let when = '';
-  try {
-    when = created
-      ? new Date(created).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
-      : '';
-  } catch {
-    when = String(created || '');
-  }
-
-  const link = pickUrl(post);
   const rawCaption = post.caption != null ? String(post.caption) : '';
-  const caption = (() => { try { return decodeURIComponent(rawCaption); } catch { return rawCaption; } })();
+  const caption    = (() => { try { return decodeURIComponent(rawCaption); } catch { return rawCaption; } })();
   let hashtags = post.hashtags;
   if (Array.isArray(hashtags)) hashtags = hashtags.join(' ');
   else if (hashtags == null) hashtags = '';
 
+  const link      = pickUrl(post);
+  const createdAt = fmtDate(post.createdAt);
+  const scheduledAt = post.scheduledAt && post.scheduledAt !== post.createdAt ? fmtDate(post.scheduledAt) : null;
+
+  const likes    = post.likes          ?? null;
+  const comments = post.commentsCount  ?? post.comments ?? null;
+  const shares   = post.shares         ?? null;
+  const views    = post.views          ?? null;
+  const impressions  = post.impressions ?? null;
+  const engageRate   = post.engagementRate ?? null;
+  const hasMetrics   = [likes, comments, shares, views, impressions, engageRate].some(v => v !== null);
+
+  const mediaType = String(post.mediaType || '').toLowerCase();
+  const mediaKeys = ['mediaUrl', 'thumbnailUrl', 'imageUrl', 'videoUrl'];
+  let mediaPreview = null;
+  for (const k of mediaKeys) {
+    if (post[k]) { mediaPreview = { url: post[k], kind: mediaType === 'video' ? 'video' : 'image' }; break; }
+  }
+
   return (
     <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 10060,
-        background: 'rgba(15, 23, 42, 0.45)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '24px 16px',
-        boxSizing: 'border-box',
-      }}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="post-detail-title"
+      style={{ position: 'fixed', inset: 0, zIndex: 10060, background: 'rgba(2,6,23,0.65)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px 16px', boxSizing: 'border-box' }}
+      role="dialog" aria-modal="true" aria-labelledby="post-detail-title"
       onClick={onClose}
     >
       <div
-        style={{
-          background: '#fff',
-          borderRadius: 16,
-          boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
-          maxWidth: 'min(520px, 100%)',
-          width: '100%',
-          maxHeight: 'min(85vh, 720px)',
-          overflow: 'auto',
-          padding: '22px 24px 24px',
-          boxSizing: 'border-box',
-        }}
-        onClick={(e) => e.stopPropagation()}
+        style={{ background: '#fff', borderRadius: 22, boxShadow: '0 32px 80px rgba(0,0,0,0.32)', maxWidth: 'min(540px,100%)', width: '100%', maxHeight: 'min(88vh,760px)', overflow: 'auto', boxSizing: 'border-box', display: 'flex', flexDirection: 'column' }}
+        onClick={e => e.stopPropagation()}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
-            <div
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 12,
-                background: `${p.color || '#6366f1'}18`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-              }}
-            >
-              <PlatformIcon platform={p} size={26} />
-            </div>
-            <div style={{ minWidth: 0 }}>
-              <h2 id="post-detail-title" style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#0f172a', lineHeight: 1.25 }}>
-                Post details
-              </h2>
-              <div style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginTop: 4 }}>
-                {p.label || post.platform}
+        {/* ── Coloured header band ── */}
+        <div style={{ background: `linear-gradient(135deg, ${p.color}22 0%, ${p.color}08 100%)`, borderBottom: `1px solid ${p.color}28`, padding: '20px 22px 18px', position: 'relative' }}>
+          {/* top accent */}
+          <div style={{ position: 'absolute', top: 0, left: 22, right: 22, height: 3, background: p.color, borderRadius: '0 0 4px 4px' }} />
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+            {/* Platform info */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+              <div style={{ width: 48, height: 48, borderRadius: 14, background: '#fff', boxShadow: `0 2px 12px ${p.color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <PlatformIcon platform={p} size={28} />
+              </div>
+              <div>
+                <div id="post-detail-title" style={{ fontSize: 17, fontWeight: 800, color: '#0f172a', marginBottom: 2 }}>{p.label || post.platform}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 9px', borderRadius: 99, background: statusBg, color: statusClr, letterSpacing: '0.04em' }}>{status}</span>
+                  {mediaType && <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 99, background: '#f1f5f9', color: '#64748b', textTransform: 'capitalize' }}>{mediaType || 'post'}</span>}
+                </div>
               </div>
             </div>
+            {/* Close */}
+            <button type="button" onClick={onClose} aria-label="Close" style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748b', flexShrink: 0, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              border: 'none',
-              background: '#f1f5f9',
-              color: '#475569',
-              width: 40,
-              height: 40,
-              borderRadius: 10,
-              fontSize: 18,
-              cursor: 'pointer',
-              lineHeight: 1,
-              flexShrink: 0,
-            }}
-            aria-label="Close"
-          >
-            ✕
-          </button>
         </div>
 
-        <div style={{ marginBottom: 14 }}>
-          <span
-            style={{
-              fontSize: 11,
-              fontWeight: 700,
-              padding: '4px 10px',
-              borderRadius: 20,
-              background: statusBg,
-              color: statusColor,
-            }}
-          >
-            {status}
-          </span>
-        </div>
+        {/* ── Body ── */}
+        <div style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 18 }}>
 
-        <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
-          Caption
-        </div>
-        <div
-          style={{
-            fontSize: 14,
-            lineHeight: 1.6,
-            color: '#1e293b',
-            whiteSpace: 'pre-wrap',
-            wordBreak: 'break-word',
-            background: '#f8fafc',
-            borderRadius: 10,
-            padding: '12px 14px',
-            border: '1px solid #e2e8f0',
-            marginBottom: 14,
-            minHeight: 48,
-          }}
-        >
-          {caption.trim() ? caption : '(no caption)'}
-        </div>
-
-        {hashtags && (
-          <>
-            <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
-              Hashtags
-            </div>
-            <div style={{ fontSize: 13, color: '#334155', marginBottom: 14, lineHeight: 1.5 }}>{hashtags}</div>
-          </>
-        )}
-
-        <div style={{ display: 'grid', gap: 8, fontSize: 13, color: '#475569' }}>
-          <div>
-            <strong style={{ color: '#64748b' }}>Media</strong> · {post.mediaType || '—'}
-          </div>
-          <div>
-            <strong style={{ color: '#64748b' }}>Time</strong> · {when || '—'}
-          </div>
-          {post.scheduledAt && post.scheduledAt !== post.createdAt && (
-            <div>
-              <strong style={{ color: '#64748b' }}>Scheduled</strong> ·{' '}
-              {(() => {
-                try {
-                  return new Date(post.scheduledAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
-                } catch {
-                  return post.scheduledAt;
-                }
-              })()}
+          {/* Media preview */}
+          {mediaPreview && (
+            <div style={{ borderRadius: 12, overflow: 'hidden', maxHeight: 220, background: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {mediaPreview.kind === 'video'
+                ? <video src={mediaPreview.url} controls muted style={{ maxWidth: '100%', maxHeight: 220 }} />
+                : <img src={mediaPreview.url} alt="post media" style={{ maxWidth: '100%', maxHeight: 220, objectFit: 'contain' }} />
+              }
             </div>
           )}
-          {post.id != null && (
+
+          {/* Caption */}
+          <div>
+            <div style={{ fontSize: 10, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Caption</div>
+            <div style={{ fontSize: 14, lineHeight: 1.65, color: '#1e293b', whiteSpace: 'pre-wrap', wordBreak: 'break-word', background: '#f8fafc', borderRadius: 12, padding: '13px 15px', border: '1px solid #e2e8f0', minHeight: 52 }}>
+              {caption.trim() || <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>(no caption)</span>}
+            </div>
+          </div>
+
+          {/* Hashtags */}
+          {hashtags && (
             <div>
-              <strong style={{ color: '#64748b' }}>ID</strong> · <span style={{ fontFamily: 'ui-monospace, monospace', fontSize: 12 }}>{String(post.id)}</span>
+              <div style={{ fontSize: 10, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Hashtags</div>
+              <div style={{ fontSize: 13, color: '#3b82f6', lineHeight: 1.6, wordBreak: 'break-word' }}>{hashtags}</div>
             </div>
           )}
-        </div>
 
-        {post.errorMessage && (
-          <div
-            style={{
-              marginTop: 14,
-              padding: '10px 12px',
-              background: '#fef2f2',
-              border: '1px solid #fecaca',
-              borderRadius: 10,
-              fontSize: 13,
-              color: '#991b1b',
-              lineHeight: 1.5,
-            }}
-          >
-            <strong>Error</strong>
-            <br />
-            {post.errorMessage}
+          {/* ── Engagement Metrics ── */}
+          {hasMetrics && (
+            <div>
+              <div style={{ fontSize: 10, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Engagement</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: 10 }}>
+                {views !== null && (
+                  <div style={metricCard}>
+                    <span style={{ fontSize: 20 }}>👁</span>
+                    <div style={metricNum}>{views.toLocaleString()}</div>
+                    <div style={metricLabel}>Views</div>
+                  </div>
+                )}
+                {likes !== null && (
+                  <div style={metricCard}>
+                    <span style={{ fontSize: 20 }}>❤️</span>
+                    <div style={metricNum}>{likes.toLocaleString()}</div>
+                    <div style={metricLabel}>Likes</div>
+                  </div>
+                )}
+                {comments !== null && (
+                  <div style={metricCard}>
+                    <span style={{ fontSize: 20 }}>💬</span>
+                    <div style={metricNum}>{comments.toLocaleString()}</div>
+                    <div style={metricLabel}>Comments</div>
+                  </div>
+                )}
+                {shares !== null && (
+                  <div style={metricCard}>
+                    <span style={{ fontSize: 20 }}>↗️</span>
+                    <div style={metricNum}>{shares.toLocaleString()}</div>
+                    <div style={metricLabel}>Shares</div>
+                  </div>
+                )}
+                {impressions !== null && (
+                  <div style={metricCard}>
+                    <span style={{ fontSize: 20 }}>📊</span>
+                    <div style={metricNum}>{impressions.toLocaleString()}</div>
+                    <div style={metricLabel}>Impressions</div>
+                  </div>
+                )}
+                {engageRate !== null && (
+                  <div style={metricCard}>
+                    <span style={{ fontSize: 20 }}>⚡</span>
+                    <div style={metricNum}>{Number(engageRate).toFixed(1)}%</div>
+                    <div style={metricLabel}>Eng. Rate</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Meta info */}
+          <div style={{ background: '#f8fafc', borderRadius: 12, padding: '12px 15px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {createdAt && (
+              <div style={metaRow}>
+                <span style={metaLabel}>Created</span>
+                <span style={metaValue}>{createdAt}</span>
+              </div>
+            )}
+            {scheduledAt && (
+              <div style={metaRow}>
+                <span style={metaLabel}>Scheduled</span>
+                <span style={metaValue}>{scheduledAt}</span>
+              </div>
+            )}
+            {post.id != null && (
+              <div style={metaRow}>
+                <span style={metaLabel}>Post ID</span>
+                <span style={{ ...metaValue, fontFamily: 'ui-monospace, monospace', fontSize: 12 }}>{String(post.id)}</span>
+              </div>
+            )}
           </div>
-        )}
 
-        {link && (
-          <div style={{ marginTop: 16 }}>
-            <a href={link} target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', fontWeight: 600, fontSize: 14, wordBreak: 'break-all' }}>
-              Open link ↗
+          {/* Error message */}
+          {post.errorMessage && (
+            <div style={{ padding: '12px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 12, fontSize: 13, color: '#991b1b', lineHeight: 1.5 }}>
+              <strong>Error</strong><br />{post.errorMessage}
+            </div>
+          )}
+
+          {/* External link */}
+          {link && (
+            <a href={link} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#fff', background: p.color, padding: '9px 18px', borderRadius: 10, fontWeight: 700, fontSize: 13, textDecoration: 'none', alignSelf: 'flex-start' }}>
+              View on {p.label || 'platform'} ↗
             </a>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
 }
+
+const metricCard = { background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: '12px 10px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, textAlign: 'center' };
+const metricNum  = { fontSize: 16, fontWeight: 800, color: '#0f172a' };
+const metricLabel = { fontSize: 10, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' };
+const metaRow   = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 };
+const metaLabel = { fontSize: 12, fontWeight: 700, color: '#94a3b8' };
+const metaValue = { fontSize: 12, color: '#334155', fontWeight: 600, textAlign: 'right' };

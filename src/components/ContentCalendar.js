@@ -277,126 +277,178 @@ function DayModal({ date, posts, onClose, onRetryFailed, retryingIds = {}, onCan
   const dayPosts = posts.filter(p => {
     try { return sameDay(postCalendarDate(p), date); } catch { return false; }
   });
+
+  const weekday = date.toLocaleDateString('en-US', { weekday: 'long' });
+  const dateStr = date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+
   return (
     <div style={ms.overlay} onClick={onClose}>
       <div style={ms.modal} onClick={e => e.stopPropagation()}>
+
+        {/* ── Header ── */}
         <div style={ms.header}>
-          <div style={ms.title}>
-            {date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>{weekday}</div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: '#0f172a' }}>{dateStr}</div>
+            <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{dayPosts.length} post{dayPosts.length !== 1 ? 's' : ''} scheduled</div>
           </div>
-          <button style={ms.closeBtn} onClick={onClose}>✕</button>
+          <button style={ms.closeBtn} onClick={onClose}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
         </div>
+
+        {/* ── Posts ── */}
         {dayPosts.length === 0 ? (
-          <div style={{ color: '#94a3b8', fontSize: 14, padding: '24px 0', textAlign: 'center' }}>
-            No posts on this day
+          <div style={{ textAlign: 'center', padding: '40px 0', color: '#94a3b8' }}>
+            <div style={{ fontSize: 32, marginBottom: 8 }}>📭</div>
+            <div style={{ fontSize: 14, fontWeight: 600 }}>No posts scheduled</div>
+            <div style={{ fontSize: 12, marginTop: 4 }}>This day is free!</div>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {dayPosts.map((p, i) => {
               const pInfo = PLATFORM_MAP[p.platform?.toLowerCase()];
+              const pColor = platformColor(p.platform);
               const preview = getPostPreview(p);
               const isVideo = String(p.mediaType || '').toLowerCase() === 'video';
               const canRetry = String(p.status || '').toUpperCase() === 'FAILED' && p.id != null;
               const retrying = canRetry && !!retryingIds[String(p.id)];
               const isScheduled = ['SCHEDULED','PENDING'].includes(String(p.status || '').toUpperCase()) && p.jobId != null;
-              const jobId = p.jobId; // only PublishJob records have jobId; don't fall back to SocialPost id
+              const jobId = p.jobId;
+              const statusUp = String(p.status || 'SCHEDULED').toUpperCase();
+              const statusColor = statusUp === 'SUCCESS' ? { bg: '#dcfce7', fg: '#15803d' }
+                                : statusUp === 'FAILED'  ? { bg: '#fee2e2', fg: '#dc2626' }
+                                : statusUp === 'PUBLISHED' ? { bg: '#dcfce7', fg: '#15803d' }
+                                : { bg: '#fef9c3', fg: '#a16207' };
+
+              const likes    = p.likes          ?? null;
+              const comments = p.commentsCount   ?? p.comments ?? null;
+              const shares   = p.shares          ?? null;
+              const views    = p.views           ?? null;
+              const hasMetrics = likes !== null || comments !== null || shares !== null || views !== null;
+
               return (
-                <div key={i} style={{ ...ms.postCard, borderLeft: `3px solid ${platformColor(p.platform)}` }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                <div key={i} style={ms.postCard}>
+                  {/* top accent bar in platform color */}
+                  <div style={{ height: 3, background: pColor, borderRadius: '8px 8px 0 0', margin: '-14px -14px 14px -14px' }} />
+
+                  <div style={{ display: 'flex', gap: 12 }}>
+                    {/* Thumbnail */}
                     <div style={{
-                      width: 84, height: 84, borderRadius: 10, overflow: 'hidden', flexShrink: 0,
+                      width: 76, height: 76, borderRadius: 10, overflow: 'hidden', flexShrink: 0,
                       background: '#f1f5f9', border: '1px solid #e2e8f0', position: 'relative',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}>
                       {preview?.kind === 'image' ? (
-                        <img src={preview.url} alt="post thumbnail" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <img src={preview.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       ) : preview?.kind === 'video' ? (
                         <video src={preview.url} muted preload="metadata" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       ) : (
-                        <span style={{ fontSize: 20 }}>{isVideo ? '🎬' : String(p.mediaType || '').toLowerCase() === 'image' ? '🖼️' : '✍️'}</span>
+                        <span style={{ fontSize: 22 }}>{isVideo ? '🎬' : String(p.mediaType || '').toLowerCase() === 'image' ? '🖼️' : '✍️'}</span>
                       )}
                       {isVideo && (
-                        <div style={{
-                          position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.25)',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          color: '#fff', fontSize: 13, fontWeight: 700,
-                        }}>▶</div>
+                        <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.28)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 16 }}>▶</div>
                       )}
                     </div>
 
+                    {/* Content */}
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      {/* Header row */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                        {pInfo && <PlatformIcon platform={pInfo} size={16} />}
-                        <span style={{ fontWeight: 700, fontSize: 13, color: platformColor(p.platform), textTransform: 'capitalize' }}>{p.platform}</span>
-                        <span style={{ marginLeft: 'auto', fontSize: 11, color: '#94a3b8' }}>{fmtTime(postCalendarTimestamp(p))}</span>
-                        <span style={{
-                          fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 99,
-                          background: p.status === 'SUCCESS' ? '#f0fdf4' : p.status === 'FAILED' ? '#fef2f2' : '#fff7ed',
-                          color: p.status === 'SUCCESS' ? '#16a34a' : p.status === 'FAILED' ? '#dc2626' : '#d97706',
-                        }}>{p.status || 'SCHEDULED'}</span>
+                      {/* Platform + time + status */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                        {pInfo && <PlatformIcon platform={pInfo} size={15} />}
+                        <span style={{ fontWeight: 700, fontSize: 13, color: pColor, textTransform: 'capitalize' }}>{pInfo?.label || p.platform}</span>
+                        <span style={{ marginLeft: 'auto', fontSize: 11, color: '#64748b', fontWeight: 600 }}>{fmtTime(postCalendarTimestamp(p))}</span>
+                        <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 99, background: statusColor.bg, color: statusColor.fg }}>
+                          {statusUp}
+                        </span>
                       </div>
 
                       {/* Caption */}
-                      <div style={{ fontSize: 13, color: '#334155', lineHeight: 1.45 }}>
+                      <div style={{ fontSize: 12.5, color: '#334155', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                         {safeDecodeCaption(p.caption) || <em style={{ color: '#94a3b8' }}>(no caption)</em>}
                       </div>
-                      {canRetry && (
-                        <div style={{ marginTop: 8 }}>
-                          <button
-                            type="button"
-                            onClick={() => onRetryFailed && onRetryFailed(p.id)}
-                            disabled={retrying}
-                            style={{
-                              padding: '6px 10px', borderRadius: 8,
-                              border: '1px solid #dc2626',
-                              background: retrying ? '#fee2e2' : '#fff',
-                              color: '#dc2626', fontSize: 11, fontWeight: 700,
-                              cursor: retrying ? 'wait' : 'pointer',
-                            }}
-                          >
-                            {retrying ? 'Retrying…' : '↻ Retry failed post'}
-                          </button>
+
+                      {/* Media type tag */}
+                      <div style={{ marginTop: 5 }}>
+                        <span style={{ fontSize: 10, fontWeight: 600, color: '#94a3b8', background: '#f1f5f9', padding: '2px 7px', borderRadius: 6, textTransform: 'capitalize' }}>
+                          {p.mediaType || 'post'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ── Metrics row ── */}
+                  {hasMetrics && (
+                    <div style={{ display: 'flex', gap: 8, marginTop: 12, paddingTop: 10, borderTop: '1px solid #f1f5f9', flexWrap: 'wrap' }}>
+                      {views !== null && (
+                        <div style={ms.metric}>
+                          <span style={{ fontSize: 14 }}>👁</span>
+                          <div>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>{views.toLocaleString()}</div>
+                            <div style={{ fontSize: 10, color: '#94a3b8' }}>Views</div>
+                          </div>
                         </div>
                       )}
+                      {likes !== null && (
+                        <div style={ms.metric}>
+                          <span style={{ fontSize: 14 }}>❤️</span>
+                          <div>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>{likes.toLocaleString()}</div>
+                            <div style={{ fontSize: 10, color: '#94a3b8' }}>Likes</div>
+                          </div>
+                        </div>
+                      )}
+                      {comments !== null && (
+                        <div style={ms.metric}>
+                          <span style={{ fontSize: 14 }}>💬</span>
+                          <div>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>{comments.toLocaleString()}</div>
+                            <div style={{ fontSize: 10, color: '#94a3b8' }}>Comments</div>
+                          </div>
+                        </div>
+                      )}
+                      {shares !== null && (
+                        <div style={ms.metric}>
+                          <span style={{ fontSize: 14 }}>↗️</span>
+                          <div>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>{shares.toLocaleString()}</div>
+                            <div style={{ fontSize: 10, color: '#94a3b8' }}>Shares</div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* ── Actions ── */}
+                  {(canRetry || isScheduled) && (
+                    <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #f1f5f9' }}>
+                      {canRetry && (
+                        <button type="button" onClick={() => onRetryFailed && onRetryFailed(p.id)} disabled={retrying} style={{
+                          padding: '6px 12px', borderRadius: 8, border: '1px solid #fca5a5',
+                          background: retrying ? '#fee2e2' : '#fff5f5', color: '#dc2626',
+                          fontSize: 11, fontWeight: 700, cursor: retrying ? 'wait' : 'pointer',
+                        }}>
+                          {retrying ? 'Retrying…' : '↻ Retry failed post'}
+                        </button>
+                      )}
                       {isScheduled && (
-                        <div style={{ marginTop: 8, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                           {reschedulingJob === jobId ? (
                             <>
-                              <input
-                                type="datetime-local"
-                                value={newDateTime}
-                                onChange={e => setNewDateTime(e.target.value)}
-                                style={{ padding: '5px 8px', borderRadius: 6, border: '1px solid #cbd5e1', fontSize: 12 }}
-                              />
-                              <button onClick={() => onRescheduleJob && onRescheduleJob(jobId, newDateTime)} style={{
-                                padding: '5px 10px', borderRadius: 6, border: 'none',
-                                background: '#6366f1', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer',
-                              }}>Save</button>
-                              <button onClick={() => setReschedulingJob(null)} style={{
-                                padding: '5px 10px', borderRadius: 6, border: '1px solid #e2e8f0',
-                                background: '#fff', fontSize: 11, cursor: 'pointer',
-                              }}>Cancel</button>
+                              <input type="datetime-local" value={newDateTime} onChange={e => setNewDateTime(e.target.value)} style={{ padding: '5px 8px', borderRadius: 6, border: '1px solid #cbd5e1', fontSize: 12 }} />
+                              <button onClick={() => onRescheduleJob && onRescheduleJob(jobId, newDateTime)} style={{ padding: '5px 12px', borderRadius: 6, border: 'none', background: '#6366f1', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Save</button>
+                              <button onClick={() => setReschedulingJob(null)} style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#fff', fontSize: 11, cursor: 'pointer' }}>Cancel</button>
                             </>
                           ) : (
                             <>
-                              <button onClick={() => { setReschedulingJob(jobId); setNewDateTime(p.scheduledAt ? p.scheduledAt.slice(0,16) : ''); }} style={{
-                                padding: '5px 10px', borderRadius: 6, border: '1px solid #6366f1',
-                                background: '#f0f0ff', color: '#6366f1', fontSize: 11, fontWeight: 700, cursor: 'pointer',
-                              }}>🗓 Reschedule</button>
-                              <button onClick={() => onCancelJob && onCancelJob(jobId)} style={{
-                                padding: '5px 10px', borderRadius: 6, border: '1px solid #f87171',
-                                background: '#fff5f5', color: '#dc2626', fontSize: 11, fontWeight: 700, cursor: 'pointer',
-                              }}>✕ Cancel post</button>
+                              <button onClick={() => { setReschedulingJob(jobId); setNewDateTime(p.scheduledAt ? p.scheduledAt.slice(0,16) : ''); }} style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid #a5b4fc', background: '#eef2ff', color: '#4f46e5', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>🗓 Reschedule</button>
+                              <button onClick={() => onCancelJob && onCancelJob(jobId)} style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid #fca5a5', background: '#fff5f5', color: '#dc2626', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>✕ Cancel</button>
                             </>
                           )}
                         </div>
                       )}
                     </div>
-                  </div>
-                  <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 5, textTransform: 'capitalize' }}>
-                    {p.mediaType || 'post'}
-                  </div>
+                  )}
                 </div>
               );
             })}
@@ -408,12 +460,12 @@ function DayModal({ date, posts, onClose, onRetryFailed, retryingIds = {}, onCan
 }
 
 const ms = {
-  overlay: { position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.5)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 },
-  modal: { background: '#fff', borderRadius: 16, padding: 24, width: '100%', maxWidth: 480, boxShadow: '0 20px 60px rgba(0,0,0,0.2)', maxHeight: '80vh', overflowY: 'auto' },
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  title: { fontSize: 16, fontWeight: 800, color: '#0f172a' },
-  closeBtn: { background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', color: '#94a3b8', padding: 4 },
-  postCard: { background: '#f8fafc', borderRadius: 10, padding: '10px 14px', border: '1px solid #e2e8f0' },
+  overlay: { position: 'fixed', inset: 0, background: 'rgba(2,6,23,0.65)', backdropFilter: 'blur(4px)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 },
+  modal: { background: '#ffffff', borderRadius: 20, padding: '20px 20px', width: '100%', maxWidth: 500, boxShadow: '0 24px 80px rgba(0,0,0,0.28)', maxHeight: '82vh', overflowY: 'auto' },
+  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18, paddingBottom: 16, borderBottom: '1px solid #f1f5f9' },
+  closeBtn: { background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748b', flexShrink: 0 },
+  postCard: { background: '#f8fafc', borderRadius: 12, padding: '14px', border: '1px solid #e2e8f0', overflow: 'hidden' },
+  metric: { display: 'flex', alignItems: 'center', gap: 6, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, padding: '6px 10px', flex: '1 1 70px' },
 };
 
 /* ─────────────────────────────────────────────────────────────────────────── */

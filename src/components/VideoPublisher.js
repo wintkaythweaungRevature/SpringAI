@@ -401,16 +401,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
     try { localStorage.setItem('wintaibot_caption_guide_seen', '1'); } catch (_) {}
   };
 
-  useEffect(() => {
-    if (step !== 'review') return;
-    if (!activeVariant || !variants[activeVariant]) return;
-    if (!captionOptions[activeVariant] || captionOptions[activeVariant].length === 0) {
-      const options = createOptionsForPlatform(activeVariant, variants[activeVariant].caption || '');
-      setCaptionOptions(prev => ({ ...prev, [activeVariant]: options }));
-      setSelectedOptionIdx(prev => ({ ...prev, [activeVariant]: 0 }));
-      setCaptionHistory(prev => ({ ...prev, [activeVariant]: prev[activeVariant] || [] }));
-    }
-  }, [step, activeVariant, variants, captionOptions]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Caption options are only generated when the user clicks "Generate 3 options" — not auto-created.
 
   const connectPlatform = async (platformId) => {
     setConnectLoading(platformId);

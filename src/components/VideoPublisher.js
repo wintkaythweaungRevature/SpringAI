@@ -1679,49 +1679,6 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
                     </div>
                   </div>
 
-                  <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px', background: '#f8fafc', marginBottom: '14px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}>
-                      <div>
-                        <div style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b' }}>Caption Studio</div>
-                        <div style={{ fontSize: '11px', color: '#64748b' }}>Generate options, refine in one click, publish confidently.</div>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                        <button type="button" onClick={() => regenerateCaptionOptions(pid, 'balanced', 'casual')} style={s.studioBtn}>
-                          Generate 3 options
-                        </button>
-                        <button type="button" onClick={() => regenerateCaptionOptions(pid, 'short', 'bold')} style={s.studioBtnSecondary}>
-                          Regenerate
-                        </button>
-                      </div>
-                    </div>
-
-                    {showCaptionGuide && (
-                      <div style={{ marginTop: '10px', padding: '10px', borderRadius: '10px', background: '#eef2ff', border: '1px solid #c7d2fe', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                        <div style={{ fontSize: '11px', color: '#4338ca' }}>
-                          <strong>Quick start:</strong> 1) Pick an option 2) Use rewrite actions 3) Check caption score.
-                        </div>
-                        <button type="button" onClick={dismissCaptionGuide} style={{ border: 'none', background: 'transparent', color: '#4338ca', fontWeight: 700, cursor: 'pointer', fontSize: '11px' }}>
-                          Got it
-                        </button>
-                      </div>
-                    )}
-
-                    {options.length > 0 && (
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '8px', marginTop: '10px' }}>
-                        {options.map((opt, idx) => (
-                          <div key={opt.id} style={{ border: `1.5px solid ${selectedIdx === idx ? '#6366f1' : '#e2e8f0'}`, borderRadius: '10px', padding: '10px', background: '#fff' }}>
-                            <div style={{ fontSize: '11px', fontWeight: 700, color: selectedIdx === idx ? '#4f46e5' : '#64748b', marginBottom: '6px' }}>{opt.label}</div>
-                            <div style={{ fontSize: '12px', color: '#334155', lineHeight: 1.45, minHeight: '54px' }}>
-                              {opt.text.length > 100 ? `${opt.text.slice(0, 100)}…` : opt.text}
-                            </div>
-                            <button type="button" onClick={() => selectCaptionOption(pid, idx)} style={{ marginTop: '8px', width: '100%', padding: '6px 8px', borderRadius: '8px', border: '1px solid #cbd5e1', background: selectedIdx === idx ? '#eef2ff' : '#fff', color: selectedIdx === idx ? '#4f46e5' : '#334155', fontWeight: 700, fontSize: '11px', cursor: 'pointer' }}>
-                              {selectedIdx === idx ? 'Selected' : 'Use this'}
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px', marginTop: '12px' }}>
                     <span style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>Caption</span>
@@ -1750,6 +1707,14 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
                       {v.caption.length} / {p.maxLen}
                     </span>
                   </div>
+
+                  <CaptionIdeasPanel
+                    captionText={v.caption}
+                    platform={pid}
+                    apiBase={base}
+                    token={token}
+                    onApply={({ caption, hashtags }) => applyCaptionText(pid, hashtags ? `${caption}\n${hashtags}` : caption, false)}
+                  />
 
                   <div style={{ marginTop: '10px' }}>
                     <div style={{ fontSize: '11px', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>Quick rewrites</div>

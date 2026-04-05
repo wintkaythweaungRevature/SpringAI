@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import PlatformIcon from './PlatformIcon';
+import CaptionIdeasPanel from './CaptionIdeasPanel';
 
 const PLATFORMS = [
   { id: 'instagram', label: 'Instagram', color: '#E1306C' },
@@ -229,6 +230,13 @@ export default function ComposePostModal({ open, onClose, defaultDate, onPosted 
                 placeholder="Write your caption..."
                 rows={3}
                 style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }}
+              />
+              <CaptionIdeasPanel
+                captionText={caption}
+                platform={selectedPlatforms[0] || 'social media'}
+                apiBase={base}
+                token={token}
+                onApply={({ caption: c, hashtags: h }) => { setCaption(c); if (h) setHashtags(h); }}
               />
             </div>
 

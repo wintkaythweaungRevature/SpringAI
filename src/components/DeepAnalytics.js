@@ -1267,6 +1267,7 @@ function TrendsCalendar({ authHeaders }) {
   const [selectedDay, setSelectedDay] = useState(null);
   const [rescheduleJob, setRescheduleJob] = useState(null); // { job, newDate, newTime }
   const [reschMsg, setReschMsg] = useState('');
+  const [hidePastPosts, setHidePastPosts] = useState(false);
   const [calTip, setCalTip] = useState(null); // hover on mini markers
   const [rangeView, setRangeView] = useState('monthly'); // 'monthly' | 'yearly'
   const [yearSummary, setYearSummary] = useState({});
@@ -2057,9 +2058,20 @@ function TrendsCalendar({ authHeaders }) {
             <div style={{ fontWeight: 700, fontSize: 13, color: '#1e293b', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{ color: '#10b981' }}>✓</span> Past Posts{' '}
               <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 400 }}>({(data.posts || []).length})</span>
+              {(data.posts || []).length > 0 && (
+                <button onClick={() => setHidePastPosts(h => !h)} style={{
+                  marginLeft: 'auto', fontSize: 11, fontWeight: 600,
+                  color: '#94a3b8', background: 'none', border: '1px solid #e2e8f0',
+                  borderRadius: 6, padding: '2px 8px', cursor: 'pointer',
+                }}>
+                  {hidePastPosts ? 'Show' : 'Clear'}
+                </button>
+              )}
             </div>
             {(data.posts || []).length === 0 ? (
               <p style={{ fontSize: 12, color: '#94a3b8' }}>No published posts this month.</p>
+            ) : hidePastPosts ? (
+              <p style={{ fontSize: 12, color: '#94a3b8' }}>List cleared. Click <strong>Show</strong> to restore.</p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {[...(data.posts || [])].sort((a, b) => {

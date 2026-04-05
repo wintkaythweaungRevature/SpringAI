@@ -4,6 +4,7 @@ import { useMediaQuery } from '../hooks/useMediaQuery';
 import PlatformIcon from './PlatformIcon';
 import VideoTrimmer from './VideoTrimmer';
 import PostDetailModal from './PostDetailModal';
+import CaptionIdeasPanel from './CaptionIdeasPanel';
 
 /* ─── Constants ─────────────────────────────────────────────── */
 const PLATFORMS = [
@@ -1141,6 +1142,13 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
                 <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '6px', textAlign: 'right' }}>
                   {textCaption.length} characters
                 </div>
+                <CaptionIdeasPanel
+                  captionText={textCaption}
+                  platform={selectedPlatforms[0] || 'social media'}
+                  apiBase={base}
+                  token={token}
+                  onApply={({ caption, hashtags }) => setTextCaption(hashtags ? `${caption}\n${hashtags}` : caption)}
+                />
               </div>
             )}
 
@@ -1246,7 +1254,15 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
               )}
 
               {/* Recent posts */}
-              <div style={{ fontWeight: 700, fontSize: '13px', color: '#475569', marginBottom: '10px' }}>RECENT POSTS</div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                <span style={{ fontWeight: 700, fontSize: '13px', color: '#475569' }}>RECENT POSTS</span>
+                {dashHistory.length > 0 && (
+                  <button onClick={() => setDashHistory([])} style={{
+                    fontSize: '11px', fontWeight: 600, color: '#94a3b8', background: 'none',
+                    border: '1px solid #e2e8f0', borderRadius: 6, padding: '2px 8px', cursor: 'pointer',
+                  }}>Clear</button>
+                )}
+              </div>
               {dashHistory.length === 0 && !dashLoading && (
                 <div style={{ textAlign: 'center', padding: '20px', color: '#94a3b8', fontSize: '13px', background: '#f8fafc', borderRadius: '12px', border: '1px dashed #e2e8f0' }}>
                   No posts yet. Publish your first post above! 🚀
@@ -1742,6 +1758,14 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
                       {v.caption.length} / {p.maxLen}
                     </span>
                   </div>
+
+                  <CaptionIdeasPanel
+                    captionText={v.caption}
+                    platform={pid}
+                    apiBase={base}
+                    token={token}
+                    onApply={({ caption, hashtags }) => applyCaptionText(pid, hashtags ? `${caption}\n${hashtags}` : caption, false)}
+                  />
 
                   <div style={{ marginTop: '10px' }}>
                     <div style={{ fontSize: '11px', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>Quick rewrites</div>

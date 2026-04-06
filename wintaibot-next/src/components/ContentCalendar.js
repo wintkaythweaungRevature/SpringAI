@@ -148,6 +148,38 @@ function isPostScheduled(post) {
   }
 }
 
+/** Maps API `status` (+ dates) to a single UI bucket for labels & colors under the calendar. */
+const POST_STATUS_UI = {
+  published: { label: 'Published', emoji: '🟢', pillBg: '#f0fdf4', pillFg: '#15803d', solid: '#16a34a' },
+  scheduled: { label: 'Scheduled', emoji: '🟡', pillBg: '#fffbeb', pillFg: '#b45309', solid: '#ca8a04' },
+  draft: { label: 'Draft', emoji: '🔵', pillBg: '#eff6ff', pillFg: '#1d4ed8', solid: '#2563eb' },
+  failed: { label: 'Failed', emoji: '🔴', pillBg: '#fef2f2', pillFg: '#b91c1c', solid: '#dc2626' },
+};
+
+function getPostStatusCategory(post) {
+  const s = String(post?.status || '').toUpperCase();
+  if (s === 'FAILED') return 'failed';
+  if (s === 'DRAFT' || s === 'UNSCHEDULED') return 'draft';
+  if (s === 'SUCCESS' || s === 'PUBLISHED' || s === 'COMPLETED') return 'published';
+  if (['SCHEDULED', 'PENDING', 'QUEUED', 'PROCESSING'].includes(s)) return 'scheduled';
+  const pub = post?.publishedAt || post?.published_at;
+  if (pub && String(pub).trim()) {
+    const pm = new Date(pub).getTime();
+    if (Number.isFinite(pm)) return 'published';
+  }
+  const sched = scheduledTimeFromPost(post);
+  if (sched) {
+    const sm = new Date(sched).getTime();
+    if (Number.isFinite(sm) && sm > Date.now()) return 'scheduled';
+  }
+  return 'draft';
+}
+
+function getPostStatusUi(post) {
+  const key = getPostStatusCategory(post);
+  return { key, ...POST_STATUS_UI[key] };
+}
+
 function pickFirstUrl(...vals) {
   for (const v of vals) {
     if (typeof v === 'string' && v.trim()) return v.trim();
@@ -294,6 +326,7 @@ function DayModal({ date, posts, onClose, onRetryFailed, onPostSelect, retryingI
               const isVideo = String(p.mediaType || '').toLowerCase() === 'video';
               const canRetry = String(p.status || '').toUpperCase() === 'FAILED' && p.id != null;
               const retrying = canRetry && !!retryingIds[String(p.id)];
+              const st = getPostStatusUi(p);
               return (
                 <div
                   key={i}
@@ -342,9 +375,9 @@ function DayModal({ date, posts, onClose, onRetryFailed, onPostSelect, retryingI
                         <span style={{ marginLeft: 'auto', fontSize: 11, color: '#94a3b8' }}>{fmtTime(postCalendarTimestamp(p))}</span>
                         <span style={{
                           fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 99,
-                          background: p.status === 'SUCCESS' ? '#f0fdf4' : p.status === 'FAILED' ? '#fef2f2' : '#fff7ed',
-                          color: p.status === 'SUCCESS' ? '#16a34a' : p.status === 'FAILED' ? '#dc2626' : '#d97706',
-                        }}>{p.status || 'SCHEDULED'}</span>
+                          background: st.pillBg,
+                          color: st.pillFg,
+                        }}>{st.emoji} {st.label}</span>
                       </div>
 
                       {/* Caption */}
@@ -673,6 +706,25 @@ export default function ContentCalendar() {
                   </div>
                 ))}
               </div>
+              <div style={{ marginTop: 6, paddingTop: 12, borderTop: '1px dashed #e2e8f0' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 8 }}>Post status</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px 14px' }}>
+                  {[
+                    { emoji: '🟢', label: 'Published', hint: 'already live' },
+                    { emoji: '🟡', label: 'Scheduled', hint: 'posts later' },
+                    { emoji: '🔵', label: 'Draft', hint: 'not scheduled yet' },
+                    { emoji: '🔴', label: 'Failed', hint: 'posting error' },
+                  ].map((row) => (
+                    <div key={row.label} style={s.legendItem} title={`${row.label}: ${row.hint}`}>
+                      <span style={{ fontSize: 11, lineHeight: 1 }}>{row.emoji}</span>
+                      <span style={{ fontSize: 12, color: '#475569' }}>
+                        <strong>{row.label}</strong>
+                        <span style={{ color: '#94a3b8', fontWeight: 400 }}> — {row.hint}</span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
 
             {/* Upcoming posts sidebar */}
@@ -692,6 +744,7 @@ export default function ContentCalendar() {
                     const isVideo = p.mediaType === 'video';
                     const canRetry = String(p.status || '').toUpperCase() === 'FAILED' && p.id != null;
                     const retrying = canRetry && !!retryingIds[String(p.id)];
+                    const st = getPostStatusUi(p);
                     return (
                       <div
                         key={i}
@@ -733,9 +786,9 @@ export default function ContentCalendar() {
                               </div>
                               <span style={{
                                 fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 99,
-                                background: p.status === 'SUCCESS' ? '#f0fdf4' : '#fef2f2',
-                                color: p.status === 'SUCCESS' ? '#16a34a' : '#dc2626',
-                              }}>{p.status}</span>
+                                background: st.pillBg,
+                                color: st.pillFg,
+                              }}>{st.emoji} {st.label}</span>
                             </div>
                             <div style={s.upcomingCaption}>{p.caption || '(no caption)'}</div>
                             <div style={s.upcomingMeta}>
@@ -794,6 +847,7 @@ export default function ContentCalendar() {
                   const canRetry = String(p.status || '').toUpperCase() === 'FAILED' && p.id != null;
                   const retrying = canRetry && !!retryingIds[String(p.id)];
                   const cardKey = p.id != null ? `post-${p.id}` : `feed-${postMergeKey(p)}-${i}`;
+                  const st = getPostStatusUi(p);
                   return (
                     <div
                       key={cardKey}
@@ -860,9 +914,11 @@ export default function ContentCalendar() {
                         {/* Status badge */}
                         <div style={{
                           ...s.feedStatusBadge,
-                          background: p.status === 'SUCCESS' ? '#16a34a' : '#dc2626',
-                        }}>
-                          {p.status === 'SUCCESS' ? '✓' : '✗'}
+                          background: st.solid,
+                          fontSize: 11,
+                          lineHeight: 1,
+                        }} title={st.label}>
+                          {st.emoji}
                         </div>
                       </div>
                       {/* Caption */}
@@ -932,48 +988,52 @@ export default function ContentCalendar() {
         />
       )}
 
-      {hoverPreview?.post && (
-        <div
-          style={{
-            ...s.hoverCard,
-            left: hoverPreview.x,
-            top: hoverPreview.y,
-          }}
-          onMouseEnter={() => setHoverPreview(hoverPreview)}
-          onMouseLeave={() => setHoverPreview(null)}
-        >
-          <div style={s.hoverHead}>
-            <span style={{ color: platformColor(hoverPreview.post.platform), fontWeight: 800, textTransform: 'capitalize' }}>
-              {hoverPreview.post.platform}
-            </span>
-            <span style={{ fontSize: 11, color: '#94a3b8' }}>{fmtDate(postCalendarTimestamp(hoverPreview.post))} {fmtTime(postCalendarTimestamp(hoverPreview.post))}</span>
-          </div>
-          <div style={s.hoverBody}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 13, color: '#1f2937', lineHeight: 1.45 }}>
-                {(hoverPreview.post.caption || '(no caption)').slice(0, 180)}
-              </div>
-              <div style={{ marginTop: 8, display: 'flex', gap: 12, fontSize: 11, color: '#64748b' }}>
-                <span>{hoverPreview.post.impressions ?? 0} Impressions</span>
-                <span>{hoverPreview.post.clicks ?? 0} Clicks</span>
-                <span>{hoverPreview.post.recentComments ?? hoverPreview.post.comments ?? 0} Comments</span>
-              </div>
+      {hoverPreview?.post && (() => {
+        const hp = hoverPreview.post;
+        const hst = getPostStatusUi(hp);
+        return (
+          <div
+            style={{
+              ...s.hoverCard,
+              left: hoverPreview.x,
+              top: hoverPreview.y,
+            }}
+            onMouseEnter={() => setHoverPreview(hoverPreview)}
+            onMouseLeave={() => setHoverPreview(null)}
+          >
+            <div style={s.hoverHead}>
+              <span style={{ color: platformColor(hp.platform), fontWeight: 800, textTransform: 'capitalize' }}>
+                {hp.platform}
+              </span>
+              <span style={{ fontSize: 11, color: '#94a3b8' }}>{fmtDate(postCalendarTimestamp(hp))} {fmtTime(postCalendarTimestamp(hp))}</span>
             </div>
-            {getPostPreview(hoverPreview.post)?.url && (
-              <img src={getPostPreview(hoverPreview.post).url} alt="" style={s.hoverThumb} />
-            )}
+            <div style={s.hoverBody}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, color: '#1f2937', lineHeight: 1.45 }}>
+                  {(hp.caption || '(no caption)').slice(0, 180)}
+                </div>
+                <div style={{ marginTop: 8, display: 'flex', gap: 12, fontSize: 11, color: '#64748b' }}>
+                  <span>{hp.impressions ?? 0} Impressions</span>
+                  <span>{hp.clicks ?? 0} Clicks</span>
+                  <span>{hp.recentComments ?? hp.comments ?? 0} Comments</span>
+                </div>
+              </div>
+              {getPostPreview(hp)?.url && (
+                <img src={getPostPreview(hp).url} alt="" style={s.hoverThumb} />
+              )}
+            </div>
+            <div style={s.hoverFooter}>
+              <span style={{
+                fontSize: 11,
+                fontWeight: 700,
+                color: hst.pillFg,
+              }}>
+                {hst.emoji} {hst.label}
+              </span>
+            </div>
           </div>
-          <div style={s.hoverFooter}>
-            <span style={{
-              fontSize: 11,
-              fontWeight: 700,
-              color: String(hoverPreview.post.status || '').toUpperCase() === 'SUCCESS' ? '#16a34a' : '#d97706',
-            }}>
-              {String(hoverPreview.post.status || 'PUBLISHED').toUpperCase()}
-            </span>
-          </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

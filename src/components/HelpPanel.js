@@ -23,8 +23,7 @@ function fmt(dt) {
     ' ' + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 }
 
-export default function HelpPanel() {
-  const { user, apiBase, authHeaders } = useAuth();
+function HelpPanelMain({ user, apiBase, authHeaders }) {
   const isAdmin = user?.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
   const planLimit = getPlanLimit(user?.membershipType);
   const openTickets = (tickets) => tickets.filter(t => t.status === 'OPEN').length;
@@ -60,28 +59,8 @@ export default function HelpPanel() {
   }, [user, loadTickets]);
 
   useEffect(() => {
-    if (!user) return;
     if (bottomRef.current) bottomRef.current.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, user]);
-
-  // Not logged in — show sign-in prompt
-  if (!user) {
-    return (
-      <div style={{ minHeight: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(180deg,#0c1222 0%,#0f172a 100%)', padding: '40px 20px' }}>
-        <div style={{ fontSize: 36, marginBottom: 16 }}>💬</div>
-        <h2 style={{ color: '#f1f5f9', fontSize: 20, fontWeight: 700, margin: '0 0 8px', textAlign: 'center' }}>Help & Support</h2>
-        <p style={{ color: '#64748b', fontSize: 14, textAlign: 'center', maxWidth: 320, lineHeight: 1.6, margin: '0 0 24px' }}>
-          Sign in to send us a message. We're here to help with any questions or issues.
-        </p>
-        <button
-          onClick={() => window.dispatchEvent(new CustomEvent('wintaibot:openLogin'))}
-          style={{ padding: '11px 32px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg,#4f46e5,#7c3aed)', color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}
-        >
-          Sign in to get help →
-        </button>
-      </div>
-    );
-  }
+  }, [messages]);
 
   async function openTicket(ticket) {
     setActiveTicket(ticket);
@@ -578,4 +557,29 @@ export default function HelpPanel() {
       </div>
     </div>
   );
+}
+
+function HelpPanelGuest() {
+  return (
+    <div style={{ minHeight: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(180deg,#0c1222 0%,#0f172a 100%)', padding: '40px 20px' }}>
+      <div style={{ fontSize: 36, marginBottom: 16 }}>💬</div>
+      <h2 style={{ color: '#f1f5f9', fontSize: 20, fontWeight: 700, margin: '0 0 8px', textAlign: 'center' }}>Help & Support</h2>
+      <p style={{ color: '#64748b', fontSize: 14, textAlign: 'center', maxWidth: 320, lineHeight: 1.6, margin: '0 0 24px' }}>
+        Sign in to send us a message. We're here to help with any questions or issues.
+      </p>
+      <button
+        type="button"
+        onClick={() => window.dispatchEvent(new CustomEvent('wintaibot:openLogin'))}
+        style={{ padding: '11px 32px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg,#4f46e5,#7c3aed)', color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}
+      >
+        Sign in to get help →
+      </button>
+    </div>
+  );
+}
+
+export default function HelpPanel() {
+  const { user, apiBase, authHeaders } = useAuth();
+  if (!user) return <HelpPanelGuest />;
+  return <HelpPanelMain user={user} apiBase={apiBase} authHeaders={authHeaders} />;
 }

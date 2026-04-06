@@ -220,6 +220,12 @@ export default function DashboardShell({ children }: { children: React.ReactNode
               <div style={s.navDividerStrong} role="separator" aria-hidden="true" />
               <div style={s.groupLabelFooter}>{SIDEBAR_GROUPS.settings}</div>
               <NavItem emoji="⚙️" label="Account" href="/account" active={pathname === '/account'} hasArrow />
+              <NavItem
+                emoji="🛡️"
+                label="Security"
+                href="/security-dashboard"
+                active={pathname === '/security-dashboard'}
+              />
               <NavItem emoji="💳" label="Pricing" href="/pricing" active={pathname === '/pricing'} />
               <NavItem emoji="💡" label="Help & Support" href="/docs" active={pathname === '/docs'} />
             </div>
@@ -296,6 +302,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
             <Link href="/" style={s.publicBrand}>W!ntAi</Link>
             <nav style={s.publicNav}>
               <Link href="/features" style={s.publicNavLink}>Features</Link>
+              <Link href="/#demo" style={s.publicNavLink}>Demo</Link>
               <Link href="/pricing" style={s.publicNavLink}>Pricing</Link>
               <Link href="/docs" style={s.publicNavLink}>Docs</Link>
             </nav>

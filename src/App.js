@@ -36,8 +36,22 @@ import AutoReplySettings from './components/AutoReplySettings';
 import ProGate from './components/ProGate';
 import GrowthGate from './components/GrowthGate';
 import ContentCalendar from './components/ContentCalendar';
+import SEO from './components/SEO';
 
 const BRAND_LOGO_SRC = '/android-chrome-192x192.png';
+
+/** Short document titles for social / publishing tabs (cleaner browser tab label). */
+const PUBLISHING_TAB_SEO = {
+  'video-publisher': { title: 'Publish', description: 'Upload and publish to connected social accounts.' },
+  'social-connect': { title: 'Accounts', description: 'Connect social accounts for publishing.' },
+  calendar: { title: 'Calendar', description: 'Scheduled and published posts.' },
+  messages: { title: 'Inbox', description: 'Comments and messages from connected accounts.' },
+  trends: { title: 'Growth', description: 'Follower trends and posting insights.' },
+  'social-ai': { title: 'Social AI', description: 'AI chat for social content.' },
+  Content: { title: 'Replies', description: 'AI-assisted replies.' },
+  'auto-reply': { title: 'Auto Reply', description: 'Automated comment and message replies.' },
+  bio: { title: 'Link in Bio', description: 'Your public link page.' },
+};
 
 /** Sidebar section titles — single source of truth for the logged-in nav. */
 const SIDEBAR_GROUPS = {
@@ -428,6 +442,9 @@ function App() {
 
       {/* ═══════════════ MAIN ═══════════════ */}
       <div style={s.main}>
+        {user && activeTab && PUBLISHING_TAB_SEO[activeTab] && (
+          <SEO title={PUBLISHING_TAB_SEO[activeTab].title} description={PUBLISHING_TAB_SEO[activeTab].description} />
+        )}
 
         {/* Marketing Nav for logged-out visitors */}
         {!user && <MarketingNav go={go} onLogin={openLogin} onSignup={openSignup} />}

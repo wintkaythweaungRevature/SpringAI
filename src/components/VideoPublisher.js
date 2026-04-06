@@ -1538,35 +1538,31 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
                 })}
               </div>
               <div style={s.platformCount}>
-                {selectedPlatforms.length} platform{selectedPlatforms.length !== 1 ? 's' : ''} selected ·{' '}
-                {postType === 'video' ? `AI will generate ${selectedPlatforms.length} unique content variants` : 'Ready to publish'}
+                {selectedPlatforms.length} platform{selectedPlatforms.length !== 1 ? 's' : ''} selected
               </div>
             </div>
 
             <div style={s.card}>
-              <div style={s.sectionTitle}>⚡ What Happens Next</div>
+              <div style={s.sectionTitle}>⚡ Next steps</div>
               {(postType === 'video' ? [
-                ['🎙️', 'Transcribe audio', 'via Whisper'],
-                ['✍️', 'Write platform-specific captions', 'tone-matched per platform'],
-                ['#️⃣', 'Generate hashtags', 'trending + relevant'],
-                ['✂️', 'Create clip variants', 'optimized per platform format'],
-                ['🖼️', 'Generate thumbnail ideas', 'high click-through'],
+                ['🎙️', 'Transcribe audio'],
+                ['✍️', 'Captions per platform'],
+                ['#️⃣', 'Hashtags'],
+                ['✂️', 'Clip notes'],
+                ['🖼️', 'Thumbnail ideas'],
               ] : postType === 'image' ? [
-                ['🖼️', 'Preview your image', 'confirm before publish'],
-                ['✍️', 'Edit caption per platform', 'customise tone & length'],
-                ['#️⃣', 'Add hashtags', 'per platform'],
-                ['📤', 'Publish to selected platforms', 'Instagram, Facebook & more'],
+                ['🖼️', 'Preview image'],
+                ['✍️', 'Captions per platform'],
+                ['#️⃣', 'Hashtags'],
+                ['📤', 'Publish'],
               ] : [
-                ['✍️', 'Review your text post', 'edit per platform'],
-                ['#️⃣', 'Add hashtags', 'per platform'],
-                ['📤', 'Publish to selected platforms', 'Facebook, X, LinkedIn & more'],
-              ]).map(([icon, title, sub]) => (
+                ['✍️', 'Edit per platform'],
+                ['#️⃣', 'Hashtags'],
+                ['📤', 'Publish'],
+              ]).map(([icon, title]) => (
                 <div key={title} style={s.aiFeatureRow}>
                   <span style={{ fontSize: '20px' }}>{icon}</span>
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: '13px' }}>{title}</div>
-                    <div style={{ fontSize: '11px', color: '#64748b' }}>{sub}</div>
-                  </div>
+                  <div style={{ fontWeight: 600, fontSize: '13px' }}>{title}</div>
                 </div>
               ))}
             </div>
@@ -1601,7 +1597,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
                 const n = ids.filter((pid) => connectedAccounts[pid]).length;
                 return (
                   <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 12px' }}>
-                    <strong>{n}</strong> of <strong>{ids.length}</strong> platforms linked. Connect the rest to publish from here.
+                    <strong>{n}</strong> of <strong>{ids.length}</strong> linked
                   </p>
                 );
               })()}

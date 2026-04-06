@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "security:guard": "node ../scripts/security/scan-security-guard.mjs",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",

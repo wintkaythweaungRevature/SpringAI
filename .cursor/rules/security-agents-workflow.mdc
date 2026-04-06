@@ -1,0 +1,92 @@
+---
+description: Multi-agent security workflow — SecretLeakReportor, CoverKey, SecurityGuard, Defenser
+alwaysApply: false
+---
+
+# Security agent protocol (this repository)
+
+Four named roles coordinate **secrets hygiene** and **broader security posture**. They are **human- or AI-invoked** roles backed by **automated scripts** and **GitHub Actions**.
+
+## Automation (ground truth)
+
+| Workflow | When | Script | Artifact |
+|----------|------|--------|----------|
+| `SecretLeakReportor` | PR + push to `main` | `node scripts/security/scan-secrets.mjs` | `secret-leak-report` |
+| `SecurityGuard` | Every **3 hours** (cron) + manual | `node scripts/security/scan-security-guard.mjs` | `security-guard-report` |
+
+Local:
+
+- `npm run security:scan` — secret / credential pattern scan (writes `reports/security/secret-leak-latest.json`).
+- `npm run security:guard` — full SecurityGuard report + writes `wintaibot-next/public/security-report.json` when that folder exists (for the Security Dashboard).
+
+---
+
+## 1. SecretLeakReportor
+
+**Mission:** Detect accidental leakage of tokens, API keys, private keys, passwords, JWT-like strings, committed `.env` files, etc.
+
+**When:** On every PR/merge (CI) and whenever the user runs `npm run security:scan`.
+
+**Output:** JSON report with `handoff.nextAgent: "CoverKey"` and a list of `findings` (path, line, severity, title).
+
+**After scanning:** Explicitly hand the report to **CoverKey** (paste artifact path or JSON summary in chat).
+
+---
+
+## 2. CoverKey
+
+**Mission:** Remediate **everything** SecretLeakReportor flagged **before** changes are considered safe to merge or push.
+
+**Process:**
+
+1. Rotate or invalidate any exposed credential (assume compromise if it ever hit git history).
+2. Replace literals with `process.env` / CI secrets / a secret manager; never commit real values.
+3. Ensure `.env*` is gitignored; keep only `.env.example` with dummy placeholders.
+4. Re-run `npm run security:scan` until critical/high findings are **zero** (or document false positives with inline justification and pattern allowlist change in `scripts/security/` if truly safe).
+
+**When done:** Notify **SecretLeakReportor** (re-run scan / CI) to confirm nothing critical remains. If new issues appear, repeat the **SecretLeakReportor → CoverKey** loop until clean.
+
+---
+
+## 3. SecurityGuard
+
+**Mission:** Broader, recurring checks aligned with practical app security:
+
+- Authentication & access control (document gaps; backend may live in another repo).
+- Injection / XSS / unsafe patterns (heuristic scan in repo code).
+- API layer (rate limiting, validation) — checklist in report `pillars`.
+- Dependency risk via `npm audit --package-lock-only` (root + `wintaibot-next`).
+- Secrets management (overlap with SecretLeakReportor).
+- AI safety (prompt injection, moderation) — checklist reminder.
+- Logging / monitoring — checklist reminder.
+
+**When:** GitHub Actions **every 3 hours** and `workflow_dispatch`; locally via `npm run security:guard`.
+
+**Output:** JSON with `securityScore`, `secretScan`, `codeHeuristics`, `npmAudit`, `handoff.nextAgent: "Defenser"`.
+
+**After scanning:** Hand the report to **Defenser**.
+
+---
+
+## 4. Defenser
+
+**Mission:** Act on **SecurityGuard** output: prioritize critical/high, patch or justify, run `npm audit fix` where appropriate, add missing controls (validation, sanitization, CSRF, rate limits) in code the user owns.
+
+**Coordination:** Work in the **same thread** as SecurityGuard on any concerning items: reference finding IDs/paths, close items when fixed, re-run `npm run security:guard` until score and severities are acceptable.
+
+**When SecurityGuard runs again on schedule:** Defenser should review **new** deltas (compare artifacts or git diff on `reports/security/security-guard-latest.json` if checked in — default is artifact-only; use CI download).
+
+---
+
+## Order of operations (summary)
+
+```text
+PR / push ──► SecretLeakReportor ──► CoverKey ──► SecretLeakReportor (verify) ──► …
+Cron / manual ──► SecurityGuard ──► Defenser ──► (next scheduled SecurityGuard)
+```
+
+Do not skip **verification** passes after remediation.
+
+## JSON vs markdown
+
+Automated runs write **JSON** under `reports/security/` (and optionally `wintaibot-next/public/security-report.json` for the dashboard). If you also use Cursor rules that reference `reports/security/*.md`, have **SecretLeakReportor** / **SecurityGuard** summarize the latest JSON into those markdown files for handoff, or paste the artifact into chat for **CoverKey** / **Defenser**.

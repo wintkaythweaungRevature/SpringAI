@@ -118,8 +118,7 @@ export default function SocialConnect() {
           <div>
             <div style={s.headerTitle}>Connected Accounts</div>
             <div style={s.headerSub}>
-              {connectedCount} of {PLATFORMS.length} platforms connected ·{' '}
-              Connect your accounts to enable auto-publishing
+              {connectedCount} of {PLATFORMS.length} connected
             </div>
           </div>
           <div style={s.headerBadge}>
@@ -197,26 +196,6 @@ export default function SocialConnect() {
         </div>
       )}
 
-      {/* Instructions */}
-      <div style={s.infoCard}>
-        <div style={s.infoTitle}>📋 How it works</div>
-        <div style={s.infoGrid}>
-          {[
-            ['1️⃣', 'Connect', 'Click Connect for each platform. You\'ll be redirected to authorize W!ntAi. For Facebook, register the redirect URI shown on the Facebook card in your Meta Developer app.'],
-            ['2️⃣', 'Upload Video', 'Go to Video Publisher and upload your video.'],
-            ['3️⃣', 'AI Generates', 'AI transcribes your video and writes captions + hashtags for each platform.'],
-            ['4️⃣', 'Approve & Publish', 'Review content, approve, and publish to all connected platforms at once.'],
-          ].map(([icon, title, desc]) => (
-            <div key={title} style={s.infoStep}>
-              <span style={{ fontSize: '20px' }}>{icon}</span>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: '13px', color: '#1e293b' }}>{title}</div>
-                <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>{desc}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }

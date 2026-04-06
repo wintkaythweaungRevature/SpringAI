@@ -21,6 +21,9 @@
     "xlsx": "^0.18.5"
   },
   "scripts": {
+    "security:scan": "node scripts/security/scan-secrets.mjs --no-fail",
+    "security:scan:strict": "node scripts/security/scan-secrets.mjs",
+    "security:guard": "node scripts/security/scan-security-guard.mjs",
     "start": "react-scripts start",
     "build": "react-scripts build",
     "postbuild": "react-snap",

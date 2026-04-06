@@ -1226,7 +1226,7 @@ export default function MessagesInbox({ onOpenConnectedAccounts, onOpenAutoReply
             }}
           >
           <aside
-            aria-label="Networks and view"
+            aria-label="Accounts and filters"
             style={{
               alignSelf: 'stretch',
               borderRight: '1px solid #e2e8f0',
@@ -1270,7 +1270,7 @@ export default function MessagesInbox({ onOpenConnectedAccounts, onOpenAutoReply
                   flexShrink: 0,
                 }}
               >
-                Networks
+                Accounts
               </div>
               <SidebarPlatformButton
                 active={platformTab === 'all'}

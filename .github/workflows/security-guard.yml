@@ -1,0 +1,43 @@
+# SecurityGuard — scheduled security pass + manual trigger.
+# Scans secrets, heuristic XSS/eval/SQL smells, npm audit (lockfile). Artifact for Defenser.
+name: SecurityGuard
+
+on:
+  schedule:
+    - cron: '0 */3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run SecurityGuard scanner
+        run: node scripts/security/scan-security-guard.mjs --out reports/security/security-guard-latest.json
+
+      - name: Upload report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-guard-report
+          path: |
+            reports/security/security-guard-latest.json
+          if-no-files-found: warn
+
+      - name: Job summary
+        run: |
+          echo "## SecurityGuard (every 3h schedule + manual)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Download **security-guard-report**. Hand off to **Defenser** for fixes; coordinate on open findings." >> "$GITHUB_STEP_SUMMARY"
+          if [ -f reports/security/security-guard-latest.json ]; then
+            SC=$(node -e "const r=require('./reports/security/security-guard-latest.json');console.log(r.securityScore||0)")
+            echo "**Security score:** $SC / 100" >> "$GITHUB_STEP_SUMMARY"
+          fi

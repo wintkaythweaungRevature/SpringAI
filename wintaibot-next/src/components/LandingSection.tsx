@@ -283,6 +283,197 @@ function HeroEightPlatformsMotion() {
   );
 }
 
+/** Stylized “screenshot” frames — abstract UI, no external image assets. */
+function ProductPreviewMockups() {
+  const panels = [
+    {
+      title: 'Content calendar',
+      subtitle: 'Month view, feed grid, and per-platform slots',
+      accent: '#6366f1',
+      bars: ['32%', '48%', '64%', '40%'],
+    },
+    {
+      title: 'Video Publisher',
+      subtitle: 'One upload → captions, thumbnails, multi-platform publish',
+      accent: '#e11d48',
+      bars: ['72%', '88%', '55%'],
+    },
+    {
+      title: 'Analytics & inbox',
+      subtitle: 'Post outcomes, messages, and AI-assisted replies',
+      accent: '#0ea5e9',
+      bars: ['45%', '62%', '38%', '70%', '52%'],
+    },
+  ];
+  return (
+    <section className="ls-section ls-demo" id="demo" aria-labelledby="demo-heading">
+      <h2 id="demo-heading">Inside the product</h2>
+      <p className="ls-section-sub ls-section-sub--tight">
+        Real screens use your connected accounts and live data — here’s the layout you’ll work in after{' '}
+        <strong>sign up</strong>.
+      </p>
+      <div className="ls-demo-grid" role="list">
+        {panels.map((p) => (
+          <article className="ls-demo-card" key={p.title} role="listitem">
+            <div className="ls-demo-browser" aria-hidden="true">
+              <div className="ls-demo-browser__chrome">
+                <span className="ls-demo-browser__dot" />
+                <span className="ls-demo-browser__dot ls-demo-browser__dot--amber" />
+                <span className="ls-demo-browser__dot ls-demo-browser__dot--green" />
+              </div>
+              <div className="ls-demo-browser__body" style={{ '--ls-demo-accent': p.accent } as React.CSSProperties}>
+                <div className="ls-demo-browser__toolbar" />
+                <div className="ls-demo-browser__main">
+                  <div className="ls-demo-browser__sidebar" />
+                  <div className="ls-demo-browser__stage">
+                    <div className="ls-demo-browser__chart">
+                      {p.bars.map((h, i) => (
+                        <span key={i} className="ls-demo-browser__bar" style={{ height: h }} />
+                      ))}
+                    </div>
+                    <div className="ls-demo-browser__rows" aria-hidden="true">
+                      <span />
+                      <span />
+                      <span />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <h3 className="ls-demo-card__title">{p.title}</h3>
+            <p className="ls-demo-card__sub">{p.subtitle}</p>
+          </article>
+        ))}
+      </div>
+      <div className="ls-demo-cta">
+        <Link href="/chat" className="ls-btn-primary">
+          Create free account →
+        </Link>
+        <Link href="/pricing" className="ls-btn-ghost">
+          Compare plans
+        </Link>
+      </div>
+    </section>
+  );
+}
+
+function SocialProofSection() {
+  const quotes = [
+    {
+      text:
+        'We wanted one place for scheduling and video — fewer tabs, same posting quality. W!ntAi matches how our small team actually works.',
+      role: 'Marketing lead',
+      context: 'Early access feedback',
+    },
+    {
+      text:
+        'The calendar plus Video Publisher workflow is what sold us. AI captions per platform save real time on every upload.',
+      role: 'Creator / channel owner',
+      context: 'Early access feedback',
+    },
+    {
+      text:
+        'Having Swagger-backed APIs and a clear stack (Spring, Postgres, AWS) made it easier to trust this wasn’t a throwaway side project.',
+      role: 'Technical reviewer',
+      context: 'Early access feedback',
+    },
+  ];
+  return (
+    <section className="ls-section ls-proof" id="social-proof" aria-labelledby="proof-heading">
+      <h2 id="proof-heading">Why teams try W!ntAi</h2>
+      <p className="ls-section-sub ls-section-sub--tight">
+        Honest, early feedback from people shipping content — not paid endorsements.
+      </p>
+      <div className="ls-proof-grid" role="list">
+        {quotes.map((q) => (
+          <blockquote className="ls-proof-card" key={q.role} role="listitem">
+            <p className="ls-proof-quote">“{q.text}”</p>
+            <footer className="ls-proof-meta">
+              <span className="ls-proof-role">{q.role}</span>
+              <span className="ls-proof-ctx">{q.context}</span>
+            </footer>
+          </blockquote>
+        ))}
+      </div>
+      <p className="ls-proof-stack-lead">Publishes to the networks you already use</p>
+      <div className="ls-proof-platforms" aria-label="Supported platforms">
+        {landingPublishPlatforms.map((p) => (
+          <span key={p.id} className="ls-proof-platform" title={p.label}>
+            {p.id === 'linkedin' ? (
+              <LinkedInLogo size={26} color={p.color} />
+            ) : (
+              <img
+                src={`${SI}/${p.logo}/${p.color.replace('#', '')}`}
+                alt=""
+                width={26}
+                height={26}
+                loading="lazy"
+                decoding="async"
+              />
+            )}
+          </span>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function TrustSecuritySection() {
+  return (
+    <section className="ls-section ls-trust" id="trust" aria-labelledby="trust-heading">
+      <h2 id="trust-heading">Security, privacy, and how we bill</h2>
+      <p className="ls-section-sub ls-section-sub--tight">
+        Built like a SaaS product should be: least-privilege OAuth to social platforms, encrypted transport, and payments
+        handled by Stripe — not card data on our servers.
+      </p>
+      <ul className="ls-trust-grid" role="list">
+        <li className="ls-trust-item">
+          <span className="ls-trust-icon" aria-hidden="true">
+            🔐
+          </span>
+          <div>
+            <strong>Account safety</strong>
+            <p>Password-based accounts with secure sessions; upgrade paths for team use as you grow.</p>
+          </div>
+        </li>
+        <li className="ls-trust-item">
+          <span className="ls-trust-icon" aria-hidden="true">
+            🔌
+          </span>
+          <div>
+            <strong>Platform connections</strong>
+            <p>Social accounts link through official integration patterns — we don’t ask for your platform password in chat.</p>
+          </div>
+        </li>
+        <li className="ls-trust-item">
+          <span className="ls-trust-icon" aria-hidden="true">
+            🧾
+          </span>
+          <div>
+            <strong>Payments</strong>
+            <p>Stripe processes cards; read billing details in our terms and refund policy.</p>
+          </div>
+        </li>
+        <li className="ls-trust-item">
+          <span className="ls-trust-icon" aria-hidden="true">
+            📋
+          </span>
+          <div>
+            <strong>Policies</strong>
+            <p>
+              <Link href="/privacy-policy">Privacy Policy</Link>
+              {' · '}
+              <Link href="/terms-of-service">Terms</Link>
+              {' · '}
+              <a href="mailto:contact@wintaibot.com">contact@wintaibot.com</a>
+            </p>
+          </div>
+        </li>
+      </ul>
+    </section>
+  );
+}
+
 function HeroPlatformsUnderNote() {
   const wobble = [
     'ls-hero-under-note__item--a',
@@ -490,10 +681,13 @@ export default function LandingSection() {
               <div className="ls-hero-copy__rail">
                 <div className="ls-hero-actions">
                   <Link href="/chat" className="ls-btn-primary">
-                    Start Trial
+                    Start free trial
                   </Link>
                   <Link href="/#features" className="ls-btn-ghost">
-                    See showcase →
+                    See features
+                  </Link>
+                  <Link href="/pricing" className="ls-btn-ghost ls-btn-ghost--compact">
+                    Pricing
                   </Link>
                 </div>
                 <p className="ls-hero-note">
@@ -574,6 +768,8 @@ export default function LandingSection() {
         </p>
       </section>
 
+      <ProductPreviewMockups />
+
       <section className="ls-section ls-how" id="how-it-works" aria-labelledby="how-heading">
         <h2 id="how-heading">How It Works</h2>
         <p className="ls-section-sub">Start getting results in under 30 seconds.</p>
@@ -639,6 +835,8 @@ export default function LandingSection() {
           </article>
         </div>
       </section>
+
+      <SocialProofSection />
 
       <section className="ls-section ls-pricing" id="pricing" aria-labelledby="pricing-heading">
         <h2 id="pricing-heading">Simple, Transparent Pricing</h2>
@@ -975,6 +1173,8 @@ export default function LandingSection() {
         </div>
       </section>
 
+      <TrustSecuritySection />
+
       <section className="ls-section ls-faq" id="faq" aria-labelledby="faq-heading">
         <h2 id="faq-heading">Frequently Asked Questions</h2>
         {[
@@ -1114,8 +1314,8 @@ export default function LandingSection() {
           </span>
           <span className="ls-footer-nav-group" role="group" aria-label="Resources">
             <span className="ls-footer-nav-label">Resources</span>
-            <Link href="/tutorial">Tutorials</Link>
-            <Link href="/blog">Blog</Link>
+            <Link href="/docs">Docs &amp; tutorials</Link>
+            <Link href="/changelog">Product updates</Link>
             <Link href="/changelog">Changelog</Link>
           </span>
           <Link href="/#about">About</Link>

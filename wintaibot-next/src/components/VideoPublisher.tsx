@@ -648,26 +648,22 @@ export default function VideoPublisher() {
                 ))}
               </div>
               <div style={s.platformCount}>
-                {selectedPlatforms.length} platform{selectedPlatforms.length !== 1 ? 's' : ''} selected ·{' '}
-                AI will generate {selectedPlatforms.length} unique content variants
+                {selectedPlatforms.length} platform{selectedPlatforms.length !== 1 ? 's' : ''} selected
               </div>
             </div>
 
             <div style={s.card}>
-              <div style={s.sectionTitle}>⚡ What AI Will Do</div>
+              <div style={s.sectionTitle}>⚡ Next steps</div>
               {[
-                ['🎙️', 'Transcribe audio', 'via Whisper'],
-                ['✍️', 'Write platform-specific captions', 'tone-matched per platform'],
-                ['#️⃣', 'Generate hashtags', 'trending + relevant'],
-                ['✂️', 'Create clip variants', 'optimized per platform format'],
-                ['🖼️', 'Generate thumbnail ideas', 'high click-through'],
-              ].map(([icon, title, sub]) => (
+                ['🎙️', 'Transcribe audio'],
+                ['✍️', 'Captions per platform'],
+                ['#️⃣', 'Hashtags'],
+                ['✂️', 'Clip notes'],
+                ['🖼️', 'Thumbnail ideas'],
+              ].map(([icon, title]) => (
                 <div key={title} style={s.aiFeatureRow}>
                   <span style={{ fontSize: '20px' }}>{icon}</span>
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: '13px' }}>{title}</div>
-                    <div style={{ fontSize: '11px', color: '#64748b' }}>{sub}</div>
-                  </div>
+                  <div style={{ fontWeight: 600, fontSize: '13px' }}>{title}</div>
                 </div>
               ))}
             </div>
@@ -698,9 +694,6 @@ export default function VideoPublisher() {
                   {connectMessage}
                 </div>
               )}
-              <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '12px' }}>
-                Link platforms to publish directly from here.
-              </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {CONNECT_ACCOUNT_ROW_IDS.map((pid) => {
                   const p = PLATFORMS.find(x => x.id === pid);

@@ -3,13 +3,11 @@ import MemberGate from '@/components/MemberGate';
 import VideoPublisher from '@/components/VideoPublisher';
 
 export const metadata: Metadata = {
-  title: 'Video Publisher',
-  description:
-    'Upload once, publish everywhere. Connect YouTube, Instagram, TikTok, and more. Get AI captions and hashtags per platform, schedule posts, and see viral trends.',
+  title: 'Publish',
+  description: 'Upload once and publish to your connected social accounts.',
   openGraph: {
-    title: 'Video Publisher – One Video, Every Platform | W!ntAi',
-    description:
-      'Upload once, publish everywhere. Connect YouTube, Instagram, TikTok. AI captions, hashtags, and scheduling per platform.',
+    title: 'Publish | W!ntAi',
+    description: 'Upload once and publish to your connected social accounts.',
   },
 };
 

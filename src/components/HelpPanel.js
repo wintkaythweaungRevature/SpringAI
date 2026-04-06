@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 
 const ADMIN_EMAIL = 'breezegirl6@gmail.com';
@@ -43,7 +43,26 @@ export default function HelpPanel() {
   const bottomRef = useRef(null);
   const textareaRef = useRef(null);
 
-  useEffect(() => { if (user) loadTickets(); }, [user]);
+  const loadTickets = useCallback(async () => {
+    setLoading(true);
+    try {
+      const url = isAdmin
+        ? `${apiBase}/api/support/admin/tickets`
+        : `${apiBase}/api/support/tickets`;
+      const res = await fetch(url, { headers: authHeaders() });
+      if (res.ok) setTickets(await res.json());
+    } catch (e) {}
+    setLoading(false);
+  }, [isAdmin, apiBase, authHeaders]);
+
+  useEffect(() => {
+    if (user) loadTickets();
+  }, [user, loadTickets]);
+
+  useEffect(() => {
+    if (!user) return;
+    if (bottomRef.current) bottomRef.current.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, user]);
 
   // Not logged in — show sign-in prompt
   if (!user) {
@@ -62,22 +81,6 @@ export default function HelpPanel() {
         </button>
       </div>
     );
-  }
-
-  useEffect(() => {
-    if (bottomRef.current) bottomRef.current.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  async function loadTickets() {
-    setLoading(true);
-    try {
-      const url = isAdmin
-        ? `${apiBase}/api/support/admin/tickets`
-        : `${apiBase}/api/support/tickets`;
-      const res = await fetch(url, { headers: authHeaders() });
-      if (res.ok) setTickets(await res.json());
-    } catch (e) {}
-    setLoading(false);
   }
 
   async function openTicket(ticket) {

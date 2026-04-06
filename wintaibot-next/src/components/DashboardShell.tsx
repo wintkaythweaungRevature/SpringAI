@@ -51,7 +51,8 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const { user, logout, loading } = useAuth();
+  const [billingPlanLabel, setBillingPlanLabel] = useState<string | null>(null);
+  const { user, logout, loading, token, apiBase } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
   const isMobile = useMediaQuery('(max-width: 768px)');
@@ -71,6 +72,38 @@ export default function DashboardShell({ children }: { children: React.ReactNode
       setShowAuthModal(true);
     }
   }, [loading, user, pathname]);
+
+  useEffect(() => {
+    if (!user || !token) {
+      setBillingPlanLabel(null);
+      return;
+    }
+    const base = apiBase || '';
+    if (!base) {
+      setBillingPlanLabel(null);
+      return;
+    }
+    fetch(`${base}/api/subscription/current`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        const p = d?.plan;
+        if (typeof p !== 'string' || !p.trim()) {
+          setBillingPlanLabel(null);
+          return;
+        }
+        const u = p.toUpperCase();
+        const map: Record<string, string> = {
+          STARTER: 'Starter',
+          PRO: 'Pro',
+          GROWTH: 'Growth',
+          MEMBER: 'Member',
+        };
+        setBillingPlanLabel(map[u] || p.charAt(0).toUpperCase() + p.slice(1).toLowerCase());
+      })
+      .catch(() => setBillingPlanLabel(null));
+  }, [user, token, apiBase]);
 
   const userInitials = user?.email ? user.email.slice(0, 2).toUpperCase() : '??';
   const showDashboardChrome = Boolean(user);
@@ -136,7 +169,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
           <div style={s.logoIconBg}>🤖</div>
           {sidebarOpen && (
             <Link href="/" style={s.logoText}>
-              W!ntAi
+              W!ntAI
             </Link>
           )}
         </div>
@@ -172,15 +205,10 @@ export default function DashboardShell({ children }: { children: React.ReactNode
 
           <div style={s.navDivider} role="separator" aria-hidden="true" />
           <div style={s.groupLabel}>{SIDEBAR_GROUPS.socialHq}</div>
-          <NavItem
-            emoji="💬"
-            label="Inbox"
-            href="/messages"
-            active={pathname === '/messages'}
-          />
+          <NavItem emoji="🗓️" label="Content Calendar" href="/calendar" active={pathname === '/calendar'} />
+          <NavItem emoji="📥" label="Inbox" href="/messages" active={pathname === '/messages'} />
           <NavItem emoji="📈" label="Growth Planner" href="/trends" active={pathname === '/trends'} />
           <NavItem emoji="🧠" label="Social AI" href="/social-ai" active={pathname === '/social-ai'} />
-          <NavItem emoji="🗓️" label="Content Calendar" href="/calendar" active={pathname === '/calendar'} />
 
           <div style={s.navDivider} role="separator" aria-hidden="true" />
           <div style={s.groupLabel}>{SIDEBAR_GROUPS.theForge}</div>
@@ -193,6 +221,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
               <div style={s.groupLabelFooter}>{SIDEBAR_GROUPS.settings}</div>
               <NavItem emoji="⚙️" label="Account" href="/account" active={pathname === '/account'} hasArrow />
               <NavItem emoji="💳" label="Pricing" href="/pricing" active={pathname === '/pricing'} />
+              <NavItem emoji="💡" label="Help & Support" href="/docs" active={pathname === '/docs'} />
             </div>
           )}
         </nav>
@@ -250,7 +279,9 @@ export default function DashboardShell({ children }: { children: React.ReactNode
                   {user?.email || ''}
                 </span>
                 {user?.membershipType === 'MEMBER' && (
-                  <span style={s.memberBadge}>✓ Member</span>
+                  <span style={s.planBadge}>
+                    ✓ {billingPlanLabel || 'Member'}
+                  </span>
                 )}
                 <button onClick={logout} style={s.logoutBtn}>
                   Logout
@@ -334,9 +365,10 @@ const nav: Record<string, React.CSSProperties | Record<string, unknown>> = {
     textDecoration: 'none',
   },
   active: {
-    background: '#2563eb',
+    background: 'linear-gradient(90deg, #4f46e5 0%, #6366f1 50%, #2563eb 100%)',
     color: '#ffffff',
     fontWeight: '700',
+    boxShadow: '0 4px 16px rgba(79, 70, 229, 0.35)',
   },
   hover: {
     background: 'rgba(255,255,255,0.08)',
@@ -391,12 +423,15 @@ const s: Record<string, any> = {
     flexShrink: 0,
   },
   logoText: {
-    color: '#f1f5f9',
-    fontSize: '16px',
+    fontSize: '17px',
     fontWeight: '800',
     letterSpacing: '-0.3px',
     whiteSpace: 'nowrap',
     textDecoration: 'none',
+    background: 'linear-gradient(90deg, #f8fafc 0%, #c7d2fe 45%, #a5b4fc 100%)',
+    WebkitBackgroundClip: 'text',
+    backgroundClip: 'text',
+    color: 'transparent',
   },
   nav: {
     flex: 1,
@@ -582,13 +617,13 @@ const s: Record<string, any> = {
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
   },
-  memberBadge: {
+  planBadge: {
     fontSize: '11.5px',
     fontWeight: '700',
-    color: '#16a34a',
-    background: '#f0fdf4',
-    border: '1px solid #bbf7d0',
-    padding: '3px 10px',
+    color: '#e0e7ff',
+    background: 'linear-gradient(135deg, rgba(99,102,241,0.45), rgba(37,99,235,0.4))',
+    border: '1px solid rgba(165, 180, 252, 0.35)',
+    padding: '4px 12px',
     borderRadius: '20px',
     whiteSpace: 'nowrap',
   },

@@ -632,7 +632,7 @@ export default function ContentCalendar() {
                       }}
                       onClick={() => setSelectedDay(isSelected ? null : day)}
                     >
-                      <div style={{ ...s.calDayNum, ...(isToday ? { color: '#fff', background: '#6366f1', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center' } : {}) }}                      >
+                      <div style={{ ...s.calDayNum, ...(isToday ? { color: '#fff', background: '#2563eb', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' } : {}) }}                      >
                         {day.getDate()}
                       </div>
 
@@ -1040,34 +1040,50 @@ export default function ContentCalendar() {
 
 /* ─── Styles ──────────────────────────────────────────────────────────────── */
 const s = {
-  page: { maxWidth: 1100, margin: '0 auto', padding: '20px 16px', fontFamily: 'inherit' },
+  page: { maxWidth: 1180, margin: '0 auto', padding: '12px 12px 28px', fontFamily: 'inherit' },
 
-  pageHeader: { display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 },
+  pageHeader: { display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: 18, flexWrap: 'wrap', gap: 12 },
 
-  viewToggle: { display: 'flex', background: '#f1f5f9', borderRadius: 10, padding: 3, gap: 2 },
-  viewBtn: { background: 'none', border: 'none', borderRadius: 8, padding: '7px 14px', fontSize: 13, fontWeight: 600, color: '#64748b', cursor: 'pointer' },
-  viewBtnActive: { background: '#fff', color: '#6366f1', boxShadow: '0 1px 4px rgba(0,0,0,0.1)' },
+  viewToggle: { display: 'flex', background: 'rgba(15,23,42,0.06)', borderRadius: 12, padding: 4, gap: 2, border: '1px solid #e2e8f0' },
+  viewBtn: { background: 'none', border: 'none', borderRadius: 9, padding: '8px 16px', fontSize: 13, fontWeight: 600, color: '#64748b', cursor: 'pointer', transition: 'background 0.15s, color 0.15s' },
+  viewBtnActive: {
+    background: 'linear-gradient(90deg, #4f46e5 0%, #6366f1 55%, #2563eb 100%)',
+    color: '#fff',
+    boxShadow: '0 4px 14px rgba(79, 70, 229, 0.35)',
+  },
 
-  pillRow: { display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 18 },
+  pillRow: { display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 },
   pill: {
     display: 'inline-flex', alignItems: 'center', gap: 4,
-    padding: '5px 12px', borderRadius: 99, border: '1.5px solid #e2e8f0',
+    padding: '6px 14px', borderRadius: 99, border: '1.5px solid #e2e8f0',
     background: '#fff', fontSize: 12, fontWeight: 600, color: '#475569', cursor: 'pointer',
+    transition: 'transform 0.12s, box-shadow 0.12s',
   },
-  pillActive: { background: '#6366f1', color: '#fff', borderColor: '#6366f1' },
+  pillActive: {
+    background: 'linear-gradient(135deg, #6366f1 0%, #7c3aed 100%)',
+    color: '#fff',
+    borderColor: 'transparent',
+    boxShadow: '0 4px 14px rgba(124, 58, 237, 0.25)',
+  },
 
-  body: { display: 'grid', gridTemplateColumns: '1fr 300px', gap: 18, alignItems: 'start' },
+  body: { display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(260px, 320px)', gap: 20, alignItems: 'start' },
 
   /* Calendar */
-  calCard: { background: '#fff', borderRadius: 16, padding: '20px', border: '1.5px solid #e2e8f0', boxShadow: '0 1px 6px rgba(0,0,0,0.05)' },
+  calCard: {
+    background: '#fff',
+    borderRadius: 18,
+    padding: '22px',
+    border: '1px solid #e8ecf1',
+    boxShadow: '0 8px 32px rgba(15,23,42,0.07)',
+  },
   monthNav: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
   monthLabel: { fontSize: 17, fontWeight: 800, color: '#0f172a' },
   navBtn: { background: '#f1f5f9', border: 'none', borderRadius: 8, width: 32, height: 32, fontSize: 18, cursor: 'pointer', color: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center' },
 
   calGrid: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2 },
   calDayHeader: { textAlign: 'center', fontSize: 11, fontWeight: 700, color: '#94a3b8', padding: '6px 0', textTransform: 'uppercase', letterSpacing: '0.05em' },
-  calCell: { minHeight: 72, padding: '6px', borderRadius: 8, border: '1px solid #e2e8f0', transition: 'all 0.15s', position: 'relative', background: '#fff' },
-  calCellToday: { border: '1.5px solid #6366f133', background: '#f5f3ff' },
+  calCell: { minHeight: 76, padding: '6px', borderRadius: 10, border: '1px solid #e8ecf1', transition: 'all 0.15s', position: 'relative', background: '#fff' },
+  calCellToday: { border: '1.5px solid #93c5fd', background: '#eff6ff' },
   calCellHasScheduled: { border: '1.5px solid #fde68a' },
   calCellSelected: { background: '#ede9fe', border: '1.5px solid #6366f1' },
   calDayNum: { fontSize: 13, fontWeight: 600, color: '#334155', lineHeight: 1, marginBottom: 4 },
@@ -1120,7 +1136,15 @@ const s = {
   legendItem: { display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#64748b' },
 
   /* Sidebar */
-  sidebar: { background: '#fff', borderRadius: 16, border: '1.5px solid #e2e8f0', padding: '18px', boxShadow: '0 1px 6px rgba(0,0,0,0.05)', maxHeight: 640, overflowY: 'auto' },
+  sidebar: {
+    background: '#fff',
+    borderRadius: 18,
+    border: '1px solid #e8ecf1',
+    padding: '20px',
+    boxShadow: '0 8px 32px rgba(15,23,42,0.07)',
+    maxHeight: 680,
+    overflowY: 'auto',
+  },
   sidebarHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
   sidebarTitle: { fontSize: 15, fontWeight: 800, color: '#0f172a' },
   sidebarCount: { background: '#f1f5f9', borderRadius: 99, padding: '2px 10px', fontSize: 12, fontWeight: 700, color: '#6366f1' },
@@ -1134,7 +1158,14 @@ const s = {
   emptyState: { color: '#94a3b8', fontSize: 13, textAlign: 'center', padding: 16 },
 
   /* Feed grid */
-  feedWrap: { gridColumn: '1 / -1', background: '#fff', borderRadius: 16, padding: 24, border: '1.5px solid #e2e8f0', boxShadow: '0 1px 6px rgba(0,0,0,0.05)' },
+  feedWrap: {
+    gridColumn: '1 / -1',
+    background: '#fff',
+    borderRadius: 18,
+    padding: 24,
+    border: '1px solid #e8ecf1',
+    boxShadow: '0 8px 32px rgba(15,23,42,0.07)',
+  },
   feedHeader: { marginBottom: 20 },
   feedTitle: { fontSize: 17, fontWeight: 800, color: '#0f172a', display: 'block' },
   feedSub: { fontSize: 13, color: '#94a3b8', marginTop: 2, display: 'block' },

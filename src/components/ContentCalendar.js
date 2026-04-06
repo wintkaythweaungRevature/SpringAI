@@ -190,6 +190,42 @@ function pickFirstUrl(...vals) {
   return '';
 }
 
+function isHttpUrl(s) {
+  return typeof s === 'string' && /^\s*https?:\/\//i.test(s.trim());
+}
+
+/** Prefer a real browser-loadable URL over raw S3 keys when merging overview + history. */
+function pickBestMediaUrl(a, b) {
+  const aa = typeof a === 'string' ? a.trim() : '';
+  const bb = typeof b === 'string' ? b.trim() : '';
+  if (isHttpUrl(aa)) return aa;
+  if (isHttpUrl(bb)) return bb;
+  return pickFirstUrl(a, b);
+}
+
+function toNum(v) {
+  if (v == null || v === '') return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+function coalesceMetric(pVal, srcVal) {
+  const a = toNum(pVal);
+  if (a !== null) return a;
+  const b = toNum(srcVal);
+  if (b !== null) return b;
+  return 0;
+}
+
+function fmtCount(n) {
+  const v = Number(n);
+  if (!Number.isFinite(v)) return '0';
+  if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`;
+  if (v >= 10_000) return `${Math.round(v / 1_000)}K`;
+  if (v >= 1_000) return `${(v / 1_000).toFixed(1)}K`;
+  return String(Math.round(v));
+}
+
 function getPostPreview(post) {
   const mediaType = String(post?.mediaType || '').toLowerCase();
   const mediaUrl = pickFirstUrl(
@@ -218,8 +254,12 @@ function getPostPreview(post) {
 }
 
 function postMergeKey(post) {
+  // PublishJob rows use id === jobId; never share a key with SocialPost id (same number = wrong merge).
+  if (post?.jobId != null && String(post.jobId).trim() !== '') {
+    return `job:${String(post.jobId)}`;
+  }
   if (post?.id != null && String(post.id).trim() !== '') {
-    return `id:${String(post.id)}`;
+    return `post:${String(post.id)}`;
   }
   const platform = String(post?.platform || '').toLowerCase();
   const caption = String(post?.caption || '').trim().slice(0, 80).toLowerCase();
@@ -243,9 +283,16 @@ function mergeOneRow(p, src) {
       p?.status != null && String(p.status).trim() !== ''
         ? p.status
         : src?.status,
-    mediaUrl: pickFirstUrl(p?.mediaUrl, src?.mediaUrl),
+    mediaUrl: pickBestMediaUrl(p?.mediaUrl, src?.mediaUrl),
     thumbnailUrl: pickFirstUrl(
       p?.thumbnailUrl,
+      p?.thumbnail,
+      p?.thumbUrl,
+      p?.posterUrl,
+      p?.previewImageUrl,
+      p?.previewUrl,
+      p?.imageUrl,
+      p?.coverUrl,
       src?.thumbnailUrl,
       src?.thumbnail,
       src?.thumbUrl,
@@ -256,6 +303,16 @@ function mergeOneRow(p, src) {
       src?.coverUrl,
     ),
     imageUrl: pickFirstUrl(p?.imageUrl, src?.imageUrl),
+    likes: coalesceMetric(p?.likes, src?.likes),
+    commentsCount: coalesceMetric(
+      p?.commentsCount ?? p?.comments,
+      src?.commentsCount ?? src?.comments,
+    ),
+    comments: coalesceMetric(p?.comments ?? p?.commentsCount, src?.comments ?? src?.commentsCount),
+    shares: coalesceMetric(p?.shares, src?.shares),
+    views: coalesceMetric(p?.views, src?.views),
+    impressions: coalesceMetric(p?.impressions, src?.impressions),
+    reach: coalesceMetric(p?.reach, src?.reach),
   };
 }
 
@@ -267,17 +324,20 @@ function mergeRecentWithHistory(recentActivity, historyPosts) {
   const historyByKey = new Map(history.map(p => [postMergeKey(p), p]));
 
   const merged = recent.map((p) => {
-    const byId = p?.id != null ? historyById.get(String(p.id)) : null;
+    const byId =
+      p?.jobId == null && p?.id != null ? historyById.get(String(p.id)) : null;
     const byKey = historyByKey.get(postMergeKey(p));
     const src = byId || byKey || {};
     return mergeOneRow(p, src);
   });
 
-  const seenIds = new Set(
-    merged.map((p) => (p?.id != null ? String(p.id) : null)).filter(Boolean),
+  const seenPostIds = new Set(
+    merged
+      .filter((p) => p?.id != null && p.jobId == null)
+      .map((p) => String(p.id)),
   );
   const extras = history
-    .filter((h) => h?.id != null && !seenIds.has(String(h.id)))
+    .filter((h) => h?.id != null && !seenPostIds.has(String(h.id)))
     .map((h) => mergeOneRow(h, historyById.get(String(h.id)) || {}));
 
   return [...merged, ...extras];
@@ -342,7 +402,10 @@ function DayModal({ date, posts, onClose, onRetryFailed, retryingIds = {}, onCan
               const pColor = platformColor(p.platform);
               const preview = getPostPreview(p);
               const isVideo = String(p.mediaType || '').toLowerCase() === 'video';
-              const canRetry = String(p.status || '').toUpperCase() === 'FAILED' && p.id != null;
+              const canRetry =
+                String(p.status || '').toUpperCase() === 'FAILED' &&
+                p.id != null &&
+                p.jobId == null;
               const retrying = canRetry && !!retryingIds[String(p.id)];
               const isScheduled = ['SCHEDULED','PENDING'].includes(String(p.status || '').toUpperCase()) && p.jobId != null;
               const jobId = p.jobId;
@@ -919,8 +982,14 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
                 <div style={s.upcomingList}>
                   {upcoming.map((p, i) => {
                     const pInfo = PLATFORM_MAP[p.platform?.toLowerCase()];
-                    const isVideo = p.mediaType === 'video';
-                    const canRetry = String(p.status || '').toUpperCase() === 'FAILED' && p.id != null;
+                    const preview = getPostPreview(p);
+                    const sideUrl = preview?.url;
+                    const isVideo =
+                      String(p.mediaType || '').toLowerCase() === 'video' || preview?.kind === 'video';
+                    const canRetry =
+                      String(p.status || '').toUpperCase() === 'FAILED' &&
+                      p.id != null &&
+                      p.jobId == null;
                     const retrying = canRetry && !!retryingIds[String(p.id)];
                     const st = getPostStatusUi(p);
                     return (
@@ -940,12 +1009,12 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
                       >
                         <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                           {/* Thumbnail */}
-                          {p.mediaUrl && (
+                          {sideUrl && (
                             <div style={{ width: 48, height: 48, borderRadius: 8, overflow: 'hidden', flexShrink: 0, background: '#f1f5f9', position: 'relative' }}>
                               {isVideo ? (
-                                <video src={p.mediaUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} muted preload="metadata" />
+                                <video src={sideUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} muted preload="metadata" />
                               ) : (
-                                <img src={p.mediaUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                <img src={sideUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                               )}
                               {isVideo && (
                                 <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -1027,66 +1096,81 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
             ) : (
               <div style={s.feedGrid}>
                 {filteredPosts.map((p, i) => {
-                  const pInfo = PLATFORM_MAP[p.platform?.toLowerCase()];
-                  const isVideo = p.mediaType === 'video';
-                  const canRetry = String(p.status || '').toUpperCase() === 'FAILED' && p.id != null;
-                  const retrying = canRetry && !!retryingIds[String(p.id)];
-                  const cardKey = p.id != null ? `post-${p.id}` : `feed-${postMergeKey(p)}-${i}`;
-                  const st = getPostStatusUi(p);
-                  return (
-                    <div
-                      key={cardKey}
-                      role="button"
-                      tabIndex={0}
-                      title="View post details"
-                      onClick={() => setFeedDetailPost(p)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          setFeedDetailPost(p);
-                        }
-                      }}
-                      style={{
-                        ...s.feedCard,
-                        cursor: 'pointer',
-                        transition: 'box-shadow 0.2s, border-color 0.15s',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.boxShadow = '0 4px 14px rgba(15,23,42,0.1)';
-                        e.currentTarget.style.borderColor = '#cbd5e1';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.boxShadow = 'none';
-                        e.currentTarget.style.borderColor = '#e2e8f0';
-                      }}
-                    >
-                      {/* Thumbnail area */}
+                    const pInfo = PLATFORM_MAP[p.platform?.toLowerCase()];
+                    const preview = getPostPreview(p);
+                    const isVideo =
+                      String(p.mediaType || '').toLowerCase() === 'video' || preview?.kind === 'video';
+                    const thumbUrl = preview?.url;
+                    const canRetry =
+                      String(p.status || '').toUpperCase() === 'FAILED' &&
+                      p.id != null &&
+                      p.jobId == null;
+                    const retrying = canRetry && !!retryingIds[String(p.id)];
+                    const cardKey =
+                      p.jobId != null
+                        ? `job-${p.jobId}`
+                        : p.id != null
+                          ? `post-${p.id}`
+                          : `feed-${postMergeKey(p)}-${i}`;
+                    const st = getPostStatusUi(p);
+                    const likes = p.likes ?? 0;
+                    const comments = p.commentsCount ?? p.comments ?? 0;
+                    const shares = p.shares ?? 0;
+                    const views = p.views ?? p.impressions ?? 0;
+                    return (
+                      <div
+                        key={cardKey}
+                        role="button"
+                        tabIndex={0}
+                        title="View post details"
+                        onClick={() => setFeedDetailPost(p)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setFeedDetailPost(p);
+                          }
+                        }}
+                        style={{
+                          ...s.feedCard,
+                          cursor: 'pointer',
+                          transition: 'box-shadow 0.2s, border-color 0.15s',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.boxShadow = '0 4px 14px rgba(15,23,42,0.1)';
+                          e.currentTarget.style.borderColor = '#cbd5e1';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.boxShadow = 'none';
+                          e.currentTarget.style.borderColor = '#e2e8f0';
+                        }}
+                      >
+                      {/* Thumbnail — same resolution order as day modal (thumb + media variants) */}
                       <div style={{
                         ...s.feedThumb,
-                        background: p.mediaUrl
+                        background: thumbUrl
                           ? '#000'
                           : `linear-gradient(135deg, ${platformColor(p.platform)}22, ${platformColor(p.platform)}44)`,
                         position: 'relative', overflow: 'hidden',
                       }}>
-                        {p.mediaUrl ? (
+                        {thumbUrl ? (
                           isVideo ? (
                             <video
-                              src={p.mediaUrl}
+                              src={thumbUrl}
                               style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                               muted
                               preload="metadata"
                             />
                           ) : (
                             <img
-                              src={p.mediaUrl}
+                              src={thumbUrl}
                               alt="post"
                               style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                             />
                           )
                         ) : (
-                          <div style={{ fontSize: 32 }}>{isVideo ? '🎥' : p.mediaType === 'image' ? '🖼️' : '✍️'}</div>
+                          <div style={{ fontSize: 32 }}>{isVideo ? '🎥' : String(p.mediaType || '').toLowerCase() === 'image' ? '🖼️' : '✍️'}</div>
                         )}
-                        {isVideo && p.mediaUrl && (
+                        {isVideo && thumbUrl && (
                           <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
                             background: 'rgba(0,0,0,0.55)', borderRadius: '50%', width: 36, height: 36,
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -1114,6 +1198,24 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
                         <span style={{ textTransform: 'capitalize' }}>{p.platform}</span>
                         <span>·</span>
                         <span>{fmtDate(postCalendarTimestamp(p))}</span>
+                      </div>
+                      <div
+                        style={{
+                          display: 'flex',
+                          flexWrap: 'wrap',
+                          gap: '8px 12px',
+                          padding: '0 12px 10px',
+                          fontSize: 11,
+                          color: '#64748b',
+                          fontWeight: 600,
+                        }}
+                      >
+                        <span title="Likes">❤️ {fmtCount(likes)}</span>
+                        <span title="Comments">💬 {fmtCount(comments)}</span>
+                        <span title="Shares">↗ {fmtCount(shares)}</span>
+                        {views > 0 && (
+                          <span title="Views / impressions">👁 {fmtCount(views)}</span>
+                        )}
                       </div>
                       {canRetry && (
                         <div style={{ padding: '0 12px 12px' }}>

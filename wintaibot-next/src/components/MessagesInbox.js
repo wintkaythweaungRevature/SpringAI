@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { isPlatformDisabled } from '@/config/disabledPlatforms';
 import PlatformIcon from './PlatformIcon';
 
 const PLATFORM_META = {
@@ -965,7 +966,9 @@ export default function MessagesInbox({ onOpenVideoPublisher, onOpenConnectedAcc
     const list = Object.values(PLATFORM_META);
     if (connectedPlatformIds === null) return [];
     if (connectedPlatformIds.size === 0) return [];
-    return list.filter((p) => connectedPlatformIds.has(p.id));
+    return list.filter(
+      (p) => connectedPlatformIds.has(p.id) && !isPlatformDisabled(p.id),
+    );
   }, [connectedPlatformIds]);
 
   const load = useCallback(async () => {
@@ -997,6 +1000,10 @@ export default function MessagesInbox({ onOpenVideoPublisher, onOpenConnectedAcc
     if (connectedPlatformIds === null || platformTab === 'all') return;
     if (!connectedPlatformIds.has(platformTab)) setPlatformTab('all');
   }, [connectedPlatformIds, platformTab]);
+
+  useEffect(() => {
+    if (platformTab !== 'all' && isPlatformDisabled(platformTab)) setPlatformTab('all');
+  }, [platformTab]);
 
   const conversations = useMemo(() => {
     const { conversations: c0 } = coalesceMessagesApiPayload(data || {});

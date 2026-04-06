@@ -1,5 +1,12 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { filterEnabledPlatforms, isPlatformDisabled } from '../config/disabledPlatforms';
+import {
+  getVideoDurationFromFile,
+  validateVideoAgainstPlatforms,
+  formatDurationHuman,
+  SAFE_DIRECT_UPLOAD_MAX_BYTES,
+} from '../config/videoPlatformRequirements';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import PlatformIcon from './PlatformIcon';
 import VideoTrimmer from './VideoTrimmer';
@@ -8,7 +15,7 @@ import CaptionIdeasPanel from './CaptionIdeasPanel';
 import ThumbnailIdeasPanel from './ThumbnailIdeasPanel';
 
 /* ─── Constants ─────────────────────────────────────────────── */
-const PLATFORMS = [
+const PLATFORMS = filterEnabledPlatforms([
   { id: 'youtube',   label: 'YouTube',    emoji: '▶️',  color: '#FF0000', maxLen: 5000,  logo: 'youtube',   supports: ['video'] },
   { id: 'instagram', label: 'Instagram',  emoji: '📸',  color: '#E1306C', maxLen: 2200,  logo: 'instagram', supports: ['video', 'image'] },
   { id: 'facebook',  label: 'Facebook',   emoji: '👍',  color: '#1877F2', maxLen: 63206, logo: 'facebook',  supports: ['video', 'image', 'text'] },
@@ -17,7 +24,7 @@ const PLATFORMS = [
   { id: 'x',         label: 'X (Twitter)',emoji: '🐦',  color: '#000000', maxLen: 280,   logo: 'x',         supports: ['video', 'image', 'text'] },
   { id: 'threads',   label: 'Threads',    emoji: '🧵',  color: '#101010', maxLen: 500,   logo: 'threads',   supports: ['video', 'image', 'text'] },
   { id: 'pinterest', label: 'Pinterest',  emoji: '📌',  color: '#E60023', maxLen: 500,   logo: 'pinterest', supports: ['image'] },
-];
+]);
 
 const PLATFORM_ID_TO_BACKEND = {
   youtube:   'YouTube',
@@ -31,7 +38,9 @@ const PLATFORM_ID_TO_BACKEND = {
 };
 
 /** Inline “Connected accounts” rows — keep in sync with Social Connect / `/api/social/status`. */
-const CONNECT_ACCOUNT_ROW_IDS = ['youtube', 'instagram', 'tiktok', 'linkedin', 'facebook', 'x', 'threads'];
+const CONNECT_ACCOUNT_ROW_IDS = ['youtube', 'instagram', 'tiktok', 'linkedin', 'facebook', 'x', 'threads'].filter(
+  (id) => !isPlatformDisabled(id),
+);
 
 const STEPS = ['upload', 'processing', 'review', 'publishing', 'analytics'];
 
@@ -222,7 +231,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
 
   const [step, setStep]                 = useState('upload');
   const [video, setVideo]               = useState(null);
-  const [selectedPlatforms, setSelected] = useState(['youtube', 'instagram', 'tiktok', 'linkedin']);
+  const [selectedPlatforms, setSelected] = useState(['youtube', 'instagram', 'linkedin']);
   const [dragOver, setDragOver]         = useState(false);
   const [processing, setProcessing]     = useState(false);
   const [processLog, setProcessLog]     = useState([]);
@@ -249,6 +258,8 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
   const [retryingId, setRetryingId]   = useState(null);
   const [historyDetailPost, setHistoryDetailPost] = useState(null);
   const [videoDurationSec, setVideoDurationSec] = useState(0);
+  const [clientVideoDurationSec, setClientVideoDurationSec] = useState(0);
+  const [durationProbing, setDurationProbing] = useState(false);
   // Thumbnail picker state
   const [uploadedVideoId, setUploadedVideoId] = useState(null);
   const [frames, setFrames]             = useState([]);
@@ -300,6 +311,75 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
   };
 
   useEffect(() => { loadDashboard(); }, [base, token]); // eslint-disable-line
+
+  useEffect(() => {
+    if (!video || postType !== 'video') {
+      setClientVideoDurationSec(0);
+      setDurationProbing(false);
+      return;
+    }
+    let cancelled = false;
+    setDurationProbing(true);
+    getVideoDurationFromFile(video)
+      .then((d) => {
+        if (!cancelled) setClientVideoDurationSec(d);
+      })
+      .catch(() => {
+        if (!cancelled) setClientVideoDurationSec(0);
+      })
+      .finally(() => {
+        if (!cancelled) setDurationProbing(false);
+      });
+    return () => { cancelled = true; };
+  }, [video, postType]);
+
+  const effectiveDurationSec = Math.max(
+    Number(videoDurationSec) || 0,
+    Number(clientVideoDurationSec) || 0,
+  );
+
+  const uploadStepVideoValidation = useMemo(
+    () =>
+      validateVideoAgainstPlatforms({
+        platformIds: selectedPlatforms,
+        publishType,
+        postType,
+        durationSec: effectiveDurationSec,
+        fileSizeBytes: video?.size ?? 0,
+        variantsByPlatform: {},
+        scheduledTimesByPlatform: {},
+        skipDirectUploadSizeCheck: true,
+      }),
+    [selectedPlatforms, publishType, postType, effectiveDurationSec, video?.size],
+  );
+
+  const reviewVideoValidation = useMemo(() => {
+    if (step !== 'review' || postType !== 'video') {
+      return { blocking: [], warnings: [] };
+    }
+    const platformIds = selectedPlatforms.filter((pid) => variants[pid]);
+    return validateVideoAgainstPlatforms({
+      platformIds,
+      publishType,
+      postType,
+      durationSec: effectiveDurationSec,
+      fileSizeBytes: video?.size ?? 0,
+      variantsByPlatform: variants,
+      scheduledTimesByPlatform: scheduledTimes,
+    });
+  }, [
+    step,
+    postType,
+    selectedPlatforms,
+    publishType,
+    effectiveDurationSec,
+    video?.size,
+    variants,
+    scheduledTimes,
+  ]);
+
+  const publishBlockedByVideoRules =
+    postType === 'video' && reviewVideoValidation.blocking.length > 0;
 
   const handleRetry = async (id) => {
     setRetryingId(id);
@@ -577,6 +657,9 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
+        if (res.status === 413) {
+          throw new Error('File too large for the server to accept (HTTP 413). Compress or trim the video and try again.');
+        }
         if (res.status === 504) throw new Error('Upload timed out. Try a smaller video or check your connection.');
         if (res.status === 500) throw new Error(err.error || err.message || 'Server error. Try again or use Skip below.');
         throw new Error(err.error || err.message || 'Upload failed');
@@ -770,6 +853,28 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
       setPublishError({ message: 'Your session expired. Log out and log in again.', platforms: [], requiresReconnect: false, requiresReLogin: true });
       return;
     }
+    if (postType === 'video') {
+      const effDur = Math.max(Number(videoDurationSec) || 0, Number(clientVideoDurationSec) || 0);
+      const preIds = selectedPlatforms.filter((pid) => variants[pid]);
+      const { blocking: preBlock } = validateVideoAgainstPlatforms({
+        platformIds: preIds,
+        publishType,
+        postType,
+        durationSec: effDur,
+        fileSizeBytes: video?.size ?? 0,
+        variantsByPlatform: variants,
+        scheduledTimesByPlatform: scheduledTimes,
+      });
+      if (preBlock.length > 0) {
+        setPublishError({
+          message: `Fix these before publishing:\n\n${preBlock.map((b) => `• ${b.message}`).join('\n')}`,
+          platforms: [],
+          requiresReconnect: false,
+          requiresReLogin: false,
+        });
+        return;
+      }
+    }
     const toPublish = selectedPlatforms.filter(pid => variants[pid]);
     publishErrorsRef.current = {};
 
@@ -807,6 +912,14 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
             body: JSON.stringify({ variantId: variant.variantId, caption: variant.caption, hashtags, publishType }),
           });
           const data = await res.json().catch(() => ({}));
+
+          if (res.status === 413) {
+            setPublishingStatus(prev => ({
+              ...prev,
+              [pid]: { state: 'failed', error: 'Upload too large (HTTP 413). Compress or trim the video and try again.' },
+            }));
+            continue;
+          }
 
           if (res.status === 202 || res.ok) {
             // Backend accepted — now poll for result
@@ -869,7 +982,12 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
             body: fd,
           });
           const data = await res.json().catch(() => ({}));
-          if (res.ok) {
+          if (res.status === 413) {
+            setPublishingStatus(prev => ({
+              ...prev,
+              [pid]: { state: 'failed', error: 'File too large for the server (HTTP 413). Use a smaller file or ensure processing created a variant.' },
+            }));
+          } else if (res.ok) {
             successPlatforms.push(pid);
             setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'done', error: null } }));
           } else {
@@ -1051,6 +1169,29 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
                     <div style={{ fontSize: '36px' }}>🎥</div>
                     <div style={s.fileName}>{video.name}</div>
                     <div style={s.fileSize}>{(video.size / 1024 / 1024).toFixed(1)} MB</div>
+                    {durationProbing && (
+                      <div style={{ fontSize: '12px', color: '#64748b', marginTop: '6px' }}>Reading video length…</div>
+                    )}
+                    {!durationProbing && effectiveDurationSec > 0 && (
+                      <div style={{ fontSize: '12px', color: '#475569', marginTop: '6px', fontWeight: 600 }}>
+                        Length ~{formatDurationHuman(effectiveDurationSec)}
+                      </div>
+                    )}
+                    {postType === 'video' && video.size > SAFE_DIRECT_UPLOAD_MAX_BYTES && (
+                      <div style={{
+                        marginTop: '10px',
+                        fontSize: '12px',
+                        color: '#92400e',
+                        background: '#fffbeb',
+                        border: '1px solid #fcd34d',
+                        borderRadius: '8px',
+                        padding: '8px 10px',
+                        lineHeight: 1.4,
+                      }}
+                      >
+                        Large file — uploads or publish requests above ~{(SAFE_DIRECT_UPLOAD_MAX_BYTES / 1024 / 1024).toFixed(0)} MB often hit server limits (HTTP 413). Compress or trim if anything fails.
+                      </div>
+                    )}
                     <div style={s.changeFile}>Click to change</div>
                     {/* Growth-only trim button */}
                     {isGrowth && (
@@ -1183,17 +1324,40 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
               </div>
             )}
 
+            {postType === 'video' && video && uploadStepVideoValidation.blocking.length > 0 && (
+              <div
+                role="alert"
+                style={{
+                  marginBottom: '14px',
+                  background: '#fef2f2',
+                  border: '1.5px solid #f87171',
+                  borderRadius: '10px',
+                  padding: '12px 14px',
+                  fontSize: '13px',
+                  color: '#7f1d1d',
+                  lineHeight: 1.45,
+                }}
+              >
+                <strong>Selected platforms do not fit this video</strong>
+                <ul style={{ margin: '8px 0 0', paddingLeft: '18px' }}>
+                  {uploadStepVideoValidation.blocking.map((b, i) => (
+                    <li key={`up-${b.code}-${b.platform}-${i}`}>{b.message}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             <button
               style={{
                 ...s.btnPrimary,
-                ...((postType === 'video' && (!video || selectedPlatforms.length === 0)) ||
+                ...((postType === 'video' && (!video || selectedPlatforms.length === 0 || uploadStepVideoValidation.blocking.length > 0)) ||
                     (postType === 'image' && (!imageFile || selectedPlatforms.length === 0)) ||
                     (postType === 'text'  && (!textCaption.trim() || selectedPlatforms.length === 0))
                   ? s.btnDisabled : {}),
               }}
               onClick={runProcessing}
               disabled={
-                (postType === 'video' && (!video || selectedPlatforms.length === 0)) ||
+                (postType === 'video' && (!video || selectedPlatforms.length === 0 || uploadStepVideoValidation.blocking.length > 0)) ||
                 (postType === 'image' && (!imageFile || selectedPlatforms.length === 0)) ||
                 (postType === 'text'  && (!textCaption.trim() || selectedPlatforms.length === 0))
               }
@@ -1521,32 +1685,50 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
       {/* ── STEP: REVIEW & PUBLISH ── */}
       {step === 'review' && (
         <div>
-        {/* Clip-limit warning banner — shown when video exceeds a platform's max duration */}
-        {postType === 'video' && videoDurationSec > 0 && (() => {
-          const clipped = selectedPlatforms.filter(pid => {
-            const max = PLATFORM_MAX_SEC[pid];
-            return max && videoDurationSec > max;
-          });
-          if (clipped.length === 0) return null;
-          const fmt = sec => sec >= 3600 ? `${Math.floor(sec/3600)}h` : sec >= 60 ? `${Math.floor(sec/60)}m` : `${sec}s`;
-          return (
-            <div style={{ background: '#fffbeb', border: '1.5px solid #f59e0b', borderRadius: '10px', padding: '12px 16px', marginBottom: '16px', fontSize: '13px', color: '#92400e' }}>
-              <strong>⚠️ Auto-clip notice</strong> — your video is {fmt(videoDurationSec)} long.
-              These platforms will be clipped automatically:
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px' }}>
-                {clipped.map(pid => {
-                  const p = PLATFORMS.find(x => x.id === pid);
-                  const max = PLATFORM_MAX_SEC[pid];
-                  return (
-                    <span key={pid} style={{ background: '#fef3c7', border: '1px solid #f59e0b', borderRadius: '6px', padding: '2px 10px', fontWeight: 600 }}>
-                      {p.label} → max {fmt(max)}
-                    </span>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })()}
+        {postType === 'video' && reviewVideoValidation.blocking.length > 0 && (
+          <div
+            role="alert"
+            style={{
+              background: '#fef2f2',
+              border: '1.5px solid #f87171',
+              borderRadius: '10px',
+              padding: '14px 16px',
+              marginBottom: '16px',
+              fontSize: '13px',
+              color: '#7f1d1d',
+            }}
+          >
+            <strong>Cannot publish yet — platform limits</strong>
+            <p style={{ margin: '8px 0 10px', lineHeight: 1.45 }}>
+              Each network has different rules for Reels, Stories, and Shorts. Fix the items below before using Schedule &amp; Publish (or deselect the platforms that do not fit).
+            </p>
+            <ul style={{ margin: 0, paddingLeft: '18px', lineHeight: 1.5 }}>
+              {reviewVideoValidation.blocking.map((b, i) => (
+                <li key={`${b.code}-${b.platform}-${i}`}>{b.message}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {postType === 'video' && reviewVideoValidation.warnings.length > 0 && reviewVideoValidation.blocking.length === 0 && (
+          <div
+            style={{
+              background: '#fffbeb',
+              border: '1.5px solid #fbbf24',
+              borderRadius: '10px',
+              padding: '12px 16px',
+              marginBottom: '16px',
+              fontSize: '13px',
+              color: '#92400e',
+            }}
+          >
+            <strong>Heads up</strong>
+            <ul style={{ margin: '8px 0 0', paddingLeft: '18px', lineHeight: 1.5 }}>
+              {reviewVideoValidation.warnings.map((w, i) => (
+                <li key={`${w.code}-${w.platform}-${i}`}>{w.message}</li>
+              ))}
+            </ul>
+          </div>
+        )}
         <div style={{ ...s.layout, ...(isMobile ? { flexDirection: 'column', flexWrap: 'wrap' } : {}) }}>
           {/* Platform tabs on left */}
           <div style={{ ...s.left, ...(isMobile ? { width: '100%', minWidth: 0 } : {}) }}>
@@ -1653,7 +1835,12 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
             </div>
 
             <div style={{ marginTop: '16px' }}>
-              <button type="button" style={s.btnPrimary} onClick={scheduleAndPublishAll}>
+              <button
+                type="button"
+                style={{ ...s.btnPrimary, ...(publishBlockedByVideoRules ? s.btnDisabled : {}) }}
+                onClick={scheduleAndPublishAll}
+                disabled={publishBlockedByVideoRules}
+              >
                 🚀 Schedule & Publish
               </button>
               <p style={{ fontSize: '11px', color: '#64748b', marginTop: '8px', marginBottom: 0 }}>
@@ -2002,7 +2189,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
                 );
               })}
               <button style={{ ...s.btnPrimary, marginTop: '16px', fontSize: '13px' }}
-                onClick={() => { setStep('upload'); setVideo(null); setVariants({}); setPublished([]); setScheduledTimes({}); setProcessLog([]); setContentIdea(null); setFrames([]); setSelectedFrameKey(null); setThumbnailUrl(null); setUploadedVideoId(null); setVideoDurationSec(0); }}>
+                onClick={() => { setStep('upload'); setVideo(null); setVariants({}); setPublished([]); setScheduledTimes({}); setProcessLog([]); setContentIdea(null); setFrames([]); setSelectedFrameKey(null); setThumbnailUrl(null); setUploadedVideoId(null); setVideoDurationSec(0); setClientVideoDurationSec(0); }}>
                 + New Video
               </button>
             </div>
@@ -2081,18 +2268,6 @@ function formatPublishError(platform, rawError) {
 }
 
 /* ─── Mock data generators (replace with GPT API calls) ─────── */
-// Max video duration in seconds per platform (null = no limit)
-const PLATFORM_MAX_SEC = {
-  youtube:   null,
-  instagram: 900,   // 15 min (Reels)
-  tiktok:    600,   // 10 min
-  linkedin:  600,   // 10 min
-  facebook:  null,  // 4 hours — effectively no limit
-  x:         140,   // 2 min 20 sec
-  threads:   300,   // 5 min
-  pinterest: 900,   // 15 min
-};
-
 const CAPTION_FORMAT_HINTS = {
   youtube:   '📋 Long description · timestamps · SEO keywords',
   instagram: '✨ Short & punchy · 3–5 lines · emojis + CTA',

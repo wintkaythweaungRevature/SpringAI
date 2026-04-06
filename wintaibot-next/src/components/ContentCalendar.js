@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { filterEnabledPlatforms } from '@/config/disabledPlatforms';
 import PlatformIcon from './PlatformIcon';
 import PostDetailModal from './PostDetailModal';
 
@@ -14,7 +15,7 @@ import PostDetailModal from './PostDetailModal';
    - Upcoming posts sidebar
 ───────────────────────────────────────────────────────────────────────────── */
 
-const PLATFORMS = [
+const PLATFORMS_ALL = [
   { id: 'instagram', label: 'Instagram', color: '#E1306C', logo: 'instagram' },
   { id: 'facebook',  label: 'Facebook',  color: '#1877F2', logo: 'facebook'  },
   { id: 'youtube',   label: 'YouTube',   color: '#FF0000', logo: 'youtube'   },
@@ -24,8 +25,8 @@ const PLATFORMS = [
   { id: 'threads',   label: 'Threads',   color: '#101010', logo: 'threads'   },
   { id: 'pinterest', label: 'Pinterest', color: '#E60023', logo: 'pinterest' },
 ];
-
-const PLATFORM_MAP = Object.fromEntries(PLATFORMS.map(p => [p.id, p]));
+const PLATFORMS = filterEnabledPlatforms(PLATFORMS_ALL);
+const PLATFORM_MAP = Object.fromEntries(PLATFORMS_ALL.map((p) => [p.id, p]));
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
@@ -223,6 +224,17 @@ function fmtCount(n) {
   return String(Math.round(v));
 }
 
+function youtubeVideoIdForCalendarPost(post) {
+  if (String(post?.platform || '').toLowerCase() !== 'youtube') return null;
+  const pid = post?.platformPostId ?? post?.platform_post_id;
+  if (!pid || typeof pid !== 'string') return null;
+  let s = pid.trim();
+  const m1 = s.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:[&?/]|$)/);
+  if (m1) return m1[1];
+  if (/^[a-zA-Z0-9_-]{11}$/.test(s)) return s;
+  return null;
+}
+
 function getPostPreview(post) {
   const mediaType = String(post?.mediaType || '').toLowerCase();
   const mediaUrl = pickFirstUrl(
@@ -247,6 +259,8 @@ function getPostPreview(post) {
   if (mediaType === 'image' && mediaUrl) return { kind: 'image', url: mediaUrl };
   if (mediaType === 'video' && mediaUrl) return { kind: 'video', url: mediaUrl };
   if (mediaUrl) return { kind: 'media', url: mediaUrl };
+  const ytId = youtubeVideoIdForCalendarPost(post);
+  if (ytId) return { kind: 'image', url: `https://img.youtube.com/vi/${ytId}/mqdefault.jpg` };
   return null;
 }
 

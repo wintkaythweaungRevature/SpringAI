@@ -1,13 +1,20 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { filterEnabledPlatforms, isPlatformDisabled } from '@/config/disabledPlatforms';
+import {
+  getVideoDurationFromFile,
+  validateVideoAgainstPlatforms,
+  formatDurationHuman,
+  SAFE_DIRECT_UPLOAD_MAX_BYTES,
+} from '@/config/videoPlatformRequirements';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import PlatformIcon from './PlatformIcon';
 
 /* ─── Constants ─────────────────────────────────────────────── */
-const PLATFORMS = [
+const PLATFORMS = filterEnabledPlatforms([
   { id: 'youtube',   label: 'YouTube',   emoji: '▶️',  color: '#FF0000', maxLen: 5000, logo: 'youtube' },
   { id: 'instagram', label: 'Instagram', emoji: '📸',  color: '#E1306C', maxLen: 2200, logo: 'instagram' },
   { id: 'facebook',  label: 'Facebook',   emoji: '👍',  color: '#1877F2', maxLen: 63206, logo: 'facebook' },
@@ -16,10 +23,12 @@ const PLATFORMS = [
   { id: 'x',         label: 'X (Twitter)', emoji: '🐦', color: '#000000', maxLen: 280, logo: 'x' },
   { id: 'threads',   label: 'Threads',   emoji: '🧵',  color: '#101010', maxLen: 500, logo: 'threads' },
   { id: 'pinterest', label: 'Pinterest', emoji: '📌',  color: '#E60023', maxLen: 500, logo: 'pinterest' },
-];
+]);
 
 /** Inline “Connect your accounts” rows — keep in sync with Social Connect / `/api/social/status`. */
-const CONNECT_ACCOUNT_ROW_IDS = ['youtube', 'instagram', 'tiktok', 'linkedin', 'facebook', 'x', 'threads'] as const;
+const CONNECT_ACCOUNT_ROW_IDS = ['youtube', 'instagram', 'tiktok', 'linkedin', 'facebook', 'x', 'threads'].filter(
+  (id) => !isPlatformDisabled(id),
+);
 
 const STEPS = ['upload', 'processing', 'review', 'published', 'analytics'];
 
@@ -45,7 +54,7 @@ export default function VideoPublisher() {
 
   const [step, setStep]                 = useState('upload');
   const [video, setVideo]               = useState<File | null>(null);
-  const [selectedPlatforms, setSelected] = useState<string[]>(['youtube', 'instagram', 'tiktok', 'linkedin']);
+  const [selectedPlatforms, setSelected] = useState<string[]>(['youtube', 'instagram', 'linkedin']);
   const [dragOver, setDragOver]         = useState(false);
   const [processing, setProcessing]     = useState(false);
   const [processLog, setProcessLog]     = useState<string[]>([]);
@@ -59,6 +68,11 @@ export default function VideoPublisher() {
   const [canSkipProcessing, setCanSkipProcessing] = useState(false);
   const [contentIdea, setContentIdea] = useState<string | null>(null);
   const [publishError, setPublishError] = useState<{ message: string; platforms: string[]; requiresReconnect: boolean } | null>(null);
+  /** Default reels limits for IG/FB (Next UI has no story/reels toggle yet). */
+  const publishType = 'reels';
+  const [videoDurationSec, setVideoDurationSec] = useState(0);
+  const [clientVideoDurationSec, setClientVideoDurationSec] = useState(0);
+  const [durationProbing, setDurationProbing] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const skippedRef = useRef(false);
   const router = useRouter();
@@ -81,6 +95,63 @@ export default function VideoPublisher() {
       })
       .catch(() => {});
   }, [base, token]);
+
+  useEffect(() => {
+    if (!video) {
+      setClientVideoDurationSec(0);
+      setDurationProbing(false);
+      return;
+    }
+    let cancelled = false;
+    setDurationProbing(true);
+    getVideoDurationFromFile(video)
+      .then((d) => {
+        if (!cancelled) setClientVideoDurationSec(d);
+      })
+      .catch(() => {
+        if (!cancelled) setClientVideoDurationSec(0);
+      })
+      .finally(() => {
+        if (!cancelled) setDurationProbing(false);
+      });
+    return () => { cancelled = true; };
+  }, [video]);
+
+  const effectiveDurationSec = Math.max(
+    Number(videoDurationSec) || 0,
+    Number(clientVideoDurationSec) || 0,
+  );
+
+  const uploadStepVideoValidation = useMemo(
+    () =>
+      validateVideoAgainstPlatforms({
+        platformIds: selectedPlatforms,
+        publishType,
+        postType: 'video',
+        durationSec: effectiveDurationSec,
+        fileSizeBytes: video?.size ?? 0,
+        variantsByPlatform: {},
+        scheduledTimesByPlatform: {},
+        skipDirectUploadSizeCheck: true,
+      }),
+    [selectedPlatforms, publishType, effectiveDurationSec, video?.size],
+  );
+
+  const reviewVideoValidation = useMemo(() => {
+    if (step !== 'review') return { blocking: [], warnings: [] };
+    const platformIds = selectedPlatforms.filter((pid) => variants[pid]);
+    return validateVideoAgainstPlatforms({
+      platformIds,
+      publishType,
+      postType: 'video',
+      durationSec: effectiveDurationSec,
+      fileSizeBytes: video?.size ?? 0,
+      variantsByPlatform: variants,
+      scheduledTimesByPlatform: scheduledTimes,
+    });
+  }, [step, selectedPlatforms, publishType, effectiveDurationSec, video?.size, variants, scheduledTimes]);
+
+  const publishBlockedByVideoRules = reviewVideoValidation.blocking.length > 0;
 
   const refreshConnections = () => {
     if (!token) return;
@@ -164,6 +235,8 @@ export default function VideoPublisher() {
     setScheduledTimes({});
     setProcessLog([]);
     setContentIdea(idea);
+    setVideoDurationSec(0);
+    setClientVideoDurationSec(0);
   };
 
   const usePlaceholders = () => {
@@ -209,6 +282,9 @@ export default function VideoPublisher() {
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
+        if (res.status === 413) {
+          throw new Error('File too large for the server to accept (HTTP 413). Compress or trim the video and try again.');
+        }
         if (res.status === 504) throw new Error('Upload timed out. Try a smaller video or check your connection.');
         if (res.status === 500) throw new Error(err.error || err.message || 'Server error. Try again or use Skip below.');
         throw new Error(err.error || err.message || 'Upload failed');
@@ -221,7 +297,11 @@ export default function VideoPublisher() {
       log('📝 Generating captions & hashtags with GPT-4...');
 
       // Poll until variants ready (max 2 min, every 3 sec)
-      type PollResult = { variants?: { platform: string; caption?: string; hashtags?: string; id?: string }[]; status?: string };
+      type PollResult = {
+        variants?: { platform: string; caption?: string; hashtags?: string; id?: string }[];
+        status?: string;
+        durationSeconds?: number;
+      };
       let pollData: PollResult | null = null;
       for (let i = 0; i < 40; i++) {
         await new Promise(r => setTimeout(r, 3000));
@@ -241,6 +321,10 @@ export default function VideoPublisher() {
       }
 
       log('📦 Packaging content variants...');
+
+      if (pollData?.durationSeconds != null && Number.isFinite(pollData.durationSeconds)) {
+        setVideoDurationSec(pollData.durationSeconds);
+      }
 
       const generated = {};
       for (const pid of selectedPlatforms) {
@@ -300,6 +384,26 @@ export default function VideoPublisher() {
   };
 
   const scheduleAndPublishAll = async () => {
+    const effDur = Math.max(Number(videoDurationSec) || 0, Number(clientVideoDurationSec) || 0);
+    const preIds = selectedPlatforms.filter((pid) => variants[pid]);
+    const { blocking: preBlock } = validateVideoAgainstPlatforms({
+      platformIds: preIds,
+      publishType,
+      postType: 'video',
+      durationSec: effDur,
+      fileSizeBytes: video?.size ?? 0,
+      variantsByPlatform: variants,
+      scheduledTimesByPlatform: scheduledTimes,
+    });
+    if (preBlock.length > 0) {
+      setPublishError({
+        message: `Fix these before publishing:\n\n${preBlock.map((b) => `• ${b.message}`).join('\n')}`,
+        platforms: [],
+        requiresReconnect: false,
+      });
+      return;
+    }
+
     const toPublish = selectedPlatforms.filter(pid => variants[pid]);
     const successPlatforms: string[] = [];
     const errors: Record<string, string> = {};
@@ -328,7 +432,9 @@ export default function VideoPublisher() {
               body: JSON.stringify({ variantId: variant.variantId, caption: variant.caption, hashtags }),
             });
             const data = await res.json().catch(() => ({}));
-            if (res.ok) successPlatforms.push(pid);
+            if (res.status === 413) {
+              errors[pid] = 'Upload too large (HTTP 413). Compress or trim the video and try again.';
+            } else if (res.ok) successPlatforms.push(pid);
             else if (data.requiresConnect) errors[pid] = formatPublishError(pid, data.error || `Connect your ${pid} account first`);
             else errors[pid] = formatPublishError(pid, data.error || 'Publish failed');
           } else {
@@ -346,7 +452,9 @@ export default function VideoPublisher() {
               body: formData,
             });
             const data = await res.json().catch(() => ({}));
-            if (res.ok) successPlatforms.push(pid);
+            if (res.status === 413) {
+              errors[pid] = 'File too large for the server (HTTP 413). Use a smaller file or ensure processing created a variant.';
+            } else if (res.ok) successPlatforms.push(pid);
             else if (data.requiresConnect) errors[pid] = formatPublishError(pid, data.error || `Connect your ${pid} account first`);
             else errors[pid] = formatPublishError(pid, data.error || 'Publish failed');
           }
@@ -451,6 +559,29 @@ export default function VideoPublisher() {
                   <div style={{ fontSize: '36px' }}>🎥</div>
                   <div style={s.fileName}>{video.name}</div>
                   <div style={s.fileSize}>{(video.size / 1024 / 1024).toFixed(1)} MB</div>
+                  {durationProbing && (
+                    <div style={{ fontSize: '12px', color: '#64748b', marginTop: '6px' }}>Reading video length…</div>
+                  )}
+                  {!durationProbing && effectiveDurationSec > 0 && (
+                    <div style={{ fontSize: '12px', color: '#475569', marginTop: '6px', fontWeight: 600 }}>
+                      Length ~{formatDurationHuman(effectiveDurationSec)}
+                    </div>
+                  )}
+                  {video.size > SAFE_DIRECT_UPLOAD_MAX_BYTES && (
+                    <div style={{
+                      marginTop: '10px',
+                      fontSize: '12px',
+                      color: '#92400e',
+                      background: '#fffbeb',
+                      border: '1px solid #fcd34d',
+                      borderRadius: '8px',
+                      padding: '8px 10px',
+                      lineHeight: 1.4,
+                    }}
+                    >
+                      Large file — uploads or publish above ~{(SAFE_DIRECT_UPLOAD_MAX_BYTES / 1024 / 1024).toFixed(0)} MB often hit server limits (HTTP 413). Compress or trim if anything fails.
+                    </div>
+                  )}
                   <div style={s.changeFile}>Click to change</div>
                 </>
               ) : (
@@ -462,10 +593,36 @@ export default function VideoPublisher() {
               )}
             </div>
 
+            {video && uploadStepVideoValidation.blocking.length > 0 && (
+              <div
+                role="alert"
+                style={{
+                  marginBottom: '14px',
+                  background: '#fef2f2',
+                  border: '1.5px solid #f87171',
+                  borderRadius: '10px',
+                  padding: '12px 14px',
+                  fontSize: '13px',
+                  color: '#7f1d1d',
+                  lineHeight: 1.45,
+                }}
+              >
+                <strong>Selected platforms do not fit this video</strong>
+                <ul style={{ margin: '8px 0 0', paddingLeft: '18px' }}>
+                  {uploadStepVideoValidation.blocking.map((b, i) => (
+                    <li key={`up-${b.code}-${b.platform}-${i}`}>{b.message}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             <button
-              style={{ ...s.btnPrimary, ...((!video || selectedPlatforms.length === 0) ? s.btnDisabled : {}) }}
+              style={{
+                ...s.btnPrimary,
+                ...((!video || selectedPlatforms.length === 0 || uploadStepVideoValidation.blocking.length > 0) ? s.btnDisabled : {}),
+              }}
               onClick={runProcessing}
-              disabled={!video || selectedPlatforms.length === 0}
+              disabled={!video || selectedPlatforms.length === 0 || uploadStepVideoValidation.blocking.length > 0}
             >
               🚀 Generate Content
             </button>
@@ -603,6 +760,50 @@ export default function VideoPublisher() {
         <div style={{ ...s.layout, ...(isMobile ? { flexDirection: 'column', flexWrap: 'wrap' } : {}) }}>
           {/* Platform tabs on left */}
           <div style={{ ...s.left, ...(isMobile ? { width: '100%', minWidth: 0 } : {}) }}>
+            {reviewVideoValidation.blocking.length > 0 && (
+              <div
+                role="alert"
+                style={{
+                  background: '#fef2f2',
+                  border: '1.5px solid #f87171',
+                  borderRadius: '10px',
+                  padding: '14px 16px',
+                  marginBottom: '12px',
+                  fontSize: '13px',
+                  color: '#7f1d1d',
+                }}
+              >
+                <strong>Cannot publish yet — platform limits</strong>
+                <p style={{ margin: '8px 0 10px', lineHeight: 1.45 }}>
+                  Each network has different rules for Reels and short video. Fix the items below or deselect platforms that do not fit.
+                </p>
+                <ul style={{ margin: 0, paddingLeft: '18px', lineHeight: 1.5 }}>
+                  {reviewVideoValidation.blocking.map((b, i) => (
+                    <li key={`rv-${b.code}-${b.platform}-${i}`}>{b.message}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {reviewVideoValidation.warnings.length > 0 && reviewVideoValidation.blocking.length === 0 && (
+              <div
+                style={{
+                  background: '#fffbeb',
+                  border: '1.5px solid #fbbf24',
+                  borderRadius: '10px',
+                  padding: '12px 16px',
+                  marginBottom: '12px',
+                  fontSize: '13px',
+                  color: '#92400e',
+                }}
+              >
+                <strong>Heads up</strong>
+                <ul style={{ margin: '8px 0 0', paddingLeft: '18px', lineHeight: 1.5 }}>
+                  {reviewVideoValidation.warnings.map((w, i) => (
+                    <li key={`rw-${w.code}-${w.platform}-${i}`}>{w.message}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
             <div style={s.sectionTitle}>📦 Content Variants</div>
             {selectedPlatforms.map(pid => {
               const p = PLATFORMS.find(x => x.id === pid);
@@ -708,7 +909,11 @@ export default function VideoPublisher() {
             </div>
 
             <div style={{ marginTop: '16px' }}>
-              <button style={s.btnPrimary} onClick={scheduleAndPublishAll}>
+              <button
+                style={{ ...s.btnPrimary, ...(publishBlockedByVideoRules ? s.btnDisabled : {}) }}
+                onClick={scheduleAndPublishAll}
+                disabled={publishBlockedByVideoRules}
+              >
                 🚀 Schedule & Publish
               </button>
               <p style={{ fontSize: '11px', color: '#64748b', marginTop: '8px', marginBottom: 0 }}>
@@ -780,7 +985,18 @@ export default function VideoPublisher() {
                 );
               })}
               <button style={{ ...s.btnPrimary, marginTop: '16px', fontSize: '13px' }}
-                onClick={() => { setStep('upload'); setVideo(null); setVariants({}); setPublished([]); setScheduledTimes({}); setProcessLog([]); setContentIdea(null); }}>
+                onClick={() => {
+                  setStep('upload');
+                  setVideo(null);
+                  setVariants({});
+                  setPublished([]);
+                  setScheduledTimes({});
+                  setProcessLog([]);
+                  setContentIdea(null);
+                  setVideoDurationSec(0);
+                  setClientVideoDurationSec(0);
+                }}
+              >
                 + New Video
               </button>
             </div>

@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { filterEnabledPlatforms } from '../config/disabledPlatforms';
 import PlatformIcon from './PlatformIcon';
 import ComposePostModal from './ComposePostModal';
 
 const API = process.env.REACT_APP_API_URL || 'https://api.wintaibot.com';
 
-const PLATFORMS = [
+const PLATFORMS = filterEnabledPlatforms([
   { id: 'instagram', label: 'Instagram', color: '#E1306C', emoji: '📸', logo: 'instagram' },
   { id: 'facebook',  label: 'Facebook',  color: '#1877F2', emoji: '👍', logo: 'facebook'  },
   { id: 'youtube',   label: 'YouTube',   color: '#FF0000', emoji: '▶️', logo: 'youtube'   },
@@ -15,7 +16,7 @@ const PLATFORMS = [
   { id: 'threads',   label: 'Threads',   color: '#101010', emoji: '🧵', logo: 'threads'   },
   { id: 'pinterest', label: 'Pinterest', color: '#E60023', emoji: '📌', logo: 'pinterest' },
   { id: 'reddit',    label: 'Reddit',    color: '#FF4500', emoji: '🤝', logo: 'reddit'    },
-];
+]);
 
 const PLATFORM_COLORS = {
   instagram: '#E1306C', facebook: '#1877F2', youtube: '#FF0000',

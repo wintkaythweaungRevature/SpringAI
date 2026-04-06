@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { filterEnabledPlatforms } from '../config/disabledPlatforms';
 import PlatformIcon from './PlatformIcon';
 
-const PLATFORMS = [
+const PLATFORMS = filterEnabledPlatforms([
   { id: 'youtube',   label: 'YouTube',    emoji: '▶️',  color: '#FF0000', desc: 'Upload videos & Shorts', logo: 'youtube' },
   { id: 'instagram', label: 'Instagram',  emoji: '📸',  color: '#E1306C', desc: 'Reels & Posts', logo: 'instagram' },
   { id: 'tiktok',    label: 'TikTok',     emoji: '🎵',  color: '#010101', desc: 'Short-form videos', logo: 'tiktok' },
@@ -11,7 +12,7 @@ const PLATFORMS = [
   { id: 'x',         label: 'X (Twitter)',emoji: '🐦',  color: '#000000', desc: 'Video tweets', logo: 'x' },
   { id: 'threads',   label: 'Threads',    emoji: '🧵',  color: '#101010', desc: 'Text + video posts', logo: 'threads' },
   { id: 'pinterest', label: 'Pinterest',  emoji: '📌',  color: '#E60023', desc: 'Video pins', logo: 'pinterest' },
-];
+]);
 
 export default function SocialConnect() {
   const { apiBase, token } = useAuth();

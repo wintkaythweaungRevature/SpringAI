@@ -2,16 +2,17 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { filterEnabledPlatforms } from '@/config/disabledPlatforms';
 import PlatformIcon from './PlatformIcon';
 
-const PLATFORMS = [
+const PLATFORMS = filterEnabledPlatforms([
   { id: 'instagram', label: 'Instagram', emoji: '📸', color: '#E1306C', logo: 'instagram' },
   { id: 'facebook', label: 'Facebook', emoji: '👍', color: '#1877F2', logo: 'facebook' },
   { id: 'youtube', label: 'YouTube', emoji: '▶️', color: '#FF0000', logo: 'youtube' },
   { id: 'x', label: 'X', emoji: '🐦', color: '#000000', logo: 'x' },
   { id: 'tiktok', label: 'TikTok', emoji: '🎵', color: '#010101', logo: 'tiktok' },
   { id: 'linkedin', label: 'LinkedIn', emoji: '💼', color: '#0A66C2', logo: 'linkedin' },
-];
+]);
 
 function IconChart({ size = 26, color = '#6366f1' }) {
   return (

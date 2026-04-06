@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { isPlatformDisabled } from '@/config/disabledPlatforms';
 import PlatformIcon from './PlatformIcon';
 
 const PLATFORM_META: Record<string, { id: string; label: string; color: string; logo: string; emoji: string }> = {
@@ -241,6 +242,10 @@ export default function MessagesInbox({
     load();
   }, [load]);
 
+  useEffect(() => {
+    if (platformTab !== 'all' && isPlatformDisabled(platformTab)) setPlatformTab('all');
+  }, [platformTab]);
+
   const filteredConvs = useMemo(() => {
     const source = platformTab === 'all' ? data.conversations : data.conversations.filter((x) => x.platform === platformTab);
     return typeTab === 'comments' ? [] : source;
@@ -310,7 +315,9 @@ export default function MessagesInbox({
             >
               <span style={{ fontSize: 15, fontWeight: 800 }}>All</span>
             </button>
-            {Object.values(PLATFORM_META).map((p) => {
+            {Object.values(PLATFORM_META)
+              .filter((p) => !isPlatformDisabled(p.id))
+              .map((p) => {
               const n = commentCountsByPlatform[p.id] || 0;
               const active = platformTab === p.id;
               return (

@@ -2,11 +2,12 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { filterEnabledPlatforms } from '@/config/disabledPlatforms';
 import PlatformIcon from './PlatformIcon';
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_BASE || '').replace(/\/$/, '') || 'https://api.wintaibot.com';
 
-const PLATFORMS = [
+const PLATFORMS = filterEnabledPlatforms([
   { id: 'instagram', label: 'Instagram', color: '#E1306C', emoji: '📸', logo: 'instagram',
     note: 'Replies to comments on your Instagram posts.' },
   { id: 'facebook',  label: 'Facebook (comments)',  color: '#1877F2', emoji: '👍', logo: 'facebook',
@@ -25,7 +26,7 @@ const PLATFORMS = [
     note: 'Replies to comments on your Threads posts.' },
   { id: 'pinterest', label: 'Pinterest', color: '#E60023', emoji: '📌', logo: 'pinterest',
     note: 'Replies to comments on your Pinterest pins.' },
-];
+]);
 
 const DEFAULT_PROMPT =
   "You are a friendly social media manager. Reply to the following comment in 1-2 short, human sentences. " +

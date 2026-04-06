@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import PlatformIcon, { LinkedInLogo } from "./PlatformIcon";
 import { WINTAI_SOCIAL } from "../config/brandSocial";
+import { filterEnabledPlatforms, isPlatformDisabled } from "../config/disabledPlatforms";
 import "./LandingSection.css";
 
 /** Simple Icons CDN — same source as PlatformIcon (production- recognizable marks). */
@@ -15,8 +16,8 @@ const infraStackLogos = [
   { label: "Java", fullLabel: "OpenJDK / Java", slug: "openjdk", color: "437291", href: "https://openjdk.org" },
 ];
 
-/** Eight publish destinations supported in-app (Video Publisher / social). */
-const landingPublishPlatforms = [
+/** Publish destinations shown on marketing (mirrors in-app picker; some may be temporarily hidden). */
+const landingPublishPlatforms = filterEnabledPlatforms([
   { id: "youtube", label: "YouTube", color: "#FF0000", logo: "youtube" },
   { id: "instagram", label: "Instagram", color: "#E1306C", logo: "instagram" },
   { id: "facebook", label: "Facebook", color: "#1877F2", logo: "facebook" },
@@ -25,7 +26,7 @@ const landingPublishPlatforms = [
   { id: "x", label: "X", color: "#000000", logo: "x" },
   { id: "threads", label: "Threads", color: "#101010", logo: "threads" },
   { id: "pinterest", label: "Pinterest", color: "#E60023", logo: "pinterest" },
-];
+]);
 
 /** Icons for landing “showcase” graphic (Simple Icons CDN). */
 const VP_SHOWCASE_PLATFORMS = [
@@ -33,7 +34,7 @@ const VP_SHOWCASE_PLATFORMS = [
   { slug: "tiktok", color: "000000" },
   { slug: "facebook", color: "1877F2" },
   { slug: "instagram", color: "E4405F" },
-];
+].filter((row) => !isPlatformDisabled(row.slug));
 
 /**
  * Visual story: one video → beams → platform marks (showcase, not a wall of text).

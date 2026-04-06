@@ -1,9 +1,10 @@
 import React, { useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { filterEnabledPlatforms } from '../config/disabledPlatforms';
 import PlatformIcon from './PlatformIcon';
 import CaptionIdeasPanel from './CaptionIdeasPanel';
 
-const PLATFORMS = [
+const PLATFORMS = filterEnabledPlatforms([
   { id: 'instagram', label: 'Instagram', color: '#E1306C' },
   { id: 'facebook',  label: 'Facebook',  color: '#1877F2' },
   { id: 'youtube',   label: 'YouTube',   color: '#FF0000' },
@@ -12,7 +13,7 @@ const PLATFORMS = [
   { id: 'x',         label: 'X',         color: '#000000' },
   { id: 'threads',   label: 'Threads',   color: '#000000' },
   { id: 'pinterest', label: 'Pinterest', color: '#E60023' },
-];
+]);
 
 const MEDIA_TYPES = ['Text', 'Image', 'Video', 'Story'];
 

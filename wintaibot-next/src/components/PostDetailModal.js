@@ -4,15 +4,6 @@ import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import PlatformIcon from './PlatformIcon';
 
-function pickUrl(post) {
-  const keys = ['postUrl', 'permalink', 'externalUrl', 'url', 'link', 'publicUrl', 'mediaUrl'];
-  for (const k of keys) {
-    const v = post?.[k];
-    if (typeof v === 'string' && v.trim()) return v.trim();
-  }
-  return '';
-}
-
 function firstNonEmptyStr(...vals) {
   for (const v of vals) {
     if (v != null && String(v).trim() !== '') return String(v).trim();
@@ -93,6 +84,57 @@ function fromDatetimeLocalToIso(local) {
   return Number.isFinite(d.getTime()) ? d.toISOString() : null;
 }
 
+function combineDateAndTimeToIso(dateYmd, timeHm) {
+  if (!dateYmd || !timeHm) return null;
+  const d = new Date(`${dateYmd}T${timeHm}:00`);
+  return Number.isFinite(d.getTime()) ? d.toISOString() : null;
+}
+
+function splitDatetimeLocal(dlv) {
+  if (!dlv || !String(dlv).includes('T')) return { date: '', time: '12:00' };
+  const [d, t] = String(dlv).split('T');
+  return { date: d || '', time: (t || '12:00').slice(0, 5) };
+}
+
+function looksLikePresignedAwsUrl(u) {
+  return typeof u === 'string' && /X-Amz-Algorithm|X-Amz-Credential/i.test(u);
+}
+
+function looksLikeS3HttpUrl(u) {
+  return typeof u === 'string' && /^https?:\/\//i.test(u) && /\.s3[.-][a-z0-9-]+\.amazonaws\.com\//i.test(u);
+}
+
+function youtubeVideoIdFromPost(post) {
+  if (String(post?.platform || '').toLowerCase() !== 'youtube') return null;
+  const pid = post?.platformPostId ?? post?.platform_post_id;
+  if (!pid || typeof pid !== 'string') return null;
+  let s = pid.trim();
+  const m1 = s.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:[&?/]|$)/);
+  if (m1) return m1[1];
+  if (/^[a-zA-Z0-9_-]{11}$/.test(s)) return s;
+  return null;
+}
+
+function youtubeEmbedUrl(post) {
+  const id = youtubeVideoIdFromPost(post);
+  return id ? `https://www.youtube.com/embed/${id}` : null;
+}
+
+function rawPreviewRef(post, mediaUrlEdit) {
+  return (
+    firstNonEmptyStr(
+      mediaUrlEdit,
+      post?.thumbnailUrl,
+      post?.mediaUrl,
+      post?.videoUrl,
+      post?.imageUrl,
+      post?.fileUrl,
+      post?.assetUrl,
+      post?.url,
+    ) || ''
+  );
+}
+
 /**
  * Post detail + edit modal: caption, hashtags, schedule, media URL; DELETE / PATCH to API.
  */
@@ -103,8 +145,11 @@ export default function PostDetailModal({ post, onClose, platform, onSaved }) {
   const [caption, setCaption] = useState('');
   const [hashtags, setHashtags] = useState('');
   const [publishType, setPublishType] = useState('text');
-  const [scheduledLocal, setScheduledLocal] = useState('');
+  const [scheduledDateOnly, setScheduledDateOnly] = useState('');
+  const [scheduledTimeOnly, setScheduledTimeOnly] = useState('12:00');
   const [mediaUrlEdit, setMediaUrlEdit] = useState('');
+  const [displayPreviewUrl, setDisplayPreviewUrl] = useState('');
+  const [previewHint, setPreviewHint] = useState('');
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [errMsg, setErrMsg] = useState('');
@@ -132,16 +177,86 @@ export default function PostDetailModal({ post, onClose, platform, onSaved }) {
     const mt = String(post.mediaType || 'text').toLowerCase();
     setPublishType(mt === 'video' ? 'video' : mt === 'image' ? 'image' : 'text');
     const sched = scheduledIsoFromPost(post);
-    setScheduledLocal(toDatetimeLocalValue(sched) || toDatetimeLocalValue(post?.createdAt));
+    const dlv = toDatetimeLocalValue(sched) || toDatetimeLocalValue(post?.createdAt);
+    const { date, time } = splitDatetimeLocal(dlv);
+    setScheduledDateOnly(date);
+    setScheduledTimeOnly(time);
     setMediaUrlEdit(
       firstNonEmptyStr(post?.mediaUrl, post?.videoUrl, post?.imageUrl, post?.thumbnailUrl, post?.url) || ''
     );
+    setDisplayPreviewUrl('');
+    setPreviewHint('');
     setErrMsg('');
   }, [post]);
 
   useEffect(() => {
     syncFromPost();
   }, [syncFromPost]);
+
+  const rawPreview = rawPreviewRef(post, mediaUrlEdit);
+
+  useEffect(() => {
+    let cancelled = false;
+    const yt = youtubeEmbedUrl(post);
+    if (yt) {
+      setDisplayPreviewUrl('');
+      setPreviewHint('');
+      return () => {
+        cancelled = true;
+      };
+    }
+    if (!rawPreview) {
+      setDisplayPreviewUrl('');
+      setPreviewHint('');
+      return () => {
+        cancelled = true;
+      };
+    }
+    if (looksLikePresignedAwsUrl(rawPreview)) {
+      setDisplayPreviewUrl(rawPreview);
+      setPreviewHint('');
+      return () => {
+        cancelled = true;
+      };
+    }
+    const needsPresign =
+      !/^https?:\/\//i.test(rawPreview) || looksLikeS3HttpUrl(rawPreview);
+    if (!needsPresign || !token) {
+      setDisplayPreviewUrl(rawPreview);
+      setPreviewHint('');
+      return () => {
+        cancelled = true;
+      };
+    }
+    (async () => {
+      try {
+        const r = await fetch(
+          `${base}/api/social/post/media/preview-url?ref=${encodeURIComponent(rawPreview)}`,
+          { headers: { Authorization: `Bearer ${token}` } },
+        );
+        const data = await r.json().catch(() => ({}));
+        if (cancelled) return;
+        if (r.ok && data.url) {
+          setDisplayPreviewUrl(data.url);
+          setPreviewHint('');
+        } else {
+          setDisplayPreviewUrl(rawPreview);
+          setPreviewHint(
+            data.error ||
+              'Could not unlock this file for preview. Check AWS/S3 or use a presigned link.',
+          );
+        }
+      } catch {
+        if (!cancelled) {
+          setDisplayPreviewUrl(rawPreview);
+          setPreviewHint('Preview request failed.');
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [rawPreview, token, base, post]);
 
   useEffect(() => {
     const onKey = (e) => {
@@ -154,7 +269,8 @@ export default function PostDetailModal({ post, onClose, platform, onSaved }) {
   if (!post) return null;
 
   const status = post.status || '—';
-  const statusOk = status === 'SUCCESS' || status === 'PUBLISHED';
+  const statusOk =
+    status === 'SUCCESS' || status === 'PUBLISHED' || status === 'COMPLETED';
   const statusColor = statusOk ? '#16a34a' : status === 'FAILED' ? '#dc2626' : '#d97706';
   const statusBg = statusOk ? '#f0fdf4' : status === 'FAILED' ? '#fef2f2' : '#fffbeb';
 
@@ -178,9 +294,8 @@ export default function PostDetailModal({ post, onClose, platform, onSaved }) {
     scheduledStr = scheduledDisplay || '';
   }
 
-  const link = pickUrl(post);
-  const previewUrl =
-    firstNonEmptyStr(mediaUrlEdit, post?.thumbnailUrl, post?.mediaUrl, post?.videoUrl, post?.imageUrl) || '';
+  const ytEmbed = youtubeEmbedUrl(post);
+  const previewUrl = displayPreviewUrl || rawPreview;
 
   const authHeaders = () => ({
     Authorization: `Bearer ${token}`,
@@ -193,7 +308,7 @@ export default function PostDetailModal({ post, onClose, platform, onSaved }) {
     setErrMsg('');
     try {
       const url = buildPatchUrl(base, target);
-      const scheduledAt = fromDatetimeLocalToIso(scheduledLocal);
+      const scheduledAt = combineDateAndTimeToIso(scheduledDateOnly, scheduledTimeOnly);
       const body = {
         caption: caption.trim(),
         hashtags: hashtags.trim(),
@@ -441,14 +556,40 @@ export default function PostDetailModal({ post, onClose, platform, onSaved }) {
             </select>
 
             <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
-              Scheduled for
+              Scheduled date
             </div>
-            <input
-              type="datetime-local"
-              value={scheduledLocal}
-              onChange={(e) => setScheduledLocal(e.target.value)}
+            <div
               style={{
                 width: '100%',
+                boxSizing: 'border-box',
+                padding: '10px 12px',
+                borderRadius: 10,
+                border: '1px solid #e2e8f0',
+                fontSize: 13,
+                marginBottom: 10,
+                background: '#f8fafc',
+                color: '#475569',
+              }}
+            >
+              {scheduledDateOnly
+                ? new Date(`${scheduledDateOnly}T12:00:00`).toLocaleDateString(undefined, {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })
+                : '—'}
+            </div>
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+              Time (editable)
+            </div>
+            <input
+              type="time"
+              value={scheduledTimeOnly}
+              onChange={(e) => setScheduledTimeOnly(e.target.value)}
+              style={{
+                width: '100%',
+                maxWidth: 200,
                 boxSizing: 'border-box',
                 padding: '10px 12px',
                 borderRadius: 10,
@@ -479,12 +620,36 @@ export default function PostDetailModal({ post, onClose, platform, onSaved }) {
           </>
         )}
 
-        {previewUrl && (
+        {previewHint && (
+          <div style={{ marginBottom: 10, fontSize: 12, color: '#b45309', background: '#fffbeb', padding: '8px 10px', borderRadius: 8 }}>
+            {previewHint}
+          </div>
+        )}
+        {(ytEmbed || previewUrl) && (
           <div style={{ marginBottom: 14, borderRadius: 10, overflow: 'hidden', border: '1px solid #e2e8f0', background: '#0f172a' }}>
-            {publishType === 'video' || String(post?.mediaType || '').toLowerCase() === 'video' ? (
-              <video src={previewUrl} controls style={{ width: '100%', maxHeight: 220, display: 'block' }} />
+            {ytEmbed ? (
+              <iframe
+                title="YouTube preview"
+                src={ytEmbed}
+                style={{ width: '100%', height: 220, border: 'none', display: 'block' }}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            ) : publishType === 'video' || String(post?.mediaType || '').toLowerCase() === 'video' ? (
+              <video
+                key={previewUrl}
+                src={previewUrl}
+                controls
+                playsInline
+                preload="metadata"
+                style={{ width: '100%', maxHeight: 220, display: 'block' }}
+              />
             ) : (
-              <img src={previewUrl} alt="" style={{ width: '100%', maxHeight: 220, objectFit: 'contain', display: 'block' }} />
+              <img
+                src={previewUrl}
+                alt=""
+                style={{ width: '100%', maxHeight: 220, objectFit: 'contain', display: 'block' }}
+              />
             )}
           </div>
         )}
@@ -494,7 +659,11 @@ export default function PostDetailModal({ post, onClose, platform, onSaved }) {
             <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
               Engagement
             </div>
-            <div style={{ fontSize: 12, color: '#94a3b8', fontStyle: 'italic', marginBottom: 10 }}>Available after publishing</div>
+            {!statusOk && (
+              <div style={{ fontSize: 12, color: '#94a3b8', fontStyle: 'italic', marginBottom: 10 }}>
+                Metrics appear once the post is live on the platform.
+              </div>
+            )}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 16 }}>
               {[
                 ['👁', 'Views', post.impressions ?? 0],
@@ -519,12 +688,6 @@ export default function PostDetailModal({ post, onClose, platform, onSaved }) {
           <div>
             <strong style={{ color: '#64748b' }}>Scheduled</strong> · {scheduledStr || '—'}
           </div>
-          {post.id != null && (
-            <div>
-              <strong style={{ color: '#64748b' }}>Post ID</strong> ·{' '}
-              <span style={{ fontFamily: 'ui-monospace, monospace', fontSize: 12 }}>{String(post.id)}</span>
-            </div>
-          )}
         </div>
 
         {post.errorMessage && (
@@ -543,14 +706,6 @@ export default function PostDetailModal({ post, onClose, platform, onSaved }) {
             <strong>Error</strong>
             <br />
             {post.errorMessage}
-          </div>
-        )}
-
-        {link && readOnly && (
-          <div style={{ marginBottom: 12 }}>
-            <a href={link} target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', fontWeight: 600, fontSize: 14, wordBreak: 'break-all' }}>
-              Open link ↗
-            </a>
           </div>
         )}
 

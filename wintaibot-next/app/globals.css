@@ -1,5 +1,11 @@
 /* ─── CSS Variables ────────────────────────────────────────── */
 :root {
+  /* Safe areas for notched phones / home indicator (use on fixed footers, modals, sheets) */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+
   --color-primary: #2563eb;
   --color-primary-dark: #1d4ed8;
   --color-primary-light: #93c5fd;

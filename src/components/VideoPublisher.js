@@ -1338,7 +1338,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
                   lineHeight: 1.45,
                 }}
               >
-                <strong>Selected platforms do not fit this video</strong>
+                <strong>Fix before generating content</strong>
                 <ul style={{ margin: '8px 0 0', paddingLeft: '18px' }}>
                   {uploadStepVideoValidation.blocking.map((b, i) => (
                     <li key={`up-${b.code}-${b.platform}-${i}`}>{b.message}</li>
@@ -1698,9 +1698,12 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
               color: '#7f1d1d',
             }}
           >
-            <strong>Cannot publish yet — platform limits</strong>
+            <strong>Cannot publish yet</strong>
             <p style={{ margin: '8px 0 10px', lineHeight: 1.45 }}>
-              Each network has different rules for Reels, Stories, and Shorts. Fix the items below before using Schedule &amp; Publish (or deselect the platforms that do not fit).
+              {selectedPlatforms.includes('x') && (
+                <>On <strong>X (Twitter)</strong>, your <strong>caption is visible text</strong> in the feed; we check video length for X below. </>
+              )}
+              Large direct uploads can hit server limits (HTTP 413). Fix the list or change platforms / file.
             </p>
             <ul style={{ margin: 0, paddingLeft: '18px', lineHeight: 1.5 }}>
               {reviewVideoValidation.blocking.map((b, i) => (
@@ -2274,7 +2277,7 @@ const CAPTION_FORMAT_HINTS = {
   tiktok:    '🎵 1 line max · trending phrase · #fyp style',
   linkedin:  '💼 Professional · 3 bullet takeaways · question CTA',
   facebook:  '👋 Conversational · tag people · longer ok',
-  x:         '🐦 Under 280 chars · punchy · thread hint',
+  x:         '🐦 Visible text only in the feed (280 chars) · punchy · thread hint',
   threads:   '🧵 Short & conversational · 1-2 sentences',
   pinterest: '📌 Keyword-rich · "Save this" · benefit-first',
 };
@@ -2315,7 +2318,7 @@ function mockClipNote(platform) {
     tiktok:    '15–60s · 9:16 vertical · auto-captions',
     linkedin:  'Up to 10 min · 16:9 · professional tone',
     facebook:  'Full video · 16:9 · longer captions ok',
-    x:         'Up to 2:20 · 16:9 · punchy caption',
+    x:         'Caption = visible text (280) · video up to 2:20',
     threads:   'Text + thumbnail · no long video',
     pinterest: 'Thumbnail image · 2:3 ratio',
   };

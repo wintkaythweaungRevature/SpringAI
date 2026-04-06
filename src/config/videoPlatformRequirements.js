@@ -1,6 +1,6 @@
 /**
- * Client-side limits for short-form / reels workflows and direct-upload safety.
- * These are conservative so users see issues before publish — not a guarantee of API parity.
+ * Client-side checks: X (Twitter) video length (caption is visible text in the feed) and
+ * direct-upload size (HTTP 413). Other platforms are not duration-gated here.
  */
 
 /** Full-file multipart publish often hits reverse-proxy limits (HTTP 413). */
@@ -80,37 +80,13 @@ export function getVideoDurationFromFile(file) {
 }
 
 /**
- * Max length (seconds) we enforce client-side for the selected format.
- * null = no duration block for that platform in this UI.
+ * Max video length (seconds) we enforce in the UI.
+ * Only X (Twitter) is checked here; other platforms rely on their APIs.
  */
-export function getMaxDurationSecForPlatform(platformId, publishType) {
+export function getMaxDurationSecForPlatform(platformId, _publishType) {
   const pid = String(platformId || '').toLowerCase();
-  const pt = String(publishType || 'reels').toLowerCase();
-
-  if (pid === 'instagram') {
-    if (pt === 'story') return 60;
-    return 90;
-  }
-  if (pid === 'facebook') {
-    if (pt === 'story') return 60;
-    return 90;
-  }
-  if (pid === 'youtube') return null;
   if (pid === 'x') return 140;
-  if (pid === 'linkedin') return 600;
-  if (pid === 'tiktok') return 600;
-  if (pid === 'threads') return 300;
-  if (pid === 'pinterest') return null;
   return null;
-}
-
-function formatModeLabel(publishType, platformId) {
-  const pid = String(platformId || '').toLowerCase();
-  const pt = String(publishType || 'reels').toLowerCase();
-  if (pt === 'story' && (pid === 'instagram' || pid === 'facebook')) return 'Story';
-  if (pid === 'instagram' || pid === 'facebook') return 'Reels';
-  if (pid === 'x') return 'video post';
-  return 'this format';
 }
 
 function platformNeedsDirectVideoUpload(pid, { postType, variant, scheduledAt }) {
@@ -155,12 +131,10 @@ export function validateVideoAgainstPlatforms({
   for (const pid of ids) {
     const maxDur = getMaxDurationSecForPlatform(pid, publishType);
     if (maxDur != null && effDur > 0 && effDur > maxDur + 0.25) {
-      const label = platformDisplayName(pid);
-      const mode = formatModeLabel(publishType, pid);
       blocking.push({
         platform: pid,
         code: 'duration',
-        message: `${label} (${mode}): your video is ${formatDurationHuman(effDur)}; this workflow supports up to ${formatDurationHuman(maxDur)}. Trim the video or remove ${label} from selected platforms.`,
+        message: `X (Twitter): your caption is visible text; the video is separate. This video is ${formatDurationHuman(effDur)} but X allows up to ${formatDurationHuman(maxDur)} for video. Trim the clip or deselect X.`,
         maxDurationSec: maxDur,
         actualSec: effDur,
       });
@@ -183,19 +157,11 @@ export function validateVideoAgainstPlatforms({
     });
   }
 
-  if (ids.includes('youtube') && effDur > 180 && effDur > 0) {
+  if (effDur <= 0 && ids.includes('x')) {
     warnings.push({
-      platform: 'youtube',
-      code: 'youtube_shorts',
-      message: `YouTube Shorts are typically under 3 minutes (${formatDurationHuman(180)}). At ${formatDurationHuman(effDur)} this may go out as long-form video depending on your channel and API.`,
-    });
-  }
-
-  if (effDur <= 0) {
-    warnings.push({
-      platform: '_all',
+      platform: 'x',
       code: 'no_duration',
-      message: 'Video length is not available yet. Duration checks may be incomplete until the file is analyzed.',
+      message: 'Video length is not available yet — the X (Twitter) video-length check will apply once length is known.',
     });
   }
 

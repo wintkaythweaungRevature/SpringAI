@@ -5,6 +5,12 @@ import { useAuth } from '@/context/AuthContext';
 import { filterEnabledPlatforms } from '@/config/disabledPlatforms';
 import PlatformIcon from './PlatformIcon';
 import PostDetailModal from './PostDetailModal';
+import {
+  fetchPreviewDisplayUrl,
+  rawMediaRefForCalendarPost,
+  looksLikeS3HttpUrl,
+  syncDisplayableMediaUrl,
+} from '@/utils/mediaPreviewResolve';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    ContentCalendar — Visual Calendar & Feed Planner
@@ -264,6 +270,116 @@ function getPostPreview(post) {
   return null;
 }
 
+function previewIsVideoMedia(preview) {
+  return preview?.kind === 'video';
+}
+
+function previewIsVideoPost(post, preview) {
+  return (
+    String(post?.mediaType || '').toLowerCase() === 'video' || preview?.kind === 'video'
+  );
+}
+
+function ResolvedPostMedia({
+  post,
+  wrapperStyle = {},
+  imgStyle = {},
+  videoStyle = {},
+  playOverlay = false,
+  playOverlayStyle = {},
+}) {
+  const { token, apiBase } = useAuth();
+  const base = apiBase || 'https://api.wintaibot.com';
+  const preview = getPostPreview(post);
+  const [url, setUrl] = useState('');
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setFailed(false);
+    const sync = syncDisplayableMediaUrl(post, getPostPreview, youtubeVideoIdForCalendarPost);
+    setUrl(sync || '');
+    const raw = rawMediaRefForCalendarPost(post);
+    if (!raw) return () => { cancelled = true; };
+    const needsPresign = !/^https?:\/\//i.test(raw) || looksLikeS3HttpUrl(raw);
+    if (!needsPresign || !token) {
+      if (!sync) setUrl(raw);
+      return () => { cancelled = true; };
+    }
+    if (sync) return () => { cancelled = true; };
+    (async () => {
+      const resolved = await fetchPreviewDisplayUrl(raw, { token, base });
+      if (!cancelled && resolved) setUrl(resolved);
+    })();
+    return () => { cancelled = true; };
+  }, [post, token, base]);
+
+  if (!preview?.url) return null;
+
+  const asVideo = previewIsVideoMedia(preview);
+  const showPlay = playOverlay && previewIsVideoPost(post, preview);
+
+  if (!url || failed) {
+    return (
+      <div
+        style={{
+          ...wrapperStyle,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: '#e2e8f0',
+          color: '#94a3b8',
+          fontSize: 11,
+          fontWeight: 700,
+        }}
+      >
+        {failed ? '—' : '…'}
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ position: 'relative', ...wrapperStyle }}>
+      {asVideo ? (
+        <video
+          src={url}
+          muted
+          preload="metadata"
+          playsInline
+          style={{ display: 'block', ...videoStyle }}
+          onError={() => setFailed(true)}
+        />
+      ) : (
+        <img
+          src={url}
+          alt=""
+          referrerPolicy="no-referrer"
+          style={{ display: 'block', ...imgStyle }}
+          onError={() => setFailed(true)}
+        />
+      )}
+      {showPlay && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'rgba(0,0,0,0.35)',
+            fontSize: 14,
+            color: '#fff',
+            pointerEvents: 'none',
+            ...playOverlayStyle,
+          }}
+        >
+          ▶
+        </div>
+      )}
+    </div>
+  );
+}
+
 function postMergeKey(post) {
   if (post?.jobId != null && String(post.jobId).trim() !== '') {
     return `job:${String(post.jobId)}`;
@@ -397,6 +513,7 @@ function DayModal({ date, posts, onClose, onRetryFailed, onPostSelect, retryingI
               const pInfo = PLATFORM_MAP[p.platform?.toLowerCase()];
               const preview = getPostPreview(p);
               const isVideo = String(p.mediaType || '').toLowerCase() === 'video';
+              const isVideoPostModal = previewIsVideoPost(p, preview);
               const canRetry =
                 String(p.status || '').toUpperCase() === 'FAILED' &&
                 p.id != null &&
@@ -427,19 +544,17 @@ function DayModal({ date, posts, onClose, onRetryFailed, onPostSelect, retryingI
                       background: '#f1f5f9', border: '1px solid #e2e8f0', position: 'relative',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}>
-                      {preview?.kind === 'image' ? (
-                        <img src={preview.url} alt="post thumbnail" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      ) : preview?.kind === 'video' ? (
-                        <video src={preview.url} muted preload="metadata" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      {preview?.url ? (
+                        <ResolvedPostMedia
+                          post={p}
+                          playOverlay={isVideoPostModal}
+                          playOverlayStyle={{ background: 'rgba(0,0,0,0.25)', fontSize: 13, fontWeight: 700 }}
+                          wrapperStyle={{ width: '100%', height: '100%' }}
+                          imgStyle={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          videoStyle={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
                       ) : (
                         <span style={{ fontSize: 20 }}>{isVideo ? '🎬' : String(p.mediaType || '').toLowerCase() === 'image' ? '🖼️' : '✍️'}</span>
-                      )}
-                      {isVideo && (
-                        <div style={{
-                          position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.25)',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          color: '#fff', fontSize: 13, fontWeight: 700,
-                        }}>▶</div>
                       )}
                     </div>
 
@@ -743,7 +858,13 @@ export default function ContentCalendar() {
                                 </span>
                                 <span>{t || 'Post'}</span>
                                 {preview?.url && (
-                                  <img src={preview.url} alt="" style={s.dayChipThumb} />
+                                  <ResolvedPostMedia
+                                    post={p}
+                                    playOverlay={false}
+                                    wrapperStyle={{ width: 18, height: 18, borderRadius: 4, overflow: 'hidden', marginLeft: 'auto', flexShrink: 0, border: '1px solid #e2e8f0' }}
+                                    imgStyle={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                    videoStyle={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                  />
                                 )}
                               </button>
                             );
@@ -818,9 +939,7 @@ export default function ContentCalendar() {
                   {upcoming.map((p, i) => {
                     const pInfo = PLATFORM_MAP[p.platform?.toLowerCase()];
                     const preview = getPostPreview(p);
-                    const isVideo =
-                      String(p.mediaType || '').toLowerCase() === 'video' || preview?.kind === 'video';
-                    const thumbUrl = preview?.url;
+                    const isVideoPost = previewIsVideoPost(p, preview);
                     const canRetry =
                       String(p.status || '').toUpperCase() === 'FAILED' &&
                       p.id != null &&
@@ -847,18 +966,21 @@ export default function ContentCalendar() {
                       >
                         <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                           {/* Thumbnail — same URL resolution as calendar day modal + feed grid */}
-                          {thumbUrl && (
-                            <div style={{ width: 48, height: 48, borderRadius: 8, overflow: 'hidden', flexShrink: 0, background: '#f1f5f9', position: 'relative' }}>
-                              {isVideo ? (
-                                <video src={thumbUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} muted preload="metadata" />
-                              ) : (
-                                <img src={thumbUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                              )}
-                              {isVideo && (
-                                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                  background: 'rgba(0,0,0,0.35)', fontSize: 14, color: '#fff' }}>▶</div>
-                              )}
-                            </div>
+                          {preview?.url && (
+                            <ResolvedPostMedia
+                              post={p}
+                              wrapperStyle={{
+                                width: 48,
+                                height: 48,
+                                borderRadius: 8,
+                                overflow: 'hidden',
+                                flexShrink: 0,
+                                background: '#f1f5f9',
+                              }}
+                              imgStyle={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                              videoStyle={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                              playOverlay={isVideoPost}
+                            />
                           )}
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={s.upcomingTop}>
@@ -926,8 +1048,7 @@ export default function ContentCalendar() {
                 {filteredPosts.map((p, i) => {
                   const pInfo = PLATFORM_MAP[p.platform?.toLowerCase()];
                   const preview = getPostPreview(p);
-                  const isVideo =
-                    String(p.mediaType || '').toLowerCase() === 'video' || preview?.kind === 'video';
+                  const isVideoPost = previewIsVideoPost(p, preview);
                   const thumbUrl = preview?.url;
                   const canRetry =
                     String(p.status || '').toUpperCase() === 'FAILED' &&
@@ -981,28 +1102,31 @@ export default function ContentCalendar() {
                         position: 'relative', overflow: 'hidden',
                       }}>
                         {thumbUrl ? (
-                          isVideo ? (
-                            <video
-                              src={thumbUrl}
-                              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                              muted
-                              preload="metadata"
+                          <>
+                            <ResolvedPostMedia
+                              post={p}
+                              playOverlay={false}
+                              wrapperStyle={{
+                                width: '100%',
+                                height: '100%',
+                                minHeight: 140,
+                                position: 'relative',
+                              }}
+                              imgStyle={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                              videoStyle={{ width: '100%', height: '100%', objectFit: 'cover' }}
                             />
-                          ) : (
-                            <img
-                              src={thumbUrl}
-                              alt="post"
-                              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                            />
-                          )
+                            {isVideoPost && (
+                              <div style={{
+                                position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
+                                background: 'rgba(0,0,0,0.55)', borderRadius: '50%', width: 36, height: 36,
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                fontSize: 16, color: '#fff', pointerEvents: 'none',
+                              }}
+                              >▶</div>
+                            )}
+                          </>
                         ) : (
-                          <div style={{ fontSize: 32 }}>{isVideo ? '🎥' : String(p.mediaType || '').toLowerCase() === 'image' ? '🖼️' : '✍️'}</div>
-                        )}
-                        {isVideo && thumbUrl && (
-                          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
-                            background: 'rgba(0,0,0,0.55)', borderRadius: '50%', width: 36, height: 36,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: 16, color: '#fff', pointerEvents: 'none' }}>▶</div>
+                          <div style={{ fontSize: 32 }}>{isVideoPost ? '🎥' : String(p.mediaType || '').toLowerCase() === 'image' ? '🖼️' : '✍️'}</div>
                         )}
                         {/* Platform badge */}
                         <div style={{ ...s.feedPlatformBadge, background: platformColor(p.platform) }}>
@@ -1134,7 +1258,13 @@ export default function ContentCalendar() {
                 </div>
               </div>
               {getPostPreview(hp)?.url && (
-                <img src={getPostPreview(hp).url} alt="" style={s.hoverThumb} />
+                <ResolvedPostMedia
+                  post={hp}
+                  playOverlay={false}
+                  wrapperStyle={{ width: 120, height: 96, borderRadius: 10, overflow: 'hidden', flexShrink: 0, border: '1px solid #e2e8f0' }}
+                  imgStyle={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  videoStyle={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
               )}
             </div>
             <div style={s.hoverFooter}>
@@ -1155,7 +1285,17 @@ export default function ContentCalendar() {
 
 /* ─── Styles ──────────────────────────────────────────────────────────────── */
 const s = {
-  page: { maxWidth: 1180, margin: '0 auto', padding: '12px 12px 28px', fontFamily: 'inherit' },
+  page: {
+    maxWidth: 1180,
+    margin: '0 auto',
+    padding: '12px 12px 28px',
+    fontFamily: 'inherit',
+    color: '#0f172a',
+    background: 'rgba(248,250,252,0.97)',
+    borderRadius: 16,
+    border: '1px solid rgba(148,163,184,0.25)',
+    boxShadow: '0 4px 24px rgba(0,0,0,0.12)',
+  },
 
   pageHeader: { display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: 18, flexWrap: 'wrap', gap: 12 },
 

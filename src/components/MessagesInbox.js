@@ -28,7 +28,7 @@ const SOURCE_LABELS = {
 // Which type-tabs each platform supports
 const PLATFORM_TYPES = {
   all:       ['all', 'messages', 'comments'],
-  instagram: ['comments'],                      // Instagram DMs require Meta App Review — comments only
+  instagram: ['all', 'messages', 'comments'],
   facebook:  ['all', 'messages', 'comments'],
   youtube:   ['comments'],                      // YouTube has no DM API
   linkedin:  ['all', 'messages', 'comments'],
@@ -660,10 +660,51 @@ function CommentItem({ item, apiBase, token, selected, onSelect, onReplySent, re
 }
 
 /** Right pane: full DM thread or comment + all replies (matches list selection). */
-function InboxDetailPanel({ item, kind, commentReplyExtras, onClose, onOpenAutoReply, onOpenConnectedAccounts }) {
+function InboxDetailPanel({ item, kind, commentReplyExtras, onClose, onOpenAutoReply, onOpenConnectedAccounts, apiBase, token }) {
   const p = PLATFORM_META[item.platform] ?? PLATFORM_META.instagram;
   const sl = SOURCE_LABELS[item.source] ?? { label: item.source, icon: '💬' };
   const isMetaDm = item.source === 'facebook_messenger' || item.source === 'instagram_dm';
+
+  const [dmText, setDmText] = useState('');
+  const [dmSending, setDmSending] = useState(false);
+  const [dmErr, setDmErr] = useState('');
+  const [dmOk, setDmOk] = useState(false);
+
+  const recipientId = item.recipientId != null ? String(item.recipientId).trim() : '';
+  const canSendDm = Boolean(
+    token && recipientId && (item.source === 'facebook_messenger' || item.source === 'instagram_dm'),
+  );
+
+  useEffect(() => {
+    setDmText('');
+    setDmErr('');
+    setDmOk(false);
+  }, [item.id]);
+
+  const sendDm = async () => {
+    if (!canSendDm || !dmText.trim()) return;
+    setDmSending(true);
+    setDmErr('');
+    setDmOk(false);
+    try {
+      const platform = item.platform === 'instagram' ? 'instagram' : 'facebook';
+      const payload = { platform, recipientId, replyText: dmText.trim() };
+      if (platform === 'instagram' && item.igUserId) payload.igUserId = String(item.igUserId);
+      const res = await fetch(`${apiBase}/api/auto-reply/dm-reply`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.error || `Error ${res.status}`);
+      setDmOk(true);
+      setDmText('');
+    } catch (e) {
+      setDmErr(e.message || 'Send failed');
+    } finally {
+      setDmSending(false);
+    }
+  };
 
   const dmThread = useMemo(() => {
     if (kind !== 'dm') return [];
@@ -874,11 +915,59 @@ function InboxDetailPanel({ item, kind, commentReplyExtras, onClose, onOpenAutoR
       </div>
 
       {kind === 'dm' && isMetaDm && (
-        <div style={{ margin: '0 18px 16px', padding: '14px', background: '#fffbeb', borderRadius: '8px', border: '1px solid #fde68a', fontSize: '12px', color: '#92400e' }}>
-          <p style={{ margin: '0 0 12px', lineHeight: 1.55 }}>
-            💡 <strong>You can’t send Messenger / IG DMs from this panel yet</strong> — Meta requires <code style={{ fontSize: 11 }}>pages_messaging</code> (and related) on your app, plus a backend that calls the Send API. Use the buttons below to reply in Meta or configure auto-reply for when your API supports it.
-          </p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+        <div style={{ margin: '0 18px 16px', padding: '14px', background: canSendDm ? '#f0fdf4' : '#fffbeb', borderRadius: '8px', border: `1px solid ${canSendDm ? '#86efac' : '#fde68a'}`, fontSize: '12px', color: canSendDm ? '#14532d' : '#92400e' }}>
+          {canSendDm ? (
+            <>
+              <p style={{ margin: '0 0 10px', lineHeight: 1.55 }}>
+                <strong>Reply from W!ntAi</strong> — uses Meta’s Send API. Facebook/Instagram typically require the user to have messaged you recently (often within a 24-hour window) for automated tools to reply.
+              </p>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                <textarea
+                  rows={3}
+                  placeholder="Type your message…"
+                  value={dmText}
+                  onChange={(e) => setDmText(e.target.value)}
+                  style={{
+                    flex: 1,
+                    minWidth: 200,
+                    border: '1px solid #bbf7d0',
+                    borderRadius: 8,
+                    padding: '8px 10px',
+                    fontSize: 13,
+                    fontFamily: 'inherit',
+                    resize: 'vertical',
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={sendDm}
+                  disabled={dmSending || !dmText.trim()}
+                  style={{
+                    padding: '10px 16px',
+                    background: p.color,
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: 8,
+                    fontWeight: 700,
+                    fontSize: 12,
+                    cursor: dmSending || !dmText.trim() ? 'wait' : 'pointer',
+                    opacity: !dmText.trim() ? 0.5 : 1,
+                    flexShrink: 0,
+                    alignSelf: 'flex-start',
+                  }}
+                >
+                  {dmSending ? 'Sending…' : 'Send'}
+                </button>
+              </div>
+              {dmErr && <div style={{ marginTop: 8, color: '#b91c1c', fontWeight: 600 }}>⚠ {dmErr}</div>}
+              {dmOk && <div style={{ marginTop: 8, color: '#15803d', fontWeight: 600 }}>✓ Sent</div>}
+            </>
+          ) : (
+            <p style={{ margin: '0 0 12px', lineHeight: 1.55 }}>
+              💡 <strong>DM send needs a recipient id from Meta.</strong> Refresh the inbox after reconnecting Facebook/Instagram, or open Meta Business Suite to reply. Required permissions include messaging scopes and (for many apps) Meta App Review.
+            </p>
+          )}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', marginTop: 12 }}>
             <a
               href={META_BUSINESS_INBOX_URL}
               target="_blank"
@@ -1041,8 +1130,8 @@ export default function MessagesInbox({ onOpenConnectedAccounts, onOpenAutoReply
   const platConvs    = platformTab === 'all' ? conversations : byPlatform(conversations, platformTab);
   const platComments = platformTab === 'all' ? comments      : byPlatform(comments,      platformTab);
 
-  // Step 2: filter by type (Instagram DMs are disabled — requires Meta App Review)
-  const displayConvs    = typeTab === 'comments' ? [] : platConvs.filter(c => c.platform !== 'instagram');
+  // Step 2: filter by type
+  const displayConvs    = typeTab === 'comments' ? [] : platConvs;
   const displayComments = typeTab === 'messages' ? [] : platComments;
 
   // When switching platform, reset type if not supported
@@ -1630,6 +1719,8 @@ export default function MessagesInbox({ onOpenConnectedAccounts, onOpenAutoReply
                 onClose={() => setSelection(null)}
                 onOpenAutoReply={onOpenAutoReply}
                 onOpenConnectedAccounts={onOpenConnectedAccounts}
+                apiBase={base}
+                token={token}
               />
             </div>
           )}

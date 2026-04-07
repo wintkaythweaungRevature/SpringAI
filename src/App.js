@@ -95,6 +95,7 @@ const marketingNavLinkBtn = {
 };
 
 function MarketingNav({ go, onLogin, onSignup }) {
+  const isMobile = useMediaQuery('(max-width: 900px)');
   const [resourcesOpen, setResourcesOpen] = useState(false);
 
   return (
@@ -109,8 +110,9 @@ function MarketingNav({ go, onLogin, onSignup }) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '0 32px',
-        height: '58px',
+        padding: isMobile ? '0 12px' : '0 32px',
+        height: isMobile ? '54px' : '58px',
+        gap: isMobile ? '8px' : 0,
         boxShadow: '0 1px 0 rgba(255,255,255,0.06)',
       }}
     >
@@ -122,9 +124,10 @@ function MarketingNav({ go, onLogin, onSignup }) {
         tabIndex={0}
       >
         <img src={BRAND_LOGO_SRC} alt="W!ntAi logo" width={34} height={34} style={{ display: 'block', flexShrink: 0, borderRadius: '7px' }} />
-        <span style={{ color: '#fff', fontWeight: 800, fontSize: '17px', letterSpacing: '-0.01em' }}>W!ntAi</span>
+        <span style={{ color: '#fff', fontWeight: 800, fontSize: isMobile ? '15px' : '17px', letterSpacing: '-0.01em' }}>W!ntAi</span>
       </div>
 
+      {!isMobile && (
       <div style={{ display: 'flex', alignItems: 'center', gap: '28px' }}>
         {[
           { label: 'Home', action: () => go(null) },
@@ -214,8 +217,9 @@ function MarketingNav({ go, onLogin, onSignup }) {
           )}
         </div>
       </div>
+      )}
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '6px' : '10px' }}>
         <button
           type="button"
           onClick={onLogin}
@@ -224,9 +228,9 @@ function MarketingNav({ go, onLogin, onSignup }) {
             color: '#e2e8f0',
             border: '1px solid rgba(148,163,184,0.6)',
             borderRadius: '8px',
-            padding: '9px 16px',
+            padding: isMobile ? '7px 10px' : '9px 16px',
             fontWeight: 700,
-            fontSize: '14px',
+            fontSize: isMobile ? '12px' : '14px',
             cursor: 'pointer',
             whiteSpace: 'nowrap',
           }}
@@ -241,15 +245,15 @@ function MarketingNav({ go, onLogin, onSignup }) {
             color: '#fff',
             border: 'none',
             borderRadius: '8px',
-            padding: '9px 20px',
+            padding: isMobile ? '7px 10px' : '9px 20px',
             fontWeight: 700,
-            fontSize: '14px',
+            fontSize: isMobile ? '12px' : '14px',
             cursor: 'pointer',
             whiteSpace: 'nowrap',
             boxShadow: '0 2px 12px rgba(99,102,241,0.4)',
           }}
         >
-          Try Free Trial →
+          {isMobile ? 'Try Free' : 'Try Free Trial →'}
         </button>
       </div>
     </nav>

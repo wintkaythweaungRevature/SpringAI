@@ -5,6 +5,12 @@
 
 /** Full-file multipart publish often hits reverse-proxy limits (HTTP 413). */
 export const SAFE_DIRECT_UPLOAD_MAX_BYTES = 100 * 1024 * 1024; // 100 MB
+/** Conservative image payload guard to avoid API gateway 413 on /api/social/post. */
+const configuredImageLimitMb = Number(process.env.REACT_APP_SAFE_DIRECT_IMAGE_UPLOAD_MAX_MB || 4);
+export const SAFE_DIRECT_IMAGE_UPLOAD_MAX_BYTES =
+  Number.isFinite(configuredImageLimitMb) && configuredImageLimitMb > 0
+    ? Math.round(configuredImageLimitMb * 1024 * 1024)
+    : 4 * 1024 * 1024;
 
 const PLATFORM_LABELS = {
   youtube: 'YouTube',
@@ -162,6 +168,31 @@ export function validateVideoAgainstPlatforms({
       platform: 'x',
       code: 'no_duration',
       message: 'Video length is not available yet — the X (Twitter) video-length check will apply once length is known.',
+    });
+  }
+
+  return { blocking, warnings };
+}
+
+/**
+ * Guard image post payload size before publish (common gateway 413 failure point).
+ * @param {object} opts
+ * @param {string[]} opts.platformIds
+ * @param {number} opts.fileSizeBytes
+ * @returns {{ blocking: object[], warnings: object[] }}
+ */
+export function validateImageAgainstPlatforms({ platformIds, fileSizeBytes }) {
+  const blocking = [];
+  const warnings = [];
+  const ids = Array.isArray(platformIds) ? platformIds : [];
+  const fileSz = Number(fileSizeBytes) || 0;
+  if (ids.length === 0) return { blocking, warnings };
+
+  if (fileSz > SAFE_DIRECT_IMAGE_UPLOAD_MAX_BYTES) {
+    blocking.push({
+      platform: '_all',
+      code: 'image_upload_size',
+      message: `Image is ${formatBytes(fileSz)}. Current API gateway often rejects image publish above ~${formatBytes(SAFE_DIRECT_IMAGE_UPLOAD_MAX_BYTES)} (HTTP 413). Compress or resize before publishing.`,
     });
   }
 

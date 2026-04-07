@@ -4,8 +4,10 @@ import { filterEnabledPlatforms, isPlatformDisabled } from '../config/disabledPl
 import {
   getVideoDurationFromFile,
   validateVideoAgainstPlatforms,
+  validateImageAgainstPlatforms,
   formatDurationHuman,
   SAFE_DIRECT_UPLOAD_MAX_BYTES,
+  SAFE_DIRECT_IMAGE_UPLOAD_MAX_BYTES,
 } from '../config/videoPlatformRequirements';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import PlatformIcon from './PlatformIcon';
@@ -72,6 +74,67 @@ const POST_TYPES = [
   { id: 'image', label: 'Image',  icon: '🖼️' },
   { id: 'text',  label: 'Text',   icon: '✍️' },
 ];
+
+/** Practical per-platform image upload ceilings (MB), used for preflight UX checks. */
+const IMAGE_PLATFORM_LIMITS_MB = {
+  instagram: 8,
+  facebook: 8,
+  linkedin: 8,
+  x: 5,
+  threads: 8,
+  pinterest: 8,
+};
+
+function imageLimitBytesForPlatforms(platformIds) {
+  const ids = Array.isArray(platformIds) ? platformIds : [];
+  const bytes = ids
+    .map((pid) => IMAGE_PLATFORM_LIMITS_MB[String(pid || '').toLowerCase()])
+    .filter((v) => Number.isFinite(v) && v > 0)
+    .map((mb) => Math.round(mb * 1024 * 1024));
+  return bytes.length ? Math.min(...bytes) : SAFE_DIRECT_IMAGE_UPLOAD_MAX_BYTES;
+}
+
+async function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(new Error('Failed to read image file'));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function compressImageToTargetBytes(file, targetBytes) {
+  const dataUrl = await fileToDataUrl(file);
+  const img = await new Promise((resolve, reject) => {
+    const el = new Image();
+    el.onload = () => resolve(el);
+    el.onerror = () => reject(new Error('Failed to decode image'));
+    el.src = dataUrl;
+  });
+  const maxDim = 1920;
+  const ratio = Math.min(1, maxDim / Math.max(img.width || 1, img.height || 1));
+  const w = Math.max(1, Math.round((img.width || 1) * ratio));
+  const h = Math.max(1, Math.round((img.height || 1) * ratio));
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Canvas unavailable for compression');
+  ctx.drawImage(img, 0, 0, w, h);
+
+  const toBlob = (q) =>
+    new Promise((resolve, reject) => {
+      canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('Compression failed'))), 'image/jpeg', q);
+    });
+
+  let quality = 0.9;
+  let blob = await toBlob(quality);
+  while (blob.size > targetBytes && quality > 0.45) {
+    quality -= 0.1;
+    blob = await toBlob(quality);
+  }
+  return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' });
+}
 
 /**
  * Schedule APIs (Java DateTimeFormatter) often reject `toISOString()` values like
@@ -261,6 +324,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
   const [contentIdea, setContentIdea] = useState(null);
   const [publishError, setPublishError] = useState(null); // { message, platforms, requiresReconnect, requiresReLogin }
   const [fileError, setFileError] = useState(null);
+  const [imageCompressionNote, setImageCompressionNote] = useState('');
   // { [pid]: { state: 'queued'|'publishing'|'done'|'failed', error: null|string } }
   const [publishingStatus, setPublishingStatus] = useState({});
   const [postType, setPostType]       = useState('video'); // 'video' | 'image' | 'text'
@@ -395,6 +459,19 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
 
   const publishBlockedByVideoRules =
     postType === 'video' && reviewVideoValidation.blocking.length > 0;
+  const imagePublishValidation = useMemo(() => {
+    if (postType !== 'image') return { blocking: [], warnings: [] };
+    return validateImageAgainstPlatforms({
+      platformIds: selectedPlatforms,
+      fileSizeBytes: imageFile?.size ?? 0,
+    });
+  }, [postType, selectedPlatforms, imageFile?.size]);
+  const imagePlatformMaxBytes = useMemo(
+    () => imageLimitBytesForPlatforms(selectedPlatforms),
+    [selectedPlatforms],
+  );
+  const publishBlockedByImageRules =
+    postType === 'image' && imagePublishValidation.blocking.length > 0;
 
   const handleRetry = async (id) => {
     setRetryingId(id);
@@ -555,6 +632,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
     setImageFile(null);
     setTextCaption('');
     setFileError(null);
+    setImageCompressionNote('');
     setVariants({});
     setPublished([]);
     setStep('upload');
@@ -570,9 +648,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
     const f = e.dataTransfer.files[0];
     if (!f) return;
     if (postType === 'image') {
-      const err = validateImage(f);
-      if (err) { setFileError(err); setImageFile(null); }
-      else { setFileError(null); setImageFile(f); }
+      void prepareImageFileForPublish(f);
     } else {
       const err = validateVideo(f);
       if (err) { setFileError(err); setVideo(null); }
@@ -591,9 +667,46 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
   const handleImageFile = (e) => {
     const f = e.target.files[0];
     if (!f) return;
-    const err = validateImage(f);
-    if (err) { setFileError(err); setImageFile(null); }
-    else { setFileError(null); setImageFile(f); }
+    void prepareImageFileForPublish(f);
+  };
+
+  const prepareImageFileForPublish = async (file) => {
+    const err = validateImage(file);
+    if (err) {
+      setFileError(err);
+      setImageFile(null);
+      setImageCompressionNote('');
+      return;
+    }
+    const targetBytes = Math.min(SAFE_DIRECT_IMAGE_UPLOAD_MAX_BYTES, imagePlatformMaxBytes);
+    if (file.size <= targetBytes) {
+      setFileError(null);
+      setImageFile(file);
+      setImageCompressionNote('');
+      return;
+    }
+    try {
+      const compressed = await compressImageToTargetBytes(file, targetBytes);
+      if (compressed.size <= targetBytes) {
+        setFileError(null);
+        setImageFile(compressed);
+        setImageCompressionNote(
+          `Auto-compressed from ${(file.size / 1024 / 1024).toFixed(1)} MB to ${(compressed.size / 1024 / 1024).toFixed(1)} MB.`,
+        );
+      } else {
+        setFileError(
+          `Image is ${(file.size / 1024 / 1024).toFixed(1)} MB. Even after compression, it may exceed the safe publish limit (~${Math.round(targetBytes / (1024 * 1024))} MB).`,
+        );
+        setImageFile(compressed);
+        setImageCompressionNote('Compressed, but still near or above safe publish limit.');
+      }
+    } catch {
+      setFileError(
+        `Image is ${(file.size / 1024 / 1024).toFixed(1)} MB and auto-compression failed. Please resize/compress under ~${Math.round(targetBytes / (1024 * 1024))} MB.`,
+      );
+      setImageFile(null);
+      setImageCompressionNote('');
+    }
   };
 
   const applyIdeaForNextVideo = (idea) => {
@@ -919,6 +1032,21 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
       if (preBlock.length > 0) {
         setPublishError({
           message: `Fix these before publishing:\n\n${preBlock.map((b) => `• ${b.message}`).join('\n')}`,
+          platforms: [],
+          requiresReconnect: false,
+          requiresReLogin: false,
+        });
+        return;
+      }
+    }
+    if (postType === 'image') {
+      const { blocking } = validateImageAgainstPlatforms({
+        platformIds: selectedPlatforms.filter((pid) => variants[pid]),
+        fileSizeBytes: imageFile?.size ?? 0,
+      });
+      if (blocking.length > 0) {
+        setPublishError({
+          message: `Fix these before publishing:\n\n${blocking.map((b) => `• ${b.message}`).join('\n')}`,
           platforms: [],
           requiresReconnect: false,
           requiresReLogin: false,
@@ -1334,29 +1462,50 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
 
             {/* ── Image drop zone ── */}
             {postType === 'image' && (
-              <div
-                style={{ ...s.dropZone, ...(dragOver ? s.dropOver : {}) }}
-                onDragOver={e => { e.preventDefault(); setDragOver(true); }}
-                onDragLeave={() => setDragOver(false)}
-                onDrop={handleDrop}
-                onClick={() => imageRef.current.click()}
-              >
-                <input ref={imageRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp,.jpg,.jpeg,.png,.gif,.webp" style={{ display: 'none' }} onChange={handleImageFile} />
-                {imageFile ? (
-                  <>
-                    <img src={URL.createObjectURL(imageFile)} alt="preview" style={{ maxHeight: '140px', maxWidth: '100%', borderRadius: '8px', objectFit: 'cover' }} />
-                    <div style={s.fileName}>{imageFile.name}</div>
-                    <div style={s.fileSize}>{(imageFile.size / 1024 / 1024).toFixed(1)} MB</div>
-                    <div style={s.changeFile}>Click to change</div>
-                  </>
-                ) : (
-                  <>
-                    <div style={{ fontSize: '40px' }}>🖼️</div>
-                    <div style={s.dropTitle}>Drop your image here</div>
-                    <div style={s.dropSub}>JPG, PNG, GIF, WebP · Max 20MB</div>
-                  </>
-                )}
-              </div>
+              <>
+                <div
+                  style={{ ...s.dropZone, ...(dragOver ? s.dropOver : {}) }}
+                  onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+                  onDragLeave={() => setDragOver(false)}
+                  onDrop={handleDrop}
+                  onClick={() => imageRef.current.click()}
+                >
+                  <input ref={imageRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp,.jpg,.jpeg,.png,.gif,.webp" style={{ display: 'none' }} onChange={handleImageFile} />
+                  {imageFile ? (
+                    <>
+                      <img src={URL.createObjectURL(imageFile)} alt="preview" style={{ maxHeight: '140px', maxWidth: '100%', borderRadius: '8px', objectFit: 'cover' }} />
+                      <div style={s.fileName}>{imageFile.name}</div>
+                      <div style={s.fileSize}>{(imageFile.size / 1024 / 1024).toFixed(1)} MB</div>
+                      {imageCompressionNote && (
+                        <div style={{ marginTop: '6px', fontSize: '11px', color: '#15803d', textAlign: 'center' }}>
+                          {imageCompressionNote}
+                        </div>
+                      )}
+                      <div style={s.changeFile}>Click to change</div>
+                    </>
+                  ) : (
+                    <>
+                      <div style={{ fontSize: '40px' }}>🖼️</div>
+                      <div style={s.dropTitle}>Drop your image here</div>
+                      <div style={s.dropSub}>
+                        JPG, PNG, GIF, WebP · Auto-compresses to ~{Math.round(Math.min(SAFE_DIRECT_IMAGE_UPLOAD_MAX_BYTES, imagePlatformMaxBytes) / (1024 * 1024))}MB
+                      </div>
+                    </>
+                  )}
+                </div>
+                <div style={{ marginTop: '8px', fontSize: '11px', color: '#64748b', lineHeight: 1.5 }}>
+                  Selected platform image limits:{' '}
+                  {selectedPlatforms
+                    .map((pid) => {
+                      const mb = IMAGE_PLATFORM_LIMITS_MB[String(pid || '').toLowerCase()];
+                      if (!mb) return null;
+                      const p = PLATFORMS.find((x) => x.id === pid);
+                      return `${p?.label || pid} ~${mb}MB`;
+                    })
+                    .filter(Boolean)
+                    .join(' · ') || 'default safe limit'}
+                </div>
+              </>
             )}
 
             {/* ── Text area ── */}
@@ -1415,7 +1564,8 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', color: '#7f1d1d' }}>
                       <tbody>
                         <tr><td style={{ padding: '3px 8px 3px 0', fontWeight: 600 }}>Format</td><td>JPG, PNG, GIF, WebP</td></tr>
-                        <tr><td style={{ padding: '3px 8px 3px 0', fontWeight: 600 }}>Max size</td><td>20 MB</td></tr>
+                        <tr><td style={{ padding: '3px 8px 3px 0', fontWeight: 600 }}>App safe size</td><td>~{Math.round(SAFE_DIRECT_IMAGE_UPLOAD_MAX_BYTES / (1024 * 1024))} MB (configurable)</td></tr>
+                        <tr><td style={{ padding: '3px 8px 3px 0', fontWeight: 600 }}>Selected platform limit</td><td>~{Math.round(imagePlatformMaxBytes / (1024 * 1024))} MB</td></tr>
                         <tr><td style={{ padding: '3px 8px 3px 0', fontWeight: 600 }}>Resolution</td><td>Recommended at least 1080×1080px</td></tr>
                         <tr><td style={{ padding: '3px 8px 3px 0', fontWeight: 600 }}>Aspect ratio</td><td>1:1 square, 4:5, or 16:9</td></tr>
                       </tbody>
@@ -1447,19 +1597,44 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
                 </ul>
               </div>
             )}
+            {postType === 'image' && imageFile && imagePublishValidation.blocking.length > 0 && (
+              <div
+                role="alert"
+                style={{
+                  marginBottom: '14px',
+                  background: '#fef2f2',
+                  border: '1.5px solid #f87171',
+                  borderRadius: '10px',
+                  padding: '12px 14px',
+                  fontSize: '13px',
+                  color: '#7f1d1d',
+                  lineHeight: 1.45,
+                }}
+              >
+                <strong>Fix before review</strong>
+                <ul style={{ margin: '8px 0 0', paddingLeft: '18px' }}>
+                  {imagePublishValidation.blocking.map((b, i) => (
+                    <li key={`img-up-${b.code}-${i}`}>{b.message}</li>
+                  ))}
+                </ul>
+                <div style={{ marginTop: '8px', fontSize: '12px', color: '#991b1b' }}>
+                  Current safe limit in this UI: ~{Math.round(SAFE_DIRECT_IMAGE_UPLOAD_MAX_BYTES / (1024 * 1024))} MB.
+                </div>
+              </div>
+            )}
 
             <button
               style={{
                 ...s.btnPrimary,
                 ...((postType === 'video' && (!video || selectedPlatforms.length === 0 || uploadStepVideoValidation.blocking.length > 0)) ||
-                    (postType === 'image' && (!imageFile || selectedPlatforms.length === 0)) ||
+                    (postType === 'image' && (!imageFile || selectedPlatforms.length === 0 || imagePublishValidation.blocking.length > 0)) ||
                     (postType === 'text'  && (!textCaption.trim() || selectedPlatforms.length === 0))
                   ? s.btnDisabled : {}),
               }}
               onClick={runProcessing}
               disabled={
                 (postType === 'video' && (!video || selectedPlatforms.length === 0 || uploadStepVideoValidation.blocking.length > 0)) ||
-                (postType === 'image' && (!imageFile || selectedPlatforms.length === 0)) ||
+                (postType === 'image' && (!imageFile || selectedPlatforms.length === 0 || imagePublishValidation.blocking.length > 0)) ||
                 (postType === 'text'  && (!textCaption.trim() || selectedPlatforms.length === 0))
               }
             >
@@ -1829,6 +2004,27 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
             </ul>
           </div>
         )}
+        {postType === 'image' && imagePublishValidation.blocking.length > 0 && (
+          <div
+            role="alert"
+            style={{
+              background: '#fef2f2',
+              border: '1.5px solid #f87171',
+              borderRadius: '10px',
+              padding: '14px 16px',
+              marginBottom: '16px',
+              fontSize: '13px',
+              color: '#7f1d1d',
+            }}
+          >
+            <strong>Cannot publish yet</strong>
+            <ul style={{ margin: '8px 0 0', paddingLeft: '18px', lineHeight: 1.5 }}>
+              {imagePublishValidation.blocking.map((b, i) => (
+                <li key={`img-rv-${b.code}-${i}`}>{b.message}</li>
+              ))}
+            </ul>
+          </div>
+        )}
         <div style={{ ...s.layout, ...(isMobile ? { flexDirection: 'column', flexWrap: 'wrap' } : {}) }}>
           {/* Platform tabs on left */}
           <div style={{ ...s.left, ...(isMobile ? { width: '100%', minWidth: 0 } : {}) }}>
@@ -1937,9 +2133,9 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
             <div style={{ marginTop: '16px' }}>
               <button
                 type="button"
-                style={{ ...s.btnPrimary, ...(publishBlockedByVideoRules ? s.btnDisabled : {}) }}
+                style={{ ...s.btnPrimary, ...((publishBlockedByVideoRules || publishBlockedByImageRules) ? s.btnDisabled : {}) }}
                 onClick={scheduleAndPublishAll}
-                disabled={publishBlockedByVideoRules}
+                disabled={publishBlockedByVideoRules || publishBlockedByImageRules}
               >
                 🚀 Schedule & Publish
               </button>

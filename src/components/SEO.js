@@ -2,7 +2,7 @@ import React from 'react';
 import { Helmet } from 'react-helmet';
 
 const DEFAULT = {
-  title: 'W!ntAi – AI Chatbot, PDF Extraction & Interview Prep',
+  title: 'W!ntAi | Social Media Publishing Tools',
   description: 'AI platform for PDF data extraction, interview preparation, image generation, and smart flashcards.',
   image: 'https://wintaibot.com/android-chrome-512x512.png',
   url: 'https://wintaibot.com/',

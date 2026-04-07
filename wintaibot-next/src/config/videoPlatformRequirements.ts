@@ -1,6 +1,11 @@
 /** Direct full-file upload size guard (video publisher). Keep in sync with CRA `videoPlatformRequirements.js`. */
 
 export const SAFE_DIRECT_UPLOAD_MAX_BYTES = 100 * 1024 * 1024;
+const configuredImageLimitMb = Number(process.env.NEXT_PUBLIC_SAFE_DIRECT_IMAGE_UPLOAD_MAX_MB || 4);
+export const SAFE_DIRECT_IMAGE_UPLOAD_MAX_BYTES =
+  Number.isFinite(configuredImageLimitMb) && configuredImageLimitMb > 0
+    ? Math.round(configuredImageLimitMb * 1024 * 1024)
+    : 4 * 1024 * 1024;
 
 const PLATFORM_LABELS: Record<string, string> = {
   youtube: 'YouTube',
@@ -163,6 +168,27 @@ export function validateVideoAgainstPlatforms(opts: {
       platform: '_all',
       code: 'upload_size',
       message: `This file is ${formatBytes(fileSz)}. At least one platform will publish using a full-file upload, which often fails above ~${formatBytes(SAFE_DIRECT_UPLOAD_MAX_BYTES)} (HTTP 413). Finish processing so each platform has a variant, trim/compress the video, or deselect platforms until a variant exists.`,
+    });
+  }
+
+  return { blocking, warnings };
+}
+
+export function validateImageAgainstPlatforms(opts: {
+  platformIds: string[];
+  fileSizeBytes: number;
+}): { blocking: ValidationIssue[]; warnings: ValidationIssue[] } {
+  const blocking: ValidationIssue[] = [];
+  const warnings: ValidationIssue[] = [];
+  const ids = Array.isArray(opts.platformIds) ? opts.platformIds : [];
+  const fileSz = Number(opts.fileSizeBytes) || 0;
+  if (ids.length === 0) return { blocking, warnings };
+
+  if (fileSz > SAFE_DIRECT_IMAGE_UPLOAD_MAX_BYTES) {
+    blocking.push({
+      platform: '_all',
+      code: 'image_upload_size',
+      message: `Image is ${formatBytes(fileSz)}. Current API gateway often rejects image publish above ~${formatBytes(SAFE_DIRECT_IMAGE_UPLOAD_MAX_BYTES)} (HTTP 413). Compress or resize before publishing.`,
     });
   }
 

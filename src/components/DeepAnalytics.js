@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { useAuth } from '../context/AuthContext';
+gimport { useAuth } from '../context/AuthContext';
 import { filterEnabledPlatforms } from '../config/disabledPlatforms';
 import PlatformIcon from './PlatformIcon';
 import ComposePostModal from './ComposePostModal';

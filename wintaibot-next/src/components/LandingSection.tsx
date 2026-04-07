@@ -658,7 +658,7 @@ export default function LandingSection() {
           <div className="ls-hero-copy">
             <div className="ls-hero-copy__head">
               <div className="ls-hero-copy__block ls-hero-copy__block--badge">
-                <div className="ls-hero-badge">AI Social Media Publishing &amp; Analytics Platform</div>
+                <div className="ls-hero-badge">Social Media Management · Publishing, Calendar &amp; Analytics</div>
               </div>
               <div className="ls-hero-copy__block ls-hero-copy__block--title">
                 <div
@@ -707,9 +707,9 @@ export default function LandingSection() {
       <section className="ls-section ls-what" aria-labelledby="what-heading">
         <h2 id="what-heading">What Is W!ntAi?</h2>
         <p>
-          W!ntAi is an AI-powered social media operations platform built to help you execute
-          faster without losing control. It combines publishing, scheduling, analytics, inbox, and
-          reply automation into one system.
+          W!ntAi is <strong>social media management</strong> plus AI: one place to publish, schedule,
+          analyze, and engage — with inbox, calendar, Video Publisher, and automation so you execute
+          faster without losing control.
         </p>
         <p>
           Main focus: <strong>social publishing workflow</strong>. Upload once, generate better

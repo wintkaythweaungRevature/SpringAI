@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { isScheduleTimeInPast } from '@/config/videoPlatformRequirements';
 import PlatformIcon from './PlatformIcon';
 
 function firstNonEmptyStr(...vals) {
@@ -88,6 +89,30 @@ function combineDateAndTimeToIso(dateYmd, timeHm) {
   if (!dateYmd || !timeHm) return null;
   const d = new Date(`${dateYmd}T${timeHm}:00`);
   return Number.isFinite(d.getTime()) ? d.toISOString() : null;
+}
+
+function localYmd(d = new Date()) {
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+function minTimeHmToday() {
+  const n = new Date();
+  const pad = (x) => String(x).padStart(2, '0');
+  return `${pad(n.getHours())}:${pad(n.getMinutes())}`;
+}
+
+/** If date is today and time is already past, bump to the next whole minute (local). */
+function clampTimeHmForTodayDate(dateYmd, timeHm) {
+  if (!dateYmd || !timeHm) return timeHm;
+  const d = new Date(`${dateYmd}T${timeHm}:00`);
+  if (!Number.isFinite(d.getTime())) return timeHm;
+  if (d.getTime() >= Date.now() - 500) return timeHm;
+  const n = new Date();
+  n.setSeconds(0, 0);
+  if (n.getTime() < Date.now()) n.setMinutes(n.getMinutes() + 1);
+  const pad = (x) => String(x).padStart(2, '0');
+  return `${pad(n.getHours())}:${pad(n.getMinutes())}`;
 }
 
 function splitDatetimeLocal(dlv) {
@@ -309,6 +334,10 @@ export default function PostDetailModal({ post, onClose, platform, onSaved }) {
     try {
       const url = buildPatchUrl(base, target);
       const scheduledAt = combineDateAndTimeToIso(scheduledDateOnly, scheduledTimeOnly);
+      if (scheduledAt && isScheduleTimeInPast(scheduledAt)) {
+        setErrMsg('Scheduled time must be now or later. You cannot schedule in the past.');
+        return;
+      }
       const body = {
         caption: caption.trim(),
         hashtags: hashtags.trim(),
@@ -586,7 +615,14 @@ export default function PostDetailModal({ post, onClose, platform, onSaved }) {
             <input
               type="time"
               value={scheduledTimeOnly}
-              onChange={(e) => setScheduledTimeOnly(e.target.value)}
+              min={scheduledDateOnly === localYmd() ? minTimeHmToday() : undefined}
+              onChange={(e) => {
+                let v = e.target.value;
+                if (scheduledDateOnly === localYmd()) {
+                  v = clampTimeHmForTodayDate(scheduledDateOnly, v);
+                }
+                setScheduledTimeOnly(v);
+              }}
               style={{
                 width: '100%',
                 maxWidth: 200,

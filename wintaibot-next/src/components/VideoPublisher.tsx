@@ -9,6 +9,8 @@ import {
   validateVideoAgainstPlatforms,
   formatDurationHuman,
   SAFE_DIRECT_UPLOAD_MAX_BYTES,
+  minScheduleDatetimeLocal,
+  isScheduleTimeInPast,
 } from '@/config/videoPlatformRequirements';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import PlatformIcon from './PlatformIcon';
@@ -20,30 +22,25 @@ const PLATFORMS = filterEnabledPlatforms([
   { id: 'facebook',  label: 'Facebook',   emoji: '👍',  color: '#1877F2', maxLen: 63206, logo: 'facebook' },
   { id: 'linkedin',  label: 'LinkedIn',   emoji: '💼',  color: '#0A66C2', maxLen: 3000, logo: 'linkedin' },
   { id: 'tiktok',    label: 'TikTok',    emoji: '🎵',  color: '#010101', maxLen: 2200, logo: 'tiktok' },
-  { id: 'x',         label: 'X (Twitter)', emoji: '🐦', color: '#000000', maxLen: 280, logo: 'x' },
   { id: 'threads',   label: 'Threads',   emoji: '🧵',  color: '#101010', maxLen: 500, logo: 'threads' },
   { id: 'pinterest', label: 'Pinterest', emoji: '📌',  color: '#E60023', maxLen: 500, logo: 'pinterest' },
 ]);
 
 /** Inline “Connect your accounts” rows — keep in sync with Social Connect / `/api/social/status`. */
-const CONNECT_ACCOUNT_ROW_IDS = ['youtube', 'instagram', 'tiktok', 'linkedin', 'facebook', 'x', 'threads'].filter(
+/** X is text-only in this app — connect it under Social Connect; video publisher targets video platforms only. */
+const CONNECT_ACCOUNT_ROW_IDS = ['youtube', 'instagram', 'tiktok', 'linkedin', 'facebook', 'threads'].filter(
   (id) => !isPlatformDisabled(id),
 );
 
 const STEPS = ['upload', 'processing', 'review', 'published', 'analytics'];
 
-/** Avoid `toISOString()` `.000Z` — Java DateTimeFormatter often rejects trailing `Z` at index 23. */
-function formatScheduledAtForScheduleApi(input: string) {
-  const d = new Date(String(input));
-  if (Number.isNaN(d.getTime())) return String(input);
-  const pad = (n: number) => String(n).padStart(2, '0');
-  const y = d.getUTCFullYear();
-  const m = pad(d.getUTCMonth() + 1);
-  const day = pad(d.getUTCDate());
-  const h = pad(d.getUTCHours());
-  const min = pad(d.getUTCMinutes());
-  const s = pad(d.getUTCSeconds());
-  return `${y}-${m}-${day}T${h}:${min}:${s}+00:00`;
+/**
+ * Schedule API expects a time Java can parse reliably. Epoch ms avoids offset/local quirks.
+ */
+function scheduledAtToApiValue(input: string | null | undefined): number | string {
+  const d = new Date(String(input ?? ''));
+  if (Number.isNaN(d.getTime())) return String(input ?? '');
+  return d.getTime();
 }
 
 /* ─── Component ─────────────────────────────────────────────── */
@@ -51,6 +48,9 @@ export default function VideoPublisher() {
   const { apiBase, token } = useAuth();
   const base = apiBase || 'https://api.wintaibot.com';
   const isMobile = useMediaQuery('(max-width: 768px)');
+  /** Stack review/upload columns on tablets and small laptops (fixes cramped side-by-side layout). */
+  const isNarrowLayout = useMediaQuery('(max-width: 1024px)');
+  const isCompactStepper = useMediaQuery('(max-width: 640px)');
 
   const [step, setStep]                 = useState('upload');
   const [video, setVideo]               = useState<File | null>(null);
@@ -370,17 +370,29 @@ export default function VideoPublisher() {
     }
   };
 
-  const scheduleVariant = async (variantId, platform, scheduledAt) => {
-    if (!variantId) return false;
-    const scheduledIso = formatScheduledAtForScheduleApi(String(scheduledAt));
+  const scheduleVariant = async (
+    variantId: string | number,
+    platform: string,
+    scheduledAt: string | null | undefined,
+  ): Promise<{ ok: boolean; error?: string }> => {
+    if (!variantId) return { ok: false, error: 'Missing variant' };
+    if (scheduledAt != null && String(scheduledAt).trim() !== '' && isScheduleTimeInPast(scheduledAt)) {
+      return { ok: false, error: 'Scheduled time must be now or later.' };
+    }
+    const at = scheduledAtToApiValue(scheduledAt);
     try {
       const res = await fetch(api(`/variants/${variantId}/schedule`), {
         method: 'POST',
         headers: { ...authHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ platform, scheduledAt: scheduledIso }),
+        body: JSON.stringify({ platform, scheduledAt: at, publishType }),
       });
-      return res.ok;
-    } catch (e) { return false; }
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) return { ok: true };
+      const err = typeof data?.error === 'string' ? data.error : `Schedule failed (${res.status})`;
+      return { ok: false, error: err };
+    } catch (e) {
+      return { ok: false, error: (e as Error).message || 'Network error' };
+    }
   };
 
   const scheduleAndPublishAll = async () => {
@@ -415,9 +427,9 @@ export default function VideoPublisher() {
 
       if (hasSchedule) {
         if (variant?.variantId) {
-          const ok = await scheduleVariant(variant.variantId, pid, scheduledAt);
-          if (ok) successPlatforms.push(pid);
-          else errors[pid] = 'Schedule failed';
+          const sch = await scheduleVariant(variant.variantId, pid, scheduledAt);
+          if (sch.ok) successPlatforms.push(pid);
+          else errors[pid] = sch.error || 'Schedule failed';
         } else {
           errors[pid] = 'Cannot schedule without variant. Publish now or re-upload.';
         }
@@ -478,7 +490,7 @@ export default function VideoPublisher() {
 
   /* ── render sections ── */
   return (
-    <div style={s.page}>
+    <div style={{ ...s.page, ...(isNarrowLayout ? { paddingLeft: 'max(12px, env(safe-area-inset-left, 0px))', paddingRight: 'max(12px, env(safe-area-inset-right, 0px))', paddingBottom: 'max(16px, env(safe-area-inset-bottom, 0px))' } : {}) }}>
       {/* ── Publish error modal ── */}
       {publishError && (
         <div style={{
@@ -512,23 +524,40 @@ export default function VideoPublisher() {
       )}
 
       {/* ── Stepper ── */}
-      <div style={{ ...s.stepper, ...(isMobile ? { flexWrap: 'wrap', gap: '12px', padding: '12px 16px', justifyContent: 'center' } : {}) }}>
+      <div
+        style={{
+          ...s.stepper,
+          ...(isNarrowLayout || isCompactStepper
+            ? { flexWrap: 'wrap', gap: isCompactStepper ? '10px' : '12px', padding: isCompactStepper ? '10px 12px' : '12px 16px', justifyContent: 'center', rowGap: '14px' }
+            : {}),
+        }}
+      >
         {['Upload', 'Processing', 'Review & Schedule', 'Published', 'Analytics'].map((label, i) => {
           const sid = STEPS[i];
           const idx = STEPS.indexOf(step);
           const done = i < idx;
           const active = i === idx;
+          const shortLabel = isCompactStepper
+            ? ['Up', 'Proc', 'Review', 'Done', 'Stats'][i]
+            : label;
           return (
             <React.Fragment key={sid}>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                <div style={{ ...s.stepDot, ...(done ? s.stepDone : active ? s.stepActive : {}) }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', maxWidth: isCompactStepper ? '64px' : undefined }}>
+                <div style={{ ...s.stepDot, ...(done ? s.stepDone : active ? s.stepActive : {}), ...(isCompactStepper ? { width: 24, height: 24, fontSize: 11 } : {}) }}>
                   {done ? '✓' : i + 1}
                 </div>
-                <span style={{ ...s.stepLabel, ...(active ? { color: '#2563eb', fontWeight: 700 } : {}), ...(isMobile ? { fontSize: '10px' } : {}) }}>
-                  {label}
+                <span
+                  style={{
+                    ...s.stepLabel,
+                    ...(active ? { color: '#2563eb', fontWeight: 700 } : {}),
+                    ...((isMobile || isCompactStepper) ? { fontSize: '10px', textAlign: 'center' as const, lineHeight: 1.2 } : {}),
+                  }}
+                  title={label}
+                >
+                  {shortLabel}
                 </span>
               </div>
-              {i < 4 && <div style={{ ...s.stepLine, ...(done ? s.stepLineDone : {}) }} />}
+              {i < 4 && !isCompactStepper && <div style={{ ...s.stepLine, ...(done ? s.stepLineDone : {}) }} />}
             </React.Fragment>
           );
         })}
@@ -536,9 +565,9 @@ export default function VideoPublisher() {
 
       {/* ── STEP: UPLOAD ── */}
       {step === 'upload' && (
-        <div style={{ ...s.layout, ...(isMobile ? { flexDirection: 'column', flexWrap: 'wrap' } : {}) }}>
+        <div style={{ ...s.layout, ...(isNarrowLayout ? { flexDirection: 'column', flexWrap: 'wrap', gap: '16px', alignItems: 'stretch' } : {}) }}>
           {/* Left */}
-          <div style={{ ...s.left, ...(isMobile ? { width: '100%', minWidth: 0 } : {}) }}>
+          <div style={{ ...s.left, ...(isNarrowLayout ? { width: '100%', minWidth: 0 } : {}) }}>
             <div style={s.sectionTitle}>🎬 Upload Video</div>
             {contentIdea && (
               <div style={{ marginBottom: '16px', padding: '12px 16px', borderRadius: '10px', background: 'linear-gradient(135deg,#eff6ff,#dbeafe)', border: '1px solid #93c5fd', fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
@@ -629,10 +658,10 @@ export default function VideoPublisher() {
           </div>
 
           {/* Right */}
-          <div style={s.right}>
+          <div style={{ ...s.right, ...(isNarrowLayout ? { width: '100%', minWidth: 0 } : {}) }}>
             <div style={s.card}>
               <div style={s.sectionTitle}>📡 Select Platforms</div>
-              <div style={{ ...s.platformGrid, ...(isMobile ? { gridTemplateColumns: 'repeat(2, 1fr)' } : {}) }}>
+              <div style={{ ...s.platformGrid, ...(isNarrowLayout ? { gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' } : {}) }}>
                 {PLATFORMS.map(p => (
                   <button
                     key={p.id}
@@ -722,7 +751,7 @@ export default function VideoPublisher() {
 
       {/* ── STEP: PROCESSING ── */}
       {step === 'processing' && (
-        <div style={{ ...s.centerCard, ...(isMobile ? { padding: '24px 16px', margin: '0 8px' } : {}) }}>
+        <div style={{ ...s.centerCard, ...(isNarrowLayout ? { padding: '24px 16px', margin: '0 8px', maxWidth: '100%' } : {}) }}>
           <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚙️</div>
           <div style={s.processTitle}>AI is working on your video</div>
           <div style={s.processLog}>
@@ -750,9 +779,9 @@ export default function VideoPublisher() {
 
       {/* ── STEP: REVIEW & PUBLISH ── */}
       {step === 'review' && (
-        <div style={{ ...s.layout, ...(isMobile ? { flexDirection: 'column', flexWrap: 'wrap' } : {}) }}>
+        <div style={{ ...s.layout, ...(isNarrowLayout ? { flexDirection: 'column', flexWrap: 'wrap', gap: '16px', alignItems: 'stretch' } : {}) }}>
           {/* Platform tabs on left */}
-          <div style={{ ...s.left, ...(isMobile ? { width: '100%', minWidth: 0 } : {}) }}>
+          <div style={{ ...s.left, ...(isNarrowLayout ? { width: '100%', minWidth: 0 } : {}) }}>
             {reviewVideoValidation.blocking.length > 0 && (
               <div
                 role="alert"
@@ -768,9 +797,6 @@ export default function VideoPublisher() {
               >
                 <strong>Cannot publish yet</strong>
                 <p style={{ margin: '8px 0 10px', lineHeight: 1.45 }}>
-                  {selectedPlatforms.includes('x') && (
-                    <>On <strong>X (Twitter)</strong>, your <strong>caption is visible text</strong> in the feed; we check video length for X below. </>
-                  )}
                   Large direct uploads can hit server limits (HTTP 413). Fix the list or change platforms / file.
                 </p>
                 <ul style={{ margin: 0, paddingLeft: '18px', lineHeight: 1.5 }}>
@@ -800,6 +826,23 @@ export default function VideoPublisher() {
                 </ul>
               </div>
             )}
+            {selectedPlatforms.some((pid) => variants[pid] && !variants[pid].variantId && video && video.size > SAFE_DIRECT_UPLOAD_MAX_BYTES) && (
+              <div
+                role="status"
+                style={{
+                  marginBottom: '12px',
+                  background: '#eff6ff',
+                  border: '1px solid #93c5fd',
+                  borderRadius: '10px',
+                  padding: '12px 14px',
+                  fontSize: '12px',
+                  color: '#1e3a8a',
+                  lineHeight: 1.5,
+                }}
+              >
+                <strong>Large video</strong> — publishing without a processed variant uploads the full file and often hits <strong>HTTP 413</strong> (server size limit). Use <strong>Generate Content</strong> and wait for variants, or compress the video under ~{(SAFE_DIRECT_UPLOAD_MAX_BYTES / 1024 / 1024).toFixed(0)} MB.
+              </div>
+            )}
             <div style={s.sectionTitle}>📦 Content Variants</div>
             {selectedPlatforms.map(pid => {
               const p = PLATFORMS.find(x => x.id === pid);
@@ -824,7 +867,7 @@ export default function VideoPublisher() {
                 📅 Schedule per platform (SEO & advertising)
               </div>
               <p style={{ fontSize: '11px', color: '#64748b', marginBottom: '12px' }}>
-                Uncheck <strong>Publish immediately</strong> and pick a date/time to schedule. If you leave it on immediate, the post goes live as soon as you click the button — the time shown is not used until you turn scheduling on.
+                Uncheck <strong>Publish immediately</strong> and pick a date/time to schedule. Scheduled time must be <strong>now or later</strong> — past times are not allowed. If you leave it on immediate, the post goes live as soon as you click the button — the time shown is not used until you turn scheduling on.
               </p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
                 {[
@@ -893,8 +936,20 @@ export default function VideoPublisher() {
                       ) : (
                         <input
                           type="datetime-local"
+                          min={minScheduleDatetimeLocal()}
                           value={scheduledTimes[pid] || ''}
-                          onChange={e => setScheduledTimes(prev => ({ ...prev, [pid]: e.target.value || null }))}
+                          onChange={e => {
+                            const v = e.target.value;
+                            if (!v) {
+                              setScheduledTimes(prev => ({ ...prev, [pid]: null }));
+                              return;
+                            }
+                            if (isScheduleTimeInPast(v)) {
+                              setScheduledTimes(prev => ({ ...prev, [pid]: minScheduleDatetimeLocal() }));
+                              return;
+                            }
+                            setScheduledTimes(prev => ({ ...prev, [pid]: v }));
+                          }}
                           style={{ flex: 1, minWidth: '140px', padding: '6px 8px', borderRadius: '6px', border: '1.5px solid #e2e8f0', fontSize: '12px' }}
                         />
                       )}
@@ -919,7 +974,7 @@ export default function VideoPublisher() {
           </div>
 
           {/* Right: variant editor */}
-          <div style={s.right}>
+          <div style={{ ...s.right, ...(isNarrowLayout ? { width: '100%', minWidth: 0, flex: '1 1 auto' } : {}) }}>
             {activeVariant && variants[activeVariant] && (() => {
               const pid = activeVariant;
               const p = PLATFORMS.find(x => x.id === pid);
@@ -938,7 +993,7 @@ export default function VideoPublisher() {
 
                   <div style={s.fieldLabel}>Caption</div>
                   <textarea
-                    style={s.textarea}
+                    style={{ ...s.textarea, ...(isNarrowLayout ? { minHeight: 140, width: '100%', maxWidth: '100%', boxSizing: 'border-box' as const } : {}) }}
                     value={v.caption}
                     onChange={e => setVariants(prev => ({ ...prev, [pid]: { ...prev[pid], caption: e.target.value } }))}
                   />
@@ -965,8 +1020,8 @@ export default function VideoPublisher() {
 
       {/* ── STEP: ANALYTICS ── */}
       {step === 'analytics' && (
-        <div style={{ ...s.layout, ...(isMobile ? { flexDirection: 'column', flexWrap: 'wrap' } : {}) }}>
-          <div style={{ ...s.left, ...(isMobile ? { width: '100%', minWidth: 0 } : {}) }}>
+        <div style={{ ...s.layout, ...(isNarrowLayout ? { flexDirection: 'column', flexWrap: 'wrap', gap: '16px', alignItems: 'stretch' } : {}) }}>
+          <div style={{ ...s.left, ...(isNarrowLayout ? { width: '100%', minWidth: 0 } : {}) }}>
             <div style={s.card}>
               <div style={s.sectionTitle}>🚀 Published</div>
               {published.map(pid => {
@@ -998,7 +1053,7 @@ export default function VideoPublisher() {
             </div>
           </div>
 
-          <div style={s.right}>
+          <div style={{ ...s.right, ...(isNarrowLayout ? { width: '100%', minWidth: 0 } : {}) }}>
             {/* AI Performance Report */}
             <div style={{ ...s.card, background: 'linear-gradient(135deg,#1e3a8a,#2563eb)', color: '#fff', marginBottom: '16px' }}>
               <div style={{ fontSize: '14px', fontWeight: 700, marginBottom: '12px', opacity: 0.85 }}>🤖 AI Performance Insights</div>
@@ -1015,7 +1070,7 @@ export default function VideoPublisher() {
             </div>
 
             {/* Analytics cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: '12px', marginBottom: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isNarrowLayout ? 'repeat(2, minmax(0, 1fr))' : 'repeat(3, 1fr)', gap: '12px', marginBottom: '16px' }}>
               {[
                 { label: 'Views',          value: '12.4K', icon: '👁️',  color: '#2563eb' },
                 { label: 'Likes',          value: '1.8K',  icon: '❤️',  color: '#ef4444' },
@@ -1115,7 +1170,6 @@ function mockHashtags(platform) {
     tiktok:    ['#fyp', '#foryoupage', '#viral', '#trending', '#TikTokTech'],
     linkedin:  ['#LinkedIn', '#Professional', '#CareerGrowth', '#Innovation', '#Tech'],
     facebook:  ['#Facebook', '#Video', '#ContentCreation', '#Community'],
-    x:         ['#Tech', '#AI', '#BuildInPublic', '#Startup'],
     threads:   ['#Threads', '#ContentCreator', '#AI'],
     pinterest: ['#Pinterest', '#Inspiration', '#Tutorial', '#SaveThis'],
   };
@@ -1129,7 +1183,6 @@ function mockClipNote(platform) {
     tiktok:    '15–60s · 9:16 vertical · auto-captions',
     linkedin:  'Up to 10 min · 16:9 · professional tone',
     facebook:  'Full video · 16:9 · longer captions ok',
-    x:         'Caption = visible text (280) · video up to 2:20',
     threads:   'Text + thumbnail · no long video',
     pinterest: 'Thumbnail image · 2:3 ratio',
   };

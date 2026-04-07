@@ -28,6 +28,7 @@
 
 html {
   scroll-behavior: smooth;
+  min-height: 100%;
 }
 
 body {
@@ -37,6 +38,8 @@ body {
   background: #f0f4f8;
   color: #1e293b;
   overflow-x: hidden;
+  min-height: 100%;
+  min-height: 100dvh;
 }
 
 code {

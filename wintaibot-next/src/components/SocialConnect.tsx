@@ -11,7 +11,7 @@ const PLATFORMS = filterEnabledPlatforms([
   { id: 'tiktok',    label: 'TikTok',     emoji: '🎵',  color: '#010101', desc: 'Short-form videos', logo: 'tiktok' },
   { id: 'linkedin',  label: 'LinkedIn',   emoji: '💼',  color: '#0A66C2', desc: 'Professional videos', logo: 'linkedin' },
   { id: 'facebook',  label: 'Facebook',   emoji: '👍',  color: '#1877F2', desc: 'Page videos & Reels', logo: 'facebook' },
-  { id: 'x',         label: 'X (Twitter)',emoji: '🐦',  color: '#000000', desc: 'Video tweets', logo: 'x' },
+  { id: 'x',         label: 'X (Twitter)',emoji: '🐦',  color: '#000000', desc: 'Text posts only (no media upload)', logo: 'x' },
   { id: 'threads',   label: 'Threads',    emoji: '🧵',  color: '#101010', desc: 'Text + video posts', logo: 'threads' },
   { id: 'pinterest', label: 'Pinterest',  emoji: '📌',  color: '#E60023', desc: 'Video pins', logo: 'pinterest' },
 ]);

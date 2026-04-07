@@ -2737,6 +2737,13 @@
   text-decoration: underline;
 }
 
+/* Fixed hero backgrounds are unreliable on iOS / many mobile browsers */
+@media (max-width: 1024px) {
+  .ls-root {
+    background-attachment: scroll;
+  }
+}
+
 /* ── Responsive ──────────────────────────────────────────── */
 @media (max-width: 640px) {
   .ls-seo-grid {

@@ -130,6 +130,10 @@ export default function DashboardShell({ children }: { children: React.ReactNode
     <div
       style={{
         ...s.shell,
+        /* 100dvh avoids content hidden under mobile browser chrome vs 100vh */
+        minHeight: '100dvh',
+        height: '100dvh',
+        maxHeight: '100dvh',
         ...(showDashboardChrome ? { background: mainShellBg } : {}),
       } as React.CSSProperties}
     >
@@ -155,6 +159,8 @@ export default function DashboardShell({ children }: { children: React.ReactNode
                 left: 0,
                 top: 0,
                 bottom: 0,
+                height: '100dvh',
+                maxHeight: '100dvh',
                 zIndex: 50,
                 width: sidebarOpen ? '280px' : '0',
                 minWidth: sidebarOpen ? '280px' : '0',
@@ -252,7 +258,21 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         } as React.CSSProperties}
       >
         {showDashboardChrome ? (
-          <header style={s.topBar}>
+          <header
+            style={{
+              ...s.topBar,
+              ...(isMobile || isTablet
+                ? {
+                    height: 'auto',
+                    minHeight: 52,
+                    flexWrap: 'wrap' as const,
+                    rowGap: 8,
+                    paddingTop: 'max(8px, env(safe-area-inset-top, 0px))',
+                    paddingBottom: 8,
+                  }
+                : {}),
+            }}
+          >
           <button style={s.menuBtn} onClick={() => setSidebarOpen(!sidebarOpen)}>
             ☰
           </button>
@@ -268,7 +288,14 @@ export default function DashboardShell({ children }: { children: React.ReactNode
             </button>
           )}
 
-          <div style={s.searchBox}>
+          <div
+            style={{
+              ...s.searchBox,
+              ...((isMobile || isTablet) && showDashboardChrome
+                ? { flexBasis: '100%', maxWidth: 'none', order: 4 }
+                : {}),
+            }}
+          >
             <span style={{ opacity: 0.4, fontSize: '14px' }}>🔍</span>
             <input
               className="dashboard-search-input"
@@ -278,7 +305,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
             />
           </div>
 
-          <div style={s.topRight}>
+          <div style={{ ...s.topRight, ...((isMobile || isTablet) && showDashboardChrome ? { marginLeft: 0, flexWrap: 'wrap' as const } : {}) }}>
             {loading ? <span style={{ color: '#94a3b8', fontSize: '13px' }}>...</span> : (
               <>
                 <span style={s.topEmail} title={user?.email || ''}>
@@ -365,10 +392,12 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         <div
           style={{
             ...s.content,
-            ...(isMobile
+            ...((isMobile || isTablet)
               ? {
                   padding:
-                    '12px max(12px, env(safe-area-inset-left, 0px)) max(20px, env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-right, 0px))',
+                    '12px max(12px, env(safe-area-inset-left, 0px)) max(24px, env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-right, 0px))',
+                  flex: 1,
+                  minHeight: 0,
                 }
               : {}),
           }}
@@ -451,7 +480,7 @@ const nav: Record<string, React.CSSProperties | Record<string, unknown>> = {
 const s: Record<string, any> = {
   shell: {
     display: 'flex',
-    height: '100vh',
+    /* height/minHeight set on element for 100dvh + fallback */
     overflow: 'hidden',
     fontFamily: "'Inter', -apple-system, sans-serif",
     background: '#f0f4f8',
@@ -460,7 +489,8 @@ const s: Record<string, any> = {
     width: '224px',
     minWidth: '224px',
     maxWidth: '280px',
-    height: '100vh',
+    height: '100dvh',
+    maxHeight: '100dvh',
     background: 'linear-gradient(180deg, #0c1222 0%, #0f172a 42%, #151e35 100%)',
     borderRight: '1px solid rgba(148, 163, 184, 0.14)',
     display: 'flex',

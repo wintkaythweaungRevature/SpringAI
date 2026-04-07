@@ -15,12 +15,15 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: 'W!ntAi – AI Assistant for PDF Analysis, Documents & Productivity',
+    default: 'W!ntAi – Social Media Management & AI Assistant',
     template: '%s | W!ntAi',
   },
   description:
-    'W!ntAi is an AI assistant that analyzes PDFs, extracts data from documents, transcribes audio, generates images, writes emails, and prepares you for interviews. Try free trial.',
+    'Social media management and AI in one place: schedule and publish to Instagram, YouTube, TikTok, and more, plus calendar, inbox, and analytics. Also includes AI for PDFs, documents, transcription, images, and email. Try free trial.',
   keywords: [
+    'social media management',
+    'social media scheduler',
+    'multi-platform publishing',
     'AI PDF analyzer',
     'PDF data extraction',
     'AI document assistant',
@@ -39,9 +42,9 @@ export const metadata: Metadata = {
     locale: 'en_US',
     url: SITE_URL,
     siteName: 'W!ntAi',
-    title: 'W!ntAi – AI Assistant for PDF Analysis & Documents',
+    title: 'W!ntAi – Social Media Management & AI Tools',
     description:
-      'Analyze PDFs, extract document data, transcribe audio, generate images, and automate email replies — all in one AI platform. Try free trial.',
+      'Manage social media: publish and schedule across platforms, content calendar, inbox, and analytics — plus AI for PDFs, documents, audio, images, and email. Try free trial.',
     images: [
       {
         url: OG_IMAGE,
@@ -53,9 +56,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'W!ntAi – AI Assistant for PDFs & Documents',
+    title: 'W!ntAi – Social Media Management & AI',
     description:
-      'Analyze PDFs, transcribe audio, generate images, prep for interviews, and automate email replies with W!ntAi AI. Free to start.',
+      'Social media management with scheduling and analytics, plus AI for PDFs, audio, images, interviews, and email. Free to start.',
     images: [OG_IMAGE],
   },
   alternates: {
@@ -80,12 +83,15 @@ const structuredData = {
     name: 'W!ntAi',
     url: SITE_URL,
     applicationCategory: 'ProductivityApplication',
-    applicationSubCategory: 'AI Assistant',
+    applicationSubCategory: 'Social media management software',
     operatingSystem: 'Web',
     description:
-      'W!ntAi is an AI assistant that analyzes PDFs, extracts document data, transcribes audio, generates images, writes email replies, and prepares users for job interviews.',
+      'W!ntAi is a social media management and AI platform: publish and schedule across networks, content calendar, inbox, analytics, and AI tools for PDFs, documents, audio, images, email, and interviews.',
     screenshot: OG_IMAGE,
     featureList: [
+      'Social media management and multi-platform publishing',
+      'Content calendar and feed scheduling',
+      'Unified inbox and engagement analytics',
       'PDF data extraction and analysis',
       'AI document summarization',
       'Voice and audio transcription',
@@ -134,7 +140,7 @@ const structuredData = {
     name: 'W!ntAi',
     url: SITE_URL,
     description:
-      'AI assistant for PDF analysis, document extraction, voice transcription, image generation, email writing, and interview preparation.',
+      'Social media management with publishing, calendar, and analytics — plus AI for PDFs, documents, voice, images, email, and interview prep.',
     termsOfService: `${SITE_URL}/terms-of-service`,
     potentialAction: {
       '@type': 'SearchAction',
@@ -170,7 +176,7 @@ const structuredData = {
         name: 'What is W!ntAi?',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'W!ntAi is an AI assistant platform that helps you analyze PDFs, extract document data, transcribe audio, generate images, write email replies, prepare for job interviews, and plan meals — all in one web-based dashboard.',
+          text: 'W!ntAi is a social media management and AI platform: plan and publish to major networks, use a content calendar and inbox, track analytics, and use AI for PDFs, documents, audio, images, email, interviews, and recipes — all in one web-based dashboard.',
         },
       },
       {

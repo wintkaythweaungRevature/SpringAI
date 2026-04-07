@@ -189,13 +189,15 @@ export const TOOLS = [
     icon: '🎬',
     badge: 'Member',
     color: '#dc2626',
-    headline: 'If you can record it - we help you post it everywhere, with the right format per platform.',
+    headline:
+      'Social media management for video: if you can record it, we help you post it everywhere — right format per platform.',
     description:
       'Upload your video, choose platforms - W!ntAi adapts format per destination. Use the thumbnail picker (or AI-suggested frames), review editable AI captions and hashtags, and schedule direct publishing per network without a notification-heavy workflow. Use insights to plan what to post next.',
-    metaTitle: 'Video Publisher - AI-Powered Multi-Platform Video Scheduler',
+    metaTitle: 'Video Publisher - Social Media Management & Multi-Platform Scheduling',
     metaDescription:
-      'Pick your platforms; W!ntAi adapts video per destination, with editable AI captions and direct publishing - less notification noise, more straight-through posting.',
-    keywords: 'video publishing tool, multi-platform video scheduler, AI video captions, YouTube scheduler, Instagram video publisher, TikTok automation',
+      'Social media management for video: pick your platforms; W!ntAi adapts format per destination, with AI captions and direct publishing — less noise, more straight-through posting.',
+    keywords:
+      'social media management, video publishing tool, multi-platform video scheduler, AI video captions, YouTube scheduler, Instagram video publisher, TikTok automation',
     useCases: [
       { icon: '🚀', title: 'Publish Everywhere', desc: 'One upload to YouTube, Instagram Reels, TikTok, Facebook, and LinkedIn simultaneously.' },
       { icon: '🎞️', title: 'Auto Format per Platform', desc: 'Pick destinations and we generate the right variant for each network automatically.' },

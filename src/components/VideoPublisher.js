@@ -37,6 +37,21 @@ const PLATFORM_ID_TO_BACKEND = {
   pinterest: 'Pinterest',
 };
 
+/** Match poll variants[] to a platform id — backend labels differ (Facebook vs facebook). */
+function findAiVariantForPlatform(variants, pid) {
+  if (!Array.isArray(variants) || !pid) return null;
+  const want = PLATFORM_ID_TO_BACKEND[pid];
+  const low = String(pid).toLowerCase();
+  const wantLow = want ? String(want).toLowerCase() : '';
+  return (
+    variants.find((v) => v && v.platform === want)
+    || variants.find((v) => v && String(v.platform || '').toLowerCase() === low)
+    || variants.find((v) => v && String(v.platform || '').toLowerCase() === wantLow)
+    || variants.find((v) => v && String(v.platform || '').toLowerCase().includes(low))
+    || null
+  );
+}
+
 /** Inline “Connected accounts” rows — keep in sync with Social Connect / `/api/social/status`. */
 const CONNECT_ACCOUNT_ROW_IDS = ['youtube', 'instagram', 'tiktok', 'linkedin', 'facebook', 'x', 'threads'].filter(
   (id) => !isPlatformDisabled(id),
@@ -697,7 +712,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
 
       const generated = {};
       for (const pid of selectedPlatforms) {
-        const aiVariant = pollData?.variants?.find(v => v.platform === PLATFORM_ID_TO_BACKEND[pid]);
+        const aiVariant = findAiVariantForPlatform(pollData?.variants, pid);
         const hashtagsStr = aiVariant?.hashtags || '';
         const hashtagsArr = hashtagsStr.trim().split(/\s+/).filter(t => t.startsWith('#'));
         generated[pid] = {
@@ -816,14 +831,51 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
   const scheduleSocialPost = async ({ platform, scheduledAt, variant }) => {
     if (!platform || !scheduledAt) return { ok: false, error: 'Missing schedule fields' };
     try {
+      const atMs = new Date(String(scheduledAt)).getTime();
+      if (Number.isNaN(atMs)) return { ok: false, error: 'Invalid schedule time' };
+
+      // Video with a processed variant → use video-content scheduler (JSON, no huge multipart).
+      if (postType === 'video' && variant?.variantId) {
+        const res = await fetch(api(`/variants/${variant.variantId}/schedule`), {
+          method: 'POST',
+          headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            platform,
+            scheduledAt: atMs,
+            publishType: publishType || 'reels',
+            caption: variant?.caption || '',
+            hashtags: variant?.hashtags?.join ? variant.hashtags.join(' ') : (variant?.hashtags || ''),
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          return { ok: false, error: data.error || `Schedule failed (${res.status})` };
+        }
+        const hasConfirmation =
+          data?.jobId != null ||
+          data?.scheduledAt != null ||
+          String(data?.status || '').toUpperCase() === 'SCHEDULED';
+        if (!hasConfirmation) {
+          return { ok: false, error: 'Schedule returned no job confirmation' };
+        }
+        return { ok: true, data };
+      }
+
+      if (postType === 'video' && !variant?.variantId) {
+        return {
+          ok: false,
+          error:
+            'Cannot schedule video without a processed variant. Run Generate Content and wait for variants, or publish immediately after processing.',
+        };
+      }
+
+      // Image / text-only → legacy social multipart scheduler (no large video body).
       const fd = new FormData();
-      // datetime-local → UTC instant; avoid `.000Z` (many Java parsers fail on trailing Z).
       const scheduledIso = formatScheduledAtForScheduleApi(scheduledAt);
       fd.append('scheduledAt', scheduledIso);
       fd.append('caption', variant?.caption || '');
       fd.append('hashtags', variant?.hashtags?.join ? variant.hashtags.join(' ') : (variant?.hashtags || ''));
       fd.append('postType', postType || 'video');
-      if (variant?.variantId) fd.append('variantId', String(variant.variantId));
 
       const res = await fetch(`${base}/api/social/post/schedule/${platform}`, {
         method: 'POST',
@@ -834,7 +886,6 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
       if (!res.ok) {
         return { ok: false, error: data.error || `Schedule failed (${res.status})` };
       }
-      // Guardrail: scheduling should return confirmation fields from backend.
       const hasConfirmation =
         data?.jobId != null ||
         data?.scheduledAt != null ||
@@ -951,8 +1002,49 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
           } else {
             setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'failed', error: data.error || 'Publish failed' } }));
           }
+        } else if (postType === 'video') {
+          // ── Video without variantId: multipart to video-content only (never /api/social/post — nginx 413) ──
+          if (!video) {
+            setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'failed', error: 'Video file missing — re-upload or run Generate Content for variants.' } }));
+          } else if (video.size > SAFE_DIRECT_UPLOAD_MAX_BYTES) {
+            setPublishingStatus(prev => ({
+              ...prev,
+              [pid]: {
+                state: 'failed',
+                error:
+                  `File too large for direct upload (HTTP 413). Wait for AI variants, compress under ~${Math.round(SAFE_DIRECT_UPLOAD_MAX_BYTES / 1024 / 1024)} MB, or ask your host to raise nginx client_max_body_size.`,
+              },
+            }));
+          } else {
+            const fd = new FormData();
+            fd.append('file', video);
+            fd.append('caption', variant.caption || '');
+            fd.append('hashtags', hashtags);
+            fd.append('postType', publishType);
+            const res = await fetch(api(`/publish/${pid}`), {
+              method: 'POST',
+              headers: authHeaders(),
+              body: fd,
+            });
+            const data = await res.json().catch(() => ({}));
+            if (res.status === 413) {
+              setPublishingStatus(prev => ({
+                ...prev,
+                [pid]: {
+                  state: 'failed',
+                  error:
+                    'HTTP 413: gateway rejected the upload. Finish processing so a variant exists, use a smaller file, or increase client_max_body_size on the API proxy.',
+                },
+              }));
+            } else if (res.ok) {
+              successPlatforms.push(pid);
+              setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'done', error: null } }));
+            } else {
+              setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'failed', error: data.error || 'Publish failed' } }));
+            }
+          }
         } else if (postType === 'image' || postType === 'text') {
-          // ── Image / Text publish via /api/social/post/{platform} ──
+          // ── Image / Text publish via /api/social/post/{platform} (small multipart — not full video) ──
           const fd = new FormData();
           if (postType === 'image' && imageFile) fd.append('file', imageFile);
           fd.append('caption', variant.caption || '');
@@ -963,14 +1055,23 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
             body: fd,
           });
           const data = await res.json().catch(() => ({}));
-          if (res.ok) {
+          if (res.status === 413) {
+            setPublishingStatus(prev => ({
+              ...prev,
+              [pid]: { state: 'failed', error: 'HTTP 413: attachment too large for the API gateway. Use a smaller image or raise client_max_body_size.' },
+            }));
+          } else if (res.ok) {
             successPlatforms.push(pid);
             setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'done', error: null } }));
           } else {
             setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'failed', error: data.error || 'Publish failed' } }));
           }
         } else {
-          // ── Fallback: no variantId — upload file directly (sync, fast platforms) ──
+          // Unknown postType — treat as video fallback
+          if (!video) {
+            setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'failed', error: 'No media file — re-upload.' } }));
+            continue;
+          }
           const fd = new FormData();
           fd.append('file', video);
           fd.append('caption', variant.caption || '');
@@ -985,7 +1086,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
           if (res.status === 413) {
             setPublishingStatus(prev => ({
               ...prev,
-              [pid]: { state: 'failed', error: 'File too large for the server (HTTP 413). Use a smaller file or ensure processing created a variant.' },
+              [pid]: { state: 'failed', error: 'File too large for the server (HTTP 413). Ensure processing created a variant or use a smaller file.' },
             }));
           } else if (res.ok) {
             successPlatforms.push(pid);

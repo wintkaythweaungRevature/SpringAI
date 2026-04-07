@@ -1,6 +1,4 @@
-/**
- * X (Twitter) video length + direct-upload size. Keep in sync with CRA `videoPlatformRequirements.js`.
- */
+/** Direct full-file upload size guard (video publisher). Keep in sync with CRA `videoPlatformRequirements.js`. */
 
 export const SAFE_DIRECT_UPLOAD_MAX_BYTES = 100 * 1024 * 1024;
 
@@ -34,6 +32,28 @@ export function formatDurationHuman(sec: number | null | undefined): string {
     return r > 0 ? `${m}m ${r}s` : `${m}m`;
   }
   return `${s}s`;
+}
+
+/** Earliest valid `datetime-local` value (minute precision, local) — not before the current moment. */
+export function minScheduleDatetimeLocal(now: Date = new Date()): string {
+  const d = new Date(now);
+  d.setSeconds(0, 0);
+  if (d.getTime() < Date.now()) {
+    d.setMinutes(d.getMinutes() + 1);
+  }
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/**
+ * True when a schedule string (datetime-local or ISO) is strictly before now.
+ * Empty/null is not "in the past" (treated as immediate / no schedule).
+ */
+export function isScheduleTimeInPast(value: string | null | undefined): boolean {
+  if (value == null || String(value).trim() === '') return false;
+  const t = new Date(String(value)).getTime();
+  if (!Number.isFinite(t)) return true;
+  return t < Date.now() - 500;
 }
 
 export function formatBytes(n: number | null | undefined): string {
@@ -74,10 +94,8 @@ export function getVideoDurationFromFile(file: File): Promise<number> {
   });
 }
 
-/** Only X (Twitter) video length is enforced in this UI. */
-export function getMaxDurationSecForPlatform(platformId: string, _publishType: string): number | null {
-  const pid = String(platformId || '').toLowerCase();
-  if (pid === 'x') return 140;
+/** Reserved for per-platform duration caps in the video publisher (none currently). */
+export function getMaxDurationSecForPlatform(_platformId: string, _publishType: string): number | null {
   return null;
 }
 
@@ -121,19 +139,6 @@ export function validateVideoAgainstPlatforms(opts: {
   const ids = Array.isArray(opts.platformIds) ? opts.platformIds : [];
   const sched = opts.scheduledTimesByPlatform || {};
 
-  for (const pid of ids) {
-    const maxDur = getMaxDurationSecForPlatform(pid, opts.publishType);
-    if (maxDur != null && effDur > 0 && effDur > maxDur + 0.25) {
-      blocking.push({
-        platform: pid,
-        code: 'duration',
-        message: `X (Twitter): your caption is visible text; the video is separate. This video is ${formatDurationHuman(effDur)} but X allows up to ${formatDurationHuman(maxDur)} for video. Trim the clip or deselect X.`,
-        maxDurationSec: maxDur,
-        actualSec: effDur,
-      });
-    }
-  }
-
   const anyDirect = ids.some((pid) =>
     platformNeedsDirectVideoUpload(pid, {
       postType: opts.postType,
@@ -142,19 +147,22 @@ export function validateVideoAgainstPlatforms(opts: {
     }),
   );
 
+  for (const pid of ids) {
+    const s = sched[pid];
+    if (s != null && String(s).trim() !== '' && isScheduleTimeInPast(s)) {
+      blocking.push({
+        platform: pid,
+        code: 'schedule_past',
+        message: `Scheduled time must be now or later for ${platformDisplayName(pid)}. You cannot schedule in the past.`,
+      });
+    }
+  }
+
   if (!opts.skipDirectUploadSizeCheck && anyDirect && fileSz > SAFE_DIRECT_UPLOAD_MAX_BYTES) {
     blocking.push({
       platform: '_all',
       code: 'upload_size',
       message: `This file is ${formatBytes(fileSz)}. At least one platform will publish using a full-file upload, which often fails above ~${formatBytes(SAFE_DIRECT_UPLOAD_MAX_BYTES)} (HTTP 413). Finish processing so each platform has a variant, trim/compress the video, or deselect platforms until a variant exists.`,
-    });
-  }
-
-  if (effDur <= 0 && ids.includes('x')) {
-    warnings.push({
-      platform: 'x',
-      code: 'no_duration',
-      message: 'Video length is not available yet — the X (Twitter) video-length check will apply once length is known.',
     });
   }
 

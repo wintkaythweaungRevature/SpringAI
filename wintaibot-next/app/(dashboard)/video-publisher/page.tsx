@@ -3,11 +3,13 @@ import MemberGate from '@/components/MemberGate';
 import VideoPublisher from '@/components/VideoPublisher';
 
 export const metadata: Metadata = {
-  title: 'Publish',
-  description: 'Upload once and publish to your connected social accounts.',
+  title: 'Video & social publishing',
+  description:
+    'Social media management: upload once and publish to your connected accounts with AI captions, thumbnails, and per-platform scheduling.',
   openGraph: {
-    title: 'Publish | W!ntAi',
-    description: 'Upload once and publish to your connected social accounts.',
+    title: 'Video & social publishing | W!ntAi',
+    description:
+      'Social media management — multi-platform video publishing, captions, and scheduling from one workspace.',
   },
 };
 

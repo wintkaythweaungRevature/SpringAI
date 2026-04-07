@@ -211,21 +211,21 @@ async function normalizeImageForPlatformPublish(file, platformId, publishType) {
 }
 
 /**
- * Schedule APIs (Java DateTimeFormatter) often reject `toISOString()` values like
- * `2026-04-21T13:00:00.000Z` with "unparsed text at index 23" (the `Z`).
- * Send UTC with an explicit `+00:00` offset and second precision instead.
+ * Keep the exact wall-clock time selected in the browser for schedule APIs.
+ * We intentionally avoid UTC offset conversion here because it shifts the
+ * selected local time when server/app timezones differ.
  */
 function formatScheduledAtForScheduleApi(input) {
   const d = new Date(String(input));
   if (Number.isNaN(d.getTime())) return String(input);
   const pad = n => String(n).padStart(2, '0');
-  const y = d.getUTCFullYear();
-  const m = pad(d.getUTCMonth() + 1);
-  const day = pad(d.getUTCDate());
-  const h = pad(d.getUTCHours());
-  const min = pad(d.getUTCMinutes());
-  const s = pad(d.getUTCSeconds());
-  return `${y}-${m}-${day}T${h}:${min}:${s}+00:00`;
+  const y = d.getFullYear();
+  const m = pad(d.getMonth() + 1);
+  const day = pad(d.getDate());
+  const h = pad(d.getHours());
+  const min = pad(d.getMinutes());
+  const s = pad(d.getSeconds());
+  return `${y}-${m}-${day}T${h}:${min}:${s}`;
 }
 
 /* ── Video Frame Scrubber ─────────────────────────────────────────────────── */

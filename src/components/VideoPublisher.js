@@ -773,15 +773,57 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
 
     try {
       log('🎬 Uploading video to server...');
-      const formData = new FormData();
-      formData.append('file', video);
-      if (contentIdea) formData.append('prompt', contentIdea);
-
-      const res = await fetch(`${base}/api/video-content/upload?async=true`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      });
+      let res;
+      const shouldUseDirectS3Ingest = video.size > SAFE_DIRECT_UPLOAD_MAX_BYTES;
+      if (shouldUseDirectS3Ingest) {
+        log('☁️ Large file detected — using direct S3 upload...');
+        const initRes = await fetch(`${base}/api/video-content/upload/init`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            filename: video.name,
+            contentType: video.type || 'video/mp4',
+            sizeBytes: video.size,
+          }),
+        });
+        if (!initRes.ok) {
+          const err = await initRes.json().catch(() => ({}));
+          throw new Error(err.error || err.message || 'Could not initialize direct upload');
+        }
+        const init = await initRes.json();
+        const putUrl = String(init?.url || '');
+        const objectKey = String(init?.key || '');
+        const putHeaders = (init?.headers && typeof init.headers === 'object') ? init.headers : {};
+        if (!putUrl || !objectKey) {
+          throw new Error('Upload init response missing S3 upload URL');
+        }
+        const s3Put = await fetch(putUrl, {
+          method: 'PUT',
+          headers: putHeaders,
+          body: video,
+        });
+        if (!s3Put.ok) {
+          throw new Error(`Direct upload failed (${s3Put.status})`);
+        }
+        res = await fetch(`${base}/api/video-content/upload/complete?async=true`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            key: objectKey,
+            filename: video.name,
+            contentType: video.type || 'video/mp4',
+          }),
+        });
+      } else {
+        const formData = new FormData();
+        formData.append('file', video);
+        if (contentIdea) formData.append('prompt', contentIdea);
+        res = await fetch(`${base}/api/video-content/upload?async=true`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
+      }
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));

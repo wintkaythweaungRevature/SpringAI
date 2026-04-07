@@ -60,6 +60,15 @@ const CONNECT_ACCOUNT_ROW_IDS = ['youtube', 'instagram', 'tiktok', 'linkedin', '
 );
 
 const STEPS = ['upload', 'processing', 'review', 'publishing', 'analytics'];
+const STORY_SUPPORTED_PLATFORMS = new Set(['instagram', 'facebook']);
+
+function effectivePublishTypeForPlatform(platformId, postType, selectedPublishType) {
+  const pid = String(platformId || '').toLowerCase();
+  const type = String(selectedPublishType || '').toLowerCase();
+  if (type !== 'story') return type || (postType === 'video' ? 'reels' : 'feed');
+  if (STORY_SUPPORTED_PLATFORMS.has(pid)) return 'story';
+  return postType === 'video' ? 'reels' : 'feed';
+}
 
 const MAX_FILE_SIZE_BYTES = 2 * 1024 * 1024 * 1024; // 2GB
 const ACCEPTED_FORMATS = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm', 'video/mov'];
@@ -134,6 +143,71 @@ async function compressImageToTargetBytes(file, targetBytes) {
     blob = await toBlob(quality);
   }
   return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' });
+}
+
+async function loadImageElementFromFile(file) {
+  const dataUrl = await fileToDataUrl(file);
+  return new Promise((resolve, reject) => {
+    const el = new Image();
+    el.onload = () => resolve(el);
+    el.onerror = () => reject(new Error('Failed to decode image'));
+    el.src = dataUrl;
+  });
+}
+
+function cropBoxForTargetRatio(srcW, srcH, targetRatio) {
+  const srcRatio = srcW / srcH;
+  if (srcRatio > targetRatio) {
+    const cropW = srcH * targetRatio;
+    return { sx: (srcW - cropW) / 2, sy: 0, sw: cropW, sh: srcH };
+  }
+  const cropH = srcW / targetRatio;
+  return { sx: 0, sy: (srcH - cropH) / 2, sw: srcW, sh: cropH };
+}
+
+async function normalizeImageForPlatformPublish(file, platformId, publishType) {
+  if (!file || !String(file.type || '').startsWith('image/')) return file;
+  const pid = String(platformId || '').toLowerCase();
+  const isStory = String(publishType || '').toLowerCase() === 'story';
+  const needsStoryRatio = isStory && (pid === 'instagram' || pid === 'facebook');
+  const needsInstagramFeedRatio = !isStory && pid === 'instagram';
+  if (!needsStoryRatio && !needsInstagramFeedRatio) return file;
+
+  const img = await loadImageElementFromFile(file);
+  const srcW = Math.max(1, img.width || 1);
+  const srcH = Math.max(1, img.height || 1);
+  const srcRatio = srcW / srcH;
+
+  let targetRatio = null;
+  let outW = srcW;
+  let outH = srcH;
+
+  if (needsStoryRatio) {
+    // Instagram/Facebook stories: use a 9:16 canvas.
+    targetRatio = 9 / 16;
+    outW = 1080;
+    outH = 1920;
+  } else if (needsInstagramFeedRatio) {
+    // Instagram feed supports 4:5..1.91:1. Crop only when outside range.
+    const minR = 4 / 5;
+    const maxR = 1.91;
+    if (srcRatio < minR) targetRatio = minR;
+    else if (srcRatio > maxR) targetRatio = maxR;
+  }
+
+  if (targetRatio == null) return file;
+  const { sx, sy, sw, sh } = cropBoxForTargetRatio(srcW, srcH, targetRatio);
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(outW));
+  canvas.height = Math.max(1, Math.round(outH));
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Canvas unavailable for image normalization');
+  ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+  const blob = await new Promise((resolve, reject) => {
+    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Image normalization failed'))), 'image/jpeg', 0.92);
+  });
+  const nextName = file.name.replace(/\.[^.]+$/, '') + (needsStoryRatio ? '-story.jpg' : '-ig.jpg');
+  return new File([blob], nextName, { type: 'image/jpeg' });
 }
 
 /**
@@ -628,6 +702,8 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
 
   const switchPostType = (type) => {
     setPostType(type);
+    if (type === 'video') setPublishType('reels');
+    else setPublishType('feed');
     setVideo(null);
     setImageFile(null);
     setTextCaption('');
@@ -1127,10 +1203,11 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
           }
         } else if (variant.variantId) {
           // ── Async publish via variant (202 + poll) ──
+          const platformPublishType = effectivePublishTypeForPlatform(pid, postType, publishType);
           const res = await fetch(api(`/publish/${pid}/variant`), {
             method: 'POST',
             headers: { ...authHeaders(), 'Content-Type': 'application/json' },
-            body: JSON.stringify({ variantId: variant.variantId, caption: variant.caption, hashtags, publishType }),
+            body: JSON.stringify({ variantId: variant.variantId, caption: variant.caption, hashtags, publishType: platformPublishType }),
           });
           const data = await res.json().catch(() => ({}));
 
@@ -1190,7 +1267,8 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
             fd.append('file', video);
             fd.append('caption', variant.caption || '');
             fd.append('hashtags', hashtags);
-            fd.append('postType', publishType);
+            const platformPublishType = effectivePublishTypeForPlatform(pid, postType, publishType);
+            fd.append('postType', platformPublishType);
             const res = await fetch(api(`/publish/${pid}`), {
               method: 'POST',
               headers: authHeaders(),
@@ -1215,10 +1293,29 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
           }
         } else if (postType === 'image' || postType === 'text') {
           // ── Image / Text publish via /api/social/post/{platform} (small multipart — not full video) ──
+          const platformPublishType = effectivePublishTypeForPlatform(pid, postType, publishType);
+          const isImageStoryPublish =
+            postType === 'image' &&
+            platformPublishType === 'story' &&
+            STORY_SUPPORTED_PLATFORMS.has(pid);
           const fd = new FormData();
-          if (postType === 'image' && imageFile) fd.append('file', imageFile);
-          fd.append('caption', variant.caption || '');
+          if (postType === 'image' && imageFile) {
+            try {
+              const normalized = await normalizeImageForPlatformPublish(imageFile, pid, platformPublishType);
+              fd.append('file', normalized);
+            } catch (normErr) {
+              setPublishingStatus(prev => ({
+                ...prev,
+                [pid]: { state: 'failed', error: `Image preparation failed: ${normErr.message || 'unknown error'}` },
+              }));
+              continue;
+            }
+          }
+          fd.append('caption', isImageStoryPublish ? '' : (variant.caption || ''));
           fd.append('hashtags', hashtags);
+          if (postType === 'image') {
+            fd.append('publishType', platformPublishType);
+          }
           const res = await fetch(`${base}/api/social/post/${pid}`, {
             method: 'POST',
             headers: authHeaders(),
@@ -1387,12 +1484,17 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
               {postType === 'video' ? '🎬 Upload Video' : postType === 'image' ? '🖼️ Upload Image' : '✍️ Write Your Post'}
             </div>
 
-            {/* Publish type selector — only for video when Instagram or Facebook selected */}
-            {postType === 'video' && (selectedPlatforms.includes('instagram') || selectedPlatforms.includes('facebook')) && (
+            {/* Publish type selector — story supported for video/image on Instagram/Facebook */}
+            {(postType === 'video' || postType === 'image') && (selectedPlatforms.includes('instagram') || selectedPlatforms.includes('facebook')) && (
               <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
                 {[
-                  { id: 'reels', icon: '🎬', label: 'Reels / Feed', desc: 'Regular post on feed' },
-                  { id: 'story', icon: '⏱️', label: 'Story',        desc: 'Disappears in 24h'   },
+                  {
+                    id: postType === 'video' ? 'reels' : 'feed',
+                    icon: postType === 'video' ? '🎬' : '🖼️',
+                    label: postType === 'video' ? 'Reels / Feed' : 'Image Feed',
+                    desc: 'Regular post on feed',
+                  },
+                  { id: 'story', icon: '⏱️', label: 'Story', desc: 'Instagram/Facebook only (24h)' },
                 ].map(pt => (
                   <button
                     key={pt.id}
@@ -2197,6 +2299,11 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
               const selectedIdx = selectedOptionIdx[pid] ?? 0;
               const historyLen = (captionHistory[pid] || []).length;
               const score = scoreCaption(v.caption || '', p.maxLen);
+              const platformPublishType = effectivePublishTypeForPlatform(pid, postType, publishType);
+              const isImageStoryEditor =
+                postType === 'image' &&
+                platformPublishType === 'story' &&
+                STORY_SUPPORTED_PLATFORMS.has(pid);
               return (
                 <div style={s.card}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
@@ -2208,92 +2315,100 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
                   </div>
 
 
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px', marginTop: '12px' }}>
-                    <span style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>Caption</span>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span style={{ fontSize: '11px', color: '#64748b', background: '#f1f5f9', borderRadius: '6px', padding: '2px 8px' }}>
-                        {CAPTION_FORMAT_HINTS[pid] || 'Edit caption below'}
-                      </span>
-                      <button type="button" disabled={historyLen === 0} onClick={() => undoCaptionEdit(pid)} style={{ ...s.miniActionBtn, ...(historyLen === 0 ? s.miniActionBtnDisabled : {}) }}>
-                        Undo
-                      </button>
-                      <button type="button" onClick={() => resetCaptionToSelectedOption(pid)} style={s.miniActionBtn}>
-                        Reset
-                      </button>
-                    </div>
-                  </div>
-                  <textarea
-                    style={s.textarea}
-                    value={v.caption}
-                    onChange={e => applyCaptionText(pid, e.target.value, false)}
-                  />
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
-                    <span style={{ fontSize: '11px', color: v.caption.length > p.maxLen * 0.9 ? '#ef4444' : '#94a3b8' }}>
-                      {v.caption.length > p.maxLen ? `⚠️ ${v.caption.length - p.maxLen} chars over limit` : ''}
-                    </span>
-                    <span style={{ fontSize: '11px', color: v.caption.length > p.maxLen ? '#ef4444' : '#94a3b8' }}>
-                      {v.caption.length} / {p.maxLen}
-                    </span>
-                  </div>
-
-                  <CaptionIdeasPanel
-                    captionText={v.caption}
-                    platform={pid}
-                    apiBase={base}
-                    token={token}
-                    onApply={({ caption, hashtags }) => applyCaptionText(pid, hashtags ? `${caption}\n${hashtags}` : caption, false)}
-                  />
-
-                  <div style={{ marginTop: '10px' }}>
-                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>Quick rewrites</div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                      {[
-                        { id: 'shorten', label: 'Shorten' },
-                        { id: 'expand', label: 'Expand' },
-                        { id: 'punchier', label: 'Punchier' },
-                        { id: 'add-cta', label: 'Add CTA' },
-                        { id: 'professional', label: 'Professional' },
-                        { id: 'remove-emojis', label: 'Remove emojis' },
-                      ].map(action => (
-                        <button key={action.id} type="button" onClick={() => applyCaptionRewrite(pid, action.id)} style={s.quickActionBtn}>
-                          {action.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div style={{ marginTop: '12px', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '10px', background: '#fafafa' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                      <span style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>Caption score</span>
-                      <span style={{
-                        fontSize: '11px',
-                        fontWeight: 700,
-                        padding: '2px 8px',
-                        borderRadius: '999px',
-                        background: score.level === 'strong' ? '#dcfce7' : score.level === 'good' ? '#fef3c7' : '#fee2e2',
-                        color: score.level === 'strong' ? '#166534' : score.level === 'good' ? '#92400e' : '#991b1b',
-                      }}>
-                        {score.label}
-                      </span>
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '6px' }}>
-                      {[
-                        ['Hook', score.hook],
-                        ['Clarity', score.clarity],
-                        ['CTA', score.cta],
-                        ['Length', score.lengthFit],
-                      ].map(([label, ok]) => (
-                        <div key={label} style={{ fontSize: '11px', color: ok ? '#166534' : '#64748b' }}>
-                          {ok ? '✅' : '◻️'} {label}
+                  {!isImageStoryEditor ? (
+                    <>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px', marginTop: '12px' }}>
+                        <span style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>Caption</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ fontSize: '11px', color: '#64748b', background: '#f1f5f9', borderRadius: '6px', padding: '2px 8px' }}>
+                            {CAPTION_FORMAT_HINTS[pid] || 'Edit caption below'}
+                          </span>
+                          <button type="button" disabled={historyLen === 0} onClick={() => undoCaptionEdit(pid)} style={{ ...s.miniActionBtn, ...(historyLen === 0 ? s.miniActionBtnDisabled : {}) }}>
+                            Undo
+                          </button>
+                          <button type="button" onClick={() => resetCaptionToSelectedOption(pid)} style={s.miniActionBtn}>
+                            Reset
+                          </button>
                         </div>
-                      ))}
-                    </div>
-                    {score.tip && (
-                      <div style={{ marginTop: '7px', fontSize: '11px', color: '#64748b' }}>
-                        Tip: {score.tip}
                       </div>
-                    )}
-                  </div>
+                      <textarea
+                        style={s.textarea}
+                        value={v.caption}
+                        onChange={e => applyCaptionText(pid, e.target.value, false)}
+                      />
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
+                        <span style={{ fontSize: '11px', color: v.caption.length > p.maxLen * 0.9 ? '#ef4444' : '#94a3b8' }}>
+                          {v.caption.length > p.maxLen ? `⚠️ ${v.caption.length - p.maxLen} chars over limit` : ''}
+                        </span>
+                        <span style={{ fontSize: '11px', color: v.caption.length > p.maxLen ? '#ef4444' : '#94a3b8' }}>
+                          {v.caption.length} / {p.maxLen}
+                        </span>
+                      </div>
+
+                      <CaptionIdeasPanel
+                        captionText={v.caption}
+                        platform={pid}
+                        apiBase={base}
+                        token={token}
+                        onApply={({ caption, hashtags }) => applyCaptionText(pid, hashtags ? `${caption}\n${hashtags}` : caption, false)}
+                      />
+
+                      <div style={{ marginTop: '10px' }}>
+                        <div style={{ fontSize: '11px', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>Quick rewrites</div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                          {[
+                            { id: 'shorten', label: 'Shorten' },
+                            { id: 'expand', label: 'Expand' },
+                            { id: 'punchier', label: 'Punchier' },
+                            { id: 'add-cta', label: 'Add CTA' },
+                            { id: 'professional', label: 'Professional' },
+                            { id: 'remove-emojis', label: 'Remove emojis' },
+                          ].map(action => (
+                            <button key={action.id} type="button" onClick={() => applyCaptionRewrite(pid, action.id)} style={s.quickActionBtn}>
+                              {action.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div style={{ marginTop: '12px', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '10px', background: '#fafafa' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                          <span style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>Caption score</span>
+                          <span style={{
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            padding: '2px 8px',
+                            borderRadius: '999px',
+                            background: score.level === 'strong' ? '#dcfce7' : score.level === 'good' ? '#fef3c7' : '#fee2e2',
+                            color: score.level === 'strong' ? '#166534' : score.level === 'good' ? '#92400e' : '#991b1b',
+                          }}>
+                            {score.label}
+                          </span>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '6px' }}>
+                          {[
+                            ['Hook', score.hook],
+                            ['Clarity', score.clarity],
+                            ['CTA', score.cta],
+                            ['Length', score.lengthFit],
+                          ].map(([label, ok]) => (
+                            <div key={label} style={{ fontSize: '11px', color: ok ? '#166534' : '#64748b' }}>
+                              {ok ? '✅' : '◻️'} {label}
+                            </div>
+                          ))}
+                        </div>
+                        {score.tip && (
+                          <div style={{ marginTop: '7px', fontSize: '11px', color: '#64748b' }}>
+                            Tip: {score.tip}
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <div style={{ marginTop: '10px', padding: '10px 12px', borderRadius: '10px', background: '#f8fafc', border: '1px solid #e2e8f0', fontSize: '12px', color: '#475569' }}>
+                      Image story mode: caption editor is hidden and caption is not sent for publish.
+                    </div>
+                  )}
 
                   <div style={s.fieldLabel}>Hashtags</div>
                   <div style={s.hashtagBox}>

@@ -298,22 +298,83 @@ export default function DashboardShell({ children }: { children: React.ReactNode
           </div>
           </header>
         ) : (
-          <header style={s.publicTopBar}>
-            <Link href="/" style={s.publicBrand}>W!ntAi</Link>
-            <nav style={s.publicNav}>
-              <Link href="/features" style={s.publicNavLink}>Features</Link>
-              <Link href="/#demo" style={s.publicNavLink}>Demo</Link>
-              <Link href="/pricing" style={s.publicNavLink}>Pricing</Link>
-              <Link href="/docs" style={s.publicNavLink}>Docs</Link>
+          <header
+            style={{
+              ...s.publicTopBar,
+              ...(isMobile || isTablet
+                ? {
+                    flexWrap: 'wrap' as const,
+                    height: 'auto',
+                    minHeight: 56,
+                    paddingTop: 'max(10px, env(safe-area-inset-top, 0px))',
+                    paddingLeft: 'max(12px, env(safe-area-inset-left, 0px))',
+                    paddingRight: 'max(12px, env(safe-area-inset-right, 0px))',
+                    paddingBottom: 10,
+                    rowGap: 10,
+                  }
+                : {}),
+            }}
+          >
+            <Link href="/" style={s.publicBrand}>
+              W!ntAi
+            </Link>
+            <nav
+              style={{
+                ...s.publicNav,
+                ...(isMobile || isTablet
+                  ? {
+                      flexBasis: '100%',
+                      width: '100%',
+                      overflowX: 'auto',
+                      flexWrap: 'nowrap',
+                      WebkitOverflowScrolling: 'touch',
+                      gap: 14,
+                      paddingTop: 6,
+                      marginTop: 2,
+                      borderTop: '1px solid #e2e8f0',
+                      order: 3,
+                    }
+                  : {}),
+              }}
+            >
+              <Link href="/features" style={s.publicNavLink}>
+                Features
+              </Link>
+              <Link href="/#demo" style={s.publicNavLink}>
+                Demo
+              </Link>
+              <Link href="/pricing" style={s.publicNavLink}>
+                Pricing
+              </Link>
+              <Link href="/docs" style={s.publicNavLink}>
+                Docs
+              </Link>
             </nav>
-            <div style={s.publicActions}>
+            <div
+              style={{
+                ...s.publicActions,
+                ...(isMobile || isTablet ? { marginLeft: 'auto', order: 2, flexShrink: 0 } : {}),
+              }}
+            >
               <button onClick={() => { setAuthMode('login'); setShowAuthModal(true); }} style={s.loginBtn}>Login</button>
               <button onClick={() => { setAuthMode('signup'); setShowAuthModal(true); }} style={s.signupBtn}>Sign Up</button>
             </div>
           </header>
         )}
 
-        <div style={s.content}>{children}</div>
+        <div
+          style={{
+            ...s.content,
+            ...(isMobile
+              ? {
+                  padding:
+                    '12px max(12px, env(safe-area-inset-left, 0px)) max(20px, env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-right, 0px))',
+                }
+              : {}),
+          }}
+        >
+          {children}
+        </div>
       </main>
 
       {showAuthModal && !user && (

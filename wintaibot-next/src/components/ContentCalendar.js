@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { filterEnabledPlatforms } from '@/config/disabledPlatforms';
 import PlatformIcon from './PlatformIcon';
 import PostDetailModal from './PostDetailModal';
@@ -641,6 +642,69 @@ export default function ContentCalendar() {
   const [actionMsg, setActionMsg] = useState('');
   const [hoverPreview, setHoverPreview] = useState(null); // { post, x, y }
 
+  const isNarrow = useMediaQuery('(max-width: 900px)');
+  const isSmallPhone = useMediaQuery('(max-width: 480px)');
+
+  const pageStyle = useMemo(
+    () => ({
+      ...s.page,
+      ...(isNarrow ? { maxWidth: '100%', padding: '10px 10px 24px', borderRadius: 12 } : {}),
+    }),
+    [isNarrow],
+  );
+
+  const bodyStyle = useMemo(
+    () => ({
+      ...s.body,
+      ...(isNarrow ? { gridTemplateColumns: '1fr', gap: 16 } : {}),
+    }),
+    [isNarrow],
+  );
+
+  const calCardStyle = useMemo(
+    () => ({
+      ...s.calCard,
+      ...(isNarrow ? { padding: '14px 10px' } : {}),
+    }),
+    [isNarrow],
+  );
+
+  const sidebarStyle = useMemo(
+    () => ({
+      ...s.sidebar,
+      ...(isNarrow ? { maxHeight: 'none', padding: '16px 14px' } : {}),
+    }),
+    [isNarrow],
+  );
+
+  const feedGridStyle = useMemo(
+    () => ({
+      ...s.feedGrid,
+      ...(isSmallPhone
+        ? { gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 }
+        : isNarrow
+          ? { gridTemplateColumns: 'repeat(auto-fill, minmax(148px, 1fr))', gap: 12 }
+          : {}),
+    }),
+    [isNarrow, isSmallPhone],
+  );
+
+  const feedWrapStyle = useMemo(
+    () => ({
+      ...s.feedWrap,
+      ...(isNarrow ? { padding: 14 } : {}),
+    }),
+    [isNarrow],
+  );
+
+  const pillStyle = useMemo(
+    () => ({
+      ...s.pill,
+      ...(isNarrow ? { minHeight: 40, padding: '8px 12px' } : {}),
+    }),
+    [isNarrow],
+  );
+
   const loadPosts = useCallback(async () => {
     if (!token) return;
     setLoading(true);
@@ -729,16 +793,16 @@ export default function ContentCalendar() {
     .slice(0, 20);
 
   return (
-    <div style={s.page}>
+    <div style={pageStyle}>
 
       {/* View toggle only — page name is in the app sidebar */}
       <div style={s.pageHeader}>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginLeft: 'auto' }}>
-          <div style={s.viewToggle}>
-            <button style={{ ...s.viewBtn, ...(view === 'calendar' ? s.viewBtnActive : {}) }} onClick={() => setView('calendar')}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginLeft: 'auto', width: isNarrow ? '100%' : undefined, justifyContent: isNarrow ? 'stretch' : undefined }}>
+          <div style={{ ...s.viewToggle, ...(isNarrow ? { flex: 1, minWidth: 0 } : {}) }}>
+            <button style={{ ...s.viewBtn, ...(view === 'calendar' ? s.viewBtnActive : {}), ...(isNarrow ? { flex: 1, padding: '10px 10px', fontSize: 12 } : {}) }} onClick={() => setView('calendar')}>
               🗓 Calendar
             </button>
-            <button style={{ ...s.viewBtn, ...(view === 'feed' ? s.viewBtnActive : {}) }} onClick={() => setView('feed')}>
+            <button style={{ ...s.viewBtn, ...(view === 'feed' ? s.viewBtnActive : {}), ...(isNarrow ? { flex: 1, padding: '10px 10px', fontSize: 12 } : {}) }} onClick={() => setView('feed')}>
               ⊞ Feed Grid
             </button>
           </div>
@@ -746,16 +810,16 @@ export default function ContentCalendar() {
       </div>
 
       {/* ── Platform filter pills ── */}
-      <div style={s.pillRow}>
+      <div style={{ ...s.pillRow, ...(isNarrow ? { gap: 6 } : {}) }}>
         <button
-          style={{ ...s.pill, ...(filterPlatform === 'all' ? s.pillActive : {}) }}
+          style={{ ...pillStyle, ...(filterPlatform === 'all' ? s.pillActive : {}) }}
           onClick={() => setFilterPlatform('all')}
         >All</button>
         {PLATFORMS.map(p => (
           <button
             key={p.id}
             style={{
-              ...s.pill,
+              ...pillStyle,
               ...(filterPlatform === p.id ? { background: p.color, color: '#fff', borderColor: p.color } : {}),
             }}
             onClick={() => setFilterPlatform(filterPlatform === p.id ? 'all' : p.id)}
@@ -781,13 +845,13 @@ export default function ContentCalendar() {
         </div>
       )}
 
-      <div style={s.body}>
+      <div style={bodyStyle}>
 
         {/* ══ CALENDAR VIEW ══ */}
         {view === 'calendar' && (
           <>
             {/* Month calendar */}
-            <div style={s.calCard}>
+            <div style={calCardStyle}>
               {/* Month nav */}
               <div style={s.monthNav}>
                 <button style={s.navBtn} onClick={prevMonth}>‹</button>
@@ -925,7 +989,7 @@ export default function ContentCalendar() {
             </div>
 
             {/* Upcoming posts sidebar */}
-            <div style={s.sidebar}>
+            <div style={sidebarStyle}>
               <div style={s.sidebarHeader}>
                 <span style={s.sidebarTitle}>📋 Recent Posts</span>
                 <span style={s.sidebarCount}>{upcoming.length}</span>
@@ -1034,7 +1098,7 @@ export default function ContentCalendar() {
 
         {/* ══ FEED GRID VIEW ══ */}
         {view === 'feed' && (
-          <div style={s.feedWrap}>
+          <div style={feedWrapStyle}>
             <div style={s.feedHeader}>
               <span style={s.feedTitle}>Your Content Feed</span>
               <span style={s.feedSub}>Latest published posts — newest first</span>
@@ -1044,7 +1108,7 @@ export default function ContentCalendar() {
             ) : filteredPosts.length === 0 ? (
               <div style={{ ...s.emptyState, padding: 40 }}>No posts yet. Start publishing from Video Publisher.</div>
             ) : (
-              <div style={s.feedGrid}>
+              <div style={feedGridStyle}>
                 {filteredPosts.map((p, i) => {
                   const pInfo = PLATFORM_MAP[p.platform?.toLowerCase()];
                   const preview = getPostPreview(p);

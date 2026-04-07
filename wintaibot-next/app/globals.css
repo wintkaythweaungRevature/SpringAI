@@ -77,7 +77,8 @@ nav::-webkit-scrollbar {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: max(20px, var(--safe-top)) max(20px, var(--safe-right)) max(20px, var(--safe-bottom))
+    max(20px, var(--safe-left));
 }
 
 .auth-modal {
@@ -92,10 +93,14 @@ nav::-webkit-scrollbar {
 
 @media (max-width: 480px) {
   .auth-modal-overlay {
-    padding: 12px;
+    padding: max(12px, var(--safe-top)) max(12px, var(--safe-right)) max(12px, var(--safe-bottom))
+      max(12px, var(--safe-left));
+    align-items: flex-end;
   }
   .auth-modal {
     padding: 20px;
+    max-height: min(92vh, calc(100dvh - max(24px, var(--safe-top)) - max(24px, var(--safe-bottom))));
+    overflow-y: auto;
   }
 }
 

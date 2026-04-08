@@ -8,6 +8,9 @@ import {
   getVideoDurationFromFile,
   validateVideoAgainstPlatforms,
   formatDurationHuman,
+  formatBytes,
+  getMaxDurationSecForPlatform,
+  getPlatformVideoGuidelines,
   SAFE_DIRECT_UPLOAD_MAX_BYTES,
   minScheduleDatetimeLocal,
   isScheduleTimeInPast,
@@ -789,6 +792,62 @@ export default function VideoPublisher() {
                 {selectedPlatforms.length} platform{selectedPlatforms.length !== 1 ? 's' : ''} selected
               </div>
             </div>
+
+            {selectedPlatforms.length > 0 && (
+              <div style={s.card}>
+                <div style={s.sectionTitle}>📋 Requirements by platform</div>
+                <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 12px', lineHeight: 1.45 }}>
+                  Each network has different limits. We show what this app enforces and whether your current file fits.
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {selectedPlatforms.map((pid) => {
+                    const p = PLATFORMS.find((x) => x.id === pid);
+                    if (!p) return null;
+                    const g = getPlatformVideoGuidelines(pid, publishType, 'video');
+                    const maxSec = getMaxDurationSecForPlatform(pid, publishType, 'video');
+                    const dur = effectiveDurationSec;
+                    let statusColor = '#64748b';
+                    let statusText = 'Add a video file to check length.';
+                    if (video && dur > 0) {
+                      if (maxSec != null && dur > maxSec) {
+                        statusColor = '#b91c1c';
+                        statusText = `Not valid for ${p.label}: ${formatDurationHuman(dur)} exceeds max ${formatDurationHuman(maxSec)} for this mode.`;
+                      } else if (maxSec != null) {
+                        statusColor = '#15803d';
+                        statusText = `OK for ${p.label}: within ${formatDurationHuman(maxSec)} for this mode.`;
+                      } else {
+                        statusText = 'No strict length cap in this UI for this platform.';
+                      }
+                    }
+                    return (
+                      <div key={`req-${pid}`} style={{ border: '1px solid #e2e8f0', borderRadius: '10px', padding: '12px', background: '#fafafa' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                          <PlatformIcon platform={p} size={22} />
+                          <strong style={{ fontSize: '13px', color: '#0f172a' }}>{g.title}</strong>
+                        </div>
+                        <div style={{ fontSize: '11px', fontWeight: 600, color: statusColor, marginBottom: '8px', lineHeight: 1.4 }}>{statusText}</div>
+                        {video && video.size > 0 && (
+                          <div style={{ fontSize: '11px', color: '#475569', marginBottom: '8px' }}>
+                            Your file: {formatBytes(video.size)}
+                            {durationProbing ? ' · reading length…' : dur > 0 ? ` · ${formatDurationHuman(dur)}` : ''}
+                          </div>
+                        )}
+                        <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '12px', color: '#475569', lineHeight: 1.5 }}>
+                          {g.accepts.map((line, i) => (
+                            <li key={i}>{line}</li>
+                          ))}
+                        </ul>
+                        {g.fixTips.length > 0 && (
+                          <div style={{ marginTop: '8px', fontSize: '11px', color: '#92400e', lineHeight: 1.45 }}>
+                            <strong>How to fix:</strong> {g.fixTips.join(' ')}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             <div style={s.card}>
               <div style={s.sectionTitle}>⚡ Next steps</div>

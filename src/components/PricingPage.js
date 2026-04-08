@@ -144,13 +144,23 @@ export default function PricingPage({ onClose }) {
     if (!user) { setError('Please log in first.'); return; }
     setLoading(planId); setError(''); setSuccessMsg('');
     try {
+      const billingInterval = yearly ? 'YEARLY' : 'MONTHLY';
       const res = await fetch(`${apiBase}/api/subscription/checkout`, {
         method: 'POST',
         headers: { ...authHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan: planId, billingInterval: yearly ? 'YEARLY' : 'MONTHLY' }),
+        body: JSON.stringify({
+          plan: planId,
+          planType: planId,
+          billingInterval,
+          interval: billingInterval,
+        }),
       });
-      const data = await res.json();
-      if (!res.ok) { setError(data.error || 'Checkout failed.'); return; }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const backendMsg = (data && (data.error || data.message)) ? String(data.error || data.message) : '';
+        setError(backendMsg || `Checkout failed (${res.status}).`);
+        return;
+      }
       if (data.updated) {
         setSuccessMsg(data.message || 'Plan updated!');
         if (typeof refetchUser === 'function') refetchUser();

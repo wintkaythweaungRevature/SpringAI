@@ -169,7 +169,6 @@ export default function PostDetailModal({ post, onClose, platform, onSaved }) {
 
   const [caption, setCaption] = useState('');
   const [hashtags, setHashtags] = useState('');
-  const [publishType, setPublishType] = useState('text');
   const [scheduledDateOnly, setScheduledDateOnly] = useState('');
   const [scheduledTimeOnly, setScheduledTimeOnly] = useState('12:00');
   const [mediaUrlEdit, setMediaUrlEdit] = useState('');
@@ -191,6 +190,14 @@ export default function PostDetailModal({ post, onClose, platform, onSaved }) {
   const readOnly = isPublishedPost(post);
   const canMutate = !!target && !readOnly;
 
+  /** Set at creation time (text / image / video). Not switched from this modal — video is edited in Video Publisher. */
+  const contentKind = useMemo(() => {
+    const mt = String(post?.mediaType || 'text').toLowerCase();
+    if (mt === 'video') return 'video';
+    if (mt === 'image') return 'image';
+    return 'text';
+  }, [post]);
+
   const syncFromPost = useCallback(() => {
     if (!post) return;
     const cap = post.caption != null ? String(post.caption) : '';
@@ -199,8 +206,6 @@ export default function PostDetailModal({ post, onClose, platform, onSaved }) {
     if (Array.isArray(ht)) ht = ht.join(' ');
     else if (ht == null) ht = '';
     setHashtags(String(ht));
-    const mt = String(post.mediaType || 'text').toLowerCase();
-    setPublishType(mt === 'video' ? 'video' : mt === 'image' ? 'image' : 'text');
     const sched = scheduledIsoFromPost(post);
     const dlv = toDatetimeLocalValue(sched) || toDatetimeLocalValue(post?.createdAt);
     const { date, time } = splitDatetimeLocal(dlv);
@@ -341,10 +346,10 @@ export default function PostDetailModal({ post, onClose, platform, onSaved }) {
       const body = {
         caption: caption.trim(),
         hashtags: hashtags.trim(),
-        publishType: publishType || 'text',
+        publishType: contentKind,
       };
       if (scheduledAt) body.scheduledAt = scheduledAt;
-      if (mediaUrlEdit.trim()) body.mediaUrl = mediaUrlEdit.trim();
+      if (contentKind === 'image' && mediaUrlEdit.trim()) body.mediaUrl = mediaUrlEdit.trim();
 
       const res = await fetch(url, {
         method: 'PATCH',
@@ -443,7 +448,7 @@ export default function PostDetailModal({ post, onClose, platform, onSaved }) {
                 {p.label || post.platform}
               </h2>
               <div style={{ fontSize: 12, fontWeight: 600, color: '#64748b', marginTop: 4, textTransform: 'capitalize' }}>
-                {publishType || 'text'}
+                {contentKind}
               </div>
             </div>
           </div>
@@ -564,25 +569,23 @@ export default function PostDetailModal({ post, onClose, platform, onSaved }) {
         {!readOnly && (
           <>
             <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
-              Post type
+              Content type
             </div>
-            <select
-              value={publishType}
-              onChange={(e) => setPublishType(e.target.value)}
+            <div
               style={{
-                width: '100%',
                 padding: '10px 12px',
                 borderRadius: 10,
-                border: '1px solid #cbd5e1',
+                border: '1px solid #e2e8f0',
                 fontSize: 13,
                 marginBottom: 14,
-                background: '#fff',
+                background: '#f8fafc',
+                color: '#475569',
+                fontWeight: 600,
+                textTransform: 'capitalize',
               }}
             >
-              <option value="text">Text</option>
-              <option value="image">Image</option>
-              <option value="video">Video</option>
-            </select>
+              {contentKind}
+            </div>
 
             <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
               Scheduled date
@@ -635,24 +638,28 @@ export default function PostDetailModal({ post, onClose, platform, onSaved }) {
               }}
             />
 
-            <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
-              Media URL (optional)
-            </div>
-            <input
-              type="url"
-              value={mediaUrlEdit}
-              onChange={(e) => setMediaUrlEdit(e.target.value)}
-              style={{
-                width: '100%',
-                boxSizing: 'border-box',
-                padding: '10px 12px',
-                borderRadius: 10,
-                border: '1px solid #cbd5e1',
-                fontSize: 12,
-                marginBottom: 10,
-              }}
-              placeholder="https://… (replace image or video URL if your API supports it)"
-            />
+            {contentKind === 'image' && (
+              <>
+                <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+                  Image URL (optional)
+                </div>
+                <input
+                  type="url"
+                  value={mediaUrlEdit}
+                  onChange={(e) => setMediaUrlEdit(e.target.value)}
+                  style={{
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    padding: '10px 12px',
+                    borderRadius: 10,
+                    border: '1px solid #cbd5e1',
+                    fontSize: 12,
+                    marginBottom: 10,
+                  }}
+                  placeholder="https://…"
+                />
+              </>
+            )}
           </>
         )}
 
@@ -671,7 +678,7 @@ export default function PostDetailModal({ post, onClose, platform, onSaved }) {
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
               />
-            ) : publishType === 'video' || String(post?.mediaType || '').toLowerCase() === 'video' ? (
+            ) : contentKind === 'video' || String(post?.mediaType || '').toLowerCase() === 'video' ? (
               <video
                 key={previewUrl}
                 src={previewUrl}

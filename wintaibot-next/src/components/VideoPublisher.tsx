@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { filterEnabledPlatforms, isPlatformDisabled } from '@/config/disabledPlatforms';
 import {
@@ -76,6 +76,10 @@ export default function VideoPublisher() {
   const fileRef = useRef<HTMLInputElement>(null);
   const skippedRef = useRef(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const calendarJobId = searchParams.get('jobId');
+  const calendarPostId = searchParams.get('postId');
+  const openedFromCalendar = Boolean(calendarJobId || calendarPostId);
 
   const api = (path) => `${base}/api/video-content${path}`;
   const socialApi = (path) => `${base}/api/social${path}`;
@@ -562,6 +566,33 @@ export default function VideoPublisher() {
               Dismiss
             </button>
           </div>
+        </div>
+      )}
+
+      {openedFromCalendar && (
+        <div
+          style={{
+            marginBottom: 14,
+            padding: '12px 16px',
+            borderRadius: 12,
+            background: '#eff6ff',
+            border: '1px solid #bfdbfe',
+            color: '#1e3a8a',
+            fontSize: 14,
+            lineHeight: 1.5,
+          }}
+        >
+          <strong>Opened from the content calendar</strong> — edit your video, captions, and schedule on this page.
+          {calendarJobId && (
+            <span style={{ display: 'block', fontSize: 12, opacity: 0.85, marginTop: 4 }}>
+              Job ID: {calendarJobId}
+            </span>
+          )}
+          {!calendarJobId && calendarPostId && (
+            <span style={{ display: 'block', fontSize: 12, opacity: 0.85, marginTop: 4 }}>
+              Post ID: {calendarPostId}
+            </span>
+          )}
         </div>
       )}
 

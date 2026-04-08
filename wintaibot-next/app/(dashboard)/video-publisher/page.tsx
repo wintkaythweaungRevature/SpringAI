@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import MemberGate from '@/components/MemberGate';
 import VideoPublisher from '@/components/VideoPublisher';
 
@@ -16,7 +17,9 @@ export const metadata: Metadata = {
 export default function VideoPublisherPage() {
   return (
     <MemberGate featureName="Video Publisher">
-      <VideoPublisher />
+      <Suspense fallback={null}>
+        <VideoPublisher />
+      </Suspense>
     </MemberGate>
   );
 }

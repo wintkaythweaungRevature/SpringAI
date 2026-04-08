@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { filterEnabledPlatforms } from '@/config/disabledPlatforms';
@@ -19,7 +20,6 @@ import {
    - Month navigation with post indicators per day
    - Week timeline view with time-slot cards
    - Instagram-style feed grid preview
-   - Upcoming posts sidebar
 ───────────────────────────────────────────────────────────────────────────── */
 
 const PLATFORMS_ALL = [
@@ -34,6 +34,29 @@ const PLATFORMS_ALL = [
 ];
 const PLATFORMS = filterEnabledPlatforms(PLATFORMS_ALL);
 const PLATFORM_MAP = Object.fromEntries(PLATFORMS_ALL.map((p) => [p.id, p]));
+
+/** Published / live — calendar still opens detail for metrics. */
+function calendarPostIsTerminal(p) {
+  const s = String(p?.status || '').toUpperCase();
+  return s === 'SUCCESS' || s === 'PUBLISHED' || s === 'COMPLETED';
+}
+
+/** Scheduled/draft video edits belong on Video Publisher, not the text modal. */
+function calendarVideoEditShouldOpenPublisher(p) {
+  if (!p) return false;
+  if (String(p.mediaType || '').toLowerCase() !== 'video') return false;
+  return !calendarPostIsTerminal(p);
+}
+
+function videoPublisherHrefFromPost(p) {
+  const q = new URLSearchParams();
+  const jobId = p?.jobId ?? p?.job?.id ?? p?.job_id;
+  const postId = p?.id ?? p?.postId;
+  if (jobId != null && String(jobId).trim() !== '') q.set('jobId', String(jobId));
+  else if (postId != null && String(postId).trim() !== '') q.set('postId', String(postId));
+  const s = q.toString();
+  return s ? `/video-publisher?${s}` : '/video-publisher';
+}
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
@@ -626,8 +649,20 @@ const ms = {
 
 /* ─────────────────────────────────────────────────────────────────────────── */
 export default function ContentCalendar() {
+  const router = useRouter();
   const { apiBase, token } = useAuth();
   const base = (apiBase || (process.env.NEXT_PUBLIC_API_BASE || '').replace(/\/$/, '') || 'https://api.wintaibot.com');
+
+  const openPostDetail = useCallback(
+    (p) => {
+      if (calendarVideoEditShouldOpenPublisher(p)) {
+        router.push(videoPublisherHrefFromPost(p));
+        return;
+      }
+      setFeedDetailPost(p);
+    },
+    [router],
+  );
 
   const today = new Date();
   const [viewMonth, setViewMonth] = useState(today.getMonth());
@@ -665,14 +700,6 @@ export default function ContentCalendar() {
     () => ({
       ...s.calCard,
       ...(isNarrow ? { padding: '14px 10px' } : {}),
-    }),
-    [isNarrow],
-  );
-
-  const sidebarStyle = useMemo(
-    () => ({
-      ...s.sidebar,
-      ...(isNarrow ? { maxHeight: 'none', padding: '16px 14px' } : {}),
     }),
     [isNarrow],
   );
@@ -786,11 +813,6 @@ export default function ContentCalendar() {
       postsByDay[key].push(p);
     } catch {}
   });
-
-  // Upcoming posts (future or recent)
-  const upcoming = [...filteredPosts]
-    .sort((a, b) => new Date(postCalendarTimestamp(b)) - new Date(postCalendarTimestamp(a)))
-    .slice(0, 20);
 
   return (
     <div style={pageStyle}>
@@ -913,7 +935,7 @@ export default function ContentCalendar() {
                                 onMouseLeave={() => setHoverPreview(null)}
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setFeedDetailPost(p);
+                                  openPostDetail(p);
                                 }}
                                 title="View post details"
                               >
@@ -987,112 +1009,6 @@ export default function ContentCalendar() {
                 </div>
               </div>
             </div>
-
-            {/* Upcoming posts sidebar */}
-            <div style={sidebarStyle}>
-              <div style={s.sidebarHeader}>
-                <span style={s.sidebarTitle}>📋 Recent Posts</span>
-                <span style={s.sidebarCount}>{upcoming.length}</span>
-              </div>
-              {loading ? (
-                <div style={s.loadingState}>Loading…</div>
-              ) : upcoming.length === 0 ? (
-                <div style={s.emptyState}>No posts yet</div>
-              ) : (
-                <div style={s.upcomingList}>
-                  {upcoming.map((p, i) => {
-                    const pInfo = PLATFORM_MAP[p.platform?.toLowerCase()];
-                    const preview = getPostPreview(p);
-                    const isVideoPost = previewIsVideoPost(p, preview);
-                    const canRetry =
-                      String(p.status || '').toUpperCase() === 'FAILED' &&
-                      p.id != null &&
-                      p.jobId == null;
-                    const retrying = canRetry && !!retryingIds[String(p.id)];
-                    const st = getPostStatusUi(p);
-                    return (
-                      <div
-                        key={i}
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => setFeedDetailPost(p)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            setFeedDetailPost(p);
-                          }
-                        }}
-                        style={{
-                          ...s.upcomingItem,
-                          borderLeft: `3px solid ${platformColor(p.platform)}`,
-                          cursor: 'pointer',
-                        }}
-                      >
-                        <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                          {/* Thumbnail — same URL resolution as calendar day modal + feed grid */}
-                          {preview?.url && (
-                            <ResolvedPostMedia
-                              post={p}
-                              wrapperStyle={{
-                                width: 48,
-                                height: 48,
-                                borderRadius: 8,
-                                overflow: 'hidden',
-                                flexShrink: 0,
-                                background: '#f1f5f9',
-                              }}
-                              imgStyle={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                              videoStyle={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                              playOverlay={isVideoPost}
-                            />
-                          )}
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={s.upcomingTop}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                {pInfo && <PlatformIcon platform={pInfo} size={14} />}
-                                <span style={{ fontWeight: 700, fontSize: 12, color: platformColor(p.platform), textTransform: 'capitalize' }}>{p.platform}</span>
-                              </div>
-                              <span style={{
-                                fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 99,
-                                background: st.pillBg,
-                                color: st.pillFg,
-                              }}>{st.emoji} {st.label}</span>
-                            </div>
-                            <div style={s.upcomingCaption}>{p.caption || '(no caption)'}</div>
-                            <div style={s.upcomingMeta}>
-                              {fmtDate(postCalendarTimestamp(p))} · {p.mediaType || 'post'}
-                            </div>
-                            {canRetry && (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  retryFailedPost(p.id);
-                                }}
-                                disabled={retrying}
-                                style={{
-                                  marginTop: 6,
-                                  padding: '4px 8px',
-                                  borderRadius: 7,
-                                  border: '1px solid #dc2626',
-                                  background: retrying ? '#fee2e2' : '#fff',
-                                  color: '#dc2626',
-                                  fontSize: 10,
-                                  fontWeight: 700,
-                                  cursor: retrying ? 'wait' : 'pointer',
-                                }}
-                              >
-                                {retrying ? 'Retrying…' : '↻ Retry'}
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
           </>
         )}
 
@@ -1136,11 +1052,11 @@ export default function ContentCalendar() {
                       role="button"
                       tabIndex={0}
                       title="View post details"
-                      onClick={() => setFeedDetailPost(p)}
+                      onClick={() => openPostDetail(p)}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                           e.preventDefault();
-                          setFeedDetailPost(p);
+                          openPostDetail(p);
                         }
                       }}
                       style={{
@@ -1276,8 +1192,8 @@ export default function ContentCalendar() {
           retryingIds={retryingIds}
           onClose={() => setSelectedDay(null)}
           onPostSelect={(p) => {
-            setFeedDetailPost(p);
             setSelectedDay(null);
+            openPostDetail(p);
           }}
         />
       )}
@@ -1385,7 +1301,7 @@ const s = {
     boxShadow: '0 4px 14px rgba(124, 58, 237, 0.25)',
   },
 
-  body: { display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(260px, 320px)', gap: 20, alignItems: 'start' },
+  body: { display: 'block' },
 
   /* Calendar */
   calCard: {
@@ -1453,25 +1369,6 @@ const s = {
 
   legend: { display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 16, paddingTop: 14, borderTop: '1px solid #f1f5f9' },
   legendItem: { display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#64748b' },
-
-  /* Sidebar */
-  sidebar: {
-    background: '#fff',
-    borderRadius: 18,
-    border: '1px solid #e8ecf1',
-    padding: '20px',
-    boxShadow: '0 8px 32px rgba(15,23,42,0.07)',
-    maxHeight: 680,
-    overflowY: 'auto',
-  },
-  sidebarHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
-  sidebarTitle: { fontSize: 15, fontWeight: 800, color: '#0f172a' },
-  sidebarCount: { background: '#f1f5f9', borderRadius: 99, padding: '2px 10px', fontSize: 12, fontWeight: 700, color: '#6366f1' },
-  upcomingList: { display: 'flex', flexDirection: 'column', gap: 8 },
-  upcomingItem: { padding: '10px 12px', borderRadius: 10, background: '#f8fafc', border: '1px solid #e2e8f0' },
-  upcomingTop: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
-  upcomingCaption: { fontSize: 12, color: '#334155', lineHeight: 1.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' },
-  upcomingMeta: { fontSize: 10, color: '#94a3b8', marginTop: 3 },
 
   loadingState: { color: '#94a3b8', fontSize: 13, textAlign: 'center', padding: 24 },
   emptyState: { color: '#94a3b8', fontSize: 13, textAlign: 'center', padding: 16 },

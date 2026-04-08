@@ -1293,8 +1293,6 @@ function TrendsCalendar({ authHeaders }) {
   const [loading, setLoading] = useState(true);
   const [calView, setCalView] = useState('posts'); // 'posts' | 'besttime'
   const [selectedDay, setSelectedDay] = useState(null);
-  const [rescheduleJob, setRescheduleJob] = useState(null); // { job, newDate, newTime }
-  const [reschMsg, setReschMsg] = useState('');
   const [calTip, setCalTip] = useState(null); // hover on mini markers
   const [rangeView, setRangeView] = useState('monthly'); // 'monthly' | 'yearly'
   const [yearSummary, setYearSummary] = useState({});
@@ -1490,30 +1488,6 @@ function TrendsCalendar({ authHeaders }) {
   // Find selected day's items
   const selKey = selectedDay ? `${year}-${String(month).padStart(2,'0')}-${String(selectedDay).padStart(2,'0')}` : null;
   const selItems = selKey ? (byDate[selKey] || []) : [];
-
-  const handleReschedule = async () => {
-    if (!rescheduleJob) return;
-    const { job, newDate, newTime } = rescheduleJob;
-    if (!newDate || !newTime) { setReschMsg('Pick a date and time'); return; }
-    const newDateTime = `${newDate}T${newTime}:00`;
-    try {
-      const res = await fetch(`${API}/api/analytics/job/${job.jobId}/reschedule`, {
-        method: 'POST',
-        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ newDateTime }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        setReschMsg(err.error || 'Reschedule failed');
-        return;
-      }
-      setReschMsg('Rescheduled!');
-      setRescheduleJob(null);
-      setTimeout(() => { setReschMsg(''); loadCalendar(); }, 1200);
-    } catch {
-      setReschMsg('Reschedule failed');
-    }
-  };
 
   return (
     <div>
@@ -2039,47 +2013,6 @@ function TrendsCalendar({ authHeaders }) {
                     <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 4 }}>
                       {new Date(item.dateTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
                     </div>
-                  )}
-
-                  {/* Reschedule button for pending jobs */}
-                  {item._kind === 'scheduled' && (item.status === 'PENDING' || item.status === 'SCHEDULED') && (
-                    rescheduleJob?.job?.jobId === item.jobId ? (
-                      <div style={{ marginTop: 8 }}>
-                        <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
-                          <input type="date"
-                            value={rescheduleJob.newDate}
-                            onChange={e => setRescheduleJob(r => ({ ...r, newDate: e.target.value }))}
-                            style={{ flex: 1, padding: '4px 6px', fontSize: 11, border: '1px solid #e2e8f0', borderRadius: 6 }}
-                          />
-                          <input type="time"
-                            value={rescheduleJob.newTime}
-                            onChange={e => setRescheduleJob(r => ({ ...r, newTime: e.target.value }))}
-                            style={{ flex: 1, padding: '4px 6px', fontSize: 11, border: '1px solid #e2e8f0', borderRadius: 6 }}
-                          />
-                        </div>
-                        <div style={{ display: 'flex', gap: 6 }}>
-                          <button onClick={handleReschedule} style={{
-                            flex: 1, background: '#6366f1', color: '#fff', border: 'none',
-                            borderRadius: 6, padding: '5px 0', fontSize: 11, fontWeight: 600, cursor: 'pointer',
-                          }}>Confirm</button>
-                          <button onClick={() => setRescheduleJob(null)} style={{
-                            flex: 1, background: '#f1f5f9', color: '#475569', border: 'none',
-                            borderRadius: 6, padding: '5px 0', fontSize: 11, cursor: 'pointer',
-                          }}>Cancel</button>
-                        </div>
-                        {reschMsg && <div style={{ fontSize: 11, color: '#6366f1', marginTop: 4 }}>{reschMsg}</div>}
-                      </div>
-                    ) : (
-                      <button onClick={() => setRescheduleJob({
-                        job: item,
-                        newDate: item.date || '',
-                        newTime: item.dateTime ? item.dateTime.slice(11, 16) : '12:00',
-                      })} style={{
-                        marginTop: 8, width: '100%', background: '#fff7ed',
-                        color: '#c2410c', border: '1px solid #fed7aa',
-                        borderRadius: 6, padding: '5px 0', fontSize: 11, fontWeight: 600, cursor: 'pointer',
-                      }}>⏱ Reschedule</button>
-                    )
                   )}
                 </div>
               );

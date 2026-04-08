@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-gimport { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 import { filterEnabledPlatforms } from '../config/disabledPlatforms';
 import PlatformIcon from './PlatformIcon';
 import ComposePostModal from './ComposePostModal';
@@ -1266,8 +1266,6 @@ function TrendsCalendar({ authHeaders }) {
   const [loading, setLoading] = useState(true);
   const [calView, setCalView] = useState('posts'); // 'posts' | 'besttime'
   const [selectedDay, setSelectedDay] = useState(null);
-  const [rescheduleJob, setRescheduleJob] = useState(null); // { job, newDate, newTime }
-  const [reschMsg, setReschMsg] = useState('');
   const [hidePastPosts, setHidePastPosts] = useState(false);
   const [calTip, setCalTip] = useState(null); // hover on mini markers
   const [rangeView, setRangeView] = useState('monthly'); // 'monthly' | 'yearly'
@@ -1452,47 +1450,41 @@ function TrendsCalendar({ authHeaders }) {
     };
   }, [data]);
 
+  /**
+   * Same buckets as the calendar grid: API often puts future items only in `posts`
+   * (status SCHEDULED / future scheduledAt) while `scheduled` is empty — listing only
+   * `data.scheduled` showed "(0)" even when the month had many scheduled chips.
+   */
+  const upcomingScheduledForList = useMemo(() => {
+    if (!data) return [];
+    const seenJobIds = new Set();
+    const rows = [];
+    const inThisMonth = (rec) => {
+      const key = calendarLocalDateKey(rec);
+      if (!key) return false;
+      const [yy, mm] = key.split('-').map(Number);
+      return yy === year && mm === month;
+    };
+    (data.scheduled || []).forEach((j) => {
+      if (!inThisMonth(j)) return;
+      const jid = j.jobId ?? j.id;
+      if (jid != null) seenJobIds.add(String(jid));
+      rows.push(j);
+    });
+    (data.posts || []).forEach((p) => {
+      const pid = p.jobId ?? p.id;
+      if (pid != null && seenJobIds.has(String(pid))) return;
+      if (!isCalendarRowScheduled(p)) return;
+      if (!inThisMonth(p)) return;
+      if (pid != null) seenJobIds.add(String(pid));
+      rows.push(p);
+    });
+    return rows;
+  }, [data, year, month]);
+
   // Find selected day's items
   const selKey = selectedDay ? `${year}-${String(month).padStart(2,'0')}-${String(selectedDay).padStart(2,'0')}` : null;
   const selItems = selKey ? (byDate[selKey] || []) : [];
-
-  const handleReschedule = async () => {
-    if (!rescheduleJob) return;
-    const { job, newDate, newTime } = rescheduleJob;
-    if (!newDate || !newTime) { setReschMsg('Pick a date and time'); return; }
-    const newDateTime = `${newDate}T${newTime}:00`;
-    try {
-      const res = await fetch(`${API}/api/analytics/job/${job.jobId}/reschedule`, {
-        method: 'POST',
-        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ newDateTime }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        setReschMsg(err.error || 'Reschedule failed');
-        return;
-      }
-      setReschMsg('Rescheduled!');
-      setRescheduleJob(null);
-      setTimeout(() => { setReschMsg(''); loadCalendar(); }, 1200);
-    } catch {
-      setReschMsg('Reschedule failed');
-    }
-  };
-
-  const cancelJob = async (jobId) => {
-    if (!jobId) return;
-    try {
-      const res = await fetch(`${API}/api/analytics/job/${jobId}/cancel`, {
-        method: 'POST', headers: authHeaders(),
-      });
-      if (!res.ok) { setReschMsg('Cancel failed'); return; }
-      setReschMsg('Post cancelled.');
-      setTimeout(() => { setReschMsg(''); loadCalendar(); }, 1000);
-    } catch {
-      setReschMsg('Cancel failed');
-    }
-  };
 
   return (
     <div>
@@ -2003,47 +1995,6 @@ function TrendsCalendar({ authHeaders }) {
                       {new Date(item.dateTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
                     </div>
                   )}
-
-                  {/* Reschedule button for pending jobs */}
-                  {item._kind === 'scheduled' && (item.status === 'PENDING' || item.status === 'SCHEDULED') && (
-                    rescheduleJob && rescheduleJob.job?.jobId === item.jobId ? (
-                      <div style={{ marginTop: 8 }}>
-                        <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
-                          <input type="date"
-                            value={rescheduleJob.newDate}
-                            onChange={e => setRescheduleJob(r => ({ ...r, newDate: e.target.value }))}
-                            style={{ flex: 1, padding: '4px 6px', fontSize: 11, border: '1px solid #e2e8f0', borderRadius: 6 }}
-                          />
-                          <input type="time"
-                            value={rescheduleJob.newTime}
-                            onChange={e => setRescheduleJob(r => ({ ...r, newTime: e.target.value }))}
-                            style={{ flex: 1, padding: '4px 6px', fontSize: 11, border: '1px solid #e2e8f0', borderRadius: 6 }}
-                          />
-                        </div>
-                        <div style={{ display: 'flex', gap: 6 }}>
-                          <button onClick={handleReschedule} style={{
-                            flex: 1, background: '#6366f1', color: '#fff', border: 'none',
-                            borderRadius: 6, padding: '5px 0', fontSize: 11, fontWeight: 600, cursor: 'pointer',
-                          }}>Confirm</button>
-                          <button onClick={() => setRescheduleJob(null)} style={{
-                            flex: 1, background: '#f1f5f9', color: '#475569', border: 'none',
-                            borderRadius: 6, padding: '5px 0', fontSize: 11, cursor: 'pointer',
-                          }}>Cancel</button>
-                        </div>
-                        {reschMsg && <div style={{ fontSize: 11, color: '#6366f1', marginTop: 4 }}>{reschMsg}</div>}
-                      </div>
-                    ) : (
-                      <button onClick={() => setRescheduleJob({
-                        job: item,
-                        newDate: item.date || '',
-                        newTime: item.dateTime ? item.dateTime.slice(11, 16) : '12:00',
-                      })} style={{
-                        marginTop: 8, width: '100%', background: '#fff7ed',
-                        color: '#c2410c', border: '1px solid #fed7aa',
-                        borderRadius: 6, padding: '5px 0', fontSize: 11, fontWeight: 600, cursor: 'pointer',
-                      }}>⏱ Reschedule</button>
-                    )
-                  )}
                 </div>
               );
               })}
@@ -2113,22 +2064,22 @@ function TrendsCalendar({ authHeaders }) {
           <div>
             <div style={{ fontWeight: 700, fontSize: 13, color: '#1e293b', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{ color: '#f59e0b' }}>⏰</span> Upcoming Scheduled{' '}
-              <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 400 }}>({(data.scheduled || []).length})</span>
+              <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 400 }}>({upcomingScheduledForList.length})</span>
             </div>
-            {(data.scheduled || []).length === 0 ? (
+            {upcomingScheduledForList.length === 0 ? (
               <p style={{ fontSize: 12, color: '#94a3b8' }}>No scheduled posts this month.</p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {[...(data.scheduled || [])].sort((a, b) => {
+                {[...upcomingScheduledForList].sort((a, b) => {
                   const da = a.dateTime || a.scheduledAt || a.date || '';
                   const db = b.dateTime || b.scheduledAt || b.date || '';
                   return da.localeCompare(db);
                 }).map((j, i) => {
                   const rowPc = PLATFORMS.find((x) => x.id === (j.platform || '').toLowerCase());
                   const jobId = j.jobId ?? j.id;
-                  const canModify = j.status === 'SCHEDULED' || j.status === 'PENDING' || !j.status;
+                  const rowKey = jobId != null ? `job-${jobId}` : `up-${i}-${j.platform || ''}`;
                   return (
-                    <div key={i} style={{ background: '#fff', borderRadius: 10, border: '1px solid #fde68a', padding: '10px 12px' }}>
+                    <div key={rowKey} style={{ background: '#fff', borderRadius: 10, border: '1px solid #fde68a', padding: '10px 12px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, flexWrap: 'wrap' }}>
                         {rowPc && <PlatformIcon platform={rowPc} size={18} />}
                         <span style={{
@@ -2150,52 +2101,6 @@ function TrendsCalendar({ authHeaders }) {
                                    overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
                         {j.caption || <em style={{ color: '#94a3b8' }}>No caption</em>}
                       </p>
-                      {canModify && (
-                        rescheduleJob?.job?.jobId === jobId ? (
-                          <div style={{ marginTop: 8 }}>
-                            <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
-                              <input type="date"
-                                value={rescheduleJob.newDate}
-                                onChange={e => setRescheduleJob(r => ({ ...r, newDate: e.target.value }))}
-                                style={{ flex: 1, padding: '4px 6px', fontSize: 11, border: '1px solid #e2e8f0', borderRadius: 6 }}
-                              />
-                              <input type="time"
-                                value={rescheduleJob.newTime}
-                                onChange={e => setRescheduleJob(r => ({ ...r, newTime: e.target.value }))}
-                                style={{ flex: 1, padding: '4px 6px', fontSize: 11, border: '1px solid #e2e8f0', borderRadius: 6 }}
-                              />
-                            </div>
-                            <div style={{ display: 'flex', gap: 6 }}>
-                              <button onClick={handleReschedule} style={{
-                                flex: 1, background: '#6366f1', color: '#fff', border: 'none',
-                                borderRadius: 6, padding: '5px 0', fontSize: 11, fontWeight: 600, cursor: 'pointer',
-                              }}>Confirm</button>
-                              <button onClick={() => setRescheduleJob(null)} style={{
-                                flex: 1, background: '#f1f5f9', color: '#475569', border: 'none',
-                                borderRadius: 6, padding: '5px 0', fontSize: 11, cursor: 'pointer',
-                              }}>Cancel</button>
-                            </div>
-                            {reschMsg && <div style={{ fontSize: 11, color: '#6366f1', marginTop: 4 }}>{reschMsg}</div>}
-                          </div>
-                        ) : (
-                          <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
-                            <button onClick={() => setRescheduleJob({
-                              job: j,
-                              newDate: j.date || '',
-                              newTime: j.dateTime ? j.dateTime.slice(11, 16) : '12:00',
-                            })} style={{
-                              flex: 1, background: '#fff7ed', color: '#c2410c',
-                              border: '1px solid #fed7aa', borderRadius: 6,
-                              padding: '5px 0', fontSize: 11, fontWeight: 600, cursor: 'pointer',
-                            }}>⏱ Reschedule</button>
-                            <button onClick={() => cancelJob(jobId)} style={{
-                              flex: 1, background: '#fef2f2', color: '#dc2626',
-                              border: '1px solid #fca5a5', borderRadius: 6,
-                              padding: '5px 0', fontSize: 11, fontWeight: 600, cursor: 'pointer',
-                            }}>✕ Cancel</button>
-                          </div>
-                        )
-                      )}
                     </div>
                   );
                 })}

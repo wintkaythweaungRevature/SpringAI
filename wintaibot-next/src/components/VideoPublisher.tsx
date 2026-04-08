@@ -720,21 +720,6 @@ export default function VideoPublisher() {
                       Length ~{formatDurationHuman(effectiveDurationSec)}
                     </div>
                   )}
-                  {video.size > SAFE_DIRECT_UPLOAD_MAX_BYTES && (
-                    <div style={{
-                      marginTop: '10px',
-                      fontSize: '12px',
-                      color: '#92400e',
-                      background: '#fffbeb',
-                      border: '1px solid #fcd34d',
-                      borderRadius: '8px',
-                      padding: '8px 10px',
-                      lineHeight: 1.4,
-                    }}
-                    >
-                      Large file — uploads or publish above ~{(SAFE_DIRECT_UPLOAD_MAX_BYTES / 1024 / 1024).toFixed(0)} MB often hit server limits (HTTP 413). Compress or trim if anything fails.
-                    </div>
-                  )}
                   <div style={s.changeFile}>Click to change</div>
                 </>
               ) : (

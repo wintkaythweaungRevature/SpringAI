@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
@@ -50,7 +50,8 @@ function NavItem({
 export default function DashboardShell({ children }: { children: React.ReactNode }) {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  /** Start closed to avoid one desktop-width frame (and horizontal overflow) before media queries resolve on phones. */
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [billingPlanLabel, setBillingPlanLabel] = useState<string | null>(null);
   const { user, logout, loading, token, apiBase } = useAuth();
   const pathname = usePathname();
@@ -58,11 +59,17 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   const isMobile = useMediaQuery('(max-width: 768px)');
   const isTablet = useMediaQuery('(max-width: 1024px)');
 
-  useEffect(() => {
-    if (isMobile) setSidebarOpen(false);
-    else if (isTablet) setSidebarOpen(false);
-    else setSidebarOpen(true);
-  }, [isMobile, isTablet]);
+  /** Sidebar defaults from real viewport before paint — avoids opening the wide sidebar on phones when hooks still read “desktop”. */
+  useLayoutEffect(() => {
+    const mq = window.matchMedia('(max-width: 1024px)');
+    const syncSidebarToViewport = () => {
+      if (mq.matches) setSidebarOpen(false);
+      else setSidebarOpen(true);
+    };
+    syncSidebarToViewport();
+    mq.addEventListener('change', syncSidebarToViewport);
+    return () => mq.removeEventListener('change', syncSidebarToViewport);
+  }, []);
 
   useEffect(() => {
     if (loading || user) return;
@@ -269,6 +276,8 @@ export default function DashboardShell({ children }: { children: React.ReactNode
                     rowGap: 8,
                     paddingTop: 'max(8px, env(safe-area-inset-top, 0px))',
                     paddingBottom: 8,
+                    paddingLeft: 'max(12px, env(safe-area-inset-left, 0px))',
+                    paddingRight: 'max(12px, env(safe-area-inset-right, 0px))',
                   }
                 : {}),
             }}

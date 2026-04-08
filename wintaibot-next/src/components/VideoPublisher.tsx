@@ -66,6 +66,8 @@ export default function VideoPublisher() {
   const [connectLoading, setConnectLoading] = useState<string | null>(null);
   const [connectMessage, setConnectMessage] = useState('');
   const [canSkipProcessing, setCanSkipProcessing] = useState(false);
+  /** Set after successful upload — used to re-fetch variant IDs before publish (avoids multipart re-upload / HTTP 413). */
+  const [processingVideoId, setProcessingVideoId] = useState<number | string | null>(null);
   const [contentIdea, setContentIdea] = useState<string | null>(null);
   const [publishError, setPublishError] = useState<{ message: string; platforms: string[]; requiresReconnect: boolean } | null>(null);
   /** Default reels limits for IG/FB (Next UI has no story/reels toggle yet). */
@@ -99,6 +101,10 @@ export default function VideoPublisher() {
       })
       .catch(() => {});
   }, [base, token]);
+
+  useEffect(() => {
+    setProcessingVideoId(null);
+  }, [video]);
 
   useEffect(() => {
     if (!video) {
@@ -234,6 +240,7 @@ export default function VideoPublisher() {
   const applyIdeaForNextVideo = (idea) => {
     setStep('upload');
     setVideo(null);
+    setProcessingVideoId(null);
     setVariants({});
     setPublished([]);
     setScheduledTimes({});
@@ -245,6 +252,7 @@ export default function VideoPublisher() {
 
   const usePlaceholders = () => {
     skippedRef.current = true;
+    setProcessingVideoId(null);
     const generated = {};
     for (const pid of selectedPlatforms) {
       generated[pid] = {
@@ -265,6 +273,7 @@ export default function VideoPublisher() {
   const runProcessing = async () => {
     if (!video) return;
     skippedRef.current = false;
+    setProcessingVideoId(null);
     setCanSkipProcessing(false);
     setStep('processing');
     setProcessing(true);
@@ -338,6 +347,7 @@ export default function VideoPublisher() {
 
       const data = await res.json();
       const videoId = data.videoId ?? data.id;
+      setProcessingVideoId(videoId);
 
       log('🎙️ Transcribing audio with Whisper...');
       log('📝 Generating captions & hashtags with GPT-4...');
@@ -466,8 +476,44 @@ export default function VideoPublisher() {
     const successPlatforms: string[] = [];
     const errors: Record<string, string> = {};
 
+    let mergedVariants = { ...variants };
+    const needsVariantId = toPublish.some((pid) => mergedVariants[pid] && !mergedVariants[pid].variantId);
+    if (needsVariantId && token && processingVideoId != null) {
+      try {
+        const pollRes = await fetch(`${base}/api/video-content/videos/${processingVideoId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (pollRes.ok) {
+          const pollData = await pollRes.json();
+          const list = pollData?.variants;
+          if (Array.isArray(list) && list.length > 0) {
+            mergedVariants = { ...mergedVariants };
+            for (const pid of selectedPlatforms) {
+              const row = list.find((v: { platform?: string; id?: string | number }) => v.platform === pid);
+              if (mergedVariants[pid] && row?.id != null) {
+                mergedVariants[pid] = {
+                  ...mergedVariants[pid],
+                  variantId: String(row.id),
+                };
+              }
+            }
+            setVariants((prev) => {
+              const next = { ...prev };
+              for (const pid of selectedPlatforms) {
+                const vid = mergedVariants[pid]?.variantId;
+                if (vid && next[pid]) next[pid] = { ...next[pid], variantId: vid };
+              }
+              return next;
+            });
+          }
+        }
+      } catch (_) {
+        /* keep mergedVariants as-is */
+      }
+    }
+
     for (const pid of toPublish) {
-      const variant = variants[pid];
+      const variant = mergedVariants[pid];
       const scheduledAt = scheduledTimes[pid];
       const hasSchedule = scheduledAt && String(scheduledAt).trim() !== '';
 
@@ -496,6 +542,11 @@ export default function VideoPublisher() {
             else if (data.requiresConnect) errors[pid] = formatPublishError(pid, data.error || `Connect your ${pid} account first`);
             else errors[pid] = formatPublishError(pid, data.error || 'Publish failed');
           } else {
+            if (video && video.size > SAFE_DIRECT_UPLOAD_MAX_BYTES) {
+              errors[pid] =
+                'HTTP 413: gateway rejected the full upload. For files over ~100 MB you must publish using server-side variants. Click Generate Content and wait until variants exist, or raise client_max_body_size on your API proxy.';
+              continue;
+            }
             if (!video) {
               errors[pid] = 'Video unavailable';
               continue;

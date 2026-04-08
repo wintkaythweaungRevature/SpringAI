@@ -214,7 +214,7 @@ function MetaPerformanceCard({
         <div style={{ fontSize: 16, fontWeight: 700, color: '#1c2b33', letterSpacing: '-0.02em' }}>{title}</div>
         <span style={{ color: '#bcc0c4', fontSize: 22, lineHeight: 1, userSelect: 'none' }} aria-hidden>›</span>
       </div>
-      <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+      <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start', flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap', marginBottom: 4 }}>
             <span style={{ fontSize: 34, fontWeight: 700, color: '#050505', letterSpacing: '-0.03em', lineHeight: 1 }}>{primaryValue}</span>
@@ -270,7 +270,9 @@ function MetaPerformanceCard({
             </div>
           )}
         </div>
-        <InsightSparkline values={sparkValues} color={sparkColor} />
+        <div style={{ flexShrink: 0, marginLeft: 'auto' }}>
+          <InsightSparkline values={sparkValues} color={sparkColor} />
+        </div>
       </div>
     </div>
   );
@@ -440,7 +442,7 @@ function PerformanceInsightsGrid({ platform, data, analyticsData }) {
           </div>
           {customizeBtn}
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 14 }}>
+        <div className="adh-perf-grid">
           <MetaPerformanceCard
             title="Views"
             primaryValue={fmtVal(totalViews)}
@@ -550,7 +552,7 @@ function PerformanceInsightsGrid({ platform, data, analyticsData }) {
         </div>
         {customizeBtn}
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 14 }}>
+      <div className="adh-perf-grid">
         <MetaPerformanceCard
           title="Views"
           primaryValue={fmtVal(views)}
@@ -628,7 +630,21 @@ function HBar({ label, value, max, color, icon, platform, barHeight = 10 }) {
       <span style={{ width: '24px', height: '24px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {platform ? <PlatformIcon platform={platform} size={22} /> : <span style={{ fontSize: '16px' }}>{icon}</span>}
       </span>
-      <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151', width: '78px', flexShrink: 0 }}>{label}</span>
+      <span
+        style={{
+          fontSize: '12px',
+          fontWeight: 600,
+          color: '#374151',
+          maxWidth: '88px',
+          flexShrink: 0,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+        }}
+        title={label}
+      >
+        {label}
+      </span>
       <div style={{ flex: 1, background: '#f1f5f9', borderRadius: '6px', height: `${barHeight}px`, overflow: 'hidden' }}>
         <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: '6px', transition: 'width 0.6s ease' }} />
       </div>
@@ -788,12 +804,25 @@ export default function AnalyticsDashboard() {
   return (
     <div style={{ width: '100%', maxWidth: '100%', margin: 0, boxSizing: 'border-box', fontFamily: "'Inter',-apple-system,sans-serif" }}>
       <style>{`
+        .adh-perf-grid { display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr); }
+        @media (min-width: 520px) {
+          .adh-perf-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        .adh-content-mini-grid { display: grid; gap: 10px; grid-template-columns: minmax(0, 1fr); }
+        @media (min-width: 420px) {
+          .adh-content-mini-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        }
+        .adh-analytics-main-grid { display: grid; gap: 14px; margin-bottom: 14px; grid-template-columns: minmax(0, 1fr); }
+        @media (min-width: 600px) {
+          .adh-analytics-main-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
         .adh-shared-by-platform-row { display: grid; gap: 14px; margin-bottom: 14px; grid-template-columns: 1fr; }
         @media (min-width: 640px) {
           .adh-shared-by-platform-row { grid-template-columns: 1fr 1fr; }
           .adh-shared-by-platform-spacer { display: block !important; }
         }
         .adh-shared-by-platform-spacer { display: none; min-height: 0; }
+        .adh-activity-row { display: flex; align-items: flex-start; flex-wrap: wrap; gap: 10px; padding: 10px 12px; border-radius: 10px; border: 1px solid #e2e8f0; }
       `}</style>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '16px', flexWrap: 'wrap', marginBottom: '14px' }}>
         <button type="button" onClick={load} disabled={loading} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 14px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#fff', color: '#334155', fontWeight: 600, fontSize: '13px', cursor: loading ? 'wait' : 'pointer', boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)', flexShrink: 0, fontFamily: 'inherit' }}>
@@ -829,7 +858,7 @@ export default function AnalyticsDashboard() {
             <>
               <PerformanceInsightsGrid platform="overview" analyticsData={data} />
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: '14px', marginBottom: '14px' }}>
+              <div className="adh-analytics-main-grid">
                 <div style={{ background: '#fff', borderRadius: '12px', padding: '18px 20px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)' }}>
                   <div style={{ fontWeight: 700, fontSize: '14px', color: '#1e293b', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}><IconUsers size={18} color="#6366f1" />Followers by Platform</div>
                   {connected.length === 0 ? <div style={{ color: '#94a3b8', fontSize: '13px' }}>No platforms connected yet.</div> : connected.map((pid) => {
@@ -914,10 +943,10 @@ export default function AnalyticsDashboard() {
                       const d = new Date(post.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                       const rowKey = post.id != null ? String(post.id) : `${post.platform}-${post.createdAt}-${(post.caption || '').slice(0, 20)}`;
                       return (
-                        <div key={rowKey} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                        <div key={rowKey} className="adh-activity-row">
                           <span style={{ width: 22, height: 22, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{p ? <PlatformIcon platform={p} size={20} /> : <span style={{ fontSize: '16px' }}>📤</span>}</span>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{post.caption || '(no caption)'}</div>
+                          <div style={{ flex: '1 1 160px', minWidth: 0 }}>
+                            <div style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{post.caption || '(no caption)'}</div>
                             <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>{p?.label ?? post.platform} · {post.mediaType} · {d}</div>
                           </div>
                           <button type="button" onClick={() => post.id != null && removeActivityFromList(post.id)} disabled={post.id == null} title="Remove from this list" aria-label="Remove from recent activity" style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '6px 10px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#fff', color: '#64748b', fontSize: '11px', fontWeight: 600, cursor: post.id == null ? 'not-allowed' : 'pointer', opacity: post.id == null ? 0.5 : 1 }}>

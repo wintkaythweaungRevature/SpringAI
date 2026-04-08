@@ -11,10 +11,12 @@
   --ls-blur: blur(20px);
   color: var(--ls-text-body);
   line-height: 1.65;
+  width: 100%;
   max-width: 1180px;
   margin: 0 auto;
   padding: 0 max(20px, var(--safe-right)) max(96px, var(--safe-bottom)) max(20px, var(--safe-left));
   box-sizing: border-box;
+  overflow-x: hidden;
   background: linear-gradient(165deg, #060a14 0%, #0f172a 30%, #0f1c33 55%, #0a1020 100%);
   background-attachment: fixed;
 }

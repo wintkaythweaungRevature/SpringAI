@@ -1,19 +1,20 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useLayoutEffect } from 'react';
 
+/**
+ * SSR-safe: always starts `false` so server HTML matches the client’s first paint.
+ * Media state updates in layout effect before paint to avoid hydration mismatches.
+ */
 export function useMediaQuery(query: string) {
-  const [matches, setMatches] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return window.matchMedia(query).matches;
-  });
+  const [matches, setMatches] = useState(false);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const mq = window.matchMedia(query);
-    const handler = (e: MediaQueryListEvent) => setMatches(e.matches);
-    mq.addEventListener('change', handler);
-    setMatches(mq.matches);
-    return () => mq.removeEventListener('change', handler);
+    const read = () => setMatches(mq.matches);
+    read();
+    mq.addEventListener('change', read);
+    return () => mq.removeEventListener('change', read);
   }, [query]);
 
   return matches;

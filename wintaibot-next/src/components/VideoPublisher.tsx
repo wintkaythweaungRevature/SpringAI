@@ -11,7 +11,9 @@ import {
   formatBytes,
   getMaxDurationSecForPlatform,
   getPlatformVideoGuidelines,
+  MAX_VIDEO_UPLOAD_BYTES,
   SAFE_DIRECT_UPLOAD_MAX_BYTES,
+  S3_DIRECT_UPLOAD_THRESHOLD_BYTES,
   minScheduleDatetimeLocal,
   isScheduleTimeInPast,
 } from '@/config/videoPlatformRequirements';
@@ -78,6 +80,7 @@ export default function VideoPublisher() {
   const [videoDurationSec, setVideoDurationSec] = useState(0);
   const [clientVideoDurationSec, setClientVideoDurationSec] = useState(0);
   const [durationProbing, setDurationProbing] = useState(false);
+  const [fileError, setFileError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const skippedRef = useRef(false);
   const router = useRouter();
@@ -229,19 +232,49 @@ export default function VideoPublisher() {
   const togglePlatform = (id) =>
     setSelected(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id]);
 
+  const validateVideoFile = (f: File): string | null => {
+    if (!f.type.startsWith('video/')) {
+      return 'Please choose a video file (MP4, MOV, AVI, WebM, etc.).';
+    }
+    if (f.size > MAX_VIDEO_UPLOAD_BYTES) {
+      const sizeMB = (f.size / (1024 * 1024)).toFixed(0);
+      const maxMB = Math.round(MAX_VIDEO_UPLOAD_BYTES / (1024 * 1024));
+      return `File is too large (${sizeMB} MB). Maximum is ${maxMB} MB (2 GB).`;
+    }
+    return null;
+  };
+
   const handleDrop = (e) => {
     e.preventDefault(); setDragOver(false);
     const f = e.dataTransfer.files[0];
-    if (f && f.type.startsWith('video/')) setVideo(f);
+    if (!f) return;
+    const err = validateVideoFile(f);
+    if (err) {
+      setFileError(err);
+      setVideo(null);
+      return;
+    }
+    setFileError(null);
+    setVideo(f);
   };
 
   const handleFile = (e) => {
-    const f = e.target.files[0];
-    if (f) setVideo(f);
+    const f = e.target.files?.[0];
+    if (!f) return;
+    const err = validateVideoFile(f);
+    if (err) {
+      setFileError(err);
+      setVideo(null);
+      if (e.target) (e.target as HTMLInputElement).value = '';
+      return;
+    }
+    setFileError(null);
+    setVideo(f);
   };
 
   const applyIdeaForNextVideo = (idea) => {
     setStep('upload');
+    setFileError(null);
     setVideo(null);
     setProcessingVideoId(null);
     setVariants({});
@@ -287,7 +320,7 @@ export default function VideoPublisher() {
     try {
       log('🎬 Uploading video to server...');
       let res: Response;
-      const shouldUseDirectS3Ingest = video.size > SAFE_DIRECT_UPLOAD_MAX_BYTES;
+      const shouldUseDirectS3Ingest = video.size > S3_DIRECT_UPLOAD_THRESHOLD_BYTES;
       if (shouldUseDirectS3Ingest) {
         log('☁️ Large file detected — using direct S3 upload...');
         const initRes = await fetch(`${base}/api/video-content/upload/init`, {
@@ -545,11 +578,6 @@ export default function VideoPublisher() {
             else if (data.requiresConnect) errors[pid] = formatPublishError(pid, data.error || `Connect your ${pid} account first`);
             else errors[pid] = formatPublishError(pid, data.error || 'Publish failed');
           } else {
-            if (video && video.size > SAFE_DIRECT_UPLOAD_MAX_BYTES) {
-              errors[pid] =
-                'HTTP 413: gateway rejected the full upload. For files over ~100 MB you must publish using server-side variants. Click Generate Content and wait until variants exist, or raise client_max_body_size on your API proxy.';
-              continue;
-            }
             if (!video) {
               errors[pid] = 'Video unavailable';
               continue;
@@ -729,10 +757,28 @@ export default function VideoPublisher() {
                 <>
                   <div style={{ fontSize: '40px' }}>📹</div>
                   <div style={s.dropTitle}>Drop your video here</div>
-                  <div style={s.dropSub}>MP4, MOV, AVI · Max 500MB</div>
+                  <div style={s.dropSub}>MP4, MOV, AVI, WebM · Max 2 GB</div>
                 </>
               )}
             </div>
+
+            {fileError && (
+              <div
+                role="alert"
+                style={{
+                  marginBottom: '12px',
+                  padding: '10px 14px',
+                  borderRadius: '10px',
+                  background: '#fef2f2',
+                  border: '1px solid #f87171',
+                  fontSize: '13px',
+                  color: '#7f1d1d',
+                  lineHeight: 1.45,
+                }}
+              >
+                {fileError}
+              </div>
+            )}
 
             {video && uploadStepVideoValidation.blocking.length > 0 && (
               <div
@@ -965,7 +1011,7 @@ export default function VideoPublisher() {
               >
                 <strong>Cannot publish yet</strong>
                 <p style={{ margin: '8px 0 10px', lineHeight: 1.45 }}>
-                  Large direct uploads can hit server limits (HTTP 413). Fix the list or change platforms / file.
+                  Fix the items below. For big files, run <strong>Generate Content</strong> so each platform has a variant. HTTP 413 usually means a proxy body limit—raise nginx <code>client_max_body_size</code> to match the app (up to 2GB).
                 </p>
                 <ul style={{ margin: 0, paddingLeft: '18px', lineHeight: 1.5 }}>
                   {reviewVideoValidation.blocking.map((b, i) => (
@@ -994,7 +1040,7 @@ export default function VideoPublisher() {
                 </ul>
               </div>
             )}
-            {selectedPlatforms.some((pid) => variants[pid] && !variants[pid].variantId && video && video.size > SAFE_DIRECT_UPLOAD_MAX_BYTES) && (
+            {selectedPlatforms.some((pid) => variants[pid] && !variants[pid].variantId && video && video.size > S3_DIRECT_UPLOAD_THRESHOLD_BYTES) && (
               <div
                 role="status"
                 style={{
@@ -1008,7 +1054,7 @@ export default function VideoPublisher() {
                   lineHeight: 1.5,
                 }}
               >
-                <strong>Large video</strong> — publishing without a processed variant uploads the full file and often hits <strong>HTTP 413</strong> (server size limit). Use <strong>Generate Content</strong> and wait for variants, or compress the video under ~{(SAFE_DIRECT_UPLOAD_MAX_BYTES / 1024 / 1024).toFixed(0)} MB.
+                <strong>Large video</strong> — without a variant ID the app may re-upload the full file; that can hit <strong>HTTP 413</strong> if nginx/proxy limits are too small. Use <strong>Generate Content</strong> and wait for variants, or raise proxy limits to at least your file size (app allows up to ~{(SAFE_DIRECT_UPLOAD_MAX_BYTES / (1024 * 1024)).toFixed(0)} MB).
               </div>
             )}
             <div style={s.sectionTitle}>📦 Content Variants</div>
@@ -1206,6 +1252,7 @@ export default function VideoPublisher() {
               <button style={{ ...s.btnPrimary, marginTop: '16px', fontSize: '13px' }}
                 onClick={() => {
                   setStep('upload');
+                  setFileError(null);
                   setVideo(null);
                   setVariants({});
                   setPublished([]);

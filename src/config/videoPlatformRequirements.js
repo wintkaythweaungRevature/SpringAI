@@ -3,8 +3,18 @@
  * Limits are practical guardrails for this app; platforms may change API rules.
  */
 
-/** Full-file multipart publish often hits reverse-proxy limits (HTTP 413). */
-export const SAFE_DIRECT_UPLOAD_MAX_BYTES = 100 * 1024 * 1024; // 100 MB
+/**
+ * Hard cap for video file size (picker + server multipart). Must match
+ * `spring.servlet.multipart.max-file-size` / `max-request-size` in `application.properties`.
+ * Nginx `client_max_body_size` must be >= this or uploads fail with HTTP 413.
+ */
+export const MAX_VIDEO_UPLOAD_BYTES = 2 * 1024 * 1024 * 1024; // 2 GB
+
+/** Same as {@link MAX_VIDEO_UPLOAD_BYTES} — max body for full-file publish without a variant. */
+export const SAFE_DIRECT_UPLOAD_MAX_BYTES = MAX_VIDEO_UPLOAD_BYTES;
+
+/** Above this size, use pre-signed S3 for ingest (`/upload/init` + PUT) so the browser does not POST the whole file to Spring. */
+export const S3_DIRECT_UPLOAD_THRESHOLD_BYTES = 100 * 1024 * 1024; // 100 MB
 /** Conservative image payload guard to avoid API gateway 413 on /api/social/post. */
 const configuredImageLimitMb = Number(process.env.REACT_APP_SAFE_DIRECT_IMAGE_UPLOAD_MAX_MB || 4);
 export const SAFE_DIRECT_IMAGE_UPLOAD_MAX_BYTES =

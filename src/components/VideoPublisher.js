@@ -9,7 +9,9 @@ import {
   formatBytes,
   getMaxDurationSecForPlatform,
   getPlatformVideoGuidelines,
+  MAX_VIDEO_UPLOAD_BYTES,
   SAFE_DIRECT_UPLOAD_MAX_BYTES,
+  S3_DIRECT_UPLOAD_THRESHOLD_BYTES,
   SAFE_DIRECT_IMAGE_UPLOAD_MAX_BYTES,
   IMAGE_PLATFORM_LIMITS_MB,
 } from '../config/videoPlatformRequirements';
@@ -74,7 +76,6 @@ function effectivePublishTypeForPlatform(platformId, postType, selectedPublishTy
   return postType === 'video' ? 'reels' : 'feed';
 }
 
-const MAX_FILE_SIZE_BYTES = 2 * 1024 * 1024 * 1024; // 2GB
 const ACCEPTED_FORMATS = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm', 'video/mov'];
 const ACCEPTED_EXTENSIONS = ['.mp4', '.mov', '.avi', '.webm'];
 
@@ -349,9 +350,10 @@ function validateVideo(file) {
   if (!isValidType) {
     return `❌ "${file.name}" is not supported. Please use MP4, MOV, AVI, or WebM.`;
   }
-  if (file.size > MAX_FILE_SIZE_BYTES) {
+  if (file.size > MAX_VIDEO_UPLOAD_BYTES) {
     const sizeMB = (file.size / 1024 / 1024).toFixed(0);
-    return `❌ File is too large (${sizeMB} MB). Maximum allowed size is 2GB (2,048 MB).`;
+    const maxMB = Math.round(MAX_VIDEO_UPLOAD_BYTES / (1024 * 1024));
+    return `❌ File is too large (${sizeMB} MB). Maximum allowed size is ${maxMB} MB (2 GB).`;
   }
   return null;
 }
@@ -844,7 +846,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
     try {
       log('🎬 Uploading video to server...');
       let res;
-      const shouldUseDirectS3Ingest = video.size > SAFE_DIRECT_UPLOAD_MAX_BYTES;
+      const shouldUseDirectS3Ingest = video.size > S3_DIRECT_UPLOAD_THRESHOLD_BYTES;
       if (shouldUseDirectS3Ingest) {
         log('☁️ Large file detected — using direct S3 upload...');
         const initRes = await fetch(`${base}/api/video-content/upload/init`, {
@@ -2156,7 +2158,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
               {selectedPlatforms.includes('x') && (
                 <>On <strong>X (Twitter)</strong>, your <strong>caption is visible text</strong> in the feed; we check video length for X below. </>
               )}
-              Large direct uploads can hit server limits (HTTP 413). Fix the list or change platforms / file.
+              Fix the items below. For big files, run <strong>Generate Content</strong> first so each platform has a variant (smaller publish requests). HTTP 413 usually means a proxy body limit—raise nginx <code>client_max_body_size</code> to match the app (up to 2GB).
             </p>
             <ul style={{ margin: 0, paddingLeft: '18px', lineHeight: 1.5 }}>
               {reviewVideoValidation.blocking.map((b, i) => (

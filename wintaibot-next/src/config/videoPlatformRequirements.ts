@@ -1,6 +1,12 @@
 /** Keep in sync with `SpringAI/src/config/videoPlatformRequirements.js` (CRA). */
 
-export const SAFE_DIRECT_UPLOAD_MAX_BYTES = 100 * 1024 * 1024;
+/** Must match Spring `application.properties` multipart limits; see CRA `videoPlatformRequirements.js`. */
+export const MAX_VIDEO_UPLOAD_BYTES = 2 * 1024 * 1024 * 1024;
+
+export const SAFE_DIRECT_UPLOAD_MAX_BYTES = MAX_VIDEO_UPLOAD_BYTES;
+
+/** Ingest via S3 presigned PUT when file exceeds this size (see CRA). */
+export const S3_DIRECT_UPLOAD_THRESHOLD_BYTES = 100 * 1024 * 1024;
 const configuredImageLimitMb = Number(process.env.NEXT_PUBLIC_SAFE_DIRECT_IMAGE_UPLOAD_MAX_MB || 4);
 export const SAFE_DIRECT_IMAGE_UPLOAD_MAX_BYTES =
   Number.isFinite(configuredImageLimitMb) && configuredImageLimitMb > 0

@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { filterEnabledPlatforms } from '@/config/disabledPlatforms';
 import PlatformIcon from './PlatformIcon';
+import { SOCIAL_OAUTH_MESSAGE_TYPE } from '@/components/SocialOAuthPopupHandler';
 
 const PLATFORMS = filterEnabledPlatforms([
   { id: 'youtube',   label: 'YouTube',    emoji: '▶️',  color: '#FF0000', desc: 'Upload videos & Shorts', logo: 'youtube' },
@@ -45,18 +46,35 @@ export default function SocialConnect() {
   useEffect(() => {
     fetchStatus();
 
-    // Handle OAuth callback result from URL params
+    const onOAuthMessage = (ev: MessageEvent) => {
+      const d = ev.data;
+      if (!d || d.type !== SOCIAL_OAUTH_MESSAGE_TYPE) return;
+      const plat = d.platform as string;
+      if (d.result === 'success') {
+        setMessage({ type: 'success', text: `✅ ${plat} connected successfully!` });
+        fetchStatus();
+      } else {
+        setMessage({ type: 'error', text: `❌ Failed to connect ${plat}. Please try again.` });
+        fetchStatus();
+      }
+      setTimeout(() => setMessage(null), 4000);
+    };
+    window.addEventListener('message', onOAuthMessage);
+    return () => window.removeEventListener('message', onOAuthMessage);
+  }, [fetchStatus]);
+
+  useEffect(() => {
+    // Handle OAuth callback when return landed in this tab (not popup)
     const params = new URLSearchParams(window.location.search);
     const connectResult = params.get('social_connect');
     const platform = params.get('platform');
-    if (connectResult && platform) {
+    if (connectResult && platform && !window.opener) {
       if (connectResult === 'success') {
         setMessage({ type: 'success', text: `✅ ${platform} connected successfully!` });
         fetchStatus();
       } else {
         setMessage({ type: 'error', text: `❌ Failed to connect ${platform}. Please try again.` });
       }
-      // Clean URL
       window.history.replaceState({}, '', window.location.pathname);
       setTimeout(() => setMessage(null), 4000);
     }
@@ -65,9 +83,11 @@ export default function SocialConnect() {
   const handleConnect = async (platformId) => {
     setConnecting(platformId);
     try {
-      const res = await fetch(`${base}/api/social/connect/${platformId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const returnOrigin = encodeURIComponent(window.location.origin);
+      const res = await fetch(
+        `${base}/api/social/connect/${platformId}?return_origin=${returnOrigin}`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
       if (res.ok) {
         const data = await res.json();
         // Open OAuth URL in popup

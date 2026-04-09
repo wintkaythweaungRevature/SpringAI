@@ -653,16 +653,18 @@ function HBar({ label, value, max, color, icon, platform, barHeight = 10 }) {
   );
 }
 
-function PlatformTabBtn({ active, onClick, children, activeColor }) {
+function PlatformTabBtn({ active, onClick, children, activeColor, disabled }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       style={{
         padding: '8px 14px',
         borderRadius: '8px',
         border: active ? `1px solid ${activeColor || '#0f172a'}` : '1px solid #e2e8f0',
-        cursor: 'pointer',
+        cursor: disabled ? 'wait' : 'pointer',
+        opacity: disabled ? 0.6 : 1,
         fontWeight: active ? 600 : 500,
         fontSize: '13px',
         whiteSpace: 'nowrap',
@@ -920,37 +922,16 @@ export default function AnalyticsDashboard() {
       <div
         style={{
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'flex-end',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
           gap: '16px',
           flexWrap: 'wrap',
           marginBottom: '14px',
         }}
       >
-        <button
-          type="button"
-          onClick={load}
-          disabled={loading}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '8px 14px',
-            borderRadius: '8px',
-            border: '1px solid #e2e8f0',
-            background: '#fff',
-            color: '#334155',
-            fontWeight: 600,
-            fontSize: '13px',
-            cursor: loading ? 'wait' : 'pointer',
-            boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
-            flexShrink: 0,
-            fontFamily: 'inherit',
-          }}
-        >
-          <RefreshIcon />
-          {loading ? 'Refreshing…' : 'Refresh'}
-        </button>
+        <p style={{ margin: 0, fontSize: '13px', color: '#475569', lineHeight: 1.55, maxWidth: '520px' }}>
+          Live metrics from connected social accounts. Use Overview for a combined view or open a single platform.
+        </p>
       </div>
 
       {error && (
@@ -1002,6 +983,10 @@ export default function AnalyticsDashboard() {
                 </PlatformTabBtn>
               );
             })}
+            <PlatformTabBtn active={false} onClick={load} activeColor="#0f172a" disabled={loading}>
+              <RefreshIcon />
+              {loading ? 'Refreshing…' : 'Refresh'}
+            </PlatformTabBtn>
           </div>
 
           {/* ── OVERVIEW TAB ── */}
@@ -1181,7 +1166,7 @@ export default function AnalyticsDashboard() {
 
               {/* 🏆 Top Performing Posts */}
               {topPosts?.posts?.length > 0 && (
-                <div style={{ background: '#fff', borderRadius: 12, padding: '20px 22px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(15,23,42,0.04)' }}>
+                <div style={{ background: '#fff', borderRadius: 12, padding: '20px 22px', marginTop: 22, border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(15,23,42,0.04)' }}>
                   <div style={{ fontWeight: 700, fontSize: 15, color: '#1e293b', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
                     🏆 Top Performing Posts
                   </div>
@@ -1241,7 +1226,7 @@ export default function AnalyticsDashboard() {
               )}
 
               {/* 📅 Month-by-Month Stats */}
-              <div style={{ background: '#fff', borderRadius: 12, padding: '20px 22px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(15,23,42,0.04)' }}>
+              <div style={{ background: '#fff', borderRadius: 12, padding: '20px 22px', marginTop: 22, border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(15,23,42,0.04)' }}>
                 <div style={{ fontWeight: 700, fontSize: 15, color: '#1e293b', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
                   📅 Month-by-Month Stats
                 </div>
@@ -1311,7 +1296,7 @@ export default function AnalyticsDashboard() {
 
               {/* Recent activity */}
               {recentVisible.length > 0 && (
-                <div style={{ background: '#fff', borderRadius: '12px', padding: '18px 20px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)' }}>
+                <div style={{ background: '#fff', borderRadius: '12px', padding: '18px 20px', marginTop: 22, border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
                     <div style={{ fontWeight: 700, fontSize: '14px', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <IconClock size={18} color="#6366f1" />

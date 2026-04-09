@@ -36,8 +36,8 @@ const SECTION_TABS = [
   { id: 'growth',     serial: '1', label: '👥 Follower Growth' },
   { id: 'besttime',   serial: '2', label: '⏰ Best time to post' },
   { id: 'breakdown',  serial: '3', label: '📊 Breakdown' },
-  { id: 'calendar',   serial: '4', label: '📅 Calendar' },
-  { id: 'competitor', serial: '5', label: '🔍 Competitor' },
+  { id: 'competitor', serial: '4', label: '🔍 Competitor' },
+  { id: 'calendar',   serial: '5', label: '📅 Calendar' },
 ];
 
 function formatHour12(hour) {
@@ -1868,8 +1868,8 @@ function TrendsCalendar({ authHeaders }) {
                           );
                         })}
                         {(posts.length + sched.length) > 7 && (
-                          <div style={{ fontSize: 9, color: '#94a3b8', lineHeight: '8px' }}>
-                            +{posts.length + sched.length - 7}
+                          <div style={{ fontSize: 9, color: '#64748b', lineHeight: '8px', fontWeight: 700 }}>
+                            {posts.length + sched.length - 7}
                           </div>
                         )}
                       </div>
@@ -2761,7 +2761,7 @@ function CompetitorTab({ authHeaders }) {
 export default function DeepAnalytics() {
   const { authHeaders } = useAuth();
 
-  const [platform,     setPlatform]     = useState('instagram');
+  const [platform,     setPlatform]     = useState('all');
   const [days,         setDays]         = useState(30);
   const [history,      setHistory]      = useState(null);
   const [bestTime,     setBestTime]     = useState(null);
@@ -2771,35 +2771,36 @@ export default function DeepAnalytics() {
   const [loadPerf,     setLoadPerf]     = useState(true);
   const [snapping,     setSnapping]     = useState(false);
   const [snapMsg,      setSnapMsg]      = useState('');
+  const platformForApi = platform === 'all' ? 'instagram' : platform;
 
   const fetchHistory = useCallback(() => {
     setLoadHistory(true);
-    fetch(`${API}/api/analytics/history?platform=${platform}&days=${days}`, { headers: authHeaders() })
+    fetch(`${API}/api/analytics/history?platform=${platformForApi}&days=${days}`, { headers: authHeaders() })
       .then(r => r.json())
       .then(setHistory)
       .catch(() => setHistory(null))
       .finally(() => setLoadHistory(false));
-  }, [platform, days, authHeaders]);
+  }, [platformForApi, days, authHeaders]);
 
   const fetchBestTime = useCallback(() => {
     setLoadBestTime(true);
-    const q = new URLSearchParams({ platform });
+    const q = new URLSearchParams({ platform: platformForApi });
     fetch(`${API}/api/analytics/best-time?${q}`, { headers: authHeaders() })
       .then(r => r.json())
       .then(setBestTime)
       .catch(() => setBestTime(null))
       .finally(() => setLoadBestTime(false));
-  }, [platform, authHeaders]);
+  }, [platformForApi, authHeaders]);
 
   const fetchPerformance = useCallback(() => {
     setLoadPerf(true);
-    const q = new URLSearchParams({ platform });
+    const q = new URLSearchParams({ platform: platformForApi });
     fetch(`${API}/api/analytics/post-performance?${q}`, { headers: authHeaders() })
       .then((r) => r.json())
       .then(setPostPerf)
       .catch(() => setPostPerf(null))
       .finally(() => setLoadPerf(false));
-  }, [platform, authHeaders]);
+  }, [platformForApi, authHeaders]);
 
   useEffect(() => { fetchHistory(); }, [fetchHistory]);
   useEffect(() => { fetchBestTime(); }, [fetchBestTime]);
@@ -2808,7 +2809,7 @@ export default function DeepAnalytics() {
   const refreshSnapshot = async () => {
     setSnapping(true);
     try {
-      await fetch(`${API}/api/analytics/snapshot/run?platform=${platform}`, { method: 'POST', headers: authHeaders() });
+      await fetch(`${API}/api/analytics/snapshot/run?platform=${platformForApi}`, { method: 'POST', headers: authHeaders() });
       setSnapMsg('Snapshot saved! Refreshing chart…');
       setTimeout(() => { setSnapMsg(''); fetchHistory(); }, 1500);
     } catch {
@@ -2819,7 +2820,13 @@ export default function DeepAnalytics() {
     }
   };
 
-  const platformConfig = PLATFORMS.find(p => p.id === platform) || PLATFORMS[0];
+  const platformConfig = PLATFORMS.find(p => p.id === platform) || {
+    id: 'all',
+    label: 'All Platforms',
+    color: '#6366f1',
+    emoji: '🌐',
+    logo: 'globe',
+  };
 
   const bestTimeResolved = useMemo(() => {
     if (!bestTime || typeof bestTime !== 'object') return null;
@@ -2850,24 +2857,31 @@ export default function DeepAnalytics() {
             <span style={{ opacity: 0.85 }}>{tab.serial}.</span> {tab.label}
           </a>
         ))}
-      </div>
-
-      {/* ── PLATFORM (sections 1–3: growth, best time, breakdown) ── */}
-      <div style={{ marginBottom: 20 }}>
-        <div style={s.tabs}>
-          {PLATFORMS.map(p => (
-            <button key={p.id} type="button" onClick={() => setPlatform(p.id)} style={{
-              ...s.tab,
-              background: platform === p.id ? p.color : 'transparent',
-              color: platform === p.id ? '#fff' : '#64748b',
-              border: `1.5px solid ${platform === p.id ? p.color : '#e2e8f0'}`,
-              display: 'flex', alignItems: 'center', gap: 6,
-            }}>
-              <PlatformIcon platform={p} size={15} />
+        <select
+          value={platform}
+          onChange={(e) => setPlatform(e.target.value)}
+          style={{
+            height: 32,
+            borderRadius: 999,
+            border: '1px solid #dbeafe',
+            background: '#eff6ff',
+            color: '#1d4ed8',
+            fontSize: 12,
+            fontWeight: 700,
+            padding: '0 12px',
+            outline: 'none',
+            cursor: 'pointer',
+          }}
+          aria-label="Choose platform"
+          title="Choose platform"
+        >
+          <option value="all">All platforms</option>
+          {PLATFORMS.map((p) => (
+            <option key={p.id} value={p.id}>
               {p.label}
-            </button>
+            </option>
           ))}
-        </div>
+        </select>
       </div>
 
       {/* ── FOLLOWER GROWTH ── */}
@@ -2947,9 +2961,6 @@ export default function DeepAnalytics() {
               <PlatformBestTimeCards bestTime={bestTime} />
             </>
           )}
-          {!loadBestTime && (
-            <BestTimeMonthPostStrip authHeaders={authHeaders} platformId={platform} />
-          )}
         </div>
       </section>
 
@@ -2991,19 +3002,23 @@ export default function DeepAnalytics() {
         </div>
       </section>
 
+      {/* ── COMPETITOR ── */}
+      <section id="trends-competitor" style={{ scrollMarginTop: 12 }}>
+        <div style={s.card}>
+          <h3 style={s.cardTitle}>🔍 YouTube Competitor Analysis</h3>
+          <CompetitorTab authHeaders={authHeaders} />
+        </div>
+      </section>
+
       {/* ── CALENDAR ── */}
       <section id="trends-calendar" style={{ scrollMarginTop: 12 }}>
         <div style={s.card}>
           <h3 style={s.cardTitle}>📅 Posts Calendar</h3>
+          <BestTimeMonthPostStrip authHeaders={authHeaders} platformId={platform === 'all' ? undefined : platform} />
+          <p style={{ fontSize: 12, color: '#94a3b8', marginBottom: 16 }}>
+            View all your published and scheduled posts by month. The <strong>Best Time</strong> section above shows which days and hours you post most often.
+          </p>
           <TrendsCalendar authHeaders={authHeaders} />
-        </div>
-      </section>
-
-      {/* ── COMPETITOR ── */}
-      <section id="trends-competitor" style={{ scrollMarginTop: 12 }}>
-        <div style={s.card}>
-          <h3 style={s.cardTitle}>🔍 Competitor Analysis</h3>
-          <CompetitorTab authHeaders={authHeaders} />
         </div>
       </section>
 
@@ -3028,7 +3043,7 @@ const s = {
   card: {
     background: '#fff', borderRadius: 16,
     boxShadow: '0 2px 16px rgba(0,0,0,0.07)',
-    padding: '24px', marginBottom: 20,
+    padding: '24px', marginBottom: 28,
   },
   cardHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
   cardTitle:  { fontSize: 16, fontWeight: 700, color: '#1e293b', margin: 0 },

@@ -89,15 +89,32 @@ export default function ComposePostModal({ open, onClose, defaultDate, onPosted 
           const data = await r.json();
           res.push({ platform, ok: r.ok, error: data.error || null });
         } else {
-          // Scheduled post
-          fd.append('scheduledAt', scheduledAt + ':00');
-          const r = await fetch(`${base}/api/social/post/schedule`, {
+          const fdSched = new FormData();
+          fdSched.append('caption', caption);
+          fdSched.append('hashtags', hashtags);
+          const at = new Date(`${scheduledAt.length === 16 ? `${scheduledAt}:00` : scheduledAt}`);
+          fdSched.append('scheduledAt', Number.isNaN(at.getTime()) ? scheduledAt : at.toISOString());
+          fdSched.append('publishType', publishType === 'story' ? 'story' : 'feed');
+          if (file) fdSched.append('file', file);
+          const r = await fetch(`${base}/api/social/post/schedule/${platform}`, {
             method: 'POST',
             headers: { Authorization: `Bearer ${token}` },
-            body: fd,
+            body: fdSched,
           });
-          const data = await r.json();
-          res.push({ platform, ok: r.ok, jobId: data.jobId, error: data.error || null });
+          const data = await r.json().catch(() => ({}));
+          const ok =
+            r.ok &&
+            (data?.jobId != null ||
+              data?.id != null ||
+              data?.scheduledAt != null ||
+              String(data?.status || '').toUpperCase() === 'SCHEDULED' ||
+              data?.success === true);
+          res.push({
+            platform,
+            ok,
+            jobId: data.jobId ?? data.id,
+            error: data.error || (ok ? null : `Schedule failed (${r.status})`),
+          });
         }
       } catch (e) {
         res.push({ platform, ok: false, error: e.message });

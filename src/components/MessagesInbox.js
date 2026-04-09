@@ -1204,7 +1204,7 @@ export default function MessagesInbox({ onOpenConnectedAccounts, onOpenAutoReply
             {totalUnread} unread
           </span>
         )}
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginLeft: 'auto' }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', flexWrap: 'nowrap', marginLeft: 'auto', whiteSpace: 'nowrap' }}>
           {/* Show new / Show all toggle */}
           <span style={{ fontSize: 11, color: '#94a3b8' }}>
             {showAll ? 'Showing all history' : 'New since last visit'}
@@ -1214,9 +1214,9 @@ export default function MessagesInbox({ onOpenConnectedAccounts, onOpenAutoReply
             onClick={() => setShowAll(v => !v)}
             disabled={loading}
             style={{
-              padding: '6px 12px', borderRadius: '8px',
-              border: '1px solid #e2e8f0', background: showAll ? '#f1f5f9' : '#fff',
-              color: '#6366f1', fontWeight: 600, fontSize: '12px',
+              padding: '8px 14px', borderRadius: '10px',
+              border: 'none', background: '#f8fafc',
+              color: '#0f172a', fontWeight: 600, fontSize: '13px',
               cursor: loading ? 'wait' : 'pointer', flexShrink: 0,
             }}
           >
@@ -1231,14 +1231,13 @@ export default function MessagesInbox({ onOpenConnectedAccounts, onOpenAutoReply
               alignItems: 'center',
               gap: '8px',
               padding: '8px 14px',
-              borderRadius: '8px',
-              border: '1px solid #e2e8f0',
-              background: '#fff',
-              color: '#334155',
+              borderRadius: '10px',
+              border: 'none',
+              background: '#f8fafc',
+              color: '#0f172a',
               fontWeight: 600,
               fontSize: '13px',
               cursor: loading ? 'wait' : 'pointer',
-              boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
               flexShrink: 0,
             }}
           >

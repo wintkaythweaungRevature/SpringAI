@@ -2394,24 +2394,30 @@ export default function DeepAnalytics() {
             <span style={{ opacity: 0.85 }}>{tab.serial}.</span> {tab.label}
           </a>
         ))}
-      </div>
-
-      {/* ── PLATFORM (sections 1–3: growth, best time, breakdown) ── */}
-      <div style={{ marginBottom: 20 }}>
-        <div style={s.tabs}>
-          {PLATFORMS.map(p => (
-            <button key={p.id} type="button" onClick={() => setPlatform(p.id)} style={{
-              ...s.tab,
-              background: platform === p.id ? p.color : 'transparent',
-              color: platform === p.id ? '#fff' : '#64748b',
-              border: `1.5px solid ${platform === p.id ? p.color : '#e2e8f0'}`,
-              display: 'flex', alignItems: 'center', gap: 6,
-            }}>
-              <PlatformIcon platform={p} size={15} />
+        <select
+          value={platform}
+          onChange={(e) => setPlatform(e.target.value)}
+          style={{
+            height: 32,
+            borderRadius: 999,
+            border: '1px solid #dbeafe',
+            background: '#eff6ff',
+            color: '#1d4ed8',
+            fontSize: 12,
+            fontWeight: 700,
+            padding: '0 12px',
+            outline: 'none',
+            cursor: 'pointer',
+          }}
+          aria-label="Choose platform"
+          title="Choose platform"
+        >
+          {PLATFORMS.map((p) => (
+            <option key={p.id} value={p.id}>
               {p.label}
-            </button>
+            </option>
           ))}
-        </div>
+        </select>
       </div>
 
       {/* ── FOLLOWER GROWTH ── */}
@@ -2497,6 +2503,14 @@ export default function DeepAnalytics() {
         </div>
       </section>
 
+      {/* ── COMPETITOR ── */}
+      <section id="trends-competitor" style={{ scrollMarginTop: 12 }}>
+        <div style={s.card}>
+          <h3 style={s.cardTitle}>🔍 YouTube Competitor Analysis</h3>
+          <CompetitorTab authHeaders={authHeaders} />
+        </div>
+      </section>
+
       {/* ── POST TYPE BREAKDOWN ── */}
       <section id="trends-breakdown" style={{ scrollMarginTop: 12 }}>
         <div style={s.card}>
@@ -2543,14 +2557,6 @@ export default function DeepAnalytics() {
         </div>
       </section>
 
-      {/* ── COMPETITOR ── */}
-      <section id="trends-competitor" style={{ scrollMarginTop: 12 }}>
-        <div style={s.card}>
-          <h3 style={s.cardTitle}>🔍 YouTube Competitor Analysis</h3>
-          <CompetitorTab authHeaders={authHeaders} />
-        </div>
-      </section>
-
     </div>
   );
 }
@@ -2572,7 +2578,7 @@ const s = {
   card: {
     background: '#fff', borderRadius: 16,
     boxShadow: '0 2px 16px rgba(0,0,0,0.07)',
-    padding: '24px', marginBottom: 20,
+    padding: '24px', marginBottom: 28,
   },
   cardHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
   cardTitle:  { fontSize: 16, fontWeight: 700, color: '#1e293b', margin: 0 },

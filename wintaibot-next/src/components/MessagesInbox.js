@@ -1196,7 +1196,7 @@ export default function MessagesInbox({ onOpenVideoPublisher, onOpenConnectedAcc
             {totalUnread} unread
           </span>
         )}
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginLeft: 'auto' }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', flexWrap: 'nowrap', marginLeft: 'auto', whiteSpace: 'nowrap' }}>
           {typeof onOpenVideoPublisher === 'function' && (
             <button
               type="button"

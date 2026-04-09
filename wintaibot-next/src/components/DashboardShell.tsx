@@ -53,6 +53,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   /** Start closed to avoid one desktop-width frame (and horizontal overflow) before media queries resolve on phones. */
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [billingPlanLabel, setBillingPlanLabel] = useState<string | null>(null);
+  const [aiDockOpen, setAiDockOpen] = useState(false);
   const { user, logout, loading, token, apiBase } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
@@ -192,7 +193,6 @@ export default function DashboardShell({ children }: { children: React.ReactNode
 
           <div style={s.navDivider} role="separator" aria-hidden="true" />
           <div style={s.groupLabel}>{SIDEBAR_GROUPS.smartHub}</div>
-          <NavItem emoji="💬" label="Ask AI" href="/chat" active={pathname === '/chat'} hasArrow />
           <NavItem
             emoji="🖼️"
             label="Image Generator"
@@ -219,9 +219,14 @@ export default function DashboardShell({ children }: { children: React.ReactNode
           <div style={s.navDivider} role="separator" aria-hidden="true" />
           <div style={s.groupLabel}>{SIDEBAR_GROUPS.socialHq}</div>
           <NavItem emoji="🗓️" label="Content Calendar" href="/calendar" active={pathname === '/calendar'} />
+          <NavItem
+            emoji="🔗"
+            label="Connected Accounts"
+            href="/social-connect"
+            active={pathname === '/social-connect'}
+          />
           <NavItem emoji="📥" label="Inbox" href="/messages" active={pathname === '/messages'} />
           <NavItem emoji="📈" label="Growth Planner" href="/trends" active={pathname === '/trends'} />
-          <NavItem emoji="🧠" label="Social AI" href="/social-ai" active={pathname === '/social-ai'} />
 
           <div style={s.navDivider} role="separator" aria-hidden="true" />
           <div style={s.groupLabel}>{SIDEBAR_GROUPS.theForge}</div>
@@ -413,6 +418,34 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         >
           {children}
         </div>
+        {showDashboardChrome && (
+          <div style={s.aiDockWrap}>
+            {aiDockOpen && (
+              <div style={s.aiDockPanel}>
+                <Link href="/chat" style={s.aiDockItem} onClick={() => setAiDockOpen(false)}>
+                  <span style={s.aiDockEmoji}>💬</span>
+                  <span style={{ flex: 1 }}>Ask AI</span>
+                  <span style={s.aiDockItemArrow}>›</span>
+                </Link>
+                <Link href="/social-ai" style={s.aiDockItem} onClick={() => setAiDockOpen(false)}>
+                  <span style={s.aiDockEmoji}>🧠</span>
+                  <span style={{ flex: 1 }}>Social AI</span>
+                  <span style={s.aiDockItemArrow}>›</span>
+                </Link>
+              </div>
+            )}
+            <button
+              type="button"
+              style={s.aiDockToggle}
+              onClick={() => setAiDockOpen((v) => !v)}
+              aria-expanded={aiDockOpen}
+              aria-label={aiDockOpen ? 'Close AI menu' : 'Open AI menu'}
+              title={aiDockOpen ? 'Close AI menu' : 'Open AI menu'}
+            >
+              <span style={{ fontSize: 16 }}>{aiDockOpen ? '⌄' : '⌃'}</span>
+            </button>
+          </div>
+        )}
       </main>
 
       {showAuthModal && !user && (
@@ -805,5 +838,64 @@ const s: Record<string, any> = {
     padding: '16px',
     display: 'flex',
     flexDirection: 'column',
+    position: 'relative',
+  },
+  aiDockWrap: {
+    position: 'fixed',
+    right: 'max(16px, env(safe-area-inset-right, 0px))',
+    bottom: 'max(16px, env(safe-area-inset-bottom, 0px))',
+    zIndex: 60,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    gap: 8,
+  },
+  aiDockPanel: {
+    width: 190,
+    borderRadius: 12,
+    border: '1px solid rgba(148, 163, 184, 0.35)',
+    background: 'rgba(15, 23, 42, 0.96)',
+    boxShadow: '0 14px 32px rgba(2, 6, 23, 0.45)',
+    padding: 8,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 6,
+    backdropFilter: 'blur(12px)',
+    WebkitBackdropFilter: 'blur(12px)',
+  },
+  aiDockItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    borderRadius: 9,
+    padding: '9px 10px',
+    textDecoration: 'none',
+    color: '#e2e8f0',
+    fontSize: 13,
+    fontWeight: 600,
+    background: 'rgba(255,255,255,0.04)',
+  },
+  aiDockEmoji: {
+    width: 20,
+    textAlign: 'center',
+    flexShrink: 0,
+  },
+  aiDockItemArrow: {
+    opacity: 0.6,
+    fontSize: 15,
+  },
+  aiDockToggle: {
+    width: 44,
+    height: 44,
+    borderRadius: '999px',
+    border: '1px solid rgba(148, 163, 184, 0.4)',
+    background: 'linear-gradient(135deg, #2563eb, #7c3aed)',
+    color: '#fff',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: '0 12px 26px rgba(37, 99, 235, 0.45)',
+    cursor: 'pointer',
+    lineHeight: 1,
   },
 };

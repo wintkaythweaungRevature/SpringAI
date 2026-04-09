@@ -2315,15 +2315,16 @@ export default function DeepAnalytics() {
   const [loadPerf,     setLoadPerf]     = useState(true);
   const [snapping,     setSnapping]     = useState(false);
   const [snapMsg,      setSnapMsg]      = useState('');
+  const platformForApi = platform === 'all' ? 'instagram' : platform;
 
   const fetchHistory = useCallback(() => {
     setLoadHistory(true);
-    fetch(`${API}/api/analytics/history?platform=${platform}&days=${days}`, { headers: authHeaders() })
+    fetch(`${API}/api/analytics/history?platform=${platformForApi}&days=${days}`, { headers: authHeaders() })
       .then(r => r.json())
       .then(setHistory)
       .catch(() => setHistory(null))
       .finally(() => setLoadHistory(false));
-  }, [platform, days, authHeaders]);
+  }, [platformForApi, days, authHeaders]);
 
   const fetchBestTime = useCallback(() => {
     setLoadBestTime(true);
@@ -2352,7 +2353,7 @@ export default function DeepAnalytics() {
   const refreshSnapshot = async () => {
     setSnapping(true);
     try {
-      await fetch(`${API}/api/analytics/snapshot/run?platform=${platform}`, { method: 'POST', headers: authHeaders() });
+      await fetch(`${API}/api/analytics/snapshot/run?platform=${platformForApi}`, { method: 'POST', headers: authHeaders() });
       setSnapMsg('Snapshot saved! Refreshing chart…');
       setTimeout(() => { setSnapMsg(''); fetchHistory(); }, 1500);
     } catch {
@@ -2363,7 +2364,13 @@ export default function DeepAnalytics() {
     }
   };
 
-  const platformConfig = PLATFORMS.find(p => p.id === platform) || PLATFORMS[0];
+  const platformConfig = PLATFORMS.find(p => p.id === platform) || {
+    id: 'all',
+    label: 'All Platforms',
+    color: '#6366f1',
+    emoji: '🌐',
+    logo: 'globe',
+  };
 
   const bestTimeResolved = useMemo(() => {
     if (!bestTime || typeof bestTime !== 'object') return null;
@@ -2412,6 +2419,7 @@ export default function DeepAnalytics() {
           aria-label="Choose platform"
           title="Choose platform"
         >
+          <option value="all">All platforms</option>
           {PLATFORMS.map((p) => (
             <option key={p.id} value={p.id}>
               {p.label}
@@ -2496,9 +2504,6 @@ export default function DeepAnalytics() {
               />
               <PlatformBestTimeCards bestTime={bestTime} />
             </>
-          )}
-          {!loadBestTime && (
-            <BestTimeMonthPostStrip authHeaders={authHeaders} platformId={platform} />
           )}
         </div>
       </section>

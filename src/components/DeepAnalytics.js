@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef, useId } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { filterEnabledPlatforms } from '../config/disabledPlatforms';
 import PlatformIcon from './PlatformIcon';
@@ -39,6 +39,350 @@ const SECTION_TABS = [
   { id: 'competitor', serial: '4', label: '🔍 Competitor' },
   { id: 'calendar',   serial: '5', label: '📅 Calendar' },
 ];
+
+const ALL_PLATFORM_SCOPE = { id: 'all', label: 'All platforms', color: '#6366f1', emoji: '🌐' };
+
+/** Figma-style platform scope: labeled control, floating menu, icons, keyboard + mouse parity */
+function PlatformScopeMenu({ value, onChange }) {
+  const listboxId = useId();
+  const wrapRef = useRef(null);
+  const triggerRef = useRef(null);
+  const itemRefs = useRef([]);
+  const highlightedIndexRef = useRef(0);
+  const [open, setOpen] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(0);
+  const [triggerHover, setTriggerHover] = useState(false);
+  highlightedIndexRef.current = highlightedIndex;
+
+  const options = useMemo(() => [ALL_PLATFORM_SCOPE, ...PLATFORMS], []);
+  const selectedIndex = useMemo(
+    () => Math.max(0, options.findIndex((o) => o.id === value)),
+    [options, value],
+  );
+  const current =
+    value === 'all' ? ALL_PLATFORM_SCOPE : PLATFORMS.find((p) => p.id === value) || ALL_PLATFORM_SCOPE;
+
+  const close = useCallback(() => {
+    setOpen(false);
+    triggerRef.current?.focus();
+  }, []);
+
+  const selectByIndex = useCallback(
+    (idx) => {
+      const opt = options[idx];
+      if (!opt) return;
+      onChange(opt.id);
+      setOpen(false);
+      triggerRef.current?.focus();
+    },
+    [onChange, options],
+  );
+
+  useEffect(() => {
+    if (open) setHighlightedIndex(selectedIndex);
+  }, [open, selectedIndex]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const el = itemRefs.current[highlightedIndex];
+    el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [highlightedIndex, open]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const onDoc = (e) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) close();
+    };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [open, close]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        close();
+        return;
+      }
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        e.stopPropagation();
+        setHighlightedIndex((i) => (i + 1) % options.length);
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        e.stopPropagation();
+        setHighlightedIndex((i) => (i - 1 + options.length) % options.length);
+        return;
+      }
+      if (e.key === 'Home') {
+        e.preventDefault();
+        e.stopPropagation();
+        setHighlightedIndex(0);
+        return;
+      }
+      if (e.key === 'End') {
+        e.preventDefault();
+        e.stopPropagation();
+        setHighlightedIndex(options.length - 1);
+        return;
+      }
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        e.stopPropagation();
+        selectByIndex(highlightedIndexRef.current);
+      }
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [open, close, options.length, selectByIndex]);
+
+  const onTriggerKeyDown = (e) => {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (!open) {
+        setHighlightedIndex(selectedIndex);
+        setOpen(true);
+      }
+      return;
+    }
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      if (open) return;
+      setHighlightedIndex(selectedIndex);
+      setOpen(true);
+      return;
+    }
+    if (e.key === 'Escape' && open) {
+      e.preventDefault();
+      close();
+    }
+  };
+
+  const toggleOpen = () => {
+    if (open) {
+      setOpen(false);
+      return;
+    }
+    setHighlightedIndex(selectedIndex);
+    setOpen(true);
+  };
+
+  const maxH = typeof window !== 'undefined' ? Math.min(320, window.innerHeight - 140) : 320;
+
+  const triggerBase = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 10,
+    minHeight: 40,
+    paddingLeft: 14,
+    paddingRight: 12,
+    borderRadius: 10,
+    border: `1px solid ${open || triggerHover ? 'rgba(99, 102, 241, 0.45)' : '#e2e8f0'}`,
+    background: open ? '#fafaff' : '#ffffff',
+    boxShadow: open
+      ? '0 0 0 3px rgba(99, 102, 241, 0.18), 0 4px 14px rgba(15, 23, 42, 0.08)'
+      : '0 1px 2px rgba(15, 23, 42, 0.05)',
+    cursor: 'pointer',
+    fontFamily: "'Inter', -apple-system, sans-serif",
+    fontSize: 13,
+    fontWeight: 600,
+    color: '#0f172a',
+    letterSpacing: '-0.01em',
+    outline: 'none',
+    transition: 'border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease',
+  };
+
+  const menuSurface = {
+    position: 'absolute',
+    top: 'calc(100% + 6px)',
+    left: 0,
+    minWidth: 280,
+    maxHeight: maxH,
+    overflowY: 'auto',
+    padding: '8px 6px 6px',
+    background: '#ffffff',
+    borderRadius: 12,
+    border: '1px solid #e2e8f0',
+    boxShadow: '0 16px 48px rgba(15, 23, 42, 0.14), 0 0 0 1px rgba(15, 23, 42, 0.04)',
+    zIndex: 200,
+  };
+
+  return (
+    <div
+      ref={wrapRef}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 10,
+        flexShrink: 0,
+        position: 'relative',
+        fontFamily: "'Inter', -apple-system, sans-serif",
+      }}
+    >
+      <span
+        id={`${listboxId}-label`}
+        style={{
+          fontSize: 11,
+          fontWeight: 600,
+          color: '#94a3b8',
+          textTransform: 'uppercase',
+          letterSpacing: '0.08em',
+          userSelect: 'none',
+        }}
+      >
+        Platform
+      </span>
+      <div style={{ position: 'relative' }}>
+        <button
+          ref={triggerRef}
+          type="button"
+          id={`${listboxId}-trigger`}
+          onClick={toggleOpen}
+          onKeyDown={onTriggerKeyDown}
+          onMouseEnter={() => setTriggerHover(true)}
+          onMouseLeave={() => setTriggerHover(false)}
+          aria-haspopup="listbox"
+          aria-expanded={open}
+          aria-controls={listboxId}
+          aria-labelledby={`${listboxId}-label ${listboxId}-trigger`}
+          style={triggerBase}
+        >
+          <span
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 24,
+              height: 24,
+              borderRadius: 8,
+              background: '#f1f5f9',
+            }}
+          >
+            <PlatformIcon platform={current} size={18} />
+          </span>
+          <span style={{ maxWidth: 152, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {current.label}
+          </span>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden
+            style={{
+              flexShrink: 0,
+              color: '#64748b',
+              transform: open ? 'rotate(180deg)' : 'none',
+              transition: 'transform 0.2s ease',
+            }}
+          >
+            <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+        {open && (
+          <div
+            id={listboxId}
+            role="listbox"
+            aria-labelledby={`${listboxId}-label`}
+            style={menuSurface}
+          >
+            <div
+              style={{
+                padding: '4px 10px 8px',
+                borderBottom: '1px solid #f1f5f9',
+                marginBottom: 4,
+              }}
+            >
+              <div style={{ fontSize: 13, fontWeight: 600, color: '#0f172a' }}>Filter by platform</div>
+              <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2, lineHeight: 1.35 }}>
+                Applies to charts and metrics below. Use arrow keys, then Enter.
+              </div>
+            </div>
+            {options.map((opt, idx) => {
+              const selected = value === opt.id;
+              const highlighted = idx === highlightedIndex;
+              const rowBg = selected
+                ? 'rgba(99, 102, 241, 0.1)'
+                : highlighted
+                  ? '#f1f5f9'
+                  : 'transparent';
+              return (
+                <button
+                  key={opt.id}
+                  ref={(el) => {
+                    itemRefs.current[idx] = el;
+                  }}
+                  type="button"
+                  role="option"
+                  aria-selected={selected}
+                  onMouseEnter={() => setHighlightedIndex(idx)}
+                  onClick={() => selectByIndex(idx)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '8px 10px',
+                    marginBottom: 2,
+                    border: 'none',
+                    borderRadius: 8,
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                    fontSize: 13,
+                    fontWeight: selected ? 600 : 500,
+                    color: selected ? '#3730a3' : '#334155',
+                    background: rowBg,
+                    boxShadow: selected ? 'inset 0 0 0 1px rgba(99, 102, 241, 0.25)' : 'none',
+                    transition: 'background 0.1s ease, color 0.1s ease',
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 8,
+                      background: '#ffffff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 1px 2px rgba(15, 23, 42, 0.06)',
+                      border: '1px solid #f1f5f9',
+                    }}
+                  >
+                    <PlatformIcon platform={opt} size={20} />
+                  </span>
+                  <span style={{ flex: 1, minWidth: 0 }}>{opt.label}</span>
+                  {selected ? (
+                    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden style={{ flexShrink: 0, color: '#6366f1' }}>
+                      <path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
+                    </svg>
+                  ) : (
+                    <span
+                      aria-hidden
+                      style={{
+                        width: 18,
+                        height: 18,
+                        borderRadius: '50%',
+                        border: highlighted ? '1.5px solid #94a3b8' : '1.5px solid #e2e8f0',
+                        flexShrink: 0,
+                        boxSizing: 'border-box',
+                      }}
+                    />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function formatHour12(hour) {
   const h = Number(hour);
@@ -872,197 +1216,6 @@ function PlatformBestTimeCards({ bestTime }) {
           </div>
         ))}
       </div>
-    </div>
-  );
-}
-
-/* ── Under Best Time: this month published vs scheduled (compact) ── */
-function BestTimeMonthPostStrip({ authHeaders, platformId }) {
-  const today = new Date();
-  const y = today.getFullYear();
-  const m = today.getMonth() + 1;
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [hover, setHover] = useState(null);
-
-  useEffect(() => {
-    setLoading(true);
-    fetch(`${API}/api/analytics/calendar?year=${y}&month=${m}`, { headers: authHeaders() })
-      .then((r) => r.json())
-      .then(setData)
-      .catch(() => setData(null))
-      .finally(() => setLoading(false));
-  }, [y, m, authHeaders]);
-
-  const flatItems = useMemo(() => {
-    if (!data) return [];
-    const out = [];
-    const seen = new Set();
-    (data.scheduled || []).forEach((j) => {
-      const pid = (j.platform || '').toLowerCase();
-      if (platformId && pid && pid !== platformId) return;
-      const jid = j.jobId ?? j.id;
-      if (jid != null) seen.add(String(jid));
-      out.push({ ...j, _kind: 'scheduled' });
-    });
-    (data.posts || []).forEach((p) => {
-      const pid = (p.platform || '').toLowerCase();
-      if (platformId && pid && pid !== platformId) return;
-      const pjob = p.jobId ?? p.id;
-      if (pjob != null && seen.has(String(pjob))) return;
-      const kind = isCalendarRowScheduled(p) ? 'scheduled' : 'post';
-      out.push({ ...p, _kind: kind });
-    });
-    out.sort((a, b) => String(a.dateTime || a.date || '').localeCompare(String(b.dateTime || b.date || '')));
-    return out;
-  }, [data, platformId]);
-
-  const legendPublished = platformId
-    ? PLATFORMS.find((p) => p.id === platformId)?.color || '#6366f1'
-    : '#6366f1';
-
-  if (loading) {
-    return (
-      <div style={{ marginTop: 28, paddingTop: 22, borderTop: '1px solid #f1f5f9' }}>
-        <div style={{ color: '#94a3b8', fontSize: 13 }}>Loading this month&apos;s posts…</div>
-      </div>
-    );
-  }
-
-  return (
-    <div style={{ marginTop: 28, paddingTop: 22, borderTop: '1px solid #f1f5f9', position: 'relative' }}>
-      <h4 style={{ margin: '0 0 6px', fontSize: 14, fontWeight: 700, color: '#1e293b' }}>
-        📅 This month: published vs scheduled
-      </h4>
-      <p style={{ margin: '0 0 14px', fontSize: 12, color: '#64748b', lineHeight: 1.55 }}>
-        <strong>Round</strong> markers = published (color matches platform). <strong>Square</strong> markers = scheduled or pending
-        (reschedule). Hover any marker for format (image / video / text), caption, status, and logo — same rules as the Calendar tab.
-      </p>
-      <div style={{ display: 'flex', gap: 16, marginBottom: 12, flexWrap: 'wrap', fontSize: 11, color: '#64748b' }}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ width: 10, height: 10, borderRadius: '50%', background: legendPublished }} />
-          Published
-        </span>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span
-            style={{
-              width: 10,
-              height: 10,
-              borderRadius: 2,
-              background: SCHEDULED_YELLOW,
-              border: `1px solid ${SCHEDULED_YELLOW_BORDER}`,
-            }}
-          />
-          Scheduled / pending
-        </span>
-      </div>
-      {flatItems.length === 0 ? (
-        <p style={{ color: '#94a3b8', fontSize: 13 }}>No posts this month for the selected platform filter.</p>
-      ) : (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-          {flatItems.map((item, i) => {
-            const pc = PLATFORMS.find((p) => p.id === (item.platform || '').toLowerCase());
-            const isSched = item._kind === 'scheduled';
-            const media = (item.mediaType || item.postType || 'post').toString();
-            return (
-              <button
-                key={`${item.jobId || item.id || ''}-${i}`}
-                type="button"
-                onMouseEnter={(e) => {
-                  const r = e.currentTarget.getBoundingClientRect();
-                  setHover({
-                    item,
-                    media,
-                    pc,
-                    isSched,
-                    left: r.left + r.width / 2,
-                    top: r.top,
-                  });
-                }}
-                onMouseLeave={() => setHover(null)}
-                style={{
-                  border: `2px solid ${isSched ? SCHEDULED_YELLOW_BORDER : pc?.color || '#10b981'}`,
-                  background: isSched ? SCHEDULED_YELLOW : (pc?.color || '#10b981'),
-                  borderRadius: isSched ? 4 : 99,
-                  width: isSched ? 14 : 12,
-                  height: isSched ? 14 : 12,
-                  padding: 0,
-                  cursor: 'default',
-                  boxSizing: 'border-box',
-                  flexShrink: 0,
-                }}
-                aria-label={`${isSched ? 'Scheduled' : 'Published'} ${pc?.label || item.platform || ''}`}
-              />
-            );
-          })}
-        </div>
-      )}
-      {hover && typeof document !== 'undefined' && (
-        <div
-          style={{
-            position: 'fixed',
-            left: Math.max(12, Math.min(hover.left, window.innerWidth - 292)),
-            top: hover.top,
-            transform: 'translate(-50%, calc(-100% - 10px))',
-            zIndex: 20000,
-            width: 280,
-            background: '#fff',
-            border: '1px solid #e2e8f0',
-            borderRadius: 12,
-            boxShadow: '0 12px 40px rgba(15,23,42,0.18)',
-            padding: '12px 14px',
-            pointerEvents: 'none',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-            {hover.pc ? <PlatformIcon platform={hover.pc} size={28} /> : <span style={{ fontSize: 22 }}>📱</span>}
-            <div>
-              <div style={{ fontWeight: 800, fontSize: 13, color: '#0f172a' }}>
-                {hover.pc?.label || hover.item.platform || 'Platform'}
-              </div>
-              <div style={{ fontSize: 11, color: '#64748b' }}>
-                {hover.isSched ? 'Scheduled / pending' : 'Published'} ·{' '}
-                <strong style={{ color: '#334155' }}>
-                  {String(hover.media).replace(/^\w/, (c) => c.toUpperCase())}
-                </strong>{' '}
-                (format)
-              </div>
-            </div>
-          </div>
-          {(hover.item.dateTime || hover.item.date) && (
-            <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 6 }}>
-              {hover.item.dateTime
-                ? new Date(hover.item.dateTime).toLocaleString()
-                : hover.item.date}
-            </div>
-          )}
-          <div
-            style={{
-              fontSize: 12,
-              color: '#475569',
-              lineHeight: 1.5,
-              maxHeight: 120,
-              overflow: 'auto',
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-word',
-            }}
-          >
-            {hover.item.caption || <em style={{ color: '#94a3b8' }}>No caption</em>}
-          </div>
-          {hover.item.status && (
-            <div
-              style={{
-                marginTop: 8,
-                fontSize: 10,
-                fontWeight: 700,
-                color: hover.isSched ? '#c2410c' : '#16a34a',
-              }}
-            >
-              Status: {hover.item.status}
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }
@@ -2004,7 +2157,57 @@ function TrendsCalendar({ authHeaders }) {
       )}
       {/* Past Posts + Upcoming Posts lists */}
       {rangeView === 'monthly' && !loading && data && (
-        <div style={{ marginTop: 24, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <>
+      {/* ── Growth Insights (above Past Posts) ── */}
+      {data.bestTimeOverlay && (() => {
+        const heatmap = data.bestTimeOverlay; // 7×24 array [dayOfWeek][hour]
+        const DAY_NAMES = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+        const HOUR_LABELS = Array.from({length:24},(_,h) => {
+          const ampm = h < 12 ? 'AM' : 'PM';
+          const hr = h === 0 ? 12 : h > 12 ? h - 12 : h;
+          return `${hr}${ampm}`;
+        });
+        const dayTotals = heatmap.map(row => row.reduce((s,v) => s + v, 0));
+        const bestDayIdx = dayTotals.indexOf(Math.max(...dayTotals));
+        const bestDayCount = dayTotals[bestDayIdx];
+        const hourTotals = Array.from({length:24}, (_,h) => heatmap.reduce((s,row) => s + (row[h]||0), 0));
+        const bestHourIdx = hourTotals.indexOf(Math.max(...hourTotals));
+        let bestSlotVal = 0, bestSlotDay = 0, bestSlotHour = 9;
+        heatmap.forEach((row, d) => row.forEach((v, h) => { if (v > bestSlotVal) { bestSlotVal = v; bestSlotDay = d; bestSlotHour = h; } }));
+        const totalPosts = dayTotals.reduce((s,v) => s+v, 0);
+        if (totalPosts === 0) return null;
+        const insights = [
+          { icon: '🔥', label: 'Most Active Day', value: DAY_NAMES[bestDayIdx], sub: `${bestDayCount} post${bestDayCount !== 1 ? 's' : ''}`, color: '#f59e0b' },
+          { icon: '⏰', label: 'Peak Hour', value: HOUR_LABELS[bestHourIdx], sub: `${hourTotals[bestHourIdx]} post${hourTotals[bestHourIdx] !== 1 ? 's' : ''}`, color: '#6366f1' },
+          { icon: '🎯', label: 'Best Posting Slot', value: `${DAY_NAMES[bestSlotDay]} ${HOUR_LABELS[bestSlotHour]}`, sub: `Highest engagement window`, color: '#10b981' },
+          { icon: '📊', label: 'Total This Period', value: `${totalPosts}`, sub: `posts published`, color: '#3b82f6' },
+        ];
+        return (
+          <div style={{ marginTop: 24, background: '#fff', borderRadius: 14, border: '1px solid #e2e8f0', padding: '16px 20px' }}>
+            <div style={{ fontWeight: 700, fontSize: 13, color: '#1e293b', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
+              💡 Growth Insights
+              <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 400 }}>based on your posting history</span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10 }}>
+              {insights.map((ins, i) => (
+                <div key={i} style={{ background: '#f8fafc', borderRadius: 10, padding: '12px 14px', borderLeft: `3px solid ${ins.color}` }}>
+                  <div style={{ fontSize: 18, marginBottom: 4 }}>{ins.icon}</div>
+                  <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 2 }}>{ins.label}</div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: '#1e293b' }}>{ins.value}</div>
+                  <div style={{ fontSize: 10, color: '#64748b', marginTop: 2 }}>{ins.sub}</div>
+                </div>
+              ))}
+            </div>
+            {bestSlotVal > 0 && (
+              <div style={{ marginTop: 12, padding: '10px 14px', background: '#f0fdf4', borderRadius: 10, fontSize: 12, color: '#166534', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 16 }}>💚</span>
+                <span><strong>High Engagement Prediction:</strong> Try posting on <strong>{DAY_NAMES[bestSlotDay]}s at {HOUR_LABELS[bestSlotHour]}</strong> — that's your historically strongest slot with {bestSlotVal} post{bestSlotVal !== 1 ? 's' : ''} at peak.</span>
+              </div>
+            )}
+          </div>
+        );
+      })()}
+        <div style={{ marginTop: 20, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
           {/* Past Posts */}
           <div>
             <div style={{ fontWeight: 700, fontSize: 13, color: '#1e293b', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -2108,60 +2311,8 @@ function TrendsCalendar({ authHeaders }) {
             )}
           </div>
         </div>
+        </>
       )}
-
-      {/* ── Growth Insights ── */}
-      {rangeView === 'monthly' && !loading && data?.bestTimeOverlay && (() => {
-        const heatmap = data.bestTimeOverlay; // 7×24 array [dayOfWeek][hour]
-        const DAY_NAMES = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-        const HOUR_LABELS = Array.from({length:24},(_,h) => {
-          const ampm = h < 12 ? 'AM' : 'PM';
-          const hr = h === 0 ? 12 : h > 12 ? h - 12 : h;
-          return `${hr}${ampm}`;
-        });
-        // Most active day
-        const dayTotals = heatmap.map(row => row.reduce((s,v) => s + v, 0));
-        const bestDayIdx = dayTotals.indexOf(Math.max(...dayTotals));
-        const bestDayCount = dayTotals[bestDayIdx];
-        // Peak hour (across all days)
-        const hourTotals = Array.from({length:24}, (_,h) => heatmap.reduce((s,row) => s + (row[h]||0), 0));
-        const bestHourIdx = hourTotals.indexOf(Math.max(...hourTotals));
-        // Best slot (day + hour combo)
-        let bestSlotVal = 0, bestSlotDay = 0, bestSlotHour = 9;
-        heatmap.forEach((row, d) => row.forEach((v, h) => { if (v > bestSlotVal) { bestSlotVal = v; bestSlotDay = d; bestSlotHour = h; } }));
-        const totalPosts = dayTotals.reduce((s,v) => s+v, 0);
-        if (totalPosts === 0) return null;
-        const insights = [
-          { icon: '🔥', label: 'Most Active Day', value: DAY_NAMES[bestDayIdx], sub: `${bestDayCount} post${bestDayCount !== 1 ? 's' : ''}`, color: '#f59e0b' },
-          { icon: '⏰', label: 'Peak Hour', value: HOUR_LABELS[bestHourIdx], sub: `${hourTotals[bestHourIdx]} post${hourTotals[bestHourIdx] !== 1 ? 's' : ''}`, color: '#6366f1' },
-          { icon: '🎯', label: 'Best Posting Slot', value: `${DAY_NAMES[bestSlotDay]} ${HOUR_LABELS[bestSlotHour]}`, sub: `Highest engagement window`, color: '#10b981' },
-          { icon: '📊', label: 'Total This Period', value: `${totalPosts}`, sub: `posts published`, color: '#3b82f6' },
-        ];
-        return (
-          <div style={{ marginTop: 20, background: '#fff', borderRadius: 14, border: '1px solid #e2e8f0', padding: '16px 20px' }}>
-            <div style={{ fontWeight: 700, fontSize: 13, color: '#1e293b', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
-              💡 Growth Insights
-              <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 400 }}>based on your posting history</span>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10 }}>
-              {insights.map((ins, i) => (
-                <div key={i} style={{ background: '#f8fafc', borderRadius: 10, padding: '12px 14px', borderLeft: `3px solid ${ins.color}` }}>
-                  <div style={{ fontSize: 18, marginBottom: 4 }}>{ins.icon}</div>
-                  <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 2 }}>{ins.label}</div>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: '#1e293b' }}>{ins.value}</div>
-                  <div style={{ fontSize: 10, color: '#64748b', marginTop: 2 }}>{ins.sub}</div>
-                </div>
-              ))}
-            </div>
-            {bestSlotVal > 0 && (
-              <div style={{ marginTop: 12, padding: '10px 14px', background: '#f0fdf4', borderRadius: 10, fontSize: 12, color: '#166534', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: 16 }}>💚</span>
-                <span><strong>High Engagement Prediction:</strong> Try posting on <strong>{DAY_NAMES[bestSlotDay]}s at {HOUR_LABELS[bestSlotHour]}</strong> — that's your historically strongest slot with {bestSlotVal} post{bestSlotVal !== 1 ? 's' : ''} at peak.</span>
-              </div>
-            )}
-          </div>
-        );
-      })()}
 
       <ComposePostModal
         open={composeOpen}
@@ -2857,31 +3008,7 @@ export default function DeepAnalytics() {
             <span style={{ opacity: 0.85 }}>{tab.serial}.</span> {tab.label}
           </a>
         ))}
-        <select
-          value={platform}
-          onChange={(e) => setPlatform(e.target.value)}
-          style={{
-            height: 32,
-            borderRadius: 999,
-            border: '1px solid #dbeafe',
-            background: '#eff6ff',
-            color: '#1d4ed8',
-            fontSize: 12,
-            fontWeight: 700,
-            padding: '0 12px',
-            outline: 'none',
-            cursor: 'pointer',
-          }}
-          aria-label="Choose platform"
-          title="Choose platform"
-        >
-          <option value="all">All platforms</option>
-          {PLATFORMS.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.label}
-            </option>
-          ))}
-        </select>
+        <PlatformScopeMenu value={platform} onChange={setPlatform} />
       </div>
 
       {/* ── FOLLOWER GROWTH ── */}
@@ -3014,7 +3141,6 @@ export default function DeepAnalytics() {
       <section id="trends-calendar" style={{ scrollMarginTop: 12 }}>
         <div style={s.card}>
           <h3 style={s.cardTitle}>📅 Posts Calendar</h3>
-          <BestTimeMonthPostStrip authHeaders={authHeaders} platformId={platform === 'all' ? undefined : platform} />
           <p style={{ fontSize: 12, color: '#94a3b8', marginBottom: 16 }}>
             View all your published and scheduled posts by month. The <strong>Best Time</strong> section above shows which days and hours you post most often.
           </p>

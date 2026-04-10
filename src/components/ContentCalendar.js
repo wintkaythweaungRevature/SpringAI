@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useMediaQuery } from '../hooks/useMediaQuery';
 import { filterEnabledPlatforms } from '../config/disabledPlatforms';
 import PlatformIcon from './PlatformIcon';
 import PostDetailModal from './PostDetailModal';
@@ -500,7 +501,7 @@ function buildCalendarDays(year, month) {
 }
 
 /* ── Scheduled post modal ───────────────────────────────────────────────── */
-function DayModal({ date, posts, onClose, onRetryFailed, retryingIds = {}, onCancelJob, onRescheduleJob, reschedulingJob, newDateTime, setNewDateTime, setReschedulingJob, onPostSelect }) {
+function DayModal({ date, posts, onClose, onRetryFailed, retryingIds = {}, onCancelJob, onDeletePost, onRescheduleJob, reschedulingJob, newDateTime, setNewDateTime, setReschedulingJob, onPostSelect }) {
   const dayPosts = posts.filter(p => {
     try { return sameDay(postCalendarDate(p), date); } catch { return false; }
   });
@@ -545,6 +546,8 @@ function DayModal({ date, posts, onClose, onRetryFailed, retryingIds = {}, onCan
                 p.jobId == null;
               const retrying = canRetry && !!retryingIds[String(p.id)];
               const isScheduled = ['SCHEDULED','PENDING'].includes(String(p.status || '').toUpperCase()) && p.jobId != null;
+              const isScheduledPost = ['SCHEDULED','PENDING'].includes(String(p.status || '').toUpperCase()) && p.jobId == null;
+              const isFailedPost = String(p.status || '').toUpperCase() === 'FAILED' && p.jobId == null;
               const jobId = p.jobId;
               const st = getPostStatusUi(p);
 
@@ -664,7 +667,7 @@ function DayModal({ date, posts, onClose, onRetryFailed, retryingIds = {}, onCan
                   )}
 
                   {/* ── Actions ── */}
-                  {(canRetry || isScheduled) && (
+                  {(canRetry || isScheduled || isScheduledPost || isFailedPost) && (
                     <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #f1f5f9' }}>
                       {canRetry && (
                         <button type="button" onClick={(e) => { e.stopPropagation(); if (onRetryFailed) onRetryFailed(p.id); }} disabled={retrying} style={{
@@ -689,6 +692,13 @@ function DayModal({ date, posts, onClose, onRetryFailed, retryingIds = {}, onCan
                               <button type="button" onClick={() => onCancelJob && onCancelJob(jobId)} style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid #fca5a5', background: '#fff5f5', color: '#dc2626', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>✕ Cancel</button>
                             </>
                           )}
+                        </div>
+                      )}
+                      {(isScheduledPost || isFailedPost) && p.id != null && (
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <button type="button" onClick={() => onDeletePost && onDeletePost(p.id)} style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid #fca5a5', background: '#fff5f5', color: '#dc2626', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+                            🗑 Delete post
+                          </button>
                         </div>
                       )}
                     </div>
@@ -716,6 +726,7 @@ const ms = {
 export default function ContentCalendar({ onOpenVideoPublisher }) {
   const { apiBase, token } = useAuth();
   const base = apiBase || 'https://api.wintaibot.com';
+  const isMobile = useMediaQuery('(max-width: 768px)');
 
   const today = new Date();
   const [viewMonth, setViewMonth] = useState(today.getMonth());
@@ -786,14 +797,31 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
   const cancelJob = async (jobId) => {
     if (!jobId || !token) return;
     try {
-      const res = await fetch(`${base}/api/analytics/job/${jobId}/cancel`, {
-        method: 'POST', headers: { Authorization: `Bearer ${token}` },
+      const res = await fetch(`${base}/api/video-content/jobs/${jobId}`, {
+        method: 'DELETE', headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error('Cancel failed');
       setActionMsg('Post cancelled.');
       await loadPosts();
     } catch (_) {
       setActionMsg('Could not cancel this post.');
+    } finally {
+      setSelectedDay(null);
+      setTimeout(() => setActionMsg(''), 3000);
+    }
+  };
+
+  const deletePost = async (postId) => {
+    if (!postId || !token) return;
+    try {
+      const res = await fetch(`${base}/api/social/post/${postId}`, {
+        method: 'DELETE', headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Delete failed');
+      setActionMsg('Post deleted.');
+      await loadPosts();
+    } catch (_) {
+      setActionMsg('Could not delete this post.');
     } finally {
       setSelectedDay(null);
       setTimeout(() => setActionMsg(''), 3000);
@@ -878,7 +906,7 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
     .slice(0, 20);
 
   return (
-    <div style={s.page}>
+    <div style={{ ...s.page, ...(isMobile ? { padding: '12px 8px', borderRadius: 0, border: 'none' } : {}) }}>
 
       <div style={s.pageHeader}>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginLeft: 'auto' }}>
@@ -894,7 +922,7 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
       </div>
 
       {/* ── Platform filter pills ── */}
-      <div style={s.pillRow}>
+      <div style={{ ...s.pillRow, ...(isMobile ? { flexWrap: 'nowrap', overflowX: 'auto', paddingBottom: 4, WebkitOverflowScrolling: 'touch' } : {}) }}>
         <button
           style={{ ...s.pill, ...(filterPlatform === 'all' ? s.pillActive : {}) }}
           onClick={() => setFilterPlatform('all')}
@@ -929,7 +957,7 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
         </div>
       )}
 
-      <div style={s.body}>
+      <div style={{ ...s.body, ...(isMobile ? { gridTemplateColumns: '1fr', gap: 12 } : {}) }}>
 
         {/* ══ CALENDAR VIEW ══ */}
         {view === 'calendar' && (
@@ -1408,6 +1436,7 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
           retryingIds={retryingIds}
           onClose={() => setSelectedDay(null)}
           onCancelJob={cancelJob}
+          onDeletePost={deletePost}
           onRescheduleJob={rescheduleJob}
           reschedulingJob={reschedulingJob}
           newDateTime={newDateTime}

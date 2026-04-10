@@ -1,6 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route, useSearchParams } from 'react-router-dom';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
@@ -13,6 +15,11 @@ import ResetPassword from './components/ResetPassword';
 import SEOPublicLayout from './pages/SEOPublicLayout';
 import ToolLandingPage from './pages/ToolLandingPage';
 import PublicBioPage from './pages/PublicBioPage';
+
+const darkTheme = createTheme({
+  palette: { mode: 'dark', primary: { main: '#6366f1' } },
+  breakpoints: { values: { xs: 0, sm: 640, md: 900, lg: 1200, xl: 1536 } },
+});
 
 const rootElement = document.getElementById('root');
 
@@ -64,7 +71,10 @@ if (!rootElement) {
   const root = ReactDOM.createRoot(rootElement);
   root.render(
     <React.StrictMode>
-      <Root />
+      <ThemeProvider theme={darkTheme}>
+        <CssBaseline />
+        <Root />
+      </ThemeProvider>
     </React.StrictMode>
   );
 }

@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import './App.css';
 import { useMediaQuery } from './hooks/useMediaQuery';
+import Drawer from '@mui/material/Drawer';
+import Box from '@mui/material/Box';
 
 // Icons — react-icons/hi2 (Heroicons v2, solid style)
 import { HiHome, HiChatBubbleLeftRight, HiPhoto, HiSparkles } from 'react-icons/hi2';
@@ -264,7 +266,7 @@ function MarketingNav({ go, onLogin, onSignup }) {
 function App() {
   const [activeTab, setActiveTab] = useState(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
-  // authMode: 'login' | 'signup' | 'forgot-password' | 'forgot-username'
+  // authMode: 'login' | 'signup' | 'forgot-password'
   const [authMode, setAuthMode] = useState('login');
   const [verifiedBanner, setVerifiedBanner] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -371,81 +373,91 @@ function App() {
       {/* Marketing Nav — fixed at top for logged-out visitors, above everything */}
       {!user && <MarketingNav go={go} onLogin={openLogin} onSignup={openSignup} />}
 
-      {/* ═══════════════ SIDEBAR ═══════════════ */}
-      {user && ((isMobile || isTablet) && sidebarOpen) && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 40 }} onClick={() => setSidebarOpen(false)} aria-hidden="true" />
+      {/* ═══════════════ SIDEBAR (MUI Drawer) ═══════════════ */}
+      {user && (
+        <Drawer
+          variant={(isMobile || isTablet) ? 'temporary' : 'permanent'}
+          open={(isMobile || isTablet) ? sidebarOpen : true}
+          onClose={() => setSidebarOpen(false)}
+          sx={{
+            width: (!sidebarOpen && !(isMobile || isTablet)) ? 60 : 224,
+            flexShrink: 0,
+            '& .MuiDrawer-paper': {
+              width: (!sidebarOpen && !(isMobile || isTablet)) ? 60 : 224,
+              boxSizing: 'border-box',
+              background: 'linear-gradient(180deg, #0c1222 0%, #0f172a 42%, #151e35 100%)',
+              border: 'none',
+              borderRight: '1px solid rgba(148, 163, 184, 0.14)',
+              overflowX: 'hidden',
+              transition: 'width 0.25s ease',
+            },
+          }}
+        >
+          {/* Logo */}
+          <div style={s.logoArea}>
+            <div style={s.logoIconBg}>
+              <img src={BRAND_LOGO_SRC} alt="W!ntAi logo" width={34} height={34} style={{ display: 'block', borderRadius: '7px' }} />
+            </div>
+            {(sidebarOpen || (isMobile || isTablet)) && <span style={s.logoText}>W!ntAi</span>}
+          </div>
+
+          {/* Nav */}
+          <nav style={s.nav}>
+            <NavItem icon={<HiHome size={17} />} label="Dashboard" active={activeTab === null || activeTab === 'analytics'} onClick={() => { go(null); if (isMobile || isTablet) setSidebarOpen(false); }} />
+
+            <div style={s.navDivider} role="separator" aria-hidden="true" />
+            <div style={s.groupLabel}>{SIDEBAR_GROUPS.smartHub}</div>
+            <NavItem icon={<HiPhoto size={17} />}               label="Image Generator"  active={activeTab === 'image-generator'}  onClick={() => { go('image-generator'); if (isMobile || isTablet) setSidebarOpen(false); }} />
+            <NavItem icon={<HiSparkles size={17} />}            label="Recipe Generator" active={activeTab === 'recipe-generator'} onClick={() => { go('recipe-generator'); if (isMobile || isTablet) setSidebarOpen(false); }} />
+
+            <div style={s.navDivider} role="separator" aria-hidden="true" />
+            <div style={s.groupLabel}>{SIDEBAR_GROUPS.digitalVault}</div>
+            <NavItem icon={<HiDocumentMagnifyingGlass size={17} />} label="DocuWizard" active={activeTab === 'analyzer'}     onClick={() => { go('analyzer'); if (isMobile || isTablet) setSidebarOpen(false); }} />
+            <NavItem icon={<HiMicrophone size={17} />}              label="EchoScribe"  active={activeTab === 'transcription'} onClick={() => { go('transcription'); if (isMobile || isTablet) setSidebarOpen(false); }} />
+
+            <div style={s.navDivider} role="separator" aria-hidden="true" />
+            <div style={s.groupLabel}>{SIDEBAR_GROUPS.socialHq}</div>
+            <NavItem icon={<HiPhoto size={17} />}                    label="Content Calendar"   active={activeTab === 'calendar'}         onClick={() => { go('calendar'); if (isMobile || isTablet) setSidebarOpen(false); }} />
+            <NavItem icon={<HiLink size={17} />}                     label="Connected Accounts" active={activeTab === 'social-connect'}    onClick={() => { go('social-connect'); if (isMobile || isTablet) setSidebarOpen(false); }} />
+            <NavItem icon={<HiChatBubbleOvalLeft size={17} />}       label="Inbox"              active={activeTab === 'messages'}         onClick={() => { go('messages'); if (isMobile || isTablet) setSidebarOpen(false); }} />
+            <NavItem icon={<HiArrowTrendingUp size={17} />}          label="Growth Planner"     active={activeTab === 'trends'}           onClick={() => { go('trends'); if (isMobile || isTablet) setSidebarOpen(false); }} />
+
+            <div style={s.navDivider} role="separator" aria-hidden="true" />
+            <div style={s.groupLabel}>{SIDEBAR_GROUPS.theForge}</div>
+            <NavItem icon={<HiChatBubbleLeftRight size={17} />} label="Reply Enchanter" active={activeTab === 'Content'} onClick={() => { go('Content'); if (isMobile || isTablet) setSidebarOpen(false); }} />
+            <NavItem icon={<HiDocumentText size={17} />}        label="Career Alchemist"  active={activeTab === 'Resume'}  onClick={() => { go('Resume'); if (isMobile || isTablet) setSidebarOpen(false); }} />
+
+            <div style={s.navFooterBlock}>
+              <div style={s.navDividerStrong} role="separator" aria-hidden="true" />
+              <div style={s.groupLabelFooter}>{SIDEBAR_GROUPS.settings}</div>
+              {user && <NavItem icon={<HiCog6Tooth size={17} />} label="Account" active={activeTab === 'account'} onClick={() => { go('account'); if (isMobile || isTablet) setSidebarOpen(false); }} hasArrow />}
+              {user && <NavItem icon={<HiCreditCard size={17} />} label="Pricing" active={activeTab === 'pricing'} onClick={() => { go('pricing'); if (isMobile || isTablet) setSidebarOpen(false); }} />}
+              <NavItem icon={<HiQuestionMarkCircle size={17} />} label="Help & Support" active={activeTab === 'help'} onClick={() => { go('help'); if (isMobile || isTablet) setSidebarOpen(false); }} />
+            </div>
+          </nav>
+
+          {/* Explore Tools */}
+          <div style={s.sidebarFooter}>
+            <button style={s.exploreBtn}>
+              <span style={{ fontSize: '15px' }}>⊞</span>
+              {(sidebarOpen || (isMobile || isTablet)) && <><span style={{ flex: 1 }}>Explore Tools</span><span style={{ opacity: 0.5, fontSize: '13px' }}>›</span></>}
+            </button>
+          </div>
+        </Drawer>
       )}
-      {user && <aside style={{
-        ...s.sidebar,
-        ...(sidebarOpen ? {} : s.sidebarCollapsed),
-        ...((isMobile || isTablet) ? {
-          position: 'fixed',
-          left: 0,
-          top: 0,
-          bottom: 0,
-          zIndex: 50,
-          width: sidebarOpen ? '280px' : '0',
-          minWidth: sidebarOpen ? '280px' : '0',
-          overflow: 'hidden',
-          transition: 'width 0.25s ease, min-width 0.25s ease',
-          boxShadow: sidebarOpen ? '4px 0 24px rgba(0,0,0,0.15)' : 'none',
-        } : {}),
-      }}>
-
-        {/* Logo */}
-        <div style={s.logoArea}>
-          <div style={s.logoIconBg}>
-            <img src={BRAND_LOGO_SRC} alt="W!ntAi logo" width={34} height={34} style={{ display: 'block', borderRadius: '7px' }} />
-          </div>
-          {sidebarOpen && <span style={s.logoText}>W!ntAi</span>}
-        </div>
-
-        {/* Nav */}
-        <nav style={s.nav}>
-          <NavItem icon={<HiHome size={17} />} label="Dashboard" active={activeTab === null || activeTab === 'analytics'} onClick={() => go(null)} />
-
-          <div style={s.navDivider} role="separator" aria-hidden="true" />
-          <div style={s.groupLabel}>{SIDEBAR_GROUPS.smartHub}</div>
-          <NavItem icon={<HiPhoto size={17} />}               label="Image Generator"  active={activeTab === 'image-generator'}  onClick={() => go('image-generator')} />
-          <NavItem icon={<HiSparkles size={17} />}            label="Recipe Generator" active={activeTab === 'recipe-generator'} onClick={() => go('recipe-generator')} />
-
-          <div style={s.navDivider} role="separator" aria-hidden="true" />
-          <div style={s.groupLabel}>{SIDEBAR_GROUPS.digitalVault}</div>
-          <NavItem icon={<HiDocumentMagnifyingGlass size={17} />} label="DocuWizard" active={activeTab === 'analyzer'}     onClick={() => go('analyzer')} />
-          <NavItem icon={<HiMicrophone size={17} />}              label="EchoScribe"  active={activeTab === 'transcription'} onClick={() => go('transcription')} />
-
-          <div style={s.navDivider} role="separator" aria-hidden="true" />
-          <div style={s.groupLabel}>{SIDEBAR_GROUPS.socialHq}</div>
-          <NavItem icon={<HiPhoto size={17} />}                    label="Content Calendar"   active={activeTab === 'calendar'}         onClick={() => go('calendar')} />
-          <NavItem icon={<HiLink size={17} />}                     label="Connected Accounts" active={activeTab === 'social-connect'}    onClick={() => go('social-connect')} />
-          <NavItem icon={<HiChatBubbleOvalLeft size={17} />}       label="Inbox"           active={activeTab === 'messages'}         onClick={() => go('messages')} />
-          <NavItem icon={<HiArrowTrendingUp size={17} />}          label="Growth Planner"     active={activeTab === 'trends'}           onClick={() => go('trends')} />
-
-          <div style={s.navDivider} role="separator" aria-hidden="true" />
-          <div style={s.groupLabel}>{SIDEBAR_GROUPS.theForge}</div>
-          <NavItem icon={<HiChatBubbleLeftRight size={17} />} label="Reply Enchanter" active={activeTab === 'Content'} onClick={() => go('Content')} />
-          <NavItem icon={<HiDocumentText size={17} />}        label="Career Alchemist"  active={activeTab === 'Resume'}  onClick={() => go('Resume')} />
-
-          <div style={s.navFooterBlock}>
-            <div style={s.navDividerStrong} role="separator" aria-hidden="true" />
-            <div style={s.groupLabelFooter}>{SIDEBAR_GROUPS.settings}</div>
-            {user && <NavItem icon={<HiCog6Tooth size={17} />} label="Account" active={activeTab === 'account'} onClick={() => go('account')} hasArrow />}
-            {user && <NavItem icon={<HiCreditCard size={17} />} label="Pricing" active={activeTab === 'pricing'} onClick={() => go('pricing')} />}
-            <NavItem icon={<HiQuestionMarkCircle size={17} />} label="Help & Support" active={activeTab === 'help'} onClick={() => go('help')} />
-          </div>
-        </nav>
-
-        {/* Explore Tools */}
-        <div style={s.sidebarFooter}>
-          <button style={s.exploreBtn}>
-            <span style={{ fontSize: '15px' }}>⊞</span>
-            {sidebarOpen && <><span style={{ flex: 1 }}>Explore Tools</span><span style={{ opacity: 0.5, fontSize: '13px' }}>›</span></>}
-          </button>
-        </div>
-      </aside>}
 
       {/* ═══════════════ MAIN ═══════════════ */}
-      <div style={s.main}>
+      <Box
+        component="div"
+        sx={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          background: APP_MAIN_GRAD,
+          minWidth: 0,
+        }}
+      >
         {user && activeTab && PUBLISHING_TAB_SEO[activeTab] && (
           <SEO title={PUBLISHING_TAB_SEO[activeTab].title} description={PUBLISHING_TAB_SEO[activeTab].description} />
         )}
@@ -476,7 +488,7 @@ function App() {
                 <span style={{ color: '#94a3b8', fontSize: '13px' }}>...</span>
               ) : (
                 <>
-                  <span style={s.topEmail} title={user.email}>{user.email}</span>
+                  {!isMobile && <span style={s.topEmail} title={user.email}>{user.email}</span>}
                   {(() => {
                     const mt = user?.membershipType;
                     /** Same brand colors as PricingPage / UpgradeModal — white label on solid tier color. */
@@ -502,7 +514,8 @@ function App() {
                       </span>
                     );
                   })()}
-                  <button onClick={logout} style={s.logoutBtn}>Logout</button>
+                  {!isMobile && <button onClick={logout} style={s.logoutBtn}>Logout</button>}
+                  {isMobile && <button onClick={logout} style={{ ...s.logoutBtn, padding: '6px 10px', fontSize: '12px' }}>Out</button>}
                   <div style={s.avatar}>{userInitials}</div>
                 </>
               )}
@@ -511,10 +524,19 @@ function App() {
         )}
 
         {/* Content */}
-        <div style={{
-          ...s.content,
-          paddingTop: !user ? '58px' : undefined,
-        }}>
+        <Box
+          component="div"
+          sx={{
+            flex: 1,
+            minHeight: 0,
+            minWidth: 0,
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            overscrollBehavior: 'contain',
+            paddingTop: !user ? '58px' : undefined,
+            px: { xs: 0, sm: 0 },
+          }}
+        >
           {!activeTab && !user && (
             <LandingSection onGetStarted={() => go('chat')} onChoosePlan={handleChoosePlan} />
           )}
@@ -541,8 +563,8 @@ function App() {
           {activeTab === 'help'            && <HelpPanel />}
           {activeTab === 'auto-reply'      && <MemberGate featureName="Auto Reply"><ProGate featureName="Auto Reply"><AutoReplySettings /></ProGate></MemberGate>}
           {activeTab === 'calendar'        && <MemberGate featureName="Content Calendar"><ContentCalendar onOpenVideoPublisher={() => go('video-publisher')} /></MemberGate>}
-        </div>
-      </div>
+        </Box>
+      </Box>
 
       {/* ═══════════════ EMAIL VERIFIED BANNER ═══════════════ */}
       {verifiedBanner && (
@@ -576,14 +598,14 @@ function App() {
               <Login
                 onSuccess={() => setShowAuthModal(false)}
                 onSwitchToSignup={() => setAuthMode('signup')}
-                onForgotPassword={(mode) => setAuthMode(mode === 'username' ? 'forgot-username' : 'forgot-password')}
+                onForgotPassword={() => setAuthMode('forgot-password')}
               />
             )}
             {authMode === 'signup' && (
               <Signup onSuccess={() => setShowAuthModal(false)} onSwitchToLogin={() => setAuthMode('login')} />
             )}
-            {(authMode === 'forgot-password' || authMode === 'forgot-username') && (
-              <ForgotPassword mode={authMode === 'forgot-username' ? 'username' : 'password'} onBack={() => setAuthMode('login')} />
+            {authMode === 'forgot-password' && (
+              <ForgotPassword onBack={() => setAuthMode('login')} />
             )}
           </div>
         </div>

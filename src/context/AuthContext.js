@@ -91,10 +91,10 @@ export function AuthProvider({ children }) {
         })
         .finally(() => setLoading(false));
     } else {
-      fetch(`${API_BASE}/api/auth/me`, { headers: { Authorization: "Bearer x" } })
-        .then((res) => { if (res.status === 404) setAuthAvailable(false); })
-        .catch(() => setAuthAvailable(false))
-        .finally(() => setLoading(false));
+      // No session: do not call /api/auth/me — a probe with a fake token always gets 401 and
+      // clutters DevTools ("Failed to load resource"). authAvailable stays true; 404 is still
+      // handled when restoring a real token or after login.
+      setLoading(false);
     }
   }, [token]);
 
@@ -205,6 +205,9 @@ export function AuthProvider({ children }) {
         msg = j.error || j.message || j.msg || msg;
       } catch (_) {
         if (text) msg = text;
+      }
+      if (res.status === 503 && /verification email/i.test(msg)) {
+        msg = `${msg} If this keeps happening, please contact support.`;
       }
       throw new Error(msg);
     }

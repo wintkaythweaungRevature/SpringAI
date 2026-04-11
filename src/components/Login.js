@@ -81,14 +81,7 @@ export default function Login({ onSuccess, onSwitchToSignup, onForgotPassword })
           <div className="auth-forgot-row">
             <button
               type="button"
-              onClick={() => onForgotPassword?.("username")}
-              className="auth-forgot-link"
-            >
-              Forgot username?
-            </button>
-            <button
-              type="button"
-              onClick={() => onForgotPassword?.("password")}
+              onClick={() => onForgotPassword?.()}
               className="auth-forgot-link"
             >
               Forgot password?

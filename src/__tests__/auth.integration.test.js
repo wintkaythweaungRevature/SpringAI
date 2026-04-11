@@ -34,9 +34,6 @@ describe('Auth Integration: Login flow', () => {
   });
 
   test('Feature: user can log in successfully and onSuccess callback fires', async () => {
-    // Initial AuthProvider mount (no token) probes /api/auth/me → 401
-    global.fetch.mockResolvedValueOnce(makeFailResponse(401, {}));
-
     const onSuccess = jest.fn();
     await act(async () => {
       render(
@@ -46,30 +43,31 @@ describe('Auth Integration: Login flow', () => {
       );
     });
 
-    // Login POST → success, /me GET → user details
+    // Login POST → /me in login() → /me in useEffect([token])
     global.fetch
       .mockResolvedValueOnce(
         makeOkResponse({ token: 'tok123', email: 'user@example.com', membershipType: 'FREE' })
       )
       .mockResolvedValueOnce(
         makeOkResponse({ email: 'user@example.com', membershipType: 'FREE', emailVerified: true })
+      )
+      .mockResolvedValueOnce(
+        makeOkResponse({ email: 'user@example.com', membershipType: 'FREE', emailVerified: true })
       );
 
-    fireEvent.change(screen.getByPlaceholderText('Email'), {
+    fireEvent.change(screen.getByPlaceholderText(/email/i), {
       target: { value: 'user@example.com' },
     });
-    fireEvent.change(screen.getByPlaceholderText('Password'), {
+    fireEvent.change(screen.getByPlaceholderText(/enter your password/i), {
       target: { value: 'pass123' },
     });
-    fireEvent.click(screen.getByRole('button', { name: /^login$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
 
     await waitFor(() => expect(onSuccess).toHaveBeenCalled());
     expect(localStorage.getItem('authToken')).toBe('tok123');
   });
 
   test('Feature: login shows error when credentials are wrong', async () => {
-    global.fetch.mockResolvedValueOnce(makeFailResponse(401, {}));
-
     await act(async () => {
       render(
         <Wrapper>
@@ -82,13 +80,13 @@ describe('Auth Integration: Login flow', () => {
       makeFailResponse(401, { error: 'Invalid email or password' })
     );
 
-    fireEvent.change(screen.getByPlaceholderText('Email'), {
+    fireEvent.change(screen.getByPlaceholderText(/email/i), {
       target: { value: 'wrong@example.com' },
     });
-    fireEvent.change(screen.getByPlaceholderText('Password'), {
+    fireEvent.change(screen.getByPlaceholderText(/enter your password/i), {
       target: { value: 'wrongpass' },
     });
-    fireEvent.click(screen.getByRole('button', { name: /^login$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
 
     await waitFor(() =>
       expect(screen.getByText('Invalid email or password')).toBeInTheDocument()
@@ -97,8 +95,6 @@ describe('Auth Integration: Login flow', () => {
   });
 
   test('Feature: deactivated account shows reactivate option then reactivates', async () => {
-    global.fetch.mockResolvedValueOnce(makeFailResponse(401, {}));
-
     const onSuccess = jest.fn();
     await act(async () => {
       render(
@@ -113,22 +109,25 @@ describe('Auth Integration: Login flow', () => {
       makeFailResponse(401, { error: 'Account is deactivated' })
     );
 
-    fireEvent.change(screen.getByPlaceholderText('Email'), {
+    fireEvent.change(screen.getByPlaceholderText(/email/i), {
       target: { value: 'user@example.com' },
     });
-    fireEvent.change(screen.getByPlaceholderText('Password'), {
+    fireEvent.change(screen.getByPlaceholderText(/enter your password/i), {
       target: { value: 'pass' },
     });
-    fireEvent.click(screen.getByRole('button', { name: /^login$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
 
     await waitFor(() =>
       expect(screen.getByRole('button', { name: /reactivate account/i })).toBeInTheDocument()
     );
 
-    // Reactivate POST → success, /me → user data
+    // Reactivate POST → /me in login() → /me in useEffect([token])
     global.fetch
       .mockResolvedValueOnce(
         makeOkResponse({ token: 'reactivated-tok', email: 'user@example.com', membershipType: 'FREE' })
+      )
+      .mockResolvedValueOnce(
+        makeOkResponse({ email: 'user@example.com', membershipType: 'FREE', emailVerified: true })
       )
       .mockResolvedValueOnce(
         makeOkResponse({ email: 'user@example.com', membershipType: 'FREE', emailVerified: true })
@@ -150,8 +149,6 @@ describe('Auth Integration: Signup flow', () => {
   });
 
   test('Feature: user can sign up and sees success message', async () => {
-    global.fetch.mockResolvedValueOnce(makeFailResponse(401, {}));
-
     await act(async () => {
       render(
         <Wrapper>
@@ -160,29 +157,34 @@ describe('Auth Integration: Signup flow', () => {
       );
     });
 
-    global.fetch.mockResolvedValueOnce(
-      makeOkResponse({ token: 'new-tok', email: 'new@example.com', membershipType: 'FREE' })
-    );
+    global.fetch
+      .mockResolvedValueOnce(
+        makeOkResponse({ token: 'new-tok', email: 'new@example.com', membershipType: 'FREE' })
+      )
+      .mockResolvedValueOnce(
+        makeOkResponse({ email: 'new@example.com', membershipType: 'FREE', emailVerified: true })
+      );
 
-    fireEvent.change(screen.getByPlaceholderText('Name'), {
-      target: { value: 'New User' },
+    fireEvent.change(screen.getByPlaceholderText('Jane'), {
+      target: { value: 'New' },
     });
-    fireEvent.change(screen.getByPlaceholderText('Email'), {
+    fireEvent.change(screen.getByPlaceholderText('Doe'), {
+      target: { value: 'User' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('you@example.com'), {
       target: { value: 'new@example.com' },
     });
-    fireEvent.change(screen.getByPlaceholderText(/password/i), {
+    fireEvent.change(screen.getByPlaceholderText(/at least 6 characters/i), {
       target: { value: 'pass123' },
     });
-    fireEvent.click(screen.getByRole('button', { name: /^sign up$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /create account/i }));
 
     await waitFor(() =>
-      expect(screen.getByText(/registration successful/i)).toBeInTheDocument()
+      expect(screen.getByText(/account created/i)).toBeInTheDocument()
     );
   });
 
   test('Feature: duplicate email shows error', async () => {
-    global.fetch.mockResolvedValueOnce(makeFailResponse(401, {}));
-
     await act(async () => {
       render(
         <Wrapper>
@@ -195,13 +197,15 @@ describe('Auth Integration: Signup flow', () => {
       makeFailResponse(400, { error: 'Email already registered' })
     );
 
-    fireEvent.change(screen.getByPlaceholderText('Email'), {
+    fireEvent.change(screen.getByPlaceholderText('Jane'), { target: { value: 'Dup' } });
+    fireEvent.change(screen.getByPlaceholderText('Doe'), { target: { value: 'User' } });
+    fireEvent.change(screen.getByPlaceholderText('you@example.com'), {
       target: { value: 'dup@example.com' },
     });
-    fireEvent.change(screen.getByPlaceholderText(/password/i), {
+    fireEvent.change(screen.getByPlaceholderText(/at least 6 characters/i), {
       target: { value: 'pass123' },
     });
-    fireEvent.click(screen.getByRole('button', { name: /^sign up$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /create account/i }));
 
     await waitFor(() =>
       expect(screen.getByText('Email already registered')).toBeInTheDocument()
@@ -220,9 +224,6 @@ describe('Auth Integration: MemberGate access control', () => {
   });
 
   test('Feature: unauthenticated user sees login form, not protected content', async () => {
-    // No token → probe returns 401
-    global.fetch.mockResolvedValue(makeFailResponse(401, {}));
-
     await act(async () => {
       render(
         <Wrapper>
@@ -260,12 +261,13 @@ describe('Auth Integration: MemberGate access control', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /unlock pro features/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /unlock this feature/i })).toBeInTheDocument();
     });
     expect(screen.queryByText('member only content')).not.toBeInTheDocument();
   });
 
   test('Feature: subscribed user sees protected content', async () => {
+    localStorage.setItem('authToken', 'member-token');
     global.fetch.mockResolvedValue(
       makeOkResponse({ email: 'member@example.com', membershipType: 'MEMBER', emailVerified: true })
     );
@@ -286,6 +288,7 @@ describe('Auth Integration: MemberGate access control', () => {
   });
 
   test('Feature: user with unverified email sees verification screen', async () => {
+    localStorage.setItem('authToken', 'unverified-token');
     global.fetch.mockResolvedValue(
       makeOkResponse({ email: 'unverified@example.com', membershipType: 'FREE', emailVerified: false })
     );
@@ -318,6 +321,7 @@ describe('Auth Integration: AskAIGate access control', () => {
   });
 
   test('Feature: free verified user can access Ask AI (no subscription needed)', async () => {
+    localStorage.setItem('authToken', 'free-token');
     global.fetch.mockResolvedValue(
       makeOkResponse({ email: 'free@example.com', membershipType: 'FREE', emailVerified: true })
     );
@@ -338,8 +342,6 @@ describe('Auth Integration: AskAIGate access control', () => {
   });
 
   test('Feature: unauthenticated user cannot access Ask AI', async () => {
-    global.fetch.mockResolvedValue(makeFailResponse(401, {}));
-
     await act(async () => {
       render(
         <Wrapper>

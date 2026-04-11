@@ -133,12 +133,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         })
         .finally(() => setLoading(false));
     } else {
-      fetchWithTimeout(url, { headers: { Authorization: 'Bearer x' } })
-        .then((res) => {
-          if (res.status === 404) setAuthAvailable(false);
-        })
-        .catch(() => setAuthAvailable(false))
-        .finally(() => setLoading(false));
+      // No session: avoid GET /api/auth/me with a fake token — it always 401s and spams DevTools.
+      setLoading(false);
     }
   }, [token, apiBase]);
 

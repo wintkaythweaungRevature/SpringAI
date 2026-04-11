@@ -11,7 +11,7 @@ export default function Login({
   onSuccess?: () => void;
   onSwitchToSignup?: () => void;
 }) {
-  const { login, reactivateAccount, forgotPassword, forgotUsername } = useAuth();
+  const { login, reactivateAccount, forgotPassword } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -134,7 +134,7 @@ export default function Login({
           >
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginTop: 8 }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
             <button
               type="button"
               className="auth-switch-btn"
@@ -142,28 +142,13 @@ export default function Login({
                 if (!email.trim()) return setError('Enter your email first.');
                 try {
                   await forgotPassword(email.trim());
-                  setError('Password reset email sent.');
+                  setError('Password reset email sent. Check your inbox and open the link to set a new password.');
                 } catch (e) {
                   setError((e as Error).message || 'Failed to send reset email');
                 }
               }}
             >
               Forgot password?
-            </button>
-            <button
-              type="button"
-              className="auth-switch-btn"
-              onClick={async () => {
-                if (!email.trim()) return setError('Enter your email first.');
-                try {
-                  await forgotUsername(email.trim());
-                  setError('Username email sent.');
-                } catch (e) {
-                  setError((e as Error).message || 'Failed to send username email');
-                }
-              }}
-            >
-              Forgot username?
             </button>
           </div>
         </form>

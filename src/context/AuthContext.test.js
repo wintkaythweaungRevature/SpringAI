@@ -68,36 +68,24 @@ describe('AuthContext', () => {
   // ─── Initial state (no token) ─────────────────────────────────────────────
 
   test('provides unauthenticated initial state when no token stored', async () => {
-    global.fetch.mockResolvedValue(mockFetchFail(401, {}));
-
     let authValue;
     await act(async () => {
       renderWithProvider((val) => { authValue = val; });
     });
 
+    expect(global.fetch).not.toHaveBeenCalled();
     expect(authValue.user).toBeNull();
     expect(authValue.isLoggedIn).toBe(false);
     expect(authValue.isSubscribed).toBe(false);
     expect(authValue.loading).toBe(false);
   });
 
-  test('sets authAvailable to false when server returns 404', async () => {
+  test('sets authAvailable to false when /me returns 404 while restoring token', async () => {
     global.fetch.mockResolvedValue({ ok: false, status: 404, json: async () => ({}) });
 
     let authValue;
     await act(async () => {
-      renderWithProvider((val) => { authValue = val; });
-    });
-
-    expect(authValue.authAvailable).toBe(false);
-  });
-
-  test('sets authAvailable to false on network error', async () => {
-    global.fetch.mockRejectedValue(new Error('Network error'));
-
-    let authValue;
-    await act(async () => {
-      renderWithProvider((val) => { authValue = val; });
+      renderWithProvider((val) => { authValue = val; }, 'stored-token');
     });
 
     expect(authValue.authAvailable).toBe(false);
@@ -135,18 +123,18 @@ describe('AuthContext', () => {
   // ─── login ────────────────────────────────────────────────────────────────
 
   test('login stores token and sets user', async () => {
-    // Initial mount (no token)
-    global.fetch.mockResolvedValueOnce(mockFetchFail(401, {}));
-
     let authValue;
     await act(async () => {
       renderWithProvider((val) => { authValue = val; });
     });
 
-    // login call + /me fetch
+    // login POST + /me inside login() + /me from useEffect([token])
     global.fetch
       .mockResolvedValueOnce(
         mockFetchOk({ token: 'new-token', email: 'user@example.com', membershipType: 'FREE' })
+      )
+      .mockResolvedValueOnce(
+        mockFetchOk({ email: 'user@example.com', membershipType: 'FREE', emailVerified: true })
       )
       .mockResolvedValueOnce(
         mockFetchOk({ email: 'user@example.com', membershipType: 'FREE', emailVerified: true })
@@ -162,8 +150,6 @@ describe('AuthContext', () => {
   });
 
   test('login throws on bad credentials', async () => {
-    global.fetch.mockResolvedValueOnce(mockFetchFail(401, {}));
-
     let authValue;
     await act(async () => {
       renderWithProvider((val) => { authValue = val; });
@@ -181,8 +167,6 @@ describe('AuthContext', () => {
   });
 
   test('login trims email whitespace', async () => {
-    global.fetch.mockResolvedValueOnce(mockFetchFail(401, {}));
-
     let authValue;
     await act(async () => {
       renderWithProvider((val) => { authValue = val; });
@@ -194,13 +178,16 @@ describe('AuthContext', () => {
       )
       .mockResolvedValueOnce(
         mockFetchOk({ email: 'user@example.com', membershipType: 'FREE', emailVerified: true })
+      )
+      .mockResolvedValueOnce(
+        mockFetchOk({ email: 'user@example.com', membershipType: 'FREE', emailVerified: true })
       );
 
     await act(async () => {
       await authValue.login('  user@example.com  ', 'pass');
     });
 
-    const loginCall = global.fetch.mock.calls[1];
+    const loginCall = global.fetch.mock.calls[0];
     const body = JSON.parse(loginCall[1].body);
     expect(body.email).toBe('user@example.com');
   });
@@ -229,16 +216,18 @@ describe('AuthContext', () => {
   // ─── signup ───────────────────────────────────────────────────────────────
 
   test('signup stores token when returned by server', async () => {
-    global.fetch.mockResolvedValueOnce(mockFetchFail(401, {}));
-
     let authValue;
     await act(async () => {
       renderWithProvider((val) => { authValue = val; });
     });
 
-    global.fetch.mockResolvedValueOnce(
-      mockFetchOk({ token: 'signup-token', email: 'new@example.com', membershipType: 'FREE' })
-    );
+    global.fetch
+      .mockResolvedValueOnce(
+        mockFetchOk({ token: 'signup-token', email: 'new@example.com', membershipType: 'FREE' })
+      )
+      .mockResolvedValueOnce(
+        mockFetchOk({ email: 'new@example.com', membershipType: 'FREE', emailVerified: true })
+      );
 
     await act(async () => {
       await authValue.signup('new@example.com', 'pass123', 'New', 'User');
@@ -248,8 +237,6 @@ describe('AuthContext', () => {
   });
 
   test('signup throws on failure', async () => {
-    global.fetch.mockResolvedValueOnce(mockFetchFail(401, {}));
-
     let authValue;
     await act(async () => {
       renderWithProvider((val) => { authValue = val; });

@@ -119,6 +119,22 @@ export default function SocialConnect() {
     }
   };
 
+  const debugTikTokUrl = async () => {
+    try {
+      const res = await fetch(`${base}/api/social/debug/tiktok-url`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data.error) {
+        alert(`TikTok config error:\n${data.error}\n(${data.type})`);
+      } else {
+        alert(`TikTok OAuth URL check:\n\n${data.rawUrl}\n\nstarts with https: ${data.startsWithHttps}\nhas client_key: ${data.containsClientKey}\nhas redirect_uri: ${data.containsRedirectUri}\nhas scope: ${data.containsScope}\nhas state: ${data.containsState}`);
+      }
+    } catch (e) {
+      alert('Debug failed: ' + e.message);
+    }
+  };
+
   const handleDisconnect = async (platformId) => {
     setDisconnecting(platformId);
     try {
@@ -212,14 +228,24 @@ export default function SocialConnect() {
                     {isDisconnecting ? 'Disconnecting...' : 'Disconnect'}
                   </button>
                 ) : (
-                  <button
-                    style={{ ...s.connectBtn, borderColor: p.color, color: p.color,
-                      opacity: isConnecting ? 0.6 : 1 }}
-                    onClick={() => handleConnect(p.id)}
-                    disabled={isConnecting}
-                  >
-                    {isConnecting ? 'Opening...' : `Connect ${p.label}`}
-                  </button>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <button
+                      style={{ ...s.connectBtn, borderColor: p.color, color: p.color,
+                        opacity: isConnecting ? 0.6 : 1 }}
+                      onClick={() => handleConnect(p.id)}
+                      disabled={isConnecting}
+                    >
+                      {isConnecting ? 'Opening...' : `Connect ${p.label}`}
+                    </button>
+                    {p.id === 'tiktok' && (
+                      <button
+                        style={{ fontSize: 10, background: 'none', border: '1px dashed #cbd5e1', borderRadius: 6, padding: '3px 8px', color: '#94a3b8', cursor: 'pointer' }}
+                        onClick={debugTikTokUrl}
+                      >
+                        🔍 Debug TikTok URL
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
             );

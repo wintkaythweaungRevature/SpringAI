@@ -655,10 +655,10 @@ function App() {
             style={s.aiDockToggle}
             onClick={() => setAiDockOpen((v) => !v)}
             aria-expanded={aiDockOpen}
-            aria-label={aiDockOpen ? 'Close AI menu' : 'Open AI menu'}
-            title={aiDockOpen ? 'Close AI menu' : 'Open AI menu'}
+            aria-label={aiDockOpen ? 'Close AI menu' : 'Open AI assistants'}
+            title={aiDockOpen ? 'Close AI menu' : 'Open AI assistants'}
           >
-            <span style={{ fontSize: 16 }}>{aiDockOpen ? '⌄' : '⌃'}</span>
+            <span style={{ fontSize: aiDockOpen ? 18 : 20 }}>{aiDockOpen ? '✕' : '✨'}</span>
           </button>
         </div>
       )}
@@ -864,9 +864,10 @@ const s = {
   },
   signupBtn: {
     padding: '7px 16px', borderRadius: '8px', border: 'none',
-    background: 'linear-gradient(135deg, #2563eb, #7c3aed)',
+    background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
     color: '#fff', fontSize: '13px', fontWeight: '700',
     cursor: 'pointer', fontFamily: 'inherit',
+    boxShadow: '0 2px 12px rgba(99,102,241,0.4)',
   },
   avatar: {
     width: '34px', height: '34px', borderRadius: '50%',

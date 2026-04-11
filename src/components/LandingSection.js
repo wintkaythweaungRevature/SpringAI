@@ -338,6 +338,28 @@ function HeroPlatformsUnderNote() {
   );
 }
 
+/* ─── Sticky Nav ────────────────────────────────────────────── */
+function LandingNav({ onGetStarted }) {
+  return (
+    <nav className="ls-nav" aria-label="Main navigation">
+      <div className="ls-nav-inner">
+        <a className="ls-nav-logo" href="/">
+          <span className="ls-nav-logo-mark">W!</span>ntAi
+        </a>
+        <div className="ls-nav-links">
+          <a className="ls-nav-link" href="#features">Features</a>
+          <a className="ls-nav-link" href="#how-it-works">How it works</a>
+          <a className="ls-nav-link" href="#use-cases">Use cases</a>
+          <a className="ls-nav-link" href="#pricing">Pricing</a>
+        </div>
+        <button type="button" className="ls-nav-cta" onClick={onGetStarted}>
+          Start free trial
+        </button>
+      </div>
+    </nav>
+  );
+}
+
 /* ─── Data ─────────────────────────────────────────────────── */
 
 const features = [
@@ -462,6 +484,8 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
 
   return (
     <main className="ls-root" aria-label="W!ntAi — social media video publishing and AI tools">
+
+      <LandingNav onGetStarted={onGetStarted} />
 
       {/* ── HERO (SEO: one H1 — video publishing + social managers) ── */}
       <section className="ls-hero ls-hero--showcase" aria-labelledby="hero-heading">
@@ -764,33 +788,6 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
       <section className="ls-section ls-pricing" id="pricing" aria-labelledby="pricing-heading">
         <h2 id="pricing-heading">Simple, Transparent Pricing</h2>
         <p className="ls-section-sub">Try free trial, then upgrade when you need more — annual billing saves up to ~21%.</p>
-
-        <div className="ls-pricing-why" aria-labelledby="why-pricing-heading">
-          <h3 id="why-pricing-heading">Why these numbers?</h3>
-          <div className="ls-pricing-why-grid">
-            <div className="ls-pricing-why-block">
-              <h4>Starter — $19/mo</h4>
-              <p>
-                Buffer charges about <strong>$18/mo</strong> for fewer features. Staying <strong>under $20</strong> is a
-                psychological anchor — cheap enough to try. Roughly <strong>7 paying users</strong> cover baseline AWS hosting.
-              </p>
-            </div>
-            <div className="ls-pricing-why-block">
-              <h4>Pro — $39/mo</h4>
-              <p>
-                About <strong>half the price of Hootsuite</strong> (~$99) with stronger <strong>video &amp; AI</strong> workflows.
-                A sweet spot for small businesses; on the order of <strong>4 users</strong> covers a typical full AWS bill.
-              </p>
-            </div>
-            <div className="ls-pricing-why-block">
-              <h4>Growth — $79/mo</h4>
-              <p>
-                Still <strong>below many enterprise schedulers</strong>, with <strong>priority processing</strong> and
-                room for margin — roughly <strong>2 accounts</strong> can cover AWS plus profit at this tier.
-              </p>
-            </div>
-          </div>
-        </div>
 
         <div className="ls-plans">
 

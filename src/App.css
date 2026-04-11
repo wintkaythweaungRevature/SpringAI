@@ -1,18 +1,25 @@
 /* ─── CSS Variables ────────────────────────────────────────── */
 :root {
-  --color-primary:       #2563eb;
-  --color-primary-dark:  #1d4ed8;
-  --color-primary-light: #93c5fd;
-  --color-surface:       #ffffff;
-  --color-surface-alt:   #f8fafc;
-  --color-border:        #e2e8f0;
-  --color-text:          #1e293b;
-  --color-text-muted:    #64748b;
+  /* Brand */
+  --color-primary:       #6366f1;
+  --color-primary-dark:  #4f46e5;
+  --color-primary-light: #a5b4fc;
+
+  /* Dark theme surfaces */
+  --color-surface:       #0f172a;
+  --color-surface-card:  rgba(255,255,255,0.06);
+  --color-border:        rgba(255,255,255,0.1);
+  --color-text:          #f1f5f9;
+  --color-text-muted:    #94a3b8;
+
+  /* Radius */
   --radius-sm:           8px;
   --radius-md:           10px;
   --radius-lg:           14px;
   --radius-xl:           16px;
-  --shadow-sm:           0 1px 3px rgba(0,0,0,0.08);
+
+  /* Shadow */
+  --shadow-sm:           0 4px 20px rgba(0,0,0,0.3);
 }
 
 /* ─── W!ntAi Global ─────────────────────────────────────── */
@@ -22,8 +29,8 @@ body {
   margin: 0;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
-  background: #f0f4f8;
-  color: #1e293b;
+  background: #060a14;
+  color: #f1f5f9;
   overflow-x: hidden;
 }
 

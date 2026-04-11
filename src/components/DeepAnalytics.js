@@ -437,6 +437,7 @@ function LineChart({ data, color = '#6366f1', width = 500, height = 160 }) {
         <div><strong style={{ color: '#475569' }}>Follower trend chart</strong></div>
         <div style={{ maxWidth: 360, lineHeight: 1.5 }}>
           No history points yet. Snapshots are saved daily (3am UTC) or when you use <strong>Refresh Now</strong> — after two or more points, your line appears here.
+          If data stopped updating, your platform token may have expired — reconnect in <strong>Social Connect</strong>.
         </div>
       </div>
     );
@@ -2960,12 +2961,18 @@ export default function DeepAnalytics() {
   const refreshSnapshot = async () => {
     setSnapping(true);
     try {
-      await fetch(`${API}/api/analytics/snapshot/run?platform=${platformForApi}`, { method: 'POST', headers: authHeaders() });
+      const res = await fetch(`${API}/api/analytics/snapshot/run?platform=${platformForApi}`, { method: 'POST', headers: authHeaders() });
+      const data = await res.json();
+      if (data.status === 'error') {
+        setSnapMsg('❌ ' + (data.message || 'Snapshot failed'));
+        setTimeout(() => setSnapMsg(''), 5000);
+        return;
+      }
       setSnapMsg('Snapshot saved! Refreshing chart…');
       setTimeout(() => { setSnapMsg(''); fetchHistory(); }, 1500);
     } catch {
-      setSnapMsg('Snapshot failed');
-      setTimeout(() => setSnapMsg(''), 2500);
+      setSnapMsg('❌ Network error — snapshot failed');
+      setTimeout(() => setSnapMsg(''), 3000);
     } finally {
       setSnapping(false);
     }
@@ -3030,6 +3037,17 @@ export default function DeepAnalytics() {
             </div>
           </div>
           {snapMsg && <div style={s.snapMsg}>{snapMsg}</div>}
+          {history && history.daysSinceLastSnapshot > 2 && (
+            <div style={{
+              background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 8,
+              padding: '10px 14px', fontSize: 12, color: '#92400e', marginBottom: 12,
+              lineHeight: 1.6,
+            }}>
+              ⚠️ Follower data is outdated — last snapshot was <strong>{history.lastSnapshotDate}</strong> ({history.daysSinceLastSnapshot} days ago).
+              Your <strong>{platformForApi}</strong> token may have expired.
+              Go to <strong>Social Connect</strong> to reconnect it, then click <strong>Refresh Now</strong>.
+            </div>
+          )}
           {loadHistory ? (
             <div style={s.loadingRow}><div style={s.spinner} /> Loading…</div>
           ) : (

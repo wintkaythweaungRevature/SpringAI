@@ -176,8 +176,8 @@ function MetaHintIcon() {
         width: 14,
         height: 14,
         borderRadius: '50%',
-        background: '#e5e7eb',
-        color: '#6b7280',
+        background: 'rgba(255,255,255,0.12)',
+        color: '#94a3b8',
         fontSize: 9,
         fontWeight: 700,
         fontStyle: 'italic',
@@ -214,26 +214,26 @@ function MetaPerformanceCard({
   return (
     <div
       style={{
-        background: '#fff',
-        border: '1px solid #e5e7eb',
+        background: 'rgba(255,255,255,0.06)',
+        border: '1px solid rgba(255,255,255,0.1)',
         borderRadius: 10,
         padding: '18px 16px 16px',
         minHeight: 168,
-        boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
       }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
-        <div style={{ fontSize: 16, fontWeight: 700, color: '#1c2b33', letterSpacing: '-0.02em' }}>{title}</div>
+        <div style={{ fontSize: 16, fontWeight: 700, color: '#f1f5f9', letterSpacing: '-0.02em' }}>{title}</div>
         <span style={{ color: '#bcc0c4', fontSize: 22, lineHeight: 1, userSelect: 'none' }} aria-hidden>›</span>
       </div>
       <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap', marginBottom: 4 }}>
-            <span style={{ fontSize: 34, fontWeight: 700, color: '#050505', letterSpacing: '-0.03em', lineHeight: 1 }}>{primaryValue}</span>
+            <span style={{ fontSize: 34, fontWeight: 700, color: '#ffffff', letterSpacing: '-0.03em', lineHeight: 1 }}>{primaryValue}</span>
             <DeltaBadge pct={deltaPct} />
           </div>
           {visitsSubLabel && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, fontSize: 13, color: '#374151' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, fontSize: 13, color: '#94a3b8' }}>
               <span>{visitsSubLabel}</span>
               <MetaHintIcon />
             </div>
@@ -249,13 +249,13 @@ function MetaPerformanceCard({
                     gap: 6,
                     flexWrap: 'wrap',
                     fontSize: 13,
-                    color: '#374151',
+                    color: '#94a3b8',
                     marginTop: i === 0 ? 0 : 8,
                   }}
                 >
                   <span>{row.label}</span>
                   <MetaHintIcon />
-                  <span style={{ fontWeight: 600, color: '#050505' }}>{row.valueText}</span>
+                  <span style={{ fontWeight: 600, color: '#ffffff' }}>{row.valueText}</span>
                   {row.deltaPct != null && <DeltaBadge pct={row.deltaPct} />}
                 </div>
               ))}
@@ -264,7 +264,7 @@ function MetaPerformanceCard({
           {footerRow && (
             <div
               style={{
-                borderTop: '1px solid #e5e7eb',
+                borderTop: '1px solid rgba(255,255,255,0.1)',
                 marginTop: 14,
                 paddingTop: 12,
                 display: 'flex',
@@ -272,12 +272,12 @@ function MetaPerformanceCard({
                 gap: 8,
                 flexWrap: 'wrap',
                 fontSize: 13,
-                color: '#374151',
+                color: '#94a3b8',
               }}
             >
               <span>{footerRow.label}</span>
               <MetaHintIcon />
-              <span style={{ fontWeight: 700, fontSize: 15, color: '#050505' }}>{footerRow.valueText}</span>
+              <span style={{ fontWeight: 700, fontSize: 15, color: '#ffffff' }}>{footerRow.valueText}</span>
               {footerRow.deltaPct != null && <DeltaBadge pct={footerRow.deltaPct} />}
             </div>
           )}
@@ -368,9 +368,9 @@ function PerformanceInsightsGrid({ platform, data, analyticsData, monthlyStats, 
       style={{
         padding: '8px 12px',
         borderRadius: 8,
-        border: '1px solid #e5e7eb',
-        background: '#fff',
-        color: '#bcc0c4',
+        border: '1px solid rgba(255,255,255,0.1)',
+        background: 'rgba(255,255,255,0.06)',
+        color: '#64748b',
         fontSize: 13,
         fontWeight: 600,
         cursor: 'not-allowed',
@@ -433,9 +433,9 @@ function PerformanceInsightsGrid({ platform, data, analyticsData, monthlyStats, 
     return (
       <div
         style={{
-          background: '#f3f4f6',
+          background: 'rgba(255,255,255,0.04)',
           borderRadius: 12,
-          border: '1px solid #e5e7eb',
+          border: '1px solid rgba(255,255,255,0.1)',
           padding: '18px 18px 20px',
           marginBottom: 14,
         }}
@@ -444,7 +444,7 @@ function PerformanceInsightsGrid({ platform, data, analyticsData, monthlyStats, 
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
               <IconGlobe size={22} color="#475569" />
-              <span style={{ fontSize: 18, fontWeight: 700, color: '#1c2b33', letterSpacing: '-0.02em' }}>Performance</span>
+              <span style={{ fontSize: 18, fontWeight: 700, color: '#f1f5f9', letterSpacing: '-0.02em' }}>Performance</span>
             </div>
             <div style={{ fontSize: 13, color: '#65676b' }}>
               All connected accounts{nConnected ? ` · ${nConnected} platform${nConnected !== 1 ? 's' : ''}` : ''} · {formatInsightsDateRange(28)}
@@ -538,9 +538,9 @@ function PerformanceInsightsGrid({ platform, data, analyticsData, monthlyStats, 
   return (
     <div
       style={{
-        background: '#f3f4f6',
+        background: 'rgba(255,255,255,0.04)',
         borderRadius: 12,
-        border: '1px solid #e5e7eb',
+        border: '1px solid rgba(255,255,255,0.1)',
         padding: '18px 18px 20px',
       }}
     >
@@ -548,7 +548,7 @@ function PerformanceInsightsGrid({ platform, data, analyticsData, monthlyStats, 
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
             {pMeta && <PlatformIcon platform={pMeta} size={22} />}
-            <span style={{ fontSize: 18, fontWeight: 700, color: '#1c2b33', letterSpacing: '-0.02em' }}>Performance</span>
+            <span style={{ fontSize: 18, fontWeight: 700, color: '#f1f5f9', letterSpacing: '-0.02em' }}>Performance</span>
           </div>
           <div style={{ fontSize: 13, color: '#65676b' }}>
             {pMeta?.label ?? platform} · {formatInsightsDateRange(28)}
@@ -642,11 +642,11 @@ function HBar({ label, value, max, color, icon, platform, barHeight = 10 }) {
       <span style={{ width: '24px', height: '24px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {platform ? <PlatformIcon platform={platform} size={22} /> : <span style={{ fontSize: '16px' }}>{icon}</span>}
       </span>
-      <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151', width: '78px', flexShrink: 0 }}>{label}</span>
-      <div style={{ flex: 1, background: '#f1f5f9', borderRadius: '6px', height: `${barHeight}px`, overflow: 'hidden' }}>
+      <span style={{ fontSize: '12px', fontWeight: 600, color: '#94a3b8', width: '78px', flexShrink: 0 }}>{label}</span>
+      <div style={{ flex: 1, background: 'rgba(255,255,255,0.08)', borderRadius: '6px', height: `${barHeight}px`, overflow: 'hidden' }}>
         <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: '6px', transition: 'width 0.6s ease' }} />
       </div>
-      <span style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b', width: '48px', textAlign: 'right', flexShrink: 0 }}>
+      <span style={{ fontSize: '13px', fontWeight: 700, color: '#f1f5f9', width: '48px', textAlign: 'right', flexShrink: 0 }}>
         {fmt(value)}
       </span>
     </div>
@@ -662,19 +662,19 @@ function PlatformTabBtn({ active, onClick, children, activeColor, disabled }) {
       style={{
         padding: '8px 14px',
         borderRadius: '8px',
-        border: active ? `1px solid ${activeColor || '#0f172a'}` : '1px solid #e2e8f0',
+        border: active ? `1px solid ${activeColor || '#6366f1'}` : '1px solid rgba(255,255,255,0.1)',
         cursor: disabled ? 'wait' : 'pointer',
         opacity: disabled ? 0.6 : 1,
         fontWeight: active ? 600 : 500,
         fontSize: '13px',
         whiteSpace: 'nowrap',
-        background: active ? (activeColor || '#0f172a') : '#fff',
-        color: active ? '#fff' : '#475569',
+        background: active ? (activeColor || '#6366f1') : 'rgba(255,255,255,0.06)',
+        color: active ? '#fff' : '#94a3b8',
         display: 'inline-flex',
         alignItems: 'center',
         gap: '6px',
         transition: 'background 0.15s, border-color 0.15s, color 0.15s',
-        boxShadow: active ? 'none' : '0 1px 2px rgba(15, 23, 42, 0.04)',
+        boxShadow: active ? 'none' : '0 4px 20px rgba(0,0,0,0.3)',
         fontFamily: 'inherit',
       }}
     >
@@ -704,7 +704,7 @@ function DonutChart({ segments }) {
         style={{
           width: '100px', height: '100px', borderRadius: '50%', flexShrink: 0,
           background: nonZero.length ? `conic-gradient(${gradient})` : '#e2e8f0',
-          boxShadow: 'inset 0 0 0 28px #fff',
+          boxShadow: 'inset 0 0 0 28px #0f172a',
         }}
       />
       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -725,12 +725,12 @@ function DonutChart({ segments }) {
                 cursor: 'default',
                 transition: 'background 0.15s',
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = '#f1f5f9'; }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
             >
               <div style={{ width: '10px', height: '10px', borderRadius: '3px', background: seg.color, flexShrink: 0 }} />
-              <span style={{ fontSize: '12px', color: '#374151', fontWeight: 500 }}>{seg.label}</span>
-              <span style={{ fontSize: '12px', fontWeight: 700, color: '#1e293b' }}>{pct}%</span>
+              <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 500 }}>{seg.label}</span>
+              <span style={{ fontSize: '12px', fontWeight: 700, color: '#f1f5f9' }}>{pct}%</span>
               <span style={{ fontSize: '11px', color: '#94a3b8' }}>({seg.value})</span>
             </div>
           );
@@ -748,16 +748,16 @@ function PlatformCard({ platform, data }) {
 
   return (
     <div style={{
-      background: '#fff', borderRadius: '14px', padding: '18px',
-      border: `1.5px solid ${hasError ? '#e2e8f0' : p.color}22`,
-      boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+      background: 'rgba(255,255,255,0.06)', borderRadius: '14px', padding: '18px',
+      border: `1.5px solid ${hasError ? 'rgba(255,255,255,0.08)' : p.color}22`,
+      boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
         <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: `${p.color}12`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <PlatformIcon platform={p} size={26} />
         </div>
         <div>
-          <div style={{ fontWeight: 700, fontSize: '14px', color: '#1e293b' }}>{p.label}</div>
+          <div style={{ fontWeight: 700, fontSize: '14px', color: '#f1f5f9' }}>{p.label}</div>
           {data.channelName && <div style={{ fontSize: '11px', color: '#64748b' }}>{data.channelName}</div>}
           {data.username    && <div style={{ fontSize: '11px', color: '#64748b' }}>@{data.username}</div>}
           {data.pageName    && <div style={{ fontSize: '11px', color: '#64748b' }}>{data.pageName}</div>}
@@ -766,7 +766,7 @@ function PlatformCard({ platform, data }) {
       </div>
 
       {hasError ? (
-        <div style={{ fontSize: '12px', color: '#94a3b8', background: '#f8fafc', borderRadius: '8px', padding: '10px', lineHeight: 1.5 }}>
+        <div style={{ fontSize: '12px', color: '#94a3b8', background: 'rgba(255,255,255,0.04)', borderRadius: '8px', padding: '10px', lineHeight: 1.5 }}>
           ⚠️ {data.error}
         </div>
       ) : (
@@ -1002,8 +1002,8 @@ export default function AnalyticsDashboard() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1fr', gap: '14px', marginBottom: '14px' }}>
 
                 {/* Followers per platform */}
-                <div style={{ background: '#fff', borderRadius: '12px', padding: '18px 20px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)' }}>
-                  <div style={{ fontWeight: 700, fontSize: '14px', color: '#1e293b', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: '12px', padding: '18px 20px', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
+                  <div style={{ fontWeight: 700, fontSize: '14px', color: '#f1f5f9', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <IconUsers size={18} color="#6366f1" />
                     Followers by Platform
                   </div>
@@ -1022,8 +1022,8 @@ export default function AnalyticsDashboard() {
                 </div>
 
                 {/* Content type breakdown */}
-                <div style={{ background: '#fff', borderRadius: '12px', padding: '18px 20px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)' }}>
-                  <div style={{ fontWeight: 700, fontSize: '14px', color: '#1e293b', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: '12px', padding: '18px 20px', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
+                  <div style={{ fontWeight: 700, fontSize: '14px', color: '#f1f5f9', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <IconPalette size={18} color="#6366f1" />
                     Content created
                   </div>
@@ -1047,12 +1047,12 @@ export default function AnalyticsDashboard() {
                           key={c.label}
                           title={tip ?? undefined}
                           style={{
-                            background: '#fff',
-                            border: '1px solid #e2e8f0',
+                            background: 'rgba(255,255,255,0.06)',
+                            border: '1px solid rgba(255,255,255,0.1)',
                             borderRadius: '10px',
                             padding: '12px 8px',
                             textAlign: 'center',
-                            boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+                            boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
                             cursor: tip ? 'help' : 'default',
                             position: 'relative',
                           }}
@@ -1077,7 +1077,7 @@ export default function AnalyticsDashboard() {
                                       borderRadius: '6px',
                                       marginBottom: '2px',
                                     }}
-                                    onMouseEnter={(e) => { e.currentTarget.style.background = '#f8fafc'; }}
+                                    onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
                                     onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                                   >
                                     <span style={{ width: 18, height: 18, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -1086,7 +1086,7 @@ export default function AnalyticsDashboard() {
                                     <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                       {p?.label ?? pid}
                                     </span>
-                                    <span style={{ fontWeight: 700, color: '#475569', flexShrink: 0 }}>{cnt}</span>
+                                    <span style={{ fontWeight: 700, color: '#94a3b8', flexShrink: 0 }}>{cnt}</span>
                                   </div>
                                 );
                               })}
@@ -1103,8 +1103,8 @@ export default function AnalyticsDashboard() {
 
                 {/* Content shared by platform — 3rd column */}
                 {Object.keys(byPlatform).length > 0 && (
-                  <div style={{ background: '#fff', borderRadius: '12px', padding: '18px 20px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)', minWidth: 0 }}>
-                    <div style={{ fontWeight: 700, fontSize: '14px', color: '#1e293b', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: '12px', padding: '18px 20px', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 4px 20px rgba(0,0,0,0.3)', minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, fontSize: '14px', color: '#f1f5f9', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <IconChart size={18} color="#6366f1" />
                       Content shared by platform
                     </div>
@@ -1130,7 +1130,7 @@ export default function AnalyticsDashboard() {
                             {hoveredPlatform === pid && (
                               <div style={{
                                 position: 'absolute', right: 0, top: '100%', zIndex: 50,
-                                background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10,
+                                background: 'rgba(15,23,42,0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10,
                                 boxShadow: '0 4px 16px rgba(0,0,0,0.12)', padding: '10px 14px',
                                 minWidth: 240, maxWidth: 300,
                               }}>
@@ -1140,8 +1140,8 @@ export default function AnalyticsDashboard() {
                                 {platformPosts.length === 0 ? (
                                   <div style={{ fontSize: 12, color: '#94a3b8', padding: '4px 0' }}>No recent posts yet</div>
                                 ) : platformPosts.slice(0, 4).map((post, i) => (
-                                  <div key={i} style={{ padding: '6px 0', borderBottom: i < Math.min(platformPosts.length, 4) - 1 ? '1px solid #f1f5f9' : 'none' }}>
-                                    <div style={{ fontSize: 12, color: '#1e293b', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  <div key={i} style={{ padding: '6px 0', borderBottom: i < Math.min(platformPosts.length, 4) - 1 ? '1px solid rgba(255,255,255,0.08)' : 'none' }}>
+                                    <div style={{ fontSize: 12, color: '#f1f5f9', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                       {safeDecodeCaption(post.caption) || '(no caption)'}
                                     </div>
                                     <div style={{ display: 'flex', gap: 8, marginTop: 3, fontSize: 11, color: '#64748b', flexWrap: 'wrap' }}>
@@ -1166,8 +1166,8 @@ export default function AnalyticsDashboard() {
 
               {/* 🏆 Top Performing Posts */}
               {topPosts?.posts?.length > 0 && (
-                <div style={{ background: '#fff', borderRadius: 12, padding: '20px 22px', marginTop: 22, border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(15,23,42,0.04)' }}>
-                  <div style={{ fontWeight: 700, fontSize: 15, color: '#1e293b', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: 12, padding: '20px 22px', marginTop: 22, border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
+                  <div style={{ fontWeight: 700, fontSize: 15, color: '#f1f5f9', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
                     🏆 Top Performing Posts
                   </div>
                   {/* Metric tabs */}
@@ -1183,8 +1183,8 @@ export default function AnalyticsDashboard() {
                     ].map(m => (
                       <button key={m.key} onClick={() => setTopMetricTab(m.key)} style={{
                         padding: '5px 12px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600,
-                        background: topMetricTab === m.key ? '#6366f1' : '#f1f5f9',
-                        color: topMetricTab === m.key ? '#fff' : '#475569',
+                        background: topMetricTab === m.key ? '#6366f1' : 'rgba(255,255,255,0.08)',
+                        color: topMetricTab === m.key ? '#fff' : '#94a3b8',
                       }}>{m.label}</button>
                     ))}
                   </div>
@@ -1202,13 +1202,13 @@ export default function AnalyticsDashboard() {
                           const pl = PLATFORMS.find(x => x.id === (post.platform ?? '').toLowerCase());
                           const metricVal = post[topMetricTab];
                           return (
-                            <div key={i} style={{ background: '#f8fafc', borderRadius: 10, padding: '12px 14px', border: '1px solid #e2e8f0' }}>
+                            <div key={i} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 10, padding: '12px 14px', border: '1px solid rgba(255,255,255,0.1)' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
                                 {pl ? <PlatformIcon platform={pl} size={18} /> : <span style={{ fontSize: 16 }}>📤</span>}
                                 <span style={{ fontSize: 11, fontWeight: 700, color: pl?.color ?? '#6366f1', textTransform: 'uppercase' }}>{pl?.label ?? post.platform}</span>
                                 <span style={{ marginLeft: 'auto', fontSize: 10, background: '#e0e7ff', color: '#4f46e5', borderRadius: 6, padding: '2px 6px', fontWeight: 600 }}>{post.mediaType ?? 'post'}</span>
                               </div>
-                              <div style={{ fontSize: 12, color: '#334155', marginBottom: 8, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                              <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 8, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
                                 {safeDecodeCaption(post.caption) || '(no caption)'}
                               </div>
                               <div style={{ fontSize: 13, fontWeight: 700, color: '#6366f1' }}>
@@ -1226,16 +1226,16 @@ export default function AnalyticsDashboard() {
               )}
 
               {/* 📅 Month-by-Month Stats */}
-              <div style={{ background: '#fff', borderRadius: 12, padding: '20px 22px', marginTop: 22, border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(15,23,42,0.04)' }}>
-                <div style={{ fontWeight: 700, fontSize: 15, color: '#1e293b', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: 12, padding: '20px 22px', marginTop: 22, border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
+                <div style={{ fontWeight: 700, fontSize: 15, color: '#f1f5f9', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
                   📅 Month-by-Month Stats
                 </div>
                 <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginBottom: 16 }}>
                   <input type="date" value={monthlyFrom} onChange={e => setMonthlyFrom(e.target.value)}
-                    style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 13, color: '#334155' }} />
+                    style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', fontSize: 13, color: '#f1f5f9', background: 'rgba(255,255,255,0.06)' }} />
                   <span style={{ color: '#94a3b8', fontSize: 13 }}>to</span>
                   <input type="date" value={monthlyTo} onChange={e => setMonthlyTo(e.target.value)}
-                    style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 13, color: '#334155' }} />
+                    style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', fontSize: 13, color: '#f1f5f9', background: 'rgba(255,255,255,0.06)' }} />
                   <button onClick={() => loadMonthlyStats(monthlyFrom, monthlyTo)} disabled={loadMonthly}
                     style={{ padding: '6px 16px', borderRadius: 8, border: 'none', background: '#6366f1', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer', opacity: loadMonthly ? 0.6 : 1 }}>
                     {loadMonthly ? 'Loading…' : 'Apply'}
@@ -1251,9 +1251,9 @@ export default function AnalyticsDashboard() {
                         { label: 'Total Views',    value: monthlyStats.months.reduce((s, m) => s + (m.views ?? 0), 0) },
                         { label: 'Total Shares',   value: monthlyStats.months.reduce((s, m) => s + (m.shares ?? 0), 0) },
                       ].map(stat => (
-                        <div key={stat.label} style={{ background: '#f8fafc', borderRadius: 10, padding: '10px 16px', border: '1px solid #e2e8f0', minWidth: 120 }}>
+                        <div key={stat.label} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 10, padding: '10px 16px', border: '1px solid rgba(255,255,255,0.1)', minWidth: 120 }}>
                           <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>{stat.label}</div>
-                          <div style={{ fontSize: 20, fontWeight: 700, color: '#1e293b' }}>{Number(stat.value).toLocaleString()}</div>
+                          <div style={{ fontSize: 20, fontWeight: 700, color: '#f1f5f9' }}>{Number(stat.value).toLocaleString()}</div>
                         </div>
                       ))}
                     </div>
@@ -1261,9 +1261,9 @@ export default function AnalyticsDashboard() {
                     <div style={{ overflowX: 'auto' }}>
                       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                         <thead>
-                          <tr style={{ background: '#f8fafc' }}>
+                          <tr style={{ background: 'rgba(255,255,255,0.04)' }}>
                             {['Month', 'Posts', 'Likes', 'Comments', 'Views', 'Shares'].map(h => (
-                              <th key={h} style={{ padding: '8px 12px', textAlign: h === 'Month' ? 'left' : 'center', color: '#64748b', fontWeight: 600, fontSize: 11, borderBottom: '1px solid #e2e8f0' }}>{h}</th>
+                              <th key={h} style={{ padding: '8px 12px', textAlign: h === 'Month' ? 'left' : 'center', color: '#64748b', fontWeight: 600, fontSize: 11, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>{h}</th>
                             ))}
                           </tr>
                         </thead>
@@ -1273,8 +1273,8 @@ export default function AnalyticsDashboard() {
                               ? <span style={{ color, fontWeight: 700 }}>{Number(val).toLocaleString()}</span>
                               : <span style={{ color: '#cbd5e1' }}>—</span>;
                             return (
-                            <tr key={i} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                              <td style={{ padding: '10px 12px', fontWeight: 600, color: '#1e293b' }}>{m.month}</td>
+                            <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                              <td style={{ padding: '10px 12px', fontWeight: 600, color: '#f1f5f9' }}>{m.month}</td>
                               <td style={{ padding: '10px 12px', textAlign: 'center', color: '#6366f1', fontWeight: 700 }}>{m.postCount ?? 0}</td>
                               <td style={{ padding: '10px 12px', textAlign: 'center' }}>{cell(m.likes,         '#ec4899')}</td>
                               <td style={{ padding: '10px 12px', textAlign: 'center' }}>{cell(m.commentsCount, '#22c55e')}</td>
@@ -1296,9 +1296,9 @@ export default function AnalyticsDashboard() {
 
               {/* Recent activity */}
               {recentVisible.length > 0 && (
-                <div style={{ background: '#fff', borderRadius: '12px', padding: '18px 20px', marginTop: 22, border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)' }}>
+                <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: '12px', padding: '18px 20px', marginTop: 22, border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                    <div style={{ fontWeight: 700, fontSize: '14px', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ fontWeight: 700, fontSize: '14px', color: '#f1f5f9', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <IconClock size={18} color="#6366f1" />
                       Recent activity
                     </div>
@@ -1313,7 +1313,7 @@ export default function AnalyticsDashboard() {
                           return next;
                         });
                       }}
-                      style={{ padding: '5px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#f8fafc', color: '#ef4444', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
+                      style={{ padding: '5px 12px', borderRadius: '8px', border: '1px solid rgba(239,68,68,0.25)', background: 'rgba(239,68,68,0.12)', color: '#f87171', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
                     >
                       Clear All
                     </button>
@@ -1329,12 +1329,12 @@ export default function AnalyticsDashboard() {
                       const d  = new Date(post.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                       const rowKey = post.id != null ? String(post.id) : `${post.platform}-${post.createdAt}-${(post.caption || '').slice(0, 20)}`;
                       return (
-                        <div key={rowKey} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                        <div key={rowKey} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)' }}>
                           <span style={{ width: 22, height: 22, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             {p ? <PlatformIcon platform={p} size={20} /> : <span style={{ fontSize: '16px' }}>📤</span>}
                           </span>
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            <div style={{ fontSize: '13px', fontWeight: 600, color: '#f1f5f9', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                               {safeDecodeCaption(post.caption) || '(no caption)'}
                             </div>
                             <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
@@ -1354,8 +1354,8 @@ export default function AnalyticsDashboard() {
                               gap: '4px',
                               padding: '6px 10px',
                               borderRadius: '8px',
-                              border: '1px solid #e2e8f0',
-                              background: '#fff',
+                              border: '1px solid rgba(255,255,255,0.1)',
+                              background: 'rgba(255,255,255,0.06)',
                               color: '#64748b',
                               fontSize: '11px',
                               fontWeight: 600,
@@ -1386,7 +1386,7 @@ export default function AnalyticsDashboard() {
           )}
 
           {tab !== 'overview' && !platforms[tab] && (
-            <div style={{ background: '#f8fafc', borderRadius: '14px', padding: '40px', textAlign: 'center', color: '#94a3b8', fontSize: '14px' }}>
+            <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '14px', padding: '40px', textAlign: 'center', color: '#94a3b8', fontSize: '14px' }}>
               No analytics data available for this platform yet.
             </div>
           )}
@@ -1394,10 +1394,10 @@ export default function AnalyticsDashboard() {
       )}
 
       {data && connected.length === 0 && (
-        <div style={{ background: '#f8fafc', borderRadius: '14px', padding: '40px', textAlign: 'center' }}>
+        <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '14px', padding: '40px', textAlign: 'center' }}>
           <div style={{ fontSize: '40px', marginBottom: '12px' }}>🔌</div>
-          <div style={{ fontWeight: 700, fontSize: '16px', color: '#1e293b', marginBottom: '8px' }}>No platforms connected</div>
-          <div style={{ color: '#64748b', fontSize: '13px' }}>
+          <div style={{ fontWeight: 700, fontSize: '16px', color: '#f1f5f9', marginBottom: '8px' }}>No platforms connected</div>
+          <div style={{ color: '#94a3b8', fontSize: '13px' }}>
             Go to <strong>Connected Accounts</strong> in the sidebar to link Instagram, YouTube, X, and more.
           </div>
         </div>

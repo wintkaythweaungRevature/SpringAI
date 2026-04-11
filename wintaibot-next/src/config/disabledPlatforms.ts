@@ -2,7 +2,7 @@
  * Temporarily hidden from connect / publish / calendar pickers.
  * Remove ids from the Set to re-enable.
  */
-export const DISABLED_PLATFORM_IDS = new Set<string>(['tiktok', 'threads']);
+export const DISABLED_PLATFORM_IDS = new Set<string>(['threads']);
 
 export function isPlatformDisabled(platformId: string | null | undefined): boolean {
   if (platformId == null) return false;

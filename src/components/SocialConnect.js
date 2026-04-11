@@ -43,7 +43,23 @@ export default function SocialConnect() {
   useEffect(() => {
     fetchStatus();
 
-    // Handle OAuth callback result from URL params
+    // Handle OAuth callback from popup via postMessage (popup closes itself, sends message to main window)
+    const handleOAuthMessage = (event) => {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type !== 'wintaibot:social_connect') return;
+      const { result, platform, msg } = event.data;
+      if (result === 'success') {
+        setMessage({ type: 'success', text: `✅ ${platform} connected successfully!` });
+        fetchStatus();
+      } else {
+        const detail = msg ? `: ${decodeURIComponent(msg)}` : '';
+        setMessage({ type: 'error', text: `❌ Failed to connect ${platform}${detail}` });
+      }
+      setTimeout(() => setMessage(null), 6000);
+    };
+    window.addEventListener('message', handleOAuthMessage);
+
+    // Fallback: handle direct redirect (non-popup OAuth) via URL params
     const params = new URLSearchParams(window.location.search);
     const connectResult = params.get('social_connect');
     const platform = params.get('platform');
@@ -52,12 +68,14 @@ export default function SocialConnect() {
         setMessage({ type: 'success', text: `✅ ${platform} connected successfully!` });
         fetchStatus();
       } else {
-        setMessage({ type: 'error', text: `❌ Failed to connect ${platform}. Please try again.` });
+        const detail = params.get('msg') ? `: ${decodeURIComponent(params.get('msg'))}` : '';
+        setMessage({ type: 'error', text: `❌ Failed to connect ${platform}${detail}` });
       }
-      // Clean URL
       window.history.replaceState({}, '', window.location.pathname);
-      setTimeout(() => setMessage(null), 4000);
+      setTimeout(() => setMessage(null), 6000);
     }
+
+    return () => window.removeEventListener('message', handleOAuthMessage);
   }, [fetchStatus]);
 
   const handleConnect = async (platformId) => {
@@ -66,23 +84,36 @@ export default function SocialConnect() {
       const res = await fetch(`${base}/api/social/connect/${platformId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (res.ok) {
-        const data = await res.json();
-        // Open OAuth URL in popup
-        const popup = window.open(data.url, 'oauth_popup',
-          'width=600,height=700,scrollbars=yes,resizable=yes');
-
-        // Poll for popup close
-        const interval = setInterval(() => {
-          if (popup && popup.closed) {
-            clearInterval(interval);
-            setConnecting(null);
-            fetchStatus();
-          }
-        }, 1000);
+      const data = await res.json();
+      if (!res.ok) {
+        setMessage({ type: 'error', text: `❌ ${data.error || `Failed to start ${platformId} connection`}` });
+        setTimeout(() => setMessage(null), 6000);
+        return;
       }
+
+      // Open OAuth URL in popup
+      const popup = window.open(data.url, 'oauth_popup',
+        'width=600,height=700,scrollbars=yes,resizable=yes');
+
+      if (!popup || popup.closed) {
+        // Popup was blocked — fall back to redirect
+        setMessage({ type: 'error', text: '⚠️ Popup was blocked. Please allow popups and try again, or click the link below.' });
+        setTimeout(() => setMessage(null), 8000);
+        window.location.href = data.url;
+        return;
+      }
+
+      // Poll for popup close as fallback (postMessage is primary)
+      const interval = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(interval);
+          setConnecting(null);
+          fetchStatus();
+        }
+      }, 1000);
     } catch (e) {
-      setMessage({ type: 'error', text: `Failed to initiate ${platformId} connection` });
+      setMessage({ type: 'error', text: `❌ Network error connecting ${platformId}` });
+      setTimeout(() => setMessage(null), 5000);
     } finally {
       setConnecting(null);
     }

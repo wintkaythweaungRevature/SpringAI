@@ -320,8 +320,23 @@ function App() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('social_connect') === 'success' && params.get('platform')) {
-      go('video-publisher');
+    const connectResult = params.get('social_connect');
+    const connectPlatform = params.get('platform');
+    if (connectResult && connectPlatform) {
+      // If this is an OAuth popup window — notify parent and close immediately
+      if (window.opener && !window.opener.closed) {
+        try {
+          window.opener.postMessage(
+            { type: 'wintaibot:social_connect', result: connectResult, platform: connectPlatform, msg: params.get('msg') || '' },
+            window.location.origin
+          );
+        } catch (_) {}
+        window.close();
+        return;
+      }
+      // Main-window redirect (non-popup OAuth flow)
+      if (connectResult === 'success') go('video-publisher');
+      window.history.replaceState({}, '', '/');
     }
     // Email verified → show success banner + open login
     if (params.get('verified') === 'true') {

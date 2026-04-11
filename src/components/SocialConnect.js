@@ -45,7 +45,8 @@ export default function SocialConnect() {
 
     // Handle OAuth callback from popup via postMessage (popup closes itself, sends message to main window)
     const handleOAuthMessage = (event) => {
-      if (event.origin !== window.location.origin) return;
+      const normalize = (o) => o.replace(/^https?:\/\/(www\.)?/, '');
+      if (normalize(event.origin) !== normalize(window.location.origin)) return;
       if (event.data?.type !== 'wintaibot:social_connect') return;
       const { result, platform, msg } = event.data;
       if (result === 'success') {

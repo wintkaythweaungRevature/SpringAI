@@ -338,28 +338,6 @@ function HeroPlatformsUnderNote() {
   );
 }
 
-/* ─── Sticky Nav ────────────────────────────────────────────── */
-function LandingNav({ onGetStarted }) {
-  return (
-    <nav className="ls-nav" aria-label="Main navigation">
-      <div className="ls-nav-inner">
-        <a className="ls-nav-logo" href="/">
-          <span className="ls-nav-logo-mark">W!</span>ntAi
-        </a>
-        <div className="ls-nav-links">
-          <a className="ls-nav-link" href="#features">Features</a>
-          <a className="ls-nav-link" href="#how-it-works">How it works</a>
-          <a className="ls-nav-link" href="#use-cases">Use cases</a>
-          <a className="ls-nav-link" href="#pricing">Pricing</a>
-        </div>
-        <button type="button" className="ls-nav-cta" onClick={onGetStarted}>
-          Start free trial
-        </button>
-      </div>
-    </nav>
-  );
-}
-
 /* ─── Data ─────────────────────────────────────────────────── */
 
 const features = [
@@ -484,8 +462,6 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
 
   return (
     <main className="ls-root" aria-label="W!ntAi — social media video publishing and AI tools">
-
-      <LandingNav onGetStarted={onGetStarted} />
 
       {/* ── HERO (SEO: one H1 — video publishing + social managers) ── */}
       <section className="ls-hero ls-hero--showcase" aria-labelledby="hero-heading">

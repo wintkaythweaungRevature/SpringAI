@@ -84,21 +84,25 @@ function NavItem({ icon, label, active, onClick, hasArrow }) {
   );
 }
 
-const marketingNavLinkBtn = {
-  background: 'none',
-  border: 'none',
-  cursor: 'pointer',
-  color: 'rgba(255,255,255,0.78)',
-  fontSize: '14px',
-  fontWeight: 500,
-  padding: '0',
-  fontFamily: 'inherit',
-  transition: 'color 0.15s',
-};
 
 function MarketingNav({ go, onLogin, onSignup }) {
   const isMobile = useMediaQuery('(max-width: 900px)');
   const [resourcesOpen, setResourcesOpen] = useState(false);
+
+  const linkStyle = {
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    color: 'rgba(255,255,255,0.72)',
+    fontSize: '14px',
+    fontWeight: 600,
+    padding: '6px 12px',
+    borderRadius: '6px',
+    fontFamily: 'inherit',
+    transition: 'color 0.12s, background 0.12s',
+    textDecoration: 'none',
+    display: 'inline-block',
+  };
 
   return (
     <nav
@@ -108,134 +112,134 @@ function MarketingNav({ go, onLogin, onSignup }) {
         left: 0,
         right: 0,
         zIndex: 1000,
-        background: '#0f172a',
+        background: 'rgba(6, 10, 20, 0.82)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        borderBottom: '1px solid rgba(255,255,255,0.08)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: isMobile ? '0 12px' : '0 32px',
-        height: isMobile ? '54px' : '58px',
+        padding: isMobile ? '0 16px' : '0 40px',
+        height: isMobile ? '54px' : '60px',
         gap: isMobile ? '8px' : 0,
-        boxShadow: '0 1px 0 rgba(255,255,255,0.06)',
       }}
     >
+      {/* Logo */}
       <div
-        style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+        style={{ display: 'flex', alignItems: 'center', gap: '9px', cursor: 'pointer', flexShrink: 0 }}
         onClick={() => go(null)}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(null); } }}
         role="button"
         tabIndex={0}
       >
-        <img src={BRAND_LOGO_SRC} alt="W!ntAi logo" width={34} height={34} style={{ display: 'block', flexShrink: 0, borderRadius: '7px' }} />
-        <span style={{ color: '#fff', fontWeight: 800, fontSize: isMobile ? '15px' : '17px', letterSpacing: '-0.01em' }}>W!ntAi</span>
+        <img src={BRAND_LOGO_SRC} alt="W!ntAi logo" width={32} height={32} style={{ display: 'block', flexShrink: 0, borderRadius: '8px' }} />
+        <span style={{ color: '#f1f5f9', fontWeight: 800, fontSize: isMobile ? '15px' : '17px', letterSpacing: '-0.02em' }}>
+          <span style={{ color: '#818cf8' }}>W!</span>ntAi
+        </span>
       </div>
 
+      {/* Centre links */}
       {!isMobile && (
-      <div style={{ display: 'flex', alignItems: 'center', gap: '28px' }}>
-        {[
-          { label: 'Home', action: () => go(null) },
-          { label: 'Features', action: () => go(null) },
-          { label: 'Pricing', action: () => go('pricing') },
-        ].map(({ label, action }) => (
-          <button
-            key={label}
-            type="button"
-            onClick={action}
-            style={marketingNavLinkBtn}
-            onMouseEnter={(e) => { e.target.style.color = '#fff'; }}
-            onMouseLeave={(e) => { e.target.style.color = 'rgba(255,255,255,0.78)'; }}
-          >
-            {label}
-          </button>
-        ))}
-        <div
-          style={{ position: 'relative' }}
-          onMouseEnter={() => setResourcesOpen(true)}
-          onMouseLeave={() => setResourcesOpen(false)}
-        >
-          <button
-            type="button"
-            style={marketingNavLinkBtn}
-            aria-expanded={resourcesOpen}
-            aria-haspopup="true"
-            onClick={() => setResourcesOpen((o) => !o)}
-            onMouseEnter={(e) => { e.target.style.color = '#fff'; }}
-            onMouseLeave={(e) => { if (!resourcesOpen) e.target.style.color = 'rgba(255,255,255,0.78)'; }}
-          >
-            Resources <span style={{ opacity: 0.65 }} aria-hidden="true">▾</span>
-          </button>
-          {resourcesOpen && (
-            <div
-              role="menu"
-              style={{
-                position: 'absolute',
-                top: '100%',
-                left: 0,
-                marginTop: 8,
-                background: '#1e293b',
-                border: '1px solid rgba(148,163,184,0.25)',
-                borderRadius: 8,
-                padding: '8px 0',
-                minWidth: 168,
-                boxShadow: '0 12px 24px rgba(0,0,0,0.35)',
-              }}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+          {[
+            { label: 'Features',     action: () => go(null) },
+            { label: 'How it works', action: () => go(null) },
+            { label: 'Use cases',    action: () => go(null) },
+            { label: 'Pricing',      action: () => go('pricing') },
+          ].map(({ label, action }) => (
+            <button
+              key={label}
+              type="button"
+              onClick={action}
+              style={linkStyle}
+              onMouseEnter={(e) => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(255,255,255,0.72)'; e.currentTarget.style.background = 'none'; }}
             >
-              <a
-                href="/tutorial"
-                role="menuitem"
-                style={{ display: 'block', padding: '10px 16px', color: 'rgba(255,255,255,0.92)', fontSize: '14px', fontWeight: 500, textDecoration: 'none' }}
-                onClick={() => setResourcesOpen(false)}
-              >
-                Tutorials
-              </a>
-              <a
-                href="/blog"
-                role="menuitem"
-                style={{ display: 'block', padding: '10px 16px', color: 'rgba(255,255,255,0.92)', fontSize: '14px', fontWeight: 500, textDecoration: 'none' }}
-                onClick={() => setResourcesOpen(false)}
-              >
-                Blog
-              </a>
+              {label}
+            </button>
+          ))}
+          {/* Resources dropdown */}
+          <div
+            style={{ position: 'relative' }}
+            onMouseEnter={() => setResourcesOpen(true)}
+            onMouseLeave={() => setResourcesOpen(false)}
+          >
+            <button
+              type="button"
+              style={linkStyle}
+              aria-expanded={resourcesOpen}
+              aria-haspopup="true"
+              onClick={() => setResourcesOpen((o) => !o)}
+              onMouseEnter={(e) => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(255,255,255,0.72)'; e.currentTarget.style.background = 'none'; }}
+            >
+              Resources <span style={{ opacity: 0.55, fontSize: 11 }} aria-hidden="true">▾</span>
+            </button>
+            {resourcesOpen && (
               <div
-                role="separator"
-                style={{ borderTop: '1px solid rgba(148,163,184,0.22)', margin: '6px 0 4px' }}
-              />
-              <a
-                href="/privacy-policy"
-                role="menuitem"
-                style={{ display: 'block', padding: '10px 16px', color: 'rgba(255,255,255,0.92)', fontSize: '14px', fontWeight: 500, textDecoration: 'none' }}
-                onClick={() => setResourcesOpen(false)}
+                role="menu"
+                style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  marginTop: 6,
+                  background: 'rgba(15,23,42,0.97)',
+                  backdropFilter: 'blur(16px)',
+                  WebkitBackdropFilter: 'blur(16px)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: 10,
+                  padding: '6px 0',
+                  minWidth: 168,
+                  boxShadow: '0 16px 40px rgba(0,0,0,0.4)',
+                }}
               >
-                Privacy Policy
-              </a>
-              <a
-                href="/terms-of-service"
-                role="menuitem"
-                style={{ display: 'block', padding: '10px 16px', color: 'rgba(255,255,255,0.92)', fontSize: '14px', fontWeight: 500, textDecoration: 'none' }}
-                onClick={() => setResourcesOpen(false)}
-              >
-                Terms of Service
-              </a>
-            </div>
-          )}
+                {[
+                  { label: 'Tutorials',       href: '/tutorial' },
+                  { label: 'Blog',            href: '/blog' },
+                ].map(({ label, href }) => (
+                  <a key={label} href={href} role="menuitem" onClick={() => setResourcesOpen(false)}
+                    style={{ display: 'block', padding: '9px 16px', color: 'rgba(255,255,255,0.85)', fontSize: '13.5px', fontWeight: 500, textDecoration: 'none' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = '#fff'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'rgba(255,255,255,0.85)'; }}
+                  >{label}</a>
+                ))}
+                <div role="separator" style={{ borderTop: '1px solid rgba(255,255,255,0.08)', margin: '5px 0' }} />
+                {[
+                  { label: 'Privacy Policy',  href: '/privacy-policy' },
+                  { label: 'Terms of Service',href: '/terms-of-service' },
+                ].map(({ label, href }) => (
+                  <a key={label} href={href} role="menuitem" onClick={() => setResourcesOpen(false)}
+                    style={{ display: 'block', padding: '9px 16px', color: 'rgba(255,255,255,0.55)', fontSize: '13px', fontWeight: 500, textDecoration: 'none' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'rgba(255,255,255,0.85)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)'; }}
+                  >{label}</a>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
       )}
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '6px' : '10px' }}>
+      {/* Right: Login + CTA */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '6px' : '8px', flexShrink: 0 }}>
         <button
           type="button"
           onClick={onLogin}
           style={{
-            background: 'transparent',
-            color: '#e2e8f0',
-            border: '1px solid rgba(148,163,184,0.6)',
+            background: 'rgba(255,255,255,0.07)',
+            color: 'rgba(255,255,255,0.88)',
+            border: '1px solid rgba(255,255,255,0.15)',
             borderRadius: '8px',
-            padding: isMobile ? '7px 10px' : '9px 16px',
-            fontWeight: 700,
+            padding: isMobile ? '7px 12px' : '8px 18px',
+            fontWeight: 600,
             fontSize: isMobile ? '12px' : '14px',
             cursor: 'pointer',
             whiteSpace: 'nowrap',
+            fontFamily: 'inherit',
+            transition: 'background 0.13s, border-color 0.13s',
           }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.28)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; }}
         >
           Login
         </button>
@@ -243,19 +247,23 @@ function MarketingNav({ go, onLogin, onSignup }) {
           type="button"
           onClick={onSignup}
           style={{
-            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+            background: '#6366f1',
             color: '#fff',
             border: 'none',
             borderRadius: '8px',
-            padding: isMobile ? '7px 10px' : '9px 20px',
+            padding: isMobile ? '7px 12px' : '8px 20px',
             fontWeight: 700,
             fontSize: isMobile ? '12px' : '14px',
             cursor: 'pointer',
             whiteSpace: 'nowrap',
-            boxShadow: '0 2px 12px rgba(99,102,241,0.4)',
+            fontFamily: 'inherit',
+            boxShadow: '0 2px 14px rgba(99,102,241,0.45)',
+            transition: 'background 0.13s, transform 0.13s',
           }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = '#4f46e5'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = '#6366f1'; e.currentTarget.style.transform = 'translateY(0)'; }}
         >
-          {isMobile ? 'Try Free' : 'Try Free Trial →'}
+          {isMobile ? 'Try Free' : 'Start free trial'}
         </button>
       </div>
     </nav>
@@ -328,7 +336,7 @@ function App() {
         try {
           window.opener.postMessage(
             { type: 'wintaibot:social_connect', result: connectResult, platform: connectPlatform, msg: params.get('msg') || '' },
-            window.location.origin
+            '*'
           );
         } catch (_) {}
         window.close();

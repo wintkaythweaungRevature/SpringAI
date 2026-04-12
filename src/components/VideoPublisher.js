@@ -20,7 +20,6 @@ import PlatformIcon from './PlatformIcon';
 import VideoTrimmer from './VideoTrimmer';
 import PostDetailModal from './PostDetailModal';
 import CaptionIdeasPanel from './CaptionIdeasPanel';
-import ThumbnailIdeasPanel from './ThumbnailIdeasPanel';
 
 /* ─── Constants ─────────────────────────────────────────────── */
 const PLATFORMS = filterEnabledPlatforms([
@@ -432,6 +431,10 @@ export default function VideoPublisher({ onNavigateToSocialConnect, onOpenTempla
   const api = (path) => `${base}/api/video-content${path}`;
   const socialApi = (path) => `${base}/api/social${path}`;
   const authHeaders = () => (token ? { Authorization: `Bearer ${token}` } : {});
+
+  useEffect(() => {
+    if (thumbnailMode === 'ideas') setThumbnailMode('scrub');
+  }, [thumbnailMode]);
 
   useEffect(() => {
     if (!token) return;
@@ -2055,7 +2058,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect, onOpenTempla
                 ['✍️', 'Captions per platform'],
                 ['#️⃣', 'Hashtags'],
                 ['✂️', 'Clip notes'],
-                ['🖼️', 'Thumbnail ideas'],
+                ['🖼️', 'Thumbnail (scrub or AI)'],
               ] : postType === 'image' ? [
                 ['🖼️', 'Preview image'],
                 ['✍️', 'Captions per platform'],
@@ -2544,7 +2547,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect, onOpenTempla
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
                   <div style={s.sectionTitle}>🖼️ Thumbnail</div>
                   <div style={{ display: 'flex', gap: 6 }}>
-                    {[{ id: 'scrub', label: '🎯 Scrub & Pick' }, { id: 'ai', label: '✨ AI Suggested' }, { id: 'ideas', label: '💡 Ideas' }].map(m => (
+                    {[{ id: 'scrub', label: '🎯 Scrub & Pick' }, { id: 'ai', label: '✨ AI Suggested' }].map(m => (
                       <button key={m.id} onClick={() => {
                         setThumbnailMode(m.id);
                         if (m.id === 'ai' && uploadedVideoId && frames.length === 0 && !framesLoading) {
@@ -2569,18 +2572,6 @@ export default function VideoPublisher({ onNavigateToSocialConnect, onOpenTempla
                       if (uploadedVideoId) uploadFrameThumbnail(uploadedVideoId, file, preview);
                       else setThumbnailUrl(preview);
                     }}
-                  />
-                )}
-
-                {thumbnailMode === 'ideas' && (
-                  <ThumbnailIdeasPanel
-                    captionText={variants[activeVariant]?.caption || textCaption}
-                    platform={activeVariant || 'youtube'}
-                    apiBase={base}
-                    token={token}
-                    currentThumbnailUrl={thumbnailUrl}
-                    uploadedVideoId={uploadedVideoId}
-                    onImageSelected={(file, previewUrl) => uploadFrameThumbnail(uploadedVideoId, file, previewUrl)}
                   />
                 )}
 

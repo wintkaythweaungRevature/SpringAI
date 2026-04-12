@@ -591,12 +591,118 @@ function getCatColor(cat) {
 }
 
 /* ══════════════════════════════════════════════════════════
+   PLACEHOLDER HINT HELPER
+══════════════════════════════════════════════════════════ */
+function getHint(p) {
+  const map = {
+    '[Your Name]':'e.g. Jane Smith','[Brand Name]':'e.g. Acme Co.',
+    '[Product Name]':'e.g. SuperWidget Pro','[target audience]':'e.g. small business owners',
+    '[goal]':'e.g. grow their audience','[pain point]':'e.g. wasting time',
+    '[niche]':'e.g. fitness','[topic]':'e.g. social media',
+    '[your offer]':'e.g. free consultation','[industry]':'e.g. e-commerce',
+    '[Date]':'e.g. Dec 25','[Time]':'e.g. 6:00 PM EST',
+    '[X]':'e.g. 50','[timeframe]':'e.g. 48 hours',
+    '[Location]':'e.g. Online / Zoom','[Event Name]':'e.g. Business Summit 2025',
+    '[Course Name]':'e.g. Social Media Mastery','[Client Name]':'e.g. Sarah T.',
+  };
+  return map[p] || `e.g. ${p.replace(/\[|\]/g,'')}`;
+}
+
+/* ══════════════════════════════════════════════════════════
+   CUSTOMIZE MODAL
+══════════════════════════════════════════════════════════ */
+function CustomizeModal({ template, onClose, onConfirm }) {
+  const placeholders = [...new Set(template.caption.match(/\[[^\]]+\]/g) || [])];
+  const [values, setValues] = useState(Object.fromEntries(placeholders.map(p => [p, ''])));
+
+  const filled = template.caption.replace(/\[[^\]]+\]/g, m => values[m] || m);
+
+  const set = (p, v) => setValues(prev => ({ ...prev, [p]: v }));
+
+  return (
+    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', zIndex:9100, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}
+      onClick={onClose}>
+      <div style={{ background:'#fff', borderRadius:20, width:'100%', maxWidth:900, maxHeight:'90vh', display:'flex', flexDirection:'column', boxShadow:'0 28px 64px rgba(0,0,0,0.3)', overflow:'hidden' }}
+        onClick={e => e.stopPropagation()}>
+
+        {/* Header */}
+        <div style={{ padding:'18px 24px', borderBottom:'1px solid #f1f5f9', display:'flex', justifyContent:'space-between', alignItems:'center', flexShrink:0 }}>
+          <div>
+            <div style={{ fontSize:17, fontWeight:800, color:'#1e293b' }}>✏️ Customize Template</div>
+            <div style={{ fontSize:13, color:'#64748b', marginTop:2 }}>Fill in your details — see the live preview update on the right</div>
+          </div>
+          <button onClick={onClose} style={{ background:'#f1f5f9', border:'none', cursor:'pointer', color:'#64748b', width:34, height:34, borderRadius:8, fontSize:16, display:'flex', alignItems:'center', justifyContent:'center' }}>✕</button>
+        </div>
+
+        {/* Body */}
+        <div style={{ display:'flex', flex:1, overflow:'hidden', minHeight:0 }}>
+
+          {/* Left — input fields */}
+          <div style={{ width:340, borderRight:'1px solid #f1f5f9', padding:'20px 24px', overflowY:'auto', flexShrink:0 }}>
+            <div style={{ fontSize:12, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:1, marginBottom:16 }}>
+              {placeholders.length} fields to fill
+            </div>
+            {placeholders.length === 0 && (
+              <div style={{ fontSize:13, color:'#94a3b8', textAlign:'center', padding:'20px 0' }}>No placeholders found.<br/>Ready to use as-is!</div>
+            )}
+            {placeholders.map(p => (
+              <div key={p} style={{ marginBottom:16 }}>
+                <label style={{ display:'block', fontSize:12, fontWeight:700, color:'#475569', marginBottom:6 }}>
+                  {p.replace(/\[|\]/g,'')}
+                </label>
+                <input
+                  value={values[p]}
+                  onChange={e => set(p, e.target.value)}
+                  placeholder={getHint(p)}
+                  style={{ width:'100%', padding:'9px 12px', borderRadius:8, border:'1.5px solid #e2e8f0', fontSize:13, color:'#1e293b', outline:'none', boxSizing:'border-box',
+                    fontFamily:'"Segoe UI",Arial,sans-serif' }}
+                  onFocus={e => e.target.style.borderColor='#6366f1'}
+                  onBlur={e => e.target.style.borderColor='#e2e8f0'}
+                />
+              </div>
+            ))}
+          </div>
+
+          {/* Right — live preview */}
+          <div style={{ flex:1, padding:'20px 24px', overflowY:'auto', background:'#f8fafc' }}>
+            <div style={{ fontSize:12, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:1, marginBottom:12 }}>Live Preview</div>
+            <pre style={{ background:'#fff', border:'1px solid #e2e8f0', borderRadius:12, padding:'16px 18px', fontSize:13, color:'#334155', lineHeight:1.9, whiteSpace:'pre-wrap', fontFamily:'"Segoe UI",Arial,sans-serif', margin:0, minHeight:200 }}>
+              {filled.split(/(\[[^\]]+\])/g).map((part, i) =>
+                /^\[[^\]]+\]$/.test(part)
+                  ? <mark key={i} style={{ background:'#fef9c3', color:'#92400e', borderRadius:3, padding:'0 2px' }}>{part}</mark>
+                  : part
+              )}
+            </pre>
+            <div style={{ fontSize:12, color:'#94a3b8', marginTop:10 }}>
+              💡 Highlighted text = unfilled placeholders
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div style={{ padding:'16px 24px', borderTop:'1px solid #f1f5f9', display:'flex', justifyContent:'flex-end', gap:10, flexShrink:0, background:'#fff' }}>
+          <button onClick={onClose}
+            style={{ padding:'10px 22px', borderRadius:8, border:'1.5px solid #e2e8f0', background:'#fff', color:'#64748b', fontSize:13, fontWeight:600, cursor:'pointer' }}>
+            Cancel
+          </button>
+          <button onClick={() => onConfirm(filled)}
+            style={{ padding:'10px 28px', borderRadius:8, border:'none', background:'#6366f1', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer' }}>
+            Use in Publisher →
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════
    MAIN COMPONENT
 ══════════════════════════════════════════════════════════ */
 export default function CaptionTemplates({ onBack, onUseTemplate }) {
-  const [cat, setCat]         = useState('All');
-  const [preview, setPreview] = useState(null);
-  const [copied, setCopied]   = useState(null);
+  const [cat, setCat]           = useState('All');
+  const [preview, setPreview]   = useState(null);
+  const [customize, setCustomize] = useState(null);
+  const [copied, setCopied]     = useState(null);
 
   const filtered = TEMPLATES.filter(t => cat === 'All' || t.category === cat);
 
@@ -606,8 +712,10 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
     setTimeout(() => setCopied(null), 2000);
   };
 
-  const handleUse = (t) => {
-    if (onUseTemplate) onUseTemplate(t.caption);
+  const handleCustomizeConfirm = (filledCaption) => {
+    setCustomize(null);
+    setPreview(null);
+    if (onUseTemplate) onUseTemplate(filledCaption);
     if (onBack) onBack();
   };
 
@@ -622,7 +730,7 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
         </button>
         <div>
           <div style={{ fontSize:20, fontWeight:800, color:'#1e293b' }}>🎨 Design Templates</div>
-          <div style={{ fontSize:13, color:'#64748b' }}>12 professional social media designs — preview, copy caption, customize &amp; post</div>
+          <div style={{ fontSize:13, color:'#64748b' }}>{TEMPLATES.length} professional social media designs — preview, customize &amp; send to publisher</div>
         </div>
       </div>
 
@@ -677,7 +785,7 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
                     style={{ flex:1, padding:'8px 6px', borderRadius:8, border:'1.5px solid #e2e8f0', background: copied===t.id ? '#f0fdf4' : '#fff', color: copied===t.id ? '#15803d' : '#64748b', fontSize:12, fontWeight:600, cursor:'pointer' }}>
                     {copied===t.id ? '✓ Copied' : '📋 Copy'}
                   </button>
-                  <button onClick={() => handleUse(t)}
+                  <button onClick={() => setCustomize(t)}
                     style={{ flex:1, padding:'8px 6px', borderRadius:8, border:'none', background:'#6366f1', color:'#fff', fontSize:12, fontWeight:600, cursor:'pointer' }}>
                     Use →
                   </button>
@@ -700,7 +808,6 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
               style={{ background:'#fff', borderRadius:20, overflow:'hidden', maxWidth:860, width:'100%', maxHeight:'90vh', overflowY:'auto', boxShadow:'0 28px 64px rgba(0,0,0,0.35)' }}
               onClick={e => e.stopPropagation()}
             >
-              {/* Modal header */}
               <div style={{ padding:'18px 24px', borderBottom:'1px solid #f1f5f9', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                 <div>
                   <div style={{ fontSize:17, fontWeight:800, color:'#1e293b', marginBottom:4 }}>{preview.name}</div>
@@ -709,15 +816,11 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
                 <button onClick={() => setPreview(null)}
                   style={{ background:'#f1f5f9', border:'none', fontSize:16, cursor:'pointer', color:'#64748b', width:34, height:34, borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center' }}>✕</button>
               </div>
-
-              {/* Large design preview */}
               <div style={{ background:'#f1f5f9', padding:24, display:'flex', justifyContent:'center' }}>
                 <div style={{ width:'100%', maxWidth:PW, aspectRatio:`${PW}/${PH}`, overflow:'hidden', borderRadius:14, boxShadow:'0 4px 20px rgba(0,0,0,0.12)' }}>
                   <PreviewComp />
                 </div>
               </div>
-
-              {/* Caption */}
               <div style={{ padding:'20px 24px 28px' }}>
                 <div style={{ fontSize:12, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:1, marginBottom:10 }}>Caption Template</div>
                 <pre style={{ background:'#f8fafc', border:'1px solid #e2e8f0', borderRadius:12, padding:'16px 18px', fontSize:13, color:'#334155', lineHeight:1.8, whiteSpace:'pre-wrap', fontFamily:'"Segoe UI",Arial,sans-serif', margin:0 }}>
@@ -728,9 +831,9 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
                     style={{ padding:'10px 22px', borderRadius:8, border:'1.5px solid #6366f1', background: copied===preview.id ? '#f0fdf4' : '#fff', color: copied===preview.id ? '#15803d' : '#6366f1', fontSize:13, fontWeight:600, cursor:'pointer' }}>
                     {copied===preview.id ? '✓ Copied!' : '📋 Copy Caption'}
                   </button>
-                  <button onClick={() => handleUse(preview)}
+                  <button onClick={() => { setPreview(null); setCustomize(preview); }}
                     style={{ padding:'10px 26px', borderRadius:8, border:'none', background:'#6366f1', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer' }}>
-                    Use in Publisher →
+                    ✏️ Customize &amp; Use →
                   </button>
                 </div>
               </div>
@@ -738,6 +841,15 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
           </div>
         );
       })()}
+
+      {/* ── Customize Modal ── */}
+      {customize && (
+        <CustomizeModal
+          template={customize}
+          onClose={() => setCustomize(null)}
+          onConfirm={handleCustomizeConfirm}
+        />
+      )}
     </div>
   );
 }

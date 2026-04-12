@@ -2426,6 +2426,9 @@ function CompetitorTab({ authHeaders }) {
   // ── Google Trends state ───────────────────────────────────────
   const [trendsInput,    setTrendsInput]    = useState('');
   const [trendsKeywords, setTrendsKeywords] = useState([]);
+  const [trendsData,     setTrendsData]     = useState(null);
+  const [trendsLoading,  setTrendsLoading]  = useState(false);
+  const [trendsError,    setTrendsError]    = useState('');
 
   // Cleaned query shown as a hint when user pastes a YouTube URL
   const cleanedQuery = useMemo(() => parseYouTubeInput(query), [query]);
@@ -2509,11 +2512,32 @@ function CompetitorTab({ authHeaders }) {
   };
 
   // ── Google Trends function ───────────────────────────────────
-  const doTrendsSearch = () => {
+  const doTrendsSearch = async () => {
     const raw = trendsInput.trim();
     if (!raw) return;
     const kws = raw.split(',').map(k => k.trim()).filter(Boolean).slice(0, 5);
     setTrendsKeywords(kws);
+    setTrendsLoading(true); setTrendsData(null); setTrendsError('');
+    try {
+      const res = await fetch(
+        `${API}/api/analytics/competitors/trends?keywords=${encodeURIComponent(kws.join(','))}`,
+        { headers: authHeaders() }
+      );
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setTrendsError(
+          data.error === 'rate_limited'
+            ? 'Google Trends is rate-limiting requests. Please wait a few minutes and try again.'
+            : data.error || 'Failed to load trends data.'
+        );
+        return;
+      }
+      setTrendsData(data);
+    } catch {
+      setTrendsError('Google Trends unavailable. Try again later.');
+    } finally {
+      setTrendsLoading(false);
+    }
   };
 
   const redditOrange = '#FF4500';
@@ -2851,54 +2875,133 @@ function CompetitorTab({ authHeaders }) {
                 placeholder="e.g. toyota, honda, ford (comma-separated)"
                 style={{ flex: 1, padding: '10px 14px', border: '1.5px solid #e2e8f0', borderRadius: 10, fontSize: 13, color: '#1e293b', outline: 'none' }}
               />
-              <button onClick={doTrendsSearch} disabled={!trendsInput.trim()} style={{
+              <button onClick={doTrendsSearch} disabled={trendsLoading || !trendsInput.trim()} style={{
                 padding: '10px 20px', background: '#4285F4', color: '#fff', border: 'none',
                 borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                opacity: !trendsInput.trim() ? 0.6 : 1,
+                opacity: (trendsLoading || !trendsInput.trim()) ? 0.6 : 1,
               }}>
-                🔍 Search
+                {trendsLoading ? '⏳ Loading…' : '🔍 Search'}
               </button>
             </div>
           </div>
 
-          {trendsKeywords.length > 0 && (() => {
+          {trendsError && (
+            <div style={{ background: '#fff5f0', color: '#c0392b', borderRadius: 8, padding: '10px 14px', fontSize: 13, marginBottom: 16 }}>
+              {trendsError}
+            </div>
+          )}
+
+          {trendsLoading && (
+            <div style={{ textAlign: 'center', color: '#64748b', fontSize: 13, padding: '32px 0' }}>
+              Fetching Google Trends data…
+            </div>
+          )}
+
+          {trendsData && (() => {
             const colors = ['#4285F4','#EA4335','#FBBC04','#34A853','#FF6D00'];
-            const trendsUrl = `https://trends.google.com/trends/explore?q=${trendsKeywords.map(k => encodeURIComponent(k)).join(',')}&date=today+12-m`;
+            const timeline = trendsData.timeline || [];
+            const keywords = trendsData.keywords || [];
+            const rising   = trendsData.rising   || [];
+            const CHART_W = 520, CHART_H = 130, PAD = 4;
+
+            // Compute per-keyword averages and max for summary cards
+            const kwStats = keywords.map((kw, ki) => {
+              const vals = timeline.map(p => Number((p.values || [])[ki] || 0));
+              const avg  = vals.length ? Math.round(vals.reduce((a,b) => a+b, 0) / vals.length) : 0;
+              const peak = vals.length ? Math.max(...vals) : 0;
+              return { kw, avg, peak, vals };
+            });
+
+            // SVG line chart
+            const maxV = Math.max(...kwStats.flatMap(s => s.vals), 1);
+            const svgPaths = kwStats.map((s, ki) => {
+              if (s.vals.length < 2) return null;
+              const pts = s.vals.map((v, i) => {
+                const x = PAD + (i / (s.vals.length - 1)) * (CHART_W - PAD * 2);
+                const y = PAD + (1 - v / maxV) * (CHART_H - PAD * 2);
+                return `${x.toFixed(1)},${y.toFixed(1)}`;
+              }).join(' ');
+              return (
+                <polyline key={ki} points={pts} fill="none"
+                  stroke={colors[ki % colors.length]} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+              );
+            });
+
+            const trendsUrl = `https://trends.google.com/trends/explore?q=${keywords.map(k => encodeURIComponent(k)).join(',')}&date=today+12-m`;
+
             return (
               <div>
-                {/* Keyword pills */}
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
-                  {trendsKeywords.map((kw, i) => (
-                    <span key={i} style={{ background: colors[i % colors.length], color: '#fff', borderRadius: 20, padding: '4px 14px', fontSize: 13, fontWeight: 700 }}>
-                      {kw}
-                    </span>
+                {/* Keyword summary cards */}
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 20 }}>
+                  {kwStats.map((s, i) => (
+                    <div key={i} style={{
+                      flex: '1 1 140px', background: '#fff', border: `2px solid ${colors[i % colors.length]}22`,
+                      borderRadius: 12, padding: '12px 16px',
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                        <span style={{ width: 10, height: 10, borderRadius: '50%', background: colors[i % colors.length], flexShrink: 0 }} />
+                        <span style={{ fontSize: 13, fontWeight: 700, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.kw}</span>
+                      </div>
+                      <div style={{ fontSize: 22, fontWeight: 800, color: colors[i % colors.length] }}>{s.avg}</div>
+                      <div style={{ fontSize: 11, color: '#94a3b8' }}>avg interest · peak {s.peak}</div>
+                    </div>
                   ))}
                 </div>
 
-                {/* Open in Google Trends card */}
-                <div style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: 16, padding: '28px 24px', textAlign: 'center' }}>
-                  <img src="https://cdn.simpleicons.org/google/4285F4" alt="Google" width={40} height={40} style={{ marginBottom: 16 }} />
-                  <div style={{ fontSize: 16, fontWeight: 700, color: '#1e293b', marginBottom: 6 }}>
-                    View Interest Over Time on Google Trends
+                {/* SVG line chart */}
+                {timeline.length > 1 && (
+                  <div style={{ background: '#fff', border: '1.5px solid #e2e8f0', borderRadius: 14, padding: '16px 16px 8px', marginBottom: 16 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: '#64748b', marginBottom: 8 }}>Interest Over Time (last 12 months)</div>
+                    <svg width="100%" viewBox={`0 0 ${CHART_W} ${CHART_H}`} style={{ display: 'block', overflow: 'visible' }}>
+                      {/* Grid lines */}
+                      {[0, 25, 50, 75, 100].map(v => {
+                        const y = PAD + (1 - v / 100) * (CHART_H - PAD * 2);
+                        return (
+                          <g key={v}>
+                            <line x1={PAD} y1={y} x2={CHART_W - PAD} y2={y} stroke="#f1f5f9" strokeWidth="1" />
+                            <text x={PAD - 2} y={y + 4} textAnchor="end" fontSize="9" fill="#94a3b8">{v}</text>
+                          </g>
+                        );
+                      })}
+                      {svgPaths}
+                    </svg>
+                    {/* X-axis labels (first, mid, last) */}
+                    {timeline.length > 0 && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#94a3b8', marginTop: 2, paddingLeft: 24 }}>
+                        <span>{timeline[0]?.date}</span>
+                        {timeline[Math.floor(timeline.length / 2)] && <span>{timeline[Math.floor(timeline.length / 2)]?.date}</span>}
+                        <span>{timeline[timeline.length - 1]?.date}</span>
+                      </div>
+                    )}
                   </div>
-                  <div style={{ fontSize: 13, color: '#64748b', marginBottom: 20 }}>
-                    See how <strong>{trendsKeywords.join(', ')}</strong> compare over the last 12 months — charts, regional data, and rising searches.
+                )}
+
+                {/* Rising queries */}
+                {rising.length > 0 && (
+                  <div style={{ background: '#fff', border: '1.5px solid #e2e8f0', borderRadius: 14, padding: '16px', marginBottom: 16 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: '#1e293b', marginBottom: 10 }}>🔥 Rising Searches</div>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      {rising.map((r, i) => (
+                        <span key={i} style={{
+                          background: r.rising ? '#fff5f0' : '#f8fafc',
+                          color: r.rising ? '#c0392b' : '#475569',
+                          border: `1px solid ${r.rising ? '#fca5a533' : '#e2e8f0'}`,
+                          borderRadius: 20, padding: '4px 12px', fontSize: 12, fontWeight: 600,
+                        }}>
+                          {r.rising ? '↑ ' : ''}{r.query}
+                          {r.formattedValue ? <span style={{ opacity: 0.6, marginLeft: 4 }}>{r.formattedValue}</span> : null}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                  <a
-                    href={trendsUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      display: 'inline-flex', alignItems: 'center', gap: 8,
-                      background: '#4285F4', color: '#fff', borderRadius: 10,
-                      padding: '12px 28px', fontSize: 14, fontWeight: 700,
-                      textDecoration: 'none', boxShadow: '0 2px 8px rgba(66,133,244,0.3)',
-                    }}
-                  >
-                    <img src="https://cdn.simpleicons.org/google/ffffff" alt="" width={16} height={16} />
-                    Open Google Trends →
+                )}
+
+                {/* Open full report link */}
+                <div style={{ textAlign: 'right' }}>
+                  <a href={trendsUrl} target="_blank" rel="noopener noreferrer"
+                    style={{ fontSize: 12, color: '#4285F4', textDecoration: 'none', fontWeight: 600 }}>
+                    Open full report on Google Trends →
                   </a>
-                  <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 12 }}>Opens in a new tab · No account required</div>
                 </div>
               </div>
             );

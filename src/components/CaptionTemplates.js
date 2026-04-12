@@ -342,6 +342,238 @@ const TEMPLATES = [
     id:'ec22', name:'Event Countdown', category:'Event', Preview:EventCountdown,
     caption:`🌟 [EVENT NAME] is happening and YOU'RE invited!\n\n📅 Date: [Month Day, Year]\n⏰ Time: [X:XX PM Timezone]\n📍 Where: [Location / Online]\n\nWhat to expect:\n✨ [Highlight 1]\n✨ [Highlight 2]\n✨ [Highlight 3]\n\n🎟️ Reserve your spot → link in bio\nSpots are filling up FAST!\n\n#event #[eventname] #[niche] #joinus #RSVP`,
   },
+  {
+    id: 'lm23', name: 'Free Lead Magnet', category: 'Business', Preview: LeadMagnetPreview,
+    caption: `🎁 FREE [Topic] Starter Kit — grab yours today!\n\nInside you'll get:\n✅ [Deliverable 1]\n✅ [Deliverable 2]\n✅ [Deliverable 3]\n\nPerfect for [target audience] who want [goal] without [pain point].\n\n🔗 Download free → link in bio\n\n#freebie #leadmagnet #[niche] #download #marketing`,
+  },
+  {
+    id: 'pc24', name: 'Podcast Episode Drop', category: 'Content', Preview: PodcastEpPreview,
+    caption: `🎙️ NEW EPISODE: [Episode Title]\n\nI sat down with [Guest Name] to talk about [hook topic].\n\nWe cover:\n• [Point 1]\n• [Point 2]\n• [Point 3]\n\n🎧 Listen now → link in bio (Spotify / Apple / YouTube)\n\n#podcast #newepisode #[niche] #interview`,
+  },
+  {
+    id: 'cs25', name: 'Carousel — Swipe Tips', category: 'Content', Preview: CarouselSwipePreview,
+    caption: `👉 SWIPE for [Number] [topic] tips you can use today!\n\nSlide 1: [Tip 1 short]\nSlide 2: [Tip 2 short]\nSlide 3: [Tip 3 short]\nSlide 4: [Tip 4 short]\n\nSave this carousel 🔖 and send it to a friend who needs it!\n\n#carousel #tips #[niche] #educational #swipe`,
+  },
+  {
+    id: 'wl26', name: 'Waitlist / Launch Teaser', category: 'Announce', Preview: WaitlistPreview,
+    caption: `🔔 Something big is coming — [Product Name]\n\nWe're opening a short waitlist so you get:\n✨ Early access\n✨ Launch-only pricing\n✨ Bonus [bonus item]\n\n👉 Join the waitlist → link in bio (spots limited)\n\n#waitlist #comingsoon #[niche] #launch #signup`,
+  },
+  {
+    id: 'sd27', name: 'Holiday Shipping Cutoff', category: 'Holiday', Preview: ShippingDeadlinePreview,
+    caption: `📦 ORDER BY [Date] — get it in time for [Holiday]!\n\nLast day for [shipping tier] delivery is [Date] at [Time] [Timezone].\n\n🎁 Perfect gifts for [who it's for]:\n• [Gift idea 1]\n• [Gift idea 2]\n• [Gift idea 3]\n\n🛍️ Shop now → link in bio\n\n#shipping #holiday #[niche] #deadline #order`,
+  },
+  {
+    id: 'am28', name: 'Live AMA Promo', category: 'Event', Preview: AMASessionPreview,
+    caption: `💬 LIVE AMA — [Date] at [Time] [Timezone]\n\nAsk me anything about [topic]! I'll answer live in the comments / stream.\n\nHot topics we'll cover:\n• [Topic A]\n• [Topic B]\n• [Topic C]\n\n🔔 Turn on reminders so you don't miss it!\n\n#AMA #live #QandA #[niche] #community`,
+  },
+  {
+    id: 'ys29', name: 'Year in Review Stats', category: 'Announce', Preview: YearStatsPreview,
+    caption: `🎉 Our [Year] in numbers — thank YOU!\n\n📊 [Stat 1]\n📊 [Stat 2]\n📊 [Stat 3]\n\nNone of this happens without this community. What's your favorite memory from this year? 👇\n\n#yearinreview #grateful #[brand] #[niche] #community`,
+  },
+  {
+    id: 'tt30', name: 'Trending Topics Roundup', category: 'Content', Preview: TrendingTopicsPreview,
+    caption: `🔥 What's trending in [niche] this week?\n\nWe're watching:\n#[topic1] #[topic2] #[topic3]\n\nMy take: [Your short opinion / prediction]\n\nWhat did I miss? Drop a trend below 👇\n\n#trending #socialmedia #[niche] #news #roundup`,
+  },
+  {
+    id: 'cw31', name: 'Client Win Spotlight', category: 'Business', Preview: ClientWinPreview,
+    caption: `🏆 CLIENT WIN: [Result headline]\n\n[Client Name] came to us wanting [goal]. In [timeframe] we focused on:\n1️⃣ [Strategy 1]\n2️⃣ [Strategy 2]\n3️⃣ [Strategy 3]\n\nProud of this team — and prouder of them. 💪\n\nWant similar results? 🔗 Link in bio\n\n#casestudy #results #[niche] #business #growth`,
+  },
+  {
+    id: 'rs32', name: 'Back in Stock', category: 'Sale', Preview: RestockPreview,
+    caption: `🔔 [Product Name] is BACK IN STOCK!\n\nYou asked — we listened. Limited quantities this drop.\n\nWhy people love it:\n⭐ [Benefit 1]\n⭐ [Benefit 2]\n⭐ [Benefit 3]\n\n🛒 Grab yours → link in bio before it sells out again!\n\n#restock #limited #[niche] #shop #sale`,
+  },
+  {
+    id: 'nb33', name: 'Founder Friday Intro', category: 'Business', Preview: NavyBizCover,
+    caption: `👋 Hi, I'm [Your Name] — founder of [Brand Name].\n\nEvery Friday I share one lesson from building [what you build] for [target audience].\n\nToday's lesson: [Lesson in one sentence]\n\nFollow for more founder notes + behind-the-scenes 🔖\n\n#founder #startup #[niche] #lessons #business`,
+  },
+  {
+    id: 'wb34', name: 'Brand Values Post', category: 'Business', Preview: WhiteBrand,
+    caption: `At [Brand Name], we believe:\n\n💜 [Value 1]\n💜 [Value 2]\n💜 [Value 3]\n\nThese aren't buzzwords — they're how we show up for [target audience] every day.\n\nWhat value matters most to you? Tell me below 👇\n\n#brandvalues #mission #[niche] #community #authenticity`,
+  },
+  {
+    id: 'dm35', name: 'Service Packages Menu', category: 'Business', Preview: DigitalExpert,
+    caption: `📌 Pick your package — [Brand / Your Name]\n\n🟣 Starter — [what's included] — [price or \"DM for quote\"]\n🟣 Growth — [what's included] — [price or \"DM for quote\"]\n🟣 Pro — [what's included] — [price or \"DM for quote\"]\n\nNot sure which fits? DM me \"HELP\" and I'll point you in the right direction.\n\n#services #packages #[niche] #consulting #booking`,
+  },
+  {
+    id: 'bn36', name: 'Myth vs Fact Listicle', category: 'Content', Preview: BigNumber,
+    caption: `🧠 5 myths about [topic] — busted.\n\n❌ Myth 1: [myth]\n✅ Fact: [fact]\n\n❌ Myth 2: [myth]\n✅ Fact: [fact]\n\n(Save this — your future self will thank you 🔖)\n\n#mythbusting #education #[niche] #tips #learn`,
+  },
+  {
+    id: 'ug37', name: 'Resource Stack Share', category: 'Content', Preview: UltimateGuide,
+    caption: `📚 My go-to stack for [topic]:\n\n1) [Tool or book 1] — why I love it\n2) [Tool or book 2] — why I love it\n3) [Tool or book 3] — why I love it\n\nAnything you'd add? Drop your favorite below 👇\n\n#resources #tools #[niche] #productivity #stack`,
+  },
+  {
+    id: 'cl38', name: 'Mini Course Teaser', category: 'Product', Preview: CourseLaunch,
+    caption: `⚡ New mini-course: [Course Name]\n\nIn [X] short lessons you'll learn:\n• [Outcome 1]\n• [Outcome 2]\n• [Outcome 3]\n\nBuilt for [target audience] who are tired of [pain point].\n\n👉 Preview the first lesson → link in bio\n\n#minicourse #learnonline #[niche] #education #launch`,
+  },
+  {
+    id: 'np39', name: 'Bundle Deal', category: 'Sale', Preview: NewProduct,
+    caption: `🎁 BUNDLE ALERT — save when you buy together!\n\nGet [Product A] + [Product B] for one special price.\n\n✅ [Bundle benefit 1]\n✅ [Bundle benefit 2]\n\n⏰ Ends [date]\n🛍️ Shop bundle → link in bio\n\n#bundle #deal #save #[niche] #shopping`,
+  },
+  {
+    id: 'mq40', name: 'Micro‑Affirmation', category: 'Quote', Preview: MotivationalQuote,
+    caption: `🌿 Gentle reminder:\n\nYou don't have to [unrealistic expectation].\n\nYou only need to [small actionable step].\n\nThat's enough for today.\n\nSave if you needed this 🤍\n\n#selfcare #mindset #gentle #[niche] #mentalhealth`,
+  },
+  {
+    id: 'hx41', name: 'We’re Hiring', category: 'Business', Preview: HiringBannerPreview,
+    caption: `👋 We’re hiring a [Role Title]!\n\n📍 [Location / Remote]\n⏱ [Employment type]\n💼 [1–2 sentence why your team is great]\n\nApply: [link in bio]\n\n#hiring #jobs #[industry] #careers #remote`,
+  },
+  {
+    id: 'hx42', name: 'Refer & Earn', category: 'Sale', Preview: ReferEarnPreview,
+    caption: `🎁 Refer a friend, both win.\n\nThey get: [reward for friend]\nYou get: [reward for referrer]\n\nHow it works:\n1️⃣ Share your code\n2️⃣ They sign up / purchase\n3️⃣ Rewards unlock\n\nCode: [CODE] · Link in bio\n\n#referral #rewards #[Brand Name] #community`,
+  },
+  {
+    id: 'hx43', name: 'Story Poll', category: 'Content', Preview: PollVotesPreview,
+    caption: `Quick poll 👇\n\n[Question for audience]?\n\nA) [Option A]\nB) [Option B]\nC) [Option C]\n\nVote on the sticker + tell us why in the comments.\n\n#poll #community #[niche] #engagement`,
+  },
+  {
+    id: 'hx44', name: '7‑Day Challenge', category: 'Content', Preview: DayChallengePreview,
+    caption: `🔥 [X]-Day [Challenge name] starts [Date]!\n\nEach day we’ll cover:\n• Day 1: [topic]\n• Day 2: [topic]\n• Day 3: [topic]\n…\n\nJoin free — follow + turn on notifications 🔔\n\n#challenge #habits #[goal] #accountability`,
+  },
+  {
+    id: 'hx45', name: 'Winter Sale', category: 'Sale', Preview: WinterSalePreview,
+    caption: `❄️ Winter sale is ON.\n\nSave [X]% on [category] at [Brand Name].\n\nEnds [Date] — don’t sleep on it.\n\n🛒 Shop: link in bio\n\n#wintersale #sale #[Product Name] #limitedtime`,
+  },
+  {
+    id: 'hx46', name: 'Tip Tuesday', category: 'Content', Preview: TipTuesdayPreview,
+    caption: `💡 Tip Tuesday:\n\n[One-line tip headline]\n\nWhy it matters:\n→ [benefit 1]\n→ [benefit 2]\n\nTry it this week and tell us how it went.\n\n#tiptuesday #[niche] #smallbusiness #productivity`,
+  },
+  {
+    id: 'hx47', name: 'Service Outage / Update', category: 'Announce', Preview: UrgentUpdatePreview,
+    caption: `⚠️ Important update\n\n[Headline about change or outage]\n\nWhat happened: [short explanation]\nWhat we’re doing: [action]\nWhat you should do: [steps]\nETA / next update: [Time or Date]\n\nThanks for your patience — [Brand Name] team\n\n#update #support #transparency`,
+  },
+  {
+    id: 'hx48', name: 'Ask the Audience', category: 'Content', Preview: CommunityQuestionPreview,
+    caption: `Question for you 👇\n\n[Your question to the audience]?\n\nDrop your answer in the comments — we’re reading everything.\n\n#community #question #[niche] #discussion`,
+  },
+  {
+    id: 'hx49', name: 'This or That', category: 'Content', Preview: FeatureComparePreview,
+    caption: `This or that? 🤔\n\n[A] [Name A] — [one pro]\nvs\n[B] [Name B] — [one pro]\n\nComment A or B. Bonus: tell us your use case.\n\n#poll #versus #[niche] #debate`,
+  },
+  {
+    id: 'hx50', name: 'Thank You / Milestone', category: 'Announce', Preview: ThankYouCustomersPreview,
+    caption: `🙏 Thank you\n\n[Milestone or holiday message]\n\nWe’re grateful for every follow, order, and message. You make [Brand Name] possible.\n\n[Optional: small gift code or teaser]\n\n#thankyou #community #[Brand Name] #grateful`,
+  },
+  {
+    id: 'hx51', name: 'Flash Giveaway', category: 'Sale', Preview: GiveawayPost,
+    caption: `⚡ FLASH GIVEAWAY — ends in [timeframe]\n\nPrize: [prize]\n\nTo enter:\n1️⃣ Follow @[handle]\n2️⃣ Like + save this post\n3️⃣ Tag a friend who’d love this\n\nBonus entry: share to your story\n\n#giveaway #contest #[Brand Name] #free`,
+  },
+  {
+    id: 'hx52', name: 'Lunch & Learn', category: 'Event', Preview: WebinarPromo,
+    caption: `🥪 Lunch & Learn: [Topic]\n\n📅 [Date] · ⏰ [Time]\n📍 [Location / Zoom]\n\nBring your questions — we’ll cover [3 bullet points].\n\nRSVP: link in bio\n\n#webinar #learning #[industry] #networking`,
+  },
+  {
+    id: 'hx53', name: 'Bold One‑Liner', category: 'Quote', Preview: BoldQuoteCard,
+    caption: `📌 Save this.\n\n“[Powerful one-liner quote]”\n\n— [Attribution]\n\n#motivation #mindset #[niche] #quotes #growth`,
+  },
+  {
+    id: 'hx54', name: 'How‑To Thread Teaser', category: 'Content', Preview: BloggingTips,
+    caption: `🧵 New how‑to: [Topic]\n\nIf you’ve struggled with [pain point], this thread breaks it down step by step.\n\nPreview:\n→ Step 1: [teaser]\n→ Step 2: [teaser]\n→ Step 3: [teaser]\n\nFull post: link in bio\n\n#howto #tutorial #[niche] #tips`,
+  },
+  {
+    id: 'hx55', name: 'Room Refresh', category: 'Product', Preview: HomeDecorPost,
+    caption: `🏠 Room refresh under [budget]\n\nBefore: [vibe/problem]\nAfter: [vibe/result]\n\nHero pieces:\n• [item 1]\n• [item 2]\n• [item 3]\n\nLinks: in bio\n\n#homedecor #beforeandafter #interiordesign #diy`,
+  },
+  {
+    id: 'hx56', name: 'Spring Promo', category: 'Holiday', Preview: EasterSale,
+    caption: `🌸 Spring is here — so is our sale.\n\n[Offer headline] at [Brand Name]\n\nCode: [CODE] · [Date] only\n\nTreat yourself (or your [gift recipient]).\n\n#spring #sale #[Product Name] #seasonal`,
+  },
+  {
+    id: 'hx57', name: 'Friendsgiving / Gratitude', category: 'Holiday', Preview: ThanksgivingSale,
+    caption: `🍂 Gathering season\n\nHosting [Friendsgiving / family dinner]? Here’s our checklist:\n• [item]\n• [item]\n• [item]\n\nWhat we’re grateful for: [short note]\n\n#thanksgiving #friendsgiving #hosting #grateful`,
+  },
+  {
+    id: 'hx58', name: '48‑Hour Price Drop', category: 'Sale', Preview: LimitedOffer,
+    caption: `⏰ 48 hours only\n\n[Product Name] — now [X]% off\n\nWhy now: [reason]\n\nNo code needed · Ends [Date]\n\n🛒 Link in bio\n\n#flashsale #deal #limited #[Brand Name]`,
+  },
+  {
+    id: 'hx59', name: 'Feature Drop', category: 'Product', Preview: ProductAnnounce,
+    caption: `🚀 New in [Product Name]\n\n✨ [Feature 1]\n✨ [Feature 2]\n✨ [Feature 3]\n\nBuilt because you asked for [pain point solved].\n\nTry it: link in bio\n\n#productupdate #saas #newfeature #[industry]`,
+  },
+  {
+    id: 'hx60', name: 'Launch Countdown', category: 'Event', Preview: EventCountdown,
+    caption: `⏳ T‑minus [X] until [Event Name]\n\nWhat to expect:\n• [highlight 1]\n• [highlight 2]\n• [highlight 3]\n\nSet a reminder — you won’t want to miss this.\n\n#launch #countdown #event #[Brand Name]`,
+  },
+  {
+    id: 'hx61', name: 'Case Study Breakdown', category: 'Business', Preview: CaseStudyPreview,
+    caption: `📊 Case study: [Client / project name]\n\nThe situation:\n[Problem context in 2–3 sentences]\n\nWhat we did:\n1️⃣ [Step / tactic 1]\n2️⃣ [Step / tactic 2]\n3️⃣ [Step / tactic 3]\n\nThe result:\n→ [Metric or outcome]\n→ [Metric or outcome]\n\nWant the full write-up? Link in bio.\n\n#casestudy #results #[niche] #marketing #B2B`,
+  },
+  {
+    id: 'hx62', name: 'Free Resource Drop', category: 'Content', Preview: FreebieDropPreview,
+    caption: `📥 New freebie: [Resource title]\n\nInside you’ll find:\n✅ [Bullet 1]\n✅ [Bullet 2]\n✅ [Bullet 3]\n\nPerfect if you’re [target audience] trying to [goal].\n\nGrab it → link in bio (PDF · [page count] pages)\n\n#freebie #download #[niche] #leadmagnet #templates`,
+  },
+  {
+    id: 'hx63', name: 'Meet the Team', category: 'Business', Preview: MeetTeamPreview,
+    caption: `👋 Meet [Name] — [Role] at [Brand Name]\n\n3 things to know:\n• [Fun fact 1]\n• [Fun fact 2]\n• [What they’re working on now]\n\nDrop a welcome in the comments!\n\n#team #culture #[industry] #behindthescenes #hiring`,
+  },
+  {
+    id: 'hx64', name: 'Mindset Reframe', category: 'Quote', Preview: MindsetReframePreview,
+    caption: `🧠 Reframe for [topic]:\n\nInstead of: “[Old belief]”\nTry: “[New belief]”\n\nSmall language shift → big behavior shift.\n\nSave if you needed this today 🔖\n\n#mindset #reframe #[niche] #mentalhealth #growth`,
+  },
+  {
+    id: 'hx65', name: 'Objection Buster', category: 'Content', Preview: ObjectionBusterPreview,
+    caption: `We hear this a lot:\n“[Common objection]”\n\nHere’s the truth:\n[One paragraph reframing the objection]\n\nStill unsure? DM us “[keyword]” and we’ll help you decide.\n\n#sales #FAQ #[niche] #transparency #smallbusiness`,
+  },
+  {
+    id: 'hx66', name: 'Collab Announcement', category: 'Announce', Preview: CollabInvitePreview,
+    caption: `🤝 [Brand A] × [Brand B]\n\nWe teamed up to bring you [what you built together].\n\nWhy we’re excited:\n• [Reason 1]\n• [Reason 2]\n\nAvailable [Date] — link in bio to [shop / sign up / learn more].\n\n#collab #partnership #[niche] #newdrop #limited`,
+  },
+  {
+    id: 'hx67', name: 'Plan Comparison', category: 'Product', Preview: PlanComparePreview,
+    caption: `📋 Pick your plan — [Product Name]\n\n🟣 Basic — [price] / [period]\nBest for: [who]\n\n🟣 Pro — [price] / [period]\nBest for: [who]\n\nNot sure? Take our 30-sec quiz → link in bio\n\n#pricing #SaaS #[industry] #compare #upgrade`,
+  },
+  {
+    id: 'hx68', name: 'Live Shopping / Show', category: 'Event', Preview: LiveShoppingPreview,
+    caption: `🔴 LIVE shopping: [Show title]\n\n📅 [Date] · ⏰ [Time] [Timezone]\n\nWe’ll demo [product or theme], answer questions live, and drop exclusive codes.\n\nTurn on reminders + tap link in bio to join.\n\n#liveshopping #livestream #[niche] #sale #community`,
+  },
+  {
+    id: 'hx69', name: 'Newsletter Signup', category: 'Announce', Preview: NewsletterSignupPreview,
+    caption: `✉️ [Newsletter name] — [frequency]\n\nEach issue: [value prop in one line]\n\nThis week’s topic: [teaser]\n\nSubscribe free → link in bio (unsubscribe anytime)\n\n#newsletter #email #[niche] #creator #subscribe`,
+  },
+  {
+    id: 'hx70', name: 'Student / Course Win', category: 'Business', Preview: StudentWinPreview,
+    caption: `🎓 Shoutout to [Name]!\n\nThey joined [Course / program] wanting [goal].\n\nIn [timeframe] they went from [starting point] → [result].\n\nProud doesn’t cover it. 💚\n\nDoors open again [Date] — waitlist in bio.\n\n#studentwin #onlinecourse #[niche] #testimonial #education`,
+  },
+  {
+    id: 'hx71', name: 'BTS Reel / Day in the Life', category: 'Content', Preview: BeforeAfter,
+    caption: `🎬 BTS: a day building [what you do]\n\nMorning: [beat 1]\nAfternoon: [beat 2]\nEvening: [beat 3]\n\nThe messy truth > highlight reel. Save if you’re a [niche] creator too.\n\n#behindthescenes #dayinthelife #[niche] #creator #reels`,
+  },
+  {
+    id: 'hx72', name: 'FAQ Carousel Teaser', category: 'Content', Preview: BigNumber,
+    caption: `❓ [Number] FAQs we get about [topic]\n\nSwipe the carousel for full answers — here’s a preview:\n\n1) [Question 1] → [one-line answer]\n2) [Question 2] → [one-line answer]\n\nGot another? Drop it below 👇\n\n#FAQ #carousel #[niche] #education #tips`,
+  },
+  {
+    id: 'hx73', name: 'Member / VIP Perks', category: 'Sale', Preview: LimitedOffer,
+    caption: `👑 VIP perk this month: [perk headline]\n\nMembers get:\n• [Benefit 1]\n• [Benefit 2]\n• [Benefit 3]\n\nJoin before [Date] — link in bio.\n\n#VIP #membership #loyalty #[Brand Name] #exclusive`,
+  },
+  {
+    id: 'hx74', name: 'Influencer Takeover Teaser', category: 'Announce', Preview: ProductAnnounce,
+    caption: `📣 Takeover alert: @[handle] runs our account [Date]!\n\nThey’ll share [theme] + a surprise for followers.\n\nSet a reminder — you won’t want to miss [teaser].\n\n#takeover #influencer #[niche] #community #announcement`,
+  },
+  {
+    id: 'hx75', name: 'Pop‑Up / Local Event', category: 'Event', Preview: EventCountdown,
+    caption: `📍 Pop‑up this weekend!\n\nWhere: [Address or neighborhood]\nWhen: [Date] · [Time]\n\nWhat’s there: [experience / products]\n\nBring a friend — first [X] visitors get [freebie].\n\n#popup #localevent #[city] #smallbusiness #weekend`,
+  },
+  {
+    id: 'hx76', name: 'Coffee Chat / Office Hours', category: 'Event', Preview: WebinarPromo,
+    caption: `☕ Open office hours — [Topic]\n\nNo pitch, just Q&A. Bring your questions about [focus area].\n\n📅 [Date] · ⏰ [Time] · [Zoom / space]\n\nRSVP (free, limited seats): link in bio\n\n#officehours #community #[niche] #networking #free`,
+  },
+  {
+    id: 'hx77', name: 'Rate Our Product', category: 'Content', Preview: PollVotesPreview,
+    caption: `How did we do? ⭐\n\nIf you’ve tried [Product Name], we’d love a quick rating:\n\n⭐️ Experience\n⭐️ Quality\n⭐️ Support\n\nComment your score 1–5 + one thing we should improve.\n\n#feedback #product #[Brand Name] #customerlove #poll`,
+  },
+  {
+    id: 'hx78', name: 'Earth Day / Eco Pledge', category: 'Holiday', Preview: EasterSale,
+    caption: `🌍 Earth Day pledge from [Brand Name]\n\nThis year we’re committing to:\n• [Pledge 1]\n• [Pledge 2]\n• [Pledge 3]\n\nShop our [eco product line] — [X]% to [cause] through [Date].\n\n#earthday #sustainable #[niche] #giveback #eco`,
+  },
+  {
+    id: 'hx79', name: 'Founder’s Note', category: 'Business', Preview: WhiteBrand,
+    caption: `A note from [Your Name], founder of [Brand Name]:\n\nWhen we started, we wanted to [mission in one sentence].\n\nToday [milestone or thank-you].\n\nWhat’s next: [teaser].\n\nThank you for being here. 💜\n\n#founder #letter #[niche] #startup #community`,
+  },
+  {
+    id: 'hx80', name: 'Year‑End Inventory Clearance', category: 'Sale', Preview: FlashSale,
+    caption: `📦 Year‑end clearance — make room for [new season / line]\n\nEverything in [collection] is up to [X]% off through [Date].\n\nSizes / colors moving fast — final sale on select SKUs.\n\n🛒 Shop clearance → link in bio\n\n#clearance #sale #yearend #[niche] #shop`,
+  },
 ];
 
 /* ══════════════════════════════════════════════════════════
@@ -577,6 +809,395 @@ function EventCountdown() {
   );
 }
 
+function LeadMagnetPreview() {
+  return (
+    <div style={{ width: PW, height: PH, background: 'linear-gradient(145deg,#1e1b4b,#312e81)', fontFamily: 'Arial,sans-serif', display: 'flex', alignItems: 'center', padding: '0 56px', gap: 40, boxSizing: 'border-box' }}>
+      <div style={{ flex: 1, color: '#fff' }}>
+        <div style={{ fontSize: 13, color: '#a5b4fc', letterSpacing: 3, marginBottom: 10 }}>FREE DOWNLOAD</div>
+        <div style={{ fontSize: 48, fontWeight: 900, lineHeight: 1.05, marginBottom: 12 }}>The [Topic]<br /><span style={{ color: '#a5b4fc' }}>Starter Kit</span></div>
+        <div style={{ fontSize: 14, color: '#c7d2fe', lineHeight: 1.6, marginBottom: 20 }}>PDF checklist + templates. No spam — unsubscribe anytime.</div>
+        <div style={{ background: '#4f46e5', padding: '12px 22px', borderRadius: 8, display: 'inline-block', fontWeight: 700, fontSize: 14 }}>GET IT FREE →</div>
+      </div>
+      <div style={{ width: 200, height: 260, background: 'rgba(255,255,255,0.08)', borderRadius: 16, border: '2px dashed rgba(165,180,252,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 56 }}>📎</div>
+    </div>
+  );
+}
+
+function PodcastEpPreview() {
+  return (
+    <div style={{ width: PW, height: PH, background: '#0f172a', fontFamily: 'Arial,sans-serif', display: 'flex', alignItems: 'center', padding: '0 56px', gap: 36, boxSizing: 'border-box' }}>
+      <div style={{ width: 160, height: 160, borderRadius: 20, background: 'linear-gradient(135deg,#6366f1,#a855f7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 72, flexShrink: 0 }}>🎙️</div>
+      <div style={{ flex: 1, color: '#fff' }}>
+        <div style={{ fontSize: 12, color: '#94a3b8', letterSpacing: 2, marginBottom: 8 }}>NEW EPISODE</div>
+        <div style={{ fontSize: 38, fontWeight: 900, lineHeight: 1.15, marginBottom: 10 }}>Ep. [X]: [Episode Title]</div>
+        <div style={{ fontSize: 14, color: '#cbd5e1', lineHeight: 1.6 }}>With [Guest Name] — we unpack [hook topic] in under [minutes] minutes.</div>
+      </div>
+    </div>
+  );
+}
+
+function CarouselSwipePreview() {
+  return (
+    <div style={{ width: PW, height: PH, background: '#fefce8', fontFamily: 'Arial,sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ position: 'absolute', inset: 0, background: 'repeating-linear-gradient(90deg,transparent,transparent 38px,rgba(234,179,8,0.08) 38px,rgba(234,179,8,0.08) 40px)' }} />
+      <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', padding: '0 48px' }}>
+        <div style={{ fontSize: 22, fontWeight: 800, color: '#854d0e', marginBottom: 8 }}>CAROUSEL ALERT</div>
+        <div style={{ fontSize: 52, fontWeight: 900, color: '#713f12', lineHeight: 1.05, marginBottom: 12 }}>Swipe for<br />[Number] tips →</div>
+        <div style={{ fontSize: 15, color: '#a16207', fontWeight: 600 }}>Save this post 🔖</div>
+      </div>
+    </div>
+  );
+}
+
+function WaitlistPreview() {
+  return (
+    <div style={{ width: PW, height: PH, background: 'linear-gradient(160deg,#0c4a6e,#0369a1)', fontFamily: 'Arial,sans-serif', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#fff', textAlign: 'center', padding: '0 48px', boxSizing: 'border-box' }}>
+      <div style={{ fontSize: 14, letterSpacing: 4, color: '#7dd3fc', marginBottom: 10 }}>COMING SOON</div>
+      <div style={{ fontSize: 48, fontWeight: 900, lineHeight: 1.1, marginBottom: 12 }}>[Product Name]</div>
+      <div style={{ fontSize: 15, color: '#bae6fd', maxWidth: 520, lineHeight: 1.6, marginBottom: 24 }}>Join the waitlist — be first to know when we launch.</div>
+      <div style={{ background: '#fff', color: '#0369a1', padding: '12px 28px', borderRadius: 8, fontWeight: 800, fontSize: 14 }}>JOIN WAITLIST</div>
+    </div>
+  );
+}
+
+function ShippingDeadlinePreview() {
+  return (
+    <div style={{ width: PW, height: PH, background: '#fff7ed', fontFamily: 'Arial,sans-serif', display: 'flex', alignItems: 'center', padding: '0 48px', gap: 36, boxSizing: 'border-box', border: '4px solid #ea580c' }}>
+      <div style={{ fontSize: 72 }}>📦</div>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 13, color: '#c2410c', fontWeight: 800, letterSpacing: 2, marginBottom: 6 }}>ORDER BY [Date]</div>
+        <div style={{ fontSize: 40, fontWeight: 900, color: '#9a3412', lineHeight: 1.1, marginBottom: 10 }}>Get it before<br />the holiday rush</div>
+        <div style={{ fontSize: 14, color: '#7c2d12', lineHeight: 1.6 }}>Guaranteed delivery when you order by [Time] [Timezone].</div>
+      </div>
+    </div>
+  );
+}
+
+function AMASessionPreview() {
+  return (
+    <div style={{ width: PW, height: PH, background: '#f8fafc', fontFamily: 'Arial,sans-serif', display: 'flex', alignItems: 'center', padding: '0 52px', gap: 28, boxSizing: 'border-box' }}>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 36, fontWeight: 900, color: '#0f172a', marginBottom: 10 }}>Ask Me<br />Anything</div>
+        <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.7 }}>Live on [Date] — drop your questions in the comments.</div>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: 280 }}>
+        <div style={{ background: '#e2e8f0', borderRadius: 14, padding: '12px 16px', fontSize: 13, color: '#475569' }}>Q: [Sample question]?</div>
+        <div style={{ background: '#6366f1', borderRadius: 14, padding: '12px 16px', fontSize: 13, color: '#fff', alignSelf: 'flex-end' }}>A: [Your teaser answer]…</div>
+      </div>
+    </div>
+  );
+}
+
+function YearStatsPreview() {
+  return (
+    <div style={{ width: PW, height: PH, background: '#020617', fontFamily: 'Arial,sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'space-around', padding: '0 40px', boxSizing: 'border-box' }}>
+      {[
+        { n: '[Stat 1]', l: 'LABEL A' },
+        { n: '[Stat 2]', l: 'LABEL B' },
+        { n: '[Stat 3]', l: 'LABEL C' },
+      ].map((s, i) => (
+        <div key={i} style={{ textAlign: 'center', color: '#fff' }}>
+          <div style={{ fontSize: 44, fontWeight: 900, color: '#38bdf8', marginBottom: 4 }}>{s.n}</div>
+          <div style={{ fontSize: 11, letterSpacing: 2, color: '#64748b' }}>{s.l}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function TrendingTopicsPreview() {
+  return (
+    <div style={{ width: PW, height: PH, background: 'linear-gradient(135deg,#fdf2f8,#ede9fe)', fontFamily: 'Arial,sans-serif', padding: '40px 48px', boxSizing: 'border-box' }}>
+      <div style={{ fontSize: 14, fontWeight: 800, color: '#db2777', marginBottom: 16, letterSpacing: 2 }}>TRENDING NOW</div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+        {['#[topic1]', '#[topic2]', '#[topic3]', '#[topic4]', '#[topic5]'].map((tag, idx) => (
+          <span key={idx} style={{ background: '#fff', border: '1.5px solid #e9d5ff', borderRadius: 999, padding: '8px 16px', fontSize: 14, fontWeight: 700, color: '#7c3aed' }}>{tag}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ClientWinPreview() {
+  return (
+    <div style={{ width: PW, height: PH, background: 'linear-gradient(90deg,#ecfdf5,#d1fae5)', fontFamily: 'Arial,sans-serif', display: 'flex', alignItems: 'center', padding: '0 56px', gap: 40, boxSizing: 'border-box' }}>
+      <div style={{ fontSize: 80, lineHeight: 1 }}>🏆</div>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 13, color: '#059669', fontWeight: 800, letterSpacing: 2, marginBottom: 8 }}>CLIENT WIN</div>
+        <div style={{ fontSize: 34, fontWeight: 900, color: '#064e3b', lineHeight: 1.15, marginBottom: 10 }}>[Result headline]</div>
+        <div style={{ fontSize: 14, color: '#047857', lineHeight: 1.6 }}>How [Client Name] hit [metric] in [timeframe].</div>
+      </div>
+    </div>
+  );
+}
+
+function RestockPreview() {
+  return (
+    <div style={{ width: PW, height: PH, background: '#fffbeb', fontFamily: 'Arial,sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0 40px', boxSizing: 'border-box' }}>
+      <div>
+        <div style={{ fontSize: 20, fontWeight: 800, color: '#b45309', marginBottom: 6 }}>BACK IN STOCK</div>
+        <div style={{ fontSize: 46, fontWeight: 900, color: '#92400e', marginBottom: 10 }}>[Product Name]</div>
+        <div style={{ fontSize: 15, color: '#a16207' }}>Limited quantities — tap link in bio 🛒</div>
+      </div>
+    </div>
+  );
+}
+
+function HiringBannerPreview() {
+  return (
+    <div style={{ width: PW, height: PH, background: 'linear-gradient(135deg,#14532d,#166534)', fontFamily: 'Arial,sans-serif', display: 'flex', alignItems: 'center', padding: '0 56px', gap: 36, boxSizing: 'border-box', color: '#fff' }}>
+      <div style={{ fontSize: 72, lineHeight: 1 }}>👋</div>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 13, letterSpacing: 3, color: '#bbf7d0', marginBottom: 8 }}>WE&apos;RE HIRING</div>
+        <div style={{ fontSize: 44, fontWeight: 900, lineHeight: 1.1, marginBottom: 10 }}>[Role Title]</div>
+        <div style={{ fontSize: 15, color: '#dcfce7', lineHeight: 1.6 }}>[Location / Remote] · [Employment type]</div>
+      </div>
+    </div>
+  );
+}
+
+function ReferEarnPreview() {
+  return (
+    <div style={{ width: PW, height: PH, background: '#faf5ff', fontFamily: 'Arial,sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0 48px', boxSizing: 'border-box' }}>
+      <div>
+        <div style={{ fontSize: 56, marginBottom: 8 }}>🎁</div>
+        <div style={{ fontSize: 28, fontWeight: 900, color: '#6b21a8', marginBottom: 8 }}>Refer &amp; Earn</div>
+        <div style={{ fontSize: 15, color: '#7c3aed', fontWeight: 600 }}>Give [reward], get [reward]</div>
+      </div>
+    </div>
+  );
+}
+
+function PollVotesPreview() {
+  return (
+    <div style={{ width: PW, height: PH, background: '#f1f5f9', fontFamily: 'Arial,sans-serif', padding: '36px 48px', boxSizing: 'border-box' }}>
+      <div style={{ fontSize: 14, fontWeight: 800, color: '#475569', marginBottom: 16, letterSpacing: 1 }}>POLL</div>
+      {['Option A', 'Option B', 'Option C'].map((label, i) => (
+        <div key={label} style={{ marginBottom: 12, background: '#fff', borderRadius: 10, padding: '12px 16px', border: '1.5px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ width: 22, height: 22, borderRadius: '50%', border: '2px solid #6366f1' }} />
+          <div style={{ flex: 1, fontWeight: 700, color: '#1e293b' }}>{label}</div>
+          <div style={{ fontSize: 13, color: '#64748b' }}>{30 + i * 15}%</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function DayChallengePreview() {
+  return (
+    <div style={{ width: PW, height: PH, background: 'linear-gradient(180deg,#1e293b,#0f172a)', fontFamily: 'Arial,sans-serif', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#fff', textAlign: 'center', padding: '0 40px', boxSizing: 'border-box' }}>
+      <div style={{ fontSize: 14, color: '#94a3b8', letterSpacing: 3, marginBottom: 8 }}>CHALLENGE</div>
+      <div style={{ fontSize: 52, fontWeight: 900, lineHeight: 1.05, marginBottom: 12 }}>[X]-Day<br /><span style={{ color: '#38bdf8' }}>[Challenge name]</span></div>
+      <div style={{ fontSize: 14, color: '#cbd5e1' }}>Starts [Date] — join us!</div>
+    </div>
+  );
+}
+
+function WinterSalePreview() {
+  return (
+    <div style={{ width: PW, height: PH, background: 'linear-gradient(160deg,#1e3a5f,#0c4a6e)', fontFamily: 'Arial,sans-serif', display: 'flex', alignItems: 'center', padding: '0 48px', gap: 28, boxSizing: 'border-box', color: '#fff' }}>
+      <div style={{ fontSize: 80, lineHeight: 1 }}>❄️</div>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 40, fontWeight: 900, lineHeight: 1.1, marginBottom: 8 }}>Winter<br />Sale</div>
+        <div style={{ fontSize: 15, color: '#bae6fd' }}>Cozy deals on [category] — limited time.</div>
+      </div>
+    </div>
+  );
+}
+
+function TipTuesdayPreview() {
+  return (
+    <div style={{ width: PW, height: PH, background: 'linear-gradient(135deg,#fef3c7,#fed7aa)', fontFamily: 'Arial,sans-serif', display: 'flex', alignItems: 'center', padding: '0 52px', gap: 28, boxSizing: 'border-box' }}>
+      <div style={{ fontSize: 64 }}>💡</div>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 13, fontWeight: 800, color: '#b45309', letterSpacing: 2, marginBottom: 6 }}>TIP TUESDAY</div>
+        <div style={{ fontSize: 32, fontWeight: 900, color: '#78350f', lineHeight: 1.2 }}>[One-line tip headline]</div>
+      </div>
+    </div>
+  );
+}
+
+function UrgentUpdatePreview() {
+  return (
+    <div style={{ width: PW, height: PH, background: '#fff', fontFamily: 'Arial,sans-serif', boxSizing: 'border-box', borderTop: '12px solid #dc2626' }}>
+      <div style={{ padding: '40px 48px' }}>
+        <div style={{ fontSize: 12, fontWeight: 800, color: '#dc2626', letterSpacing: 2, marginBottom: 10 }}>IMPORTANT UPDATE</div>
+        <div style={{ fontSize: 34, fontWeight: 900, color: '#0f172a', lineHeight: 1.15, marginBottom: 12 }}>[Headline about change or outage]</div>
+        <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.7 }}>What you need to know — short and clear.</div>
+      </div>
+    </div>
+  );
+}
+
+function CommunityQuestionPreview() {
+  return (
+    <div style={{ width: PW, height: PH, background: '#ecfeff', fontFamily: 'Arial,sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 48px', boxSizing: 'border-box', textAlign: 'center' }}>
+      <div>
+        <div style={{ fontSize: 22, fontWeight: 800, color: '#0e7490', marginBottom: 12 }}>Question for you 👇</div>
+        <div style={{ fontSize: 26, fontWeight: 700, color: '#134e4a', lineHeight: 1.35 }}>[Your question to the audience]?</div>
+      </div>
+    </div>
+  );
+}
+
+function FeatureComparePreview() {
+  return (
+    <div style={{ width: PW, height: PH, background: '#f8fafc', fontFamily: 'Arial,sans-serif', display: 'flex', alignItems: 'stretch', boxSizing: 'border-box' }}>
+      <div style={{ flex: 1, padding: '36px 32px', background: '#e2e8f0', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+        <div style={{ fontSize: 12, fontWeight: 800, color: '#64748b', marginBottom: 8 }}>OPTION A</div>
+        <div style={{ fontSize: 22, fontWeight: 900, color: '#1e293b' }}>[Name A]</div>
+      </div>
+      <div style={{ width: 56, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: 20, color: '#6366f1', background: '#fff' }}>VS</div>
+      <div style={{ flex: 1, padding: '36px 32px', background: '#ede9fe', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+        <div style={{ fontSize: 12, fontWeight: 800, color: '#6d28d9', marginBottom: 8 }}>OPTION B</div>
+        <div style={{ fontSize: 22, fontWeight: 900, color: '#1e293b' }}>[Name B]</div>
+      </div>
+    </div>
+  );
+}
+
+function ThankYouCustomersPreview() {
+  return (
+    <div style={{ width: PW, height: PH, background: 'linear-gradient(135deg,#fdf2f8,#fff1f2)', fontFamily: 'Arial,sans-serif', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0 48px', boxSizing: 'border-box' }}>
+      <div style={{ fontSize: 56, marginBottom: 12 }}>🙏</div>
+      <div style={{ fontSize: 32, fontWeight: 900, color: '#9d174d', marginBottom: 8 }}>Thank you</div>
+      <div style={{ fontSize: 15, color: '#be185d', fontWeight: 600 }}>[Milestone or holiday message]</div>
+    </div>
+  );
+}
+
+function CaseStudyPreview() {
+  return (
+    <div style={{ width: PW, height: PH, background: '#f8fafc', fontFamily: 'Arial,sans-serif', padding: '36px 48px', boxSizing: 'border-box' }}>
+      <div style={{ fontSize: 12, fontWeight: 800, color: '#64748b', letterSpacing: 2, marginBottom: 14 }}>CASE STUDY</div>
+      <div style={{ fontSize: 30, fontWeight: 900, color: '#0f172a', marginBottom: 20, lineHeight: 1.2 }}>[Client / project name]</div>
+      <div style={{ display: 'flex', gap: 16 }}>
+        {['Problem', 'Approach', 'Result'].map((label, i) => (
+          <div key={label} style={{ flex: 1, background: '#fff', borderRadius: 12, padding: '14px 16px', border: '1.5px solid #e2e8f0' }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#6366f1', marginBottom: 6 }}>{i + 1}. {label}</div>
+            <div style={{ fontSize: 13, color: '#475569', lineHeight: 1.5 }}>[Short teaser]</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function FreebieDropPreview() {
+  return (
+    <div style={{ width: PW, height: PH, background: 'linear-gradient(145deg,#0ea5e9,#0369a1)', fontFamily: 'Arial,sans-serif', display: 'flex', alignItems: 'center', padding: '0 52px', gap: 32, boxSizing: 'border-box', color: '#fff' }}>
+      <div style={{ width: 120, height: 140, background: 'rgba(255,255,255,0.2)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 52 }}>📥</div>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 13, letterSpacing: 2, color: '#bae6fd', marginBottom: 8 }}>FREE DOWNLOAD</div>
+        <div style={{ fontSize: 36, fontWeight: 900, lineHeight: 1.1, marginBottom: 8 }}>[Resource title]</div>
+        <div style={{ fontSize: 14, color: '#e0f2fe' }}>PDF · [page count] pages · No email required [optional]</div>
+      </div>
+    </div>
+  );
+}
+
+function MeetTeamPreview() {
+  return (
+    <div style={{ width: PW, height: PH, background: '#fff7ed', fontFamily: 'Arial,sans-serif', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 40px', boxSizing: 'border-box', textAlign: 'center' }}>
+      <div style={{ fontSize: 13, fontWeight: 800, color: '#c2410c', letterSpacing: 2, marginBottom: 14 }}>MEET THE TEAM</div>
+      <div style={{ display: 'flex', gap: 14, marginBottom: 16 }}>
+        {[1, 2, 3, 4].map((n) => (
+          <div key={n} style={{ width: 64, height: 64, borderRadius: '50%', background: `hsl(${n * 50}, 70%, 65%)`, border: '3px solid #fff', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }} />
+        ))}
+      </div>
+      <div style={{ fontSize: 26, fontWeight: 900, color: '#7c2d12' }}>[Role spotlight: Name]</div>
+    </div>
+  );
+}
+
+function MindsetReframePreview() {
+  return (
+    <div style={{ width: PW, height: PH, background: 'linear-gradient(180deg,#1e1b4b,#312e81)', fontFamily: 'Georgia,serif', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 64px', boxSizing: 'border-box', textAlign: 'center' }}>
+      <div>
+        <div style={{ fontSize: 15, color: '#a5b4fc', fontStyle: 'italic', marginBottom: 16 }}>Instead of thinking…</div>
+        <div style={{ fontSize: 28, fontWeight: 700, color: '#94a3b8', textDecoration: 'line-through', marginBottom: 20 }}>[Old belief]</div>
+        <div style={{ fontSize: 34, fontWeight: 700, color: '#f8fafc', lineHeight: 1.35 }}>Try: [New belief]</div>
+      </div>
+    </div>
+  );
+}
+
+function ObjectionBusterPreview() {
+  return (
+    <div style={{ width: PW, height: PH, background: '#fefce8', fontFamily: 'Arial,sans-serif', padding: '36px 48px', boxSizing: 'border-box' }}>
+      <div style={{ fontSize: 14, fontWeight: 800, color: '#a16207', marginBottom: 14 }}>“[Common objection]”</div>
+      <div style={{ fontSize: 22, fontWeight: 800, color: '#422006', marginBottom: 10 }}>Here&apos;s the truth 👇</div>
+      <div style={{ fontSize: 15, color: '#713f12', lineHeight: 1.65 }}>[One paragraph reframing the objection]</div>
+    </div>
+  );
+}
+
+function CollabInvitePreview() {
+  return (
+    <div style={{ width: PW, height: PH, background: 'linear-gradient(135deg,#fce7f3,#e0e7ff)', fontFamily: 'Arial,sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 28, padding: '0 48px', boxSizing: 'border-box' }}>
+      <div style={{ fontSize: 72 }}>🤝</div>
+      <div>
+        <div style={{ fontSize: 13, fontWeight: 800, color: '#7c3aed', letterSpacing: 2, marginBottom: 6 }}>COLLAB</div>
+        <div style={{ fontSize: 32, fontWeight: 900, color: '#4c1d95', lineHeight: 1.15 }}>[Brand A] × [Brand B]</div>
+        <div style={{ fontSize: 14, color: '#6b21a8', marginTop: 8 }}>[What you built together]</div>
+      </div>
+    </div>
+  );
+}
+
+function PlanComparePreview() {
+  return (
+    <div style={{ width: PW, height: PH, background: '#f1f5f9', fontFamily: 'Arial,sans-serif', display: 'flex', alignItems: 'stretch', gap: 14, padding: '32px 40px', boxSizing: 'border-box' }}>
+      {[
+        { t: 'Basic', p: '[price]', h: false },
+        { t: 'Pro', p: '[price]', h: true },
+      ].map((col) => (
+        <div key={col.t} style={{ flex: 1, background: col.h ? '#4f46e5' : '#fff', color: col.h ? '#fff' : '#1e293b', borderRadius: 14, padding: '22px 20px', border: col.h ? 'none' : '1.5px solid #e2e8f0', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <div style={{ fontSize: 12, fontWeight: 800, opacity: 0.85, marginBottom: 6 }}>{col.t}</div>
+          <div style={{ fontSize: 36, fontWeight: 900 }}>{col.p}</div>
+          <div style={{ fontSize: 12, marginTop: 8, opacity: 0.8 }}>per [period]</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function LiveShoppingPreview() {
+  return (
+    <div style={{ width: PW, height: PH, background: '#18181b', fontFamily: 'Arial,sans-serif', display: 'flex', alignItems: 'center', padding: '0 48px', gap: 28, boxSizing: 'border-box', color: '#fff' }}>
+      <div style={{ background: '#ef4444', color: '#fff', fontWeight: 900, fontSize: 14, letterSpacing: 2, padding: '8px 14px', borderRadius: 6 }}>LIVE</div>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 34, fontWeight: 900, lineHeight: 1.1, marginBottom: 8 }}>[Show title]</div>
+        <div style={{ fontSize: 14, color: '#a1a1aa' }}>[Date] · [Time] · Tap link to shop live</div>
+      </div>
+    </div>
+  );
+}
+
+function NewsletterSignupPreview() {
+  return (
+    <div style={{ width: PW, height: PH, background: '#fafafa', fontFamily: 'Arial,sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 56px', boxSizing: 'border-box' }}>
+      <div style={{ maxWidth: 520, textAlign: 'center' }}>
+        <div style={{ fontSize: 48, marginBottom: 12 }}>✉️</div>
+        <div style={{ fontSize: 28, fontWeight: 900, color: '#171717', marginBottom: 10 }}>[Newsletter name]</div>
+        <div style={{ fontSize: 15, color: '#525252', lineHeight: 1.6 }}>[One-line value prop] — link in bio to subscribe.</div>
+      </div>
+    </div>
+  );
+}
+
+function StudentWinPreview() {
+  return (
+    <div style={{ width: PW, height: PH, background: 'linear-gradient(135deg,#ecfdf5,#d1fae5)', fontFamily: 'Arial,sans-serif', display: 'flex', alignItems: 'center', padding: '0 52px', gap: 28, boxSizing: 'border-box' }}>
+      <div style={{ fontSize: 76 }}>🎓</div>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 13, fontWeight: 800, color: '#047857', letterSpacing: 2, marginBottom: 6 }}>STUDENT WIN</div>
+        <div style={{ fontSize: 30, fontWeight: 900, color: '#064e3b', lineHeight: 1.2, marginBottom: 8 }}>[Outcome headline]</div>
+        <div style={{ fontSize: 14, color: '#065f46' }}>From [starting point] to [result] — [timeframe]</div>
+      </div>
+    </div>
+  );
+}
 
 function getCatColor(cat) {
   const map = {

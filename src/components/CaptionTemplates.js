@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 
 const CATS = ['All','Business','Sale','Content','Holiday','Product','Quote','Event','Announce'];
 const PW = 780, PH = 440, CW = 300, CH = 170;
@@ -727,13 +728,22 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
       try {
         const canvas = await html2canvas(captureRef.current, {
           width: PW, height: PH, scale: 2,
-          useCORS: true, logging: false, backgroundColor: null,
+          useCORS: true, logging: false, backgroundColor: '#ffffff',
         });
-        const mime = format === 'jpg' ? 'image/jpeg' : 'image/png';
-        const link = document.createElement('a');
-        link.download = `${template.name.replace(/\s+/g, '-').toLowerCase()}.${format}`;
-        link.href = canvas.toDataURL(mime, 0.95);
-        link.click();
+        const filename = template.name.replace(/\s+/g, '-').toLowerCase();
+
+        if (format === 'pdf') {
+          // Landscape PDF sized exactly to the design (px → pt: 1px = 0.75pt)
+          const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [PW, PH] });
+          pdf.addImage(canvas.toDataURL('image/png', 1.0), 'PNG', 0, 0, PW, PH);
+          pdf.save(`${filename}.pdf`);
+        } else {
+          const mime = format === 'jpg' ? 'image/jpeg' : 'image/png';
+          const link = document.createElement('a');
+          link.download = `${filename}.${format}`;
+          link.href = canvas.toDataURL(mime, 0.95);
+          link.click();
+        }
       } catch (err) {
         console.error('Download failed:', err);
       } finally {
@@ -852,18 +862,14 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
                       <div style={{ position:'absolute', bottom:'110%', right:0, background:'#fff', border:'1px solid #e2e8f0', borderRadius:10, boxShadow:'0 4px 16px rgba(0,0,0,0.12)', overflow:'hidden', zIndex:100, minWidth:100 }}
                         onClick={e => e.stopPropagation()}>
                         <div style={{ padding:'6px 8px', fontSize:10, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:1, borderBottom:'1px solid #f1f5f9' }}>Download as</div>
-                        <button onClick={e => handleDownload(t, 'png', e)}
-                          style={{ width:'100%', padding:'9px 14px', border:'none', background:'none', textAlign:'left', fontSize:13, fontWeight:600, cursor:'pointer', color:'#1e293b', display:'flex', alignItems:'center', gap:8 }}
-                          onMouseEnter={e => e.currentTarget.style.background='#f8fafc'}
-                          onMouseLeave={e => e.currentTarget.style.background='none'}>
-                          🖼 PNG
-                        </button>
-                        <button onClick={e => handleDownload(t, 'jpg', e)}
-                          style={{ width:'100%', padding:'9px 14px', border:'none', background:'none', textAlign:'left', fontSize:13, fontWeight:600, cursor:'pointer', color:'#1e293b', display:'flex', alignItems:'center', gap:8 }}
-                          onMouseEnter={e => e.currentTarget.style.background='#f8fafc'}
-                          onMouseLeave={e => e.currentTarget.style.background='none'}>
-                          📷 JPG
-                        </button>
+                        {[['png','🖼 PNG'],['jpg','📷 JPG'],['pdf','📄 PDF']].map(([fmt, label]) => (
+                          <button key={fmt} onClick={e => handleDownload(t, fmt, e)}
+                            style={{ width:'100%', padding:'9px 14px', border:'none', background:'none', textAlign:'left', fontSize:13, fontWeight:600, cursor:'pointer', color:'#1e293b', display:'flex', alignItems:'center', gap:8 }}
+                            onMouseEnter={e => e.currentTarget.style.background='#f8fafc'}
+                            onMouseLeave={e => e.currentTarget.style.background='none'}>
+                            {label}
+                          </button>
+                        ))}
                       </div>
                     )}
                   </div>
@@ -909,14 +915,12 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
                     style={{ padding:'10px 22px', borderRadius:8, border:'1.5px solid #e2e8f0', background: copied===preview.id ? '#f0fdf4' : '#fff', color: copied===preview.id ? '#15803d' : '#64748b', fontSize:13, fontWeight:600, cursor:'pointer' }}>
                     {copied===preview.id ? '✓ Copied!' : '📋 Copy Caption'}
                   </button>
-                  <button onClick={e => handleDownload(preview, 'png', e)}
-                    style={{ padding:'10px 20px', borderRadius:8, border:'1.5px solid #e2e8f0', background:'#fff', color:'#334155', fontSize:13, fontWeight:600, cursor:'pointer' }}>
-                    {dlLoading === preview.id ? '⏳ Downloading…' : '⬇ PNG'}
-                  </button>
-                  <button onClick={e => handleDownload(preview, 'jpg', e)}
-                    style={{ padding:'10px 20px', borderRadius:8, border:'1.5px solid #e2e8f0', background:'#fff', color:'#334155', fontSize:13, fontWeight:600, cursor:'pointer' }}>
-                    {dlLoading === preview.id ? '⏳' : '⬇ JPG'}
-                  </button>
+                  {[['png','🖼 PNG'],['jpg','📷 JPG'],['pdf','📄 PDF']].map(([fmt, label]) => (
+                    <button key={fmt} onClick={e => handleDownload(preview, fmt, e)}
+                      style={{ padding:'10px 18px', borderRadius:8, border:'1.5px solid #e2e8f0', background:'#fff', color:'#334155', fontSize:13, fontWeight:600, cursor:'pointer' }}>
+                      {dlLoading === preview.id ? '⏳' : `⬇ ${label.split(' ')[1]}`}
+                    </button>
+                  ))}
                   <button onClick={() => { setPreview(null); setCustomize(preview); }}
                     style={{ padding:'10px 26px', borderRadius:8, border:'none', background:'#6366f1', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer' }}>
                     ✏️ Customize &amp; Use →

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import html2canvas from 'html2canvas';
 
 const CATS = ['All','Business','Sale','Content','Holiday','Product','Quote','Event','Announce'];
 const PW = 780, PH = 440, CW = 300, CH = 170;
@@ -699,12 +700,56 @@ function CustomizeModal({ template, onClose, onConfirm }) {
    MAIN COMPONENT
 ══════════════════════════════════════════════════════════ */
 export default function CaptionTemplates({ onBack, onUseTemplate }) {
-  const [cat, setCat]           = useState('All');
-  const [preview, setPreview]   = useState(null);
+  const [cat, setCat]             = useState('All');
+  const [preview, setPreview]     = useState(null);
   const [customize, setCustomize] = useState(null);
-  const [copied, setCopied]     = useState(null);
+  const [copied, setCopied]       = useState(null);
+  const [dlMenu, setDlMenu]       = useState(null);   // templateId with open dropdown
+  const [dlTarget, setDlTarget]   = useState(null);   // { template, format }
+  const [dlLoading, setDlLoading] = useState(null);   // templateId being downloaded
+  const captureRef                = useRef(null);
 
   const filtered = TEMPLATES.filter(t => cat === 'All' || t.category === cat);
+
+  // Close download menu when clicking outside
+  useEffect(() => {
+    if (!dlMenu) return;
+    const close = () => setDlMenu(null);
+    window.addEventListener('click', close);
+    return () => window.removeEventListener('click', close);
+  }, [dlMenu]);
+
+  // Trigger html2canvas after hidden div renders the template
+  useEffect(() => {
+    if (!dlTarget || !captureRef.current) return;
+    const { template, format } = dlTarget;
+    const timer = setTimeout(async () => {
+      try {
+        const canvas = await html2canvas(captureRef.current, {
+          width: PW, height: PH, scale: 2,
+          useCORS: true, logging: false, backgroundColor: null,
+        });
+        const mime = format === 'jpg' ? 'image/jpeg' : 'image/png';
+        const link = document.createElement('a');
+        link.download = `${template.name.replace(/\s+/g, '-').toLowerCase()}.${format}`;
+        link.href = canvas.toDataURL(mime, 0.95);
+        link.click();
+      } catch (err) {
+        console.error('Download failed:', err);
+      } finally {
+        setDlLoading(null);
+        setDlTarget(null);
+      }
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [dlTarget]);
+
+  const handleDownload = (t, format, e) => {
+    e.stopPropagation();
+    setDlMenu(null);
+    setDlLoading(t.id);
+    setDlTarget({ template: t, format });
+  };
 
   const handleCopy = (text, id) => {
     navigator.clipboard.writeText(text).catch(() => {});
@@ -721,6 +766,12 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
 
   return (
     <div style={{ minHeight:'100vh', background:'#f1f5f9', fontFamily:'"Segoe UI",Arial,sans-serif' }}>
+
+      {/* ── Hidden capture div for html2canvas ── */}
+      <div style={{ position:'fixed', top:-9999, left:-9999, width:PW, height:PH, overflow:'hidden', pointerEvents:'none' }}
+        ref={captureRef}>
+        {dlTarget && (() => { const P = dlTarget.template.Preview; return <P />; })()}
+      </div>
 
       {/* ── Header ── */}
       <div style={{ background:'#fff', borderBottom:'1px solid #e2e8f0', padding:'18px 32px', display:'flex', alignItems:'center', gap:16 }}>
@@ -780,15 +831,42 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
                 <span style={{ fontSize:11, background:getCatColor(t.category).bg, color:getCatColor(t.category).text, padding:'3px 10px', borderRadius:12, fontWeight:600 }}>
                   {t.category}
                 </span>
-                <div style={{ display:'flex', gap:8, marginTop:12 }}>
+                <div style={{ display:'flex', gap:6, marginTop:12 }}>
                   <button onClick={() => handleCopy(t.caption, t.id)}
-                    style={{ flex:1, padding:'8px 6px', borderRadius:8, border:'1.5px solid #e2e8f0', background: copied===t.id ? '#f0fdf4' : '#fff', color: copied===t.id ? '#15803d' : '#64748b', fontSize:12, fontWeight:600, cursor:'pointer' }}>
-                    {copied===t.id ? '✓ Copied' : '📋 Copy'}
+                    style={{ flex:1, padding:'8px 4px', borderRadius:8, border:'1.5px solid #e2e8f0', background: copied===t.id ? '#f0fdf4' : '#fff', color: copied===t.id ? '#15803d' : '#64748b', fontSize:11, fontWeight:600, cursor:'pointer' }}>
+                    {copied===t.id ? '✓' : '📋'} Copy
                   </button>
                   <button onClick={() => setCustomize(t)}
-                    style={{ flex:1, padding:'8px 6px', borderRadius:8, border:'none', background:'#6366f1', color:'#fff', fontSize:12, fontWeight:600, cursor:'pointer' }}>
-                    Use →
+                    style={{ flex:1, padding:'8px 4px', borderRadius:8, border:'none', background:'#6366f1', color:'#fff', fontSize:11, fontWeight:600, cursor:'pointer' }}>
+                    ✏️ Use
                   </button>
+                  {/* Download dropdown */}
+                  <div style={{ position:'relative' }}>
+                    <button
+                      onClick={e => { e.stopPropagation(); setDlMenu(dlMenu === t.id ? null : t.id); }}
+                      style={{ padding:'8px 10px', borderRadius:8, border:'1.5px solid #e2e8f0', background:'#fff', color:'#334155', fontSize:11, fontWeight:600, cursor:'pointer', display:'flex', alignItems:'center', gap:3 }}
+                      title="Download as image">
+                      {dlLoading === t.id ? '⏳' : '⬇'}
+                    </button>
+                    {dlMenu === t.id && (
+                      <div style={{ position:'absolute', bottom:'110%', right:0, background:'#fff', border:'1px solid #e2e8f0', borderRadius:10, boxShadow:'0 4px 16px rgba(0,0,0,0.12)', overflow:'hidden', zIndex:100, minWidth:100 }}
+                        onClick={e => e.stopPropagation()}>
+                        <div style={{ padding:'6px 8px', fontSize:10, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:1, borderBottom:'1px solid #f1f5f9' }}>Download as</div>
+                        <button onClick={e => handleDownload(t, 'png', e)}
+                          style={{ width:'100%', padding:'9px 14px', border:'none', background:'none', textAlign:'left', fontSize:13, fontWeight:600, cursor:'pointer', color:'#1e293b', display:'flex', alignItems:'center', gap:8 }}
+                          onMouseEnter={e => e.currentTarget.style.background='#f8fafc'}
+                          onMouseLeave={e => e.currentTarget.style.background='none'}>
+                          🖼 PNG
+                        </button>
+                        <button onClick={e => handleDownload(t, 'jpg', e)}
+                          style={{ width:'100%', padding:'9px 14px', border:'none', background:'none', textAlign:'left', fontSize:13, fontWeight:600, cursor:'pointer', color:'#1e293b', display:'flex', alignItems:'center', gap:8 }}
+                          onMouseEnter={e => e.currentTarget.style.background='#f8fafc'}
+                          onMouseLeave={e => e.currentTarget.style.background='none'}>
+                          📷 JPG
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -826,10 +904,18 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
                 <pre style={{ background:'#f8fafc', border:'1px solid #e2e8f0', borderRadius:12, padding:'16px 18px', fontSize:13, color:'#334155', lineHeight:1.8, whiteSpace:'pre-wrap', fontFamily:'"Segoe UI",Arial,sans-serif', margin:0 }}>
                   {preview.caption}
                 </pre>
-                <div style={{ marginTop:16, display:'flex', gap:10, justifyContent:'flex-end' }}>
+                <div style={{ marginTop:16, display:'flex', gap:10, justifyContent:'flex-end', flexWrap:'wrap' }}>
                   <button onClick={() => handleCopy(preview.caption, preview.id)}
-                    style={{ padding:'10px 22px', borderRadius:8, border:'1.5px solid #6366f1', background: copied===preview.id ? '#f0fdf4' : '#fff', color: copied===preview.id ? '#15803d' : '#6366f1', fontSize:13, fontWeight:600, cursor:'pointer' }}>
+                    style={{ padding:'10px 22px', borderRadius:8, border:'1.5px solid #e2e8f0', background: copied===preview.id ? '#f0fdf4' : '#fff', color: copied===preview.id ? '#15803d' : '#64748b', fontSize:13, fontWeight:600, cursor:'pointer' }}>
                     {copied===preview.id ? '✓ Copied!' : '📋 Copy Caption'}
+                  </button>
+                  <button onClick={e => handleDownload(preview, 'png', e)}
+                    style={{ padding:'10px 20px', borderRadius:8, border:'1.5px solid #e2e8f0', background:'#fff', color:'#334155', fontSize:13, fontWeight:600, cursor:'pointer' }}>
+                    {dlLoading === preview.id ? '⏳ Downloading…' : '⬇ PNG'}
+                  </button>
+                  <button onClick={e => handleDownload(preview, 'jpg', e)}
+                    style={{ padding:'10px 20px', borderRadius:8, border:'1.5px solid #e2e8f0', background:'#fff', color:'#334155', fontSize:13, fontWeight:600, cursor:'pointer' }}>
+                    {dlLoading === preview.id ? '⏳' : '⬇ JPG'}
                   </button>
                   <button onClick={() => { setPreview(null); setCustomize(preview); }}
                     style={{ padding:'10px 26px', borderRadius:8, border:'none', background:'#6366f1', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer' }}>

@@ -76,12 +76,6 @@ function toDatetimeLocalValue(iso) {
   }
 }
 
-function fromDatetimeLocalToIso(local) {
-  if (!local || !local.trim()) return null;
-  const d = new Date(local);
-  return Number.isFinite(d.getTime()) ? d.toISOString() : null;
-}
-
 /** Combine fixed calendar date (YYYY-MM-DD) + time (HH:mm) into ISO UTC. */
 function combineDateAndTimeToIso(dateYmd, timeHm) {
   if (!dateYmd || !timeHm) return null;

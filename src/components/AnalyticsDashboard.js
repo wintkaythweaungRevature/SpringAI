@@ -336,26 +336,12 @@ function audiencePrimaryMetric(platformId, data) {
   return net;
 }
 
-function sumVisitsAcrossPlatforms(platforms, connected) {
-  let s = 0;
-  let any = false;
-  for (const pid of connected) {
-    const d = platforms[pid] ?? {};
-    const v = pickMetric(d, ['pageVisits', 'facebookVisits', 'profileVisits', 'visits']);
-    if (v != null) {
-      s += v;
-      any = true;
-    }
-  }
-  return any ? s : null;
-}
-
 /**
  * Meta-style Performance panel — Overview (aggregated) or single platform.
  * `platform === 'overview'` → pass `analyticsData` (full /api/analytics/overview JSON).
  * Else pass `data` = `platforms[platform]`.
  */
-function PerformanceInsightsGrid({ platform, data, analyticsData, monthlyStats, activeChartTab, setActiveChartTab }) {
+function PerformanceInsightsGrid({ platform, data, analyticsData, monthlyStats }) {
   const fmtVal = (v) => (v !== null && v !== undefined ? fmt(v) : '—');
   const isOverview = platform === 'overview';
   const pMeta = isOverview ? null : PLATFORMS.find((x) => x.id === platform);
@@ -388,8 +374,6 @@ function PerformanceInsightsGrid({ platform, data, analyticsData, monthlyStats, 
     const platforms = ad.platforms ?? {};
     const ownPosts = ad.ownPosts ?? {};
 
-    const ov = ad.overviewPerformance ?? {};
-
     const totalViews = connected.reduce((sum, pid) => {
       const d = platforms[pid] ?? {};
       return sum + (d.totalViews ?? d.profileViews ?? d.videoViews ?? 0);
@@ -400,16 +384,6 @@ function PerformanceInsightsGrid({ platform, data, analyticsData, monthlyStats, 
     }, 0);
 
     const nConnected = connected.length;
-    const breakdownPlatforms = [...connected]
-      .map((pid) => {
-        const pl = PLATFORMS.find((x) => x.id === pid);
-        const d = platforms[pid] ?? {};
-        const v = pickMetric(d, ['totalViews', 'views', 'pageViews', 'impressions', 'videoViews', 'profileViews']);
-        return { pid, label: pl?.label ?? pid, value: v };
-      })
-      .filter((x) => x.value != null)
-      .sort((a, b) => Number(b.value) - Number(a.value))
-      .slice(0, 3);
 
     return (
       <div
@@ -772,7 +746,6 @@ export default function AnalyticsDashboard() {
   const [topMetricTab,    setTopMetricTab]    = useState('views');
   const [hoveredPlatform, setHoveredPlatform] = useState(null);
   const [monthlyStats,    setMonthlyStats]    = useState(null);
-  const [activeChartTab]  = useState('Views');
   const [loadMonthly,     setLoadMonthly]     = useState(false);
   const [monthlyFrom,     setMonthlyFrom]     = useState('');
   const [monthlyTo,       setMonthlyTo]       = useState('');

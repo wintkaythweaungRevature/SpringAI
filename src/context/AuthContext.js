@@ -119,7 +119,7 @@ export function AuthProvider({ children }) {
     const t1 = setTimeout(refetchUser, 2000);
     const t2 = setTimeout(refetchUser, 5000);
     return () => { clearTimeout(t1); clearTimeout(t2); };
-  }, [token]);
+  }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const login = async (identifier, password) => {
     const trimmedIdentifier = (identifier || "").trim();

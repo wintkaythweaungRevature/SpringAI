@@ -75,22 +75,6 @@ export default function MemberGate({ children, featureName = "this feature" }) {
 
   const showStarterTrialCopy = starterTrialEligible !== false;
 
-  const checkoutMemberLegacy = async () => {
-    const res = await fetch(`${apiBase}/api/subscription/checkout`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ plan: "MEMBER" }),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || data.message || "Checkout failed");
-    const url = data.url || data.checkoutUrl;
-    if (url) window.location.href = url;
-    else throw new Error("No checkout URL returned");
-  };
-
   const runCheckout = async (fn) => {
     setCheckoutLoading(true);
     try {

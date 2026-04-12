@@ -33,13 +33,17 @@ function getPreviewTheme(themeId) {
    PREVIEW COMPONENTS  — each renders at 780×440
 ══════════════════════════════════════════════════════════ */
 
-function NavyBizCover() {
+function NavyBizCover({ fields = {} }) {
+  const biz     = fields.businessName || 'Your Business';
+  const handle  = fields.handle  || 'yourhandle';
+  const email   = fields.email   || 'youremail@gmail.com';
+  const website = fields.website || 'www.yourwebsite.com';
   return (
     <div style={{width:PW,height:PH,background:'#1a3a5c',display:'flex',alignItems:'center',padding:'0 64px',gap:48,fontFamily:'Arial,sans-serif',boxSizing:'border-box'}}>
       <div style={{flex:1,color:'#fff'}}>
-        <div style={{color:'#8ecde8',fontSize:16,marginBottom:10}}>📱 yourhandle &nbsp;•&nbsp; 📧 yourbusiness@gmail.com</div>
-        <div style={{fontSize:64,fontWeight:900,lineHeight:1,marginBottom:12,letterSpacing:-2}}>your<br/>business<br/>name</div>
-        <div style={{color:'#8ecde8',fontSize:14,marginTop:18,letterSpacing:1}}>www.yourwebsite.com</div>
+        <div style={{color:'#8ecde8',fontSize:16,marginBottom:10}}>📱 {handle} &nbsp;•&nbsp; 📧 {email}</div>
+        <div style={{fontSize:54,fontWeight:900,lineHeight:1.05,marginBottom:12,letterSpacing:-1}}>{biz}</div>
+        <div style={{color:'#8ecde8',fontSize:14,marginTop:18,letterSpacing:1}}>{website}</div>
       </div>
       <div style={{width:190,height:310,background:'#243d5e',borderRadius:14,overflow:'hidden',flexShrink:0,display:'flex',alignItems:'flex-end',justifyContent:'center',position:'relative'}}>
         <div style={{width:95,height:250,background:'#4a80aa',borderRadius:'48px 48px 0 0'}}/>
@@ -49,7 +53,12 @@ function NavyBizCover() {
   );
 }
 
-function WhiteBrand() {
+function WhiteBrand({ fields = {} }) {
+  const biz     = fields.businessName || 'Business Name';
+  const author  = fields.name || 'Your Name';
+  const handle  = fields.handle  || 'yourhandle';
+  const email   = fields.email   || 'youremail@gmail.com';
+  const website = fields.website || 'www.yourwebsite.com';
   return (
     <div style={{width:PW,height:PH,background:'#f8f9fc',display:'flex',alignItems:'center',padding:'0 64px',gap:48,fontFamily:'Arial,sans-serif',boxSizing:'border-box',position:'relative',overflow:'hidden'}}>
       <div style={{position:'absolute',right:-100,top:-100,width:460,height:460,borderRadius:'50%',background:'#dde8f5'}}/>
@@ -58,16 +67,19 @@ function WhiteBrand() {
       </div>
       <div style={{flex:1,zIndex:1}}>
         <div style={{fontSize:15,color:'#8090a0',letterSpacing:3,textTransform:'uppercase',marginBottom:4}}>YOUR AMAZING</div>
-        <div style={{fontSize:54,fontWeight:900,color:'#1a3a5c',lineHeight:1.05,marginBottom:8}}>Business<br/>Name</div>
-        <div style={{fontSize:15,color:'#8090a0',marginBottom:20}}>by Your Name</div>
-        <div style={{fontSize:13,color:'#555',marginBottom:16}}>📱 yourhandle &nbsp;&nbsp; 📧 youremail@gmail.com</div>
-        <div style={{borderTop:'2px solid #1a3a5c',paddingTop:10,fontSize:13,color:'#1a3a5c',fontWeight:700,letterSpacing:1}}>www.yourwebsite.com</div>
+        <div style={{fontSize:54,fontWeight:900,color:'#1a3a5c',lineHeight:1.05,marginBottom:8}}>{biz}</div>
+        <div style={{fontSize:15,color:'#8090a0',marginBottom:20}}>by {author}</div>
+        <div style={{fontSize:13,color:'#555',marginBottom:16}}>📱 {handle} &nbsp;&nbsp; 📧 {email}</div>
+        <div style={{borderTop:'2px solid #1a3a5c',paddingTop:10,fontSize:13,color:'#1a3a5c',fontWeight:700,letterSpacing:1}}>{website}</div>
       </div>
     </div>
   );
 }
 
-function DigitalExpert() {
+function DigitalExpert({ fields = {} }) {
+  const handle  = (fields.handle  || 'yourhandle').toUpperCase();
+  const email   = (fields.email   || 'email@gmail.com').toUpperCase();
+  const website = fields.website || 'www.yourwebsite.com';
   return (
     <div style={{width:PW,height:PH,display:'flex',fontFamily:'Arial,sans-serif',overflow:'hidden'}}>
       <div style={{flex:1,background:'#9ab5cc',position:'relative',overflow:'hidden'}}>
@@ -75,10 +87,10 @@ function DigitalExpert() {
         <div style={{position:'absolute',bottom:240,left:'50%',transform:'translateX(-50%) translateY(-50%)',width:90,height:90,background:'#5c80a5',borderRadius:'50%'}}/>
       </div>
       <div style={{width:390,background:'#1a3a5c',padding:'60px 44px',display:'flex',flexDirection:'column',justifyContent:'center',color:'#fff',boxSizing:'border-box'}}>
-        <div style={{fontSize:13,color:'#7fc4e8',letterSpacing:2,marginBottom:16}}>📱 YOURHANDLE &nbsp; 📧 EMAIL@GMAIL.COM</div>
+        <div style={{fontSize:13,color:'#7fc4e8',letterSpacing:2,marginBottom:16}}>📱 {handle} &nbsp; 📧 {email}</div>
         <div style={{fontSize:44,fontWeight:900,lineHeight:1.15,marginBottom:10}}>Digital<br/>Marketing<br/><span style={{color:'#7fc4e8'}}>Manager</span></div>
         <div style={{fontSize:16,color:'#c0d8ec',marginBottom:24}}>Business Development</div>
-        <div style={{borderTop:'1px solid #2d5580',paddingTop:18,fontSize:13,color:'#7fc4e8'}}>www.yourwebsite.com</div>
+        <div style={{borderTop:'1px solid #2d5580',paddingTop:18,fontSize:13,color:'#7fc4e8'}}>{website}</div>
       </div>
     </div>
   );
@@ -1918,6 +1930,8 @@ function CustomizeModal({ template, onClose, onConfirm, onDownloadDesign, design
   const [themeId, setThemeId]       = useState(initialThemeId || 'default');
   const [customColors, setCustomColors] = useState({ primary: '#FF4C46', bg: '#DFFFDE', text: '#012B3A' });
   const [activeTab, setActiveTab]   = useState('text'); // 'text' | 'design'
+  const [designFields, setDesignFields] = useState({ businessName: '', name: '', handle: '', email: '', website: '' });
+  const setDField = (k, v) => setDesignFields(prev => ({ ...prev, [k]: v }));
 
   const filled = template.caption.replace(/\[[^\]]+\]/g, m => values[m] || m);
   const set = (p, v) => setValues(prev => ({ ...prev, [p]: v }));
@@ -1976,8 +1990,36 @@ function CustomizeModal({ template, onClose, onConfirm, onDownloadDesign, design
             {/* ── TEXT TAB ── */}
             {activeTab === 'text' && (
               <div style={{ flex:1, overflowY:'auto', padding:'16px 20px' }}>
+
+                {/* ── Design Info fields (update the visual template) ── */}
+                <div style={{ fontSize:11, fontWeight:700, color:'#6366f1', textTransform:'uppercase', letterSpacing:1, marginBottom:10 }}>
+                  🖼 Design Info
+                </div>
+                <div style={{ fontSize:11, color:'#94a3b8', marginBottom:12, lineHeight:1.5 }}>
+                  These appear directly inside the template design.
+                </div>
+                {[
+                  { key:'businessName', label:'Business / Brand Name', ph:'e.g. Spring AI' },
+                  { key:'name',         label:'Your Name',              ph:'e.g. Jane Smith' },
+                  { key:'handle',       label:'Social Handle',          ph:'e.g. @springai' },
+                  { key:'email',        label:'Email',                  ph:'e.g. hello@springai.com' },
+                  { key:'website',      label:'Website',                ph:'e.g. www.springai.com' },
+                ].map(({ key, label, ph }) => (
+                  <div key={key} style={{ marginBottom:10 }}>
+                    <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#475569', marginBottom:4 }}>{label}</label>
+                    <input value={designFields[key]} onChange={e => setDField(key, e.target.value)} placeholder={ph}
+                      style={{ width:'100%', padding:'7px 10px', borderRadius:8, border:'1.5px solid #e2e8f0', fontSize:12, color:'#1e293b', outline:'none', boxSizing:'border-box', fontFamily:'"Segoe UI",Arial,sans-serif' }}
+                      onFocus={e => e.target.style.borderColor='#6366f1'}
+                      onBlur={e  => e.target.style.borderColor='#e2e8f0'}
+                    />
+                  </div>
+                ))}
+
+                <div style={{ borderTop:'1px solid #f1f5f9', margin:'16px 0 14px' }} />
+
+                {/* ── Caption placeholders ── */}
                 <div style={{ fontSize:11, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:1, marginBottom:14 }}>
-                  {placeholders.length} field{placeholders.length !== 1 ? 's' : ''} to fill
+                  📝 Caption Fields ({placeholders.length})
                 </div>
                 {placeholders.length === 0 && (
                   <div style={{ fontSize:13, color:'#94a3b8', textAlign:'center', padding:'20px 0' }}>No placeholders found.<br/>Ready to use as-is!</div>
@@ -2077,7 +2119,7 @@ function CustomizeModal({ template, onClose, onConfirm, onDownloadDesign, design
               <div style={{ fontSize:11, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:1, marginBottom:10 }}>Design Preview</div>
               <div style={{ width:PREV_W, height:PREV_H, overflow:'hidden', borderRadius:10, border:'1px solid #e2e8f0', position:'relative', maxWidth:'100%' }}>
                 <div style={{ width:PW, height:PH, transform:`scale(${PREV_SC})`, transformOrigin:'top left', filter:designFilter }}>
-                  <template.Preview />
+                  <template.Preview fields={designFields} />
                 </div>
                 {/* Custom bg overlay */}
                 {isCustom && (
@@ -2109,7 +2151,7 @@ function CustomizeModal({ template, onClose, onConfirm, onDownloadDesign, design
                   <div style={{ display:'flex', gap:8 }}>
                     {[['png','🖼 PNG'],['jpg','📷 JPG'],['pdf','📄 PDF']].map(([fmt, label]) => (
                       <button key={fmt} type="button"
-                        onClick={e => onDownloadDesign(fmt, e, filled)}
+                        onClick={e => onDownloadDesign(fmt, e, filled, designFields)}
                         disabled={!!designDownloading}
                         style={{
                           flex:1, padding:'10px 8px', borderRadius:9, border:'1.5px solid #e2e8f0',
@@ -2282,14 +2324,14 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
     setDlTarget({ template: t, format, exportThemeId: previewTheme });
   };
 
-  /** Customize modal only: always bundle the graphic + the same text as Live Preview (filled boxes + any [placeholders] left). */
-  const handleModalCaptionExport = (format, e, filledText) => {
+  /** Customize modal: download the visual design only (no caption text). */
+  const handleModalCaptionExport = (format, e, _filledText, designFields) => {
     e.stopPropagation();
     setDlMenu(null);
     const t = customize;
     if (!t) return;
     setDlLoading(t.id);
-    setDlTarget({ template: t, format, filledCaption: filledText, exportThemeId: previewTheme });
+    setDlTarget({ template: t, format, exportThemeId: previewTheme, designFields: designFields || {} });
   };
 
   const handleCopy = (text, id) => {
@@ -2339,7 +2381,7 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
                 filter: capTheme.filter === 'none' ? undefined : capTheme.filter,
               }}
             >
-              <P />
+              <P fields={dlTarget.designFields || {}} />
             </div>
             {withCaption && (
               <div

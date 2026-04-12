@@ -420,9 +420,6 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
   const [selectedOptionIdx, setSelectedOptionIdx] = useState({}); // { [pid]: number }
   const [captionHistory, setCaptionHistory] = useState({}); // { [pid]: string[] }
   const [templateToast, setTemplateToast]   = useState(false);
-  const [showCaptionGuide, setShowCaptionGuide] = useState(() => {
-    try { return localStorage.getItem('wintaibot_caption_guide_seen') !== '1'; } catch (_) { return true; }
-  });
   const fileRef    = useRef();
   const imageRef   = useRef();
   const skippedRef = useRef(false);
@@ -449,7 +446,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
         }
       })
       .catch(() => {});
-  }, [base, token]);
+  }, [base, token]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadDashboard = () => {
     if (!token) return;
@@ -608,12 +605,6 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
     setCaptionHistory(nextHistory);
   };
 
-  const regenerateCaptionOptions = (pid, style = 'balanced', tone = 'casual') => {
-    const current = variants[pid]?.caption || '';
-    const options = buildCaptionOptions(pid, current || mockCaption(pid, video?.name), { style, tone });
-    setCaptionOptions(prev => ({ ...prev, [pid]: options }));
-    setSelectedOptionIdx(prev => ({ ...prev, [pid]: 0 }));
-  };
 
   const pushCaptionHistory = (pid, previousCaption) => {
     if (typeof previousCaption !== 'string' || !previousCaption.trim()) return;
@@ -630,13 +621,6 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
     setVariants(prev => ({ ...prev, [pid]: { ...prev[pid], caption: nextCaption } }));
   };
 
-  const selectCaptionOption = (pid, optionIndex) => {
-    const options = captionOptions[pid] || [];
-    const option = options[optionIndex];
-    if (!option) return;
-    setSelectedOptionIdx(prev => ({ ...prev, [pid]: optionIndex }));
-    applyCaptionText(pid, option.text, true);
-  };
 
   const undoCaptionEdit = (pid) => {
     const stack = captionHistory[pid] || [];
@@ -660,10 +644,6 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
     applyCaptionText(pid, rewritten, true);
   };
 
-  const dismissCaptionGuide = () => {
-    setShowCaptionGuide(false);
-    try { localStorage.setItem('wintaibot_caption_guide_seen', '1'); } catch (_) {}
-  };
 
   // Caption options are only generated when the user clicks "Generate 3 options" — not auto-created.
 
@@ -800,15 +780,6 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
     }
   };
 
-  const applyIdeaForNextVideo = (idea) => {
-    setStep('upload');
-    setVideo(null);
-    setVariants({});
-    setPublished([]);
-    setScheduledTimes({});
-    setProcessLog([]);
-    setContentIdea(idea);
-  };
 
   const usePlaceholders = () => {
     skippedRef.current = true;
@@ -2249,7 +2220,6 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
             <div style={s.sectionTitle}>📦 Content Variants</div>
             {selectedPlatforms.map(pid => {
               const p = PLATFORMS.find(x => x.id === pid);
-              const v = variants[pid];
               const hasSchedule = scheduledTimes[pid] && String(scheduledTimes[pid]).trim() !== '';
               return (
                 <button key={pid}
@@ -2369,8 +2339,6 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
               const pid = activeVariant;
               const p = PLATFORMS.find(x => x.id === pid);
               const v = variants[pid];
-              const options = captionOptions[pid] || [];
-              const selectedIdx = selectedOptionIdx[pid] ?? 0;
               const historyLen = (captionHistory[pid] || []).length;
               const score = scoreCaption(v.caption || '', p.maxLen);
               const platformPublishType = effectivePublishTypeForPlatform(pid, postType, publishType);
@@ -2762,26 +2730,6 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
   );
 }
 
-/* ─── Error formatter ───────────────────────────────────────── */
-function formatPublishError(platform, rawError) {
-  const s = String(rawError || '').toLowerCase();
-  const name = platform.charAt(0).toUpperCase() + platform.slice(1);
-  if (s.includes('"code":190') || s.includes('invalid oauth') || s.includes('cannot parse access token') || (s.includes('token') && s.includes('expired'))) {
-    return `${name} token expired — go to Connected Accounts and reconnect.`;
-  }
-  if (s.includes('"code":200') || s.includes('permissions')) {
-    return `${name} lacks required permissions. Reconnect in Connected Accounts.`;
-  }
-  if (s.includes('no facebook pages') || s.includes('no pages found')) {
-    return `${name}: No Facebook Page found. Create a Page at facebook.com/pages or link one in Connected Accounts.`;
-  }
-  if (s.includes('rate limit') || s.includes('too many')) {
-    return `${name} rate limit hit. Try again in a few minutes.`;
-  }
-  const orig = String(rawError || '');
-  return orig.length > 120 ? orig.substring(0, 120) + '…' : orig;
-}
-
 /* ─── Mock data generators (replace with GPT API calls) ─────── */
 const CAPTION_FORMAT_HINTS = {
   youtube:   '📋 Long description · timestamps · SEO keywords',
@@ -2902,8 +2850,6 @@ function scoreCaption(caption, maxLen) {
 
   return { level, label, hook: hasHook, cta: hasCta, lengthFit, clarity, tip };
 }
-
-function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 /* ─── Styles ─────────────────────────────────────────────────── */
 const s = {

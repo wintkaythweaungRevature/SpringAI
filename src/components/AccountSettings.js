@@ -46,7 +46,7 @@ function normalizeTierKey(plan, membershipType) {
 
 export default function AccountSettings() {
   const {
-    user, token, isSubscribed, checkoutSubscription, cancelSubscription,
+    user, token, isSubscribed, cancelSubscription,
     reactivateSubscription, openBillingPortal, deactivateAccount, logout,
     apiBase, authHeaders, refetchUser,
   } = useAuth();

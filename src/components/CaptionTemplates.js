@@ -687,9 +687,9 @@ function CustomizeModal({ template, onClose, onConfirm }) {
             style={{ padding:'10px 22px', borderRadius:8, border:'1.5px solid #e2e8f0', background:'#fff', color:'#64748b', fontSize:13, fontWeight:600, cursor:'pointer' }}>
             Cancel
           </button>
-          <button onClick={() => onConfirm(filled)}
+          <button type="button" onClick={() => onConfirm(filled)}
             style={{ padding:'10px 28px', borderRadius:8, border:'none', background:'#6366f1', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer' }}>
-            ⬇ Download caption (.txt)
+            Use in Publisher →
           </button>
         </div>
       </div>
@@ -700,7 +700,7 @@ function CustomizeModal({ template, onClose, onConfirm }) {
 /* ══════════════════════════════════════════════════════════
    MAIN COMPONENT
 ══════════════════════════════════════════════════════════ */
-export default function CaptionTemplates({ onBack }) {
+export default function CaptionTemplates({ onBack, onUseTemplate }) {
   const [cat, setCat]             = useState('All');
   const [preview, setPreview]     = useState(null);
   const [customize, setCustomize] = useState(null);
@@ -767,25 +767,11 @@ export default function CaptionTemplates({ onBack }) {
     setTimeout(() => setCopied(null), 2000);
   };
 
-  const handleCustomizeDownload = (filledCaption) => {
-    const t = customize;
+  const handleCustomizeConfirm = (filledCaption) => {
     setCustomize(null);
     setPreview(null);
-    const raw = (t?.name || 'caption-template').trim();
-    const baseName = raw.replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, '-').toLowerCase() || 'caption-template';
-    try {
-      const blob = new Blob([filledCaption], { type: 'text/plain;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${baseName}.txt`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error('Caption download failed:', err);
-    }
+    if (onUseTemplate) onUseTemplate(filledCaption);
+    if (onBack) onBack();
   };
 
   return (
@@ -805,7 +791,7 @@ export default function CaptionTemplates({ onBack }) {
         </button>
         <div>
           <div style={{ fontSize:20, fontWeight:800, color:'#1e293b' }}>🎨 Design Templates</div>
-          <div style={{ fontSize:13, color:'#64748b' }}>{TEMPLATES.length} professional social media designs — preview, customize placeholders, then download your caption</div>
+          <div style={{ fontSize:13, color:'#64748b' }}>{TEMPLATES.length} professional social media designs — preview, customize, and send captions to the publisher</div>
         </div>
       </div>
 
@@ -860,9 +846,9 @@ export default function CaptionTemplates({ onBack }) {
                     style={{ flex:1, padding:'8px 4px', borderRadius:8, border:'1.5px solid #e2e8f0', background: copied===t.id ? '#f0fdf4' : '#fff', color: copied===t.id ? '#15803d' : '#64748b', fontSize:11, fontWeight:600, cursor:'pointer' }}>
                     {copied===t.id ? '✓' : '📋'} Copy
                   </button>
-                  <button type="button" onClick={() => setCustomize(t)} title="Fill placeholders, then download caption as .txt"
+                  <button type="button" onClick={() => setCustomize(t)} title="Customize placeholders, then use in Video Publisher"
                     style={{ flex:1, padding:'8px 4px', borderRadius:8, border:'none', background:'#6366f1', color:'#fff', fontSize:11, fontWeight:600, cursor:'pointer' }}>
-                    ⬇ Download
+                    ✏️ Use
                   </button>
                   {/* Download dropdown */}
                   <div style={{ position:'relative' }}>
@@ -937,7 +923,7 @@ export default function CaptionTemplates({ onBack }) {
                   ))}
                   <button type="button" onClick={() => { setPreview(null); setCustomize(preview); }}
                     style={{ padding:'10px 26px', borderRadius:8, border:'none', background:'#6366f1', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer' }}>
-                    ✏️ Customize &amp; Download →
+                    ✏️ Customize &amp; Use →
                   </button>
                 </div>
               </div>
@@ -951,7 +937,7 @@ export default function CaptionTemplates({ onBack }) {
         <CustomizeModal
           template={customize}
           onClose={() => setCustomize(null)}
-          onConfirm={handleCustomizeDownload}
+          onConfirm={handleCustomizeConfirm}
         />
       )}
     </div>

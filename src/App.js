@@ -8,7 +8,7 @@ import Box from '@mui/material/Box';
 import { HiHome, HiChatBubbleLeftRight, HiPhoto, HiSparkles } from 'react-icons/hi2';
 import { HiDocumentText, HiMicrophone } from 'react-icons/hi2';
 import { HiChatBubbleOvalLeft, HiArrowTrendingUp, HiLink } from 'react-icons/hi2';
-import { HiPencilSquare, HiDocumentMagnifyingGlass, HiRectangleGroup } from 'react-icons/hi2';
+import { HiDocumentMagnifyingGlass, HiRectangleGroup } from 'react-icons/hi2';
 import { HiCog6Tooth, HiCreditCard, HiQuestionMarkCircle } from 'react-icons/hi2';
 import PlatformIcon from './components/PlatformIcon';
 import HelpPanel from './components/HelpPanel';
@@ -38,7 +38,6 @@ import SocialAIChat from './components/SocialAIChat';
 import PricingPage from './components/PricingPage';
 import AutoReplySettings from './components/AutoReplySettings';
 import ProGate from './components/ProGate';
-import GrowthGate from './components/GrowthGate';
 import ContentCalendar from './components/ContentCalendar';
 import SEO from './components/SEO';
 
@@ -488,9 +487,7 @@ function App() {
     window.addEventListener('wintaibot:openLogin', handler);
     return () => window.removeEventListener('wintaibot:openLogin', handler);
   }, []);
-  const userDisplayName = user?.firstName || user?.lastName
-    ? [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim()
-    : (user?.email || '').split('@')[0] || '';
+
   const userInitials = user?.firstName && user?.lastName
     ? (user.firstName[0] + user.lastName[0]).toUpperCase()
     : (user?.email ? user.email.slice(0, 2).toUpperCase() : '??');
@@ -603,29 +600,19 @@ function App() {
         {user && (
           <header style={{ ...s.topBar, position: 'relative' }}>
             <button style={s.menuBtn} onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>
-            {activeTab != null && (
-              <button
-                type="button"
-                style={s.backBtn}
-                onClick={goBack}
-                aria-label="Go back to previous page"
-                title="Back"
-              >
-                ←
-              </button>
-            )}
 
-            {/* Platform bar — centered absolutely */}
+            {/* Platform bar — left of back button (in document order) */}
             {!isMobile && (
               <div style={{
-                position: 'absolute', left: '50%', top: '50%',
-                transform: 'translate(-50%, -50%)',
                 display: 'flex', alignItems: 'center', gap: 4,
                 background: '#0f172a',
                 border: '1px solid #1e293b',
                 borderRadius: 12,
                 padding: '5px 8px',
-                zIndex: 1,
+                flexShrink: 0,
+                minWidth: 0,
+                maxWidth: 'min(100%, 520px)',
+                overflowX: 'auto',
               }}>
                 {ALL_PLATFORMS.map(p => {
                   const isOn = connectedPlatforms.includes(p.id);
@@ -719,6 +706,18 @@ function App() {
                   <span>Connect</span>
                 </button>
               </div>
+            )}
+
+            {activeTab != null && (
+              <button
+                type="button"
+                style={s.backBtn}
+                onClick={goBack}
+                aria-label="Go back to previous page"
+                title="Back"
+              >
+                ←
+              </button>
             )}
 
             <div style={{ flex: 1 }} />

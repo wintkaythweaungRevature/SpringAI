@@ -15,7 +15,6 @@ const PLATFORMS = filterEnabledPlatforms([
   { id: 'x',         label: 'X',         color: '#000000', emoji: '🐦', logo: 'x'         },
   { id: 'threads',   label: 'Threads',   color: '#101010', emoji: '🧵', logo: 'threads'   },
   { id: 'pinterest', label: 'Pinterest', color: '#E60023', emoji: '📌', logo: 'pinterest' },
-  { id: 'reddit',    label: 'Reddit',    color: '#FF4500', emoji: '🤝', logo: 'reddit'    },
 ]);
 
 const PLATFORM_COLORS = {
@@ -761,9 +760,9 @@ function PostHeatmap({ resolved, postsDetail = [], platformLabel = 'this platfor
     : [];
 
   return (
-    <div>
-      <div style={{ overflowX: 'auto' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: `52px repeat(24, 32px)`, gap: 3, minWidth: 'max-content' }}>
+    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <div style={{ overflowX: 'auto', width: '100%', display: 'flex', justifyContent: 'center' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: `52px repeat(24, 32px)`, gap: 3, minWidth: 'max-content', margin: '0 auto' }}>
           <div />
           {HOUR_LABELS.map((h, i) => (
             <div key={i} style={{
@@ -838,7 +837,7 @@ function PostHeatmap({ resolved, postsDetail = [], platformLabel = 'this platfor
         </div>
       </div>
 
-      <div style={{ fontSize: 11, color: '#64748b', marginTop: 12 }}>
+      <div style={{ fontSize: 11, color: '#64748b', marginTop: 12, textAlign: 'center', maxWidth: 720 }}>
         Your busiest slot on <strong>{platformLabel}</strong>: <strong>{bestDay}</strong> at{' '}
         <strong>{formatHour12(bestHour)}</strong> (by post count)
       </div>
@@ -1139,6 +1138,7 @@ function PlatformBestTimeCards({ bestTime }) {
     const apiByPlat = bestTime?.byPlatform;
     if (apiByPlat && typeof apiByPlat === 'object' && Object.keys(apiByPlat).length > 0) {
       return Object.entries(apiByPlat)
+        .filter(([platId]) => !EXCLUDED_BEST_TIME_PLATFORMS.has(String(platId).toLowerCase()))
         .filter(([, v]) => v && Number(v.postCount) > 0)
         .sort((a, b) => Number(b[1].postCount) - Number(a[1].postCount))
         .map(([platId, v]) => {
@@ -1176,6 +1176,7 @@ function PlatformBestTimeCards({ bestTime }) {
       }
     });
     return Object.entries(map)
+      .filter(([platId]) => !EXCLUDED_BEST_TIME_PLATFORMS.has(String(platId).toLowerCase()))
       .filter(([, v]) => v.total > 0)
       .sort((a, b) => b[1].total - a[1].total)
       .map(([platId, v]) => {
@@ -1260,6 +1261,38 @@ function calendarLocalDateKey(rec) {
   const m = d.getMonth() + 1;
   const day = d.getDate();
   return `${y}-${String(m).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+/** Platforms removed from product UI (API may still return legacy keys). */
+const EXCLUDED_BEST_TIME_PLATFORMS = new Set(['reddit', 'trends', 'google_trends']);
+
+function parseDateTimeLocalInput(s) {
+  if (s == null || String(s).trim() === '') return null;
+  const t = new Date(s).getTime();
+  return Number.isFinite(t) ? t : null;
+}
+
+/** Best-effort timestamp for calendar list filtering (ms). */
+function recordTimeMsForFilter(rec) {
+  if (!rec || typeof rec !== 'object') return null;
+  const raw =
+    rec.dateTime ||
+    rec.scheduledAt ||
+    rec.scheduledTime ||
+    rec.publishAt ||
+    rec.publishedAt ||
+    rec.createdAt ||
+    null;
+  if (raw) {
+    const t = new Date(raw).getTime();
+    if (Number.isFinite(t)) return t;
+  }
+  const k = calendarLocalDateKey(rec);
+  if (k && /^\d{4}-\d{2}-\d{2}$/.test(k)) {
+    const t = new Date(`${k}T12:00:00`).getTime();
+    return Number.isFinite(t) ? t : null;
+  }
+  return null;
 }
 
 /**
@@ -1426,6 +1459,10 @@ function TrendsCalendar({ authHeaders }) {
   const [yearSummary, setYearSummary] = useState({});
   const [yearSummaryLoading, setYearSummaryLoading] = useState(false);
   const [composeOpen, setComposeOpen] = useState(false);
+  const [pastFrom, setPastFrom] = useState('');
+  const [pastUntil, setPastUntil] = useState('');
+  const [schedFrom, setSchedFrom] = useState('');
+  const [schedUntil, setSchedUntil] = useState('');
 
   const loadCalendar = useCallback(() => {
     setLoading(true);
@@ -1484,6 +1521,13 @@ function TrendsCalendar({ authHeaders }) {
   }, [year, month, authHeaders]);
 
   useEffect(() => { loadCalendar(); }, [loadCalendar]);
+
+  useEffect(() => {
+    setPastFrom('');
+    setPastUntil('');
+    setSchedFrom('');
+    setSchedUntil('');
+  }, [year, month]);
 
   const loadYearSummary = useCallback(async () => {
     setYearSummaryLoading(true);
@@ -1635,6 +1679,39 @@ function TrendsCalendar({ authHeaders }) {
     });
     return rows;
   }, [data, year, month]);
+
+  const pastPostsForList = useMemo(() => {
+    if (!data) return [];
+    let posts = [...(data.posts || [])];
+    const fromMs = parseDateTimeLocalInput(pastFrom);
+    const untilMs = parseDateTimeLocalInput(pastUntil);
+    if (fromMs != null || untilMs != null) {
+      posts = posts.filter((p) => {
+        const t = recordTimeMsForFilter(p);
+        if (t == null) return false;
+        if (fromMs != null && t < fromMs) return false;
+        if (untilMs != null && t > untilMs) return false;
+        return true;
+      });
+    }
+    return posts;
+  }, [data, pastFrom, pastUntil]);
+
+  const upcomingScheduledFiltered = useMemo(() => {
+    let rows = [...upcomingScheduledForList];
+    const fromMs = parseDateTimeLocalInput(schedFrom);
+    const untilMs = parseDateTimeLocalInput(schedUntil);
+    if (fromMs != null || untilMs != null) {
+      rows = rows.filter((j) => {
+        const t = recordTimeMsForFilter(j);
+        if (t == null) return false;
+        if (fromMs != null && t < fromMs) return false;
+        if (untilMs != null && t > untilMs) return false;
+        return true;
+      });
+    }
+    return rows;
+  }, [upcomingScheduledForList, schedFrom, schedUntil]);
 
   // Find selected day's items
   const selKey = selectedDay ? `${year}-${String(month).padStart(2,'0')}-${String(selectedDay).padStart(2,'0')}` : null;
@@ -2213,7 +2290,7 @@ function TrendsCalendar({ authHeaders }) {
           <div>
             <div style={{ fontWeight: 700, fontSize: 13, color: '#1e293b', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{ color: '#10b981' }}>✓</span> Past Posts{' '}
-              <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 400 }}>({(data.posts || []).length})</span>
+              <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 400 }}>({pastPostsForList.length}{(pastFrom || pastUntil) && (data.posts || []).length !== pastPostsForList.length ? ` of ${(data.posts || []).length}` : ''})</span>
               {(data.posts || []).length > 0 && (
                 <button onClick={() => setHidePastPosts(h => !h)} style={{
                   marginLeft: 'auto', fontSize: 11, fontWeight: 600,
@@ -2224,13 +2301,33 @@ function TrendsCalendar({ authHeaders }) {
                 </button>
               )}
             </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+              <span style={{ fontSize: 10, fontWeight: 600, color: '#64748b' }}>From</span>
+              <input
+                type="datetime-local"
+                value={pastFrom}
+                onChange={(e) => setPastFrom(e.target.value)}
+                style={{ fontSize: 11, padding: '4px 8px', borderRadius: 8, border: '1px solid #e2e8f0', color: '#334155' }}
+              />
+              <span style={{ fontSize: 10, fontWeight: 600, color: '#64748b' }}>Until</span>
+              <input
+                type="datetime-local"
+                value={pastUntil}
+                onChange={(e) => setPastUntil(e.target.value)}
+                style={{ fontSize: 11, padding: '4px 8px', borderRadius: 8, border: '1px solid #e2e8f0', color: '#334155' }}
+              />
+            </div>
             {(data.posts || []).length === 0 ? (
               <p style={{ fontSize: 12, color: '#94a3b8' }}>No published posts this month.</p>
             ) : hidePastPosts ? (
               <p style={{ fontSize: 12, color: '#94a3b8' }}>List cleared. Click <strong>Show</strong> to restore.</p>
+            ) : pastPostsForList.length === 0 ? (
+              <p style={{ fontSize: 12, color: '#94a3b8' }}>
+                {(pastFrom || pastUntil) ? 'No past posts in this date/time range. Try widening From / Until.' : 'No published posts this month.'}
+              </p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {[...(data.posts || [])].sort((a, b) => {
+                {[...pastPostsForList].sort((a, b) => {
                   const da = a.dateTime || a.date || '';
                   const db = b.dateTime || b.date || '';
                   return db.localeCompare(da);
@@ -2268,13 +2365,38 @@ function TrendsCalendar({ authHeaders }) {
           <div>
             <div style={{ fontWeight: 700, fontSize: 13, color: '#1e293b', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{ color: '#f59e0b' }}>⏰</span> Upcoming Scheduled{' '}
-              <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 400 }}>({upcomingScheduledForList.length})</span>
+              <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 400 }}>
+                ({upcomingScheduledFiltered.length}
+                {(schedFrom || schedUntil) && upcomingScheduledForList.length !== upcomingScheduledFiltered.length
+                  ? ` of ${upcomingScheduledForList.length}`
+                  : ''})
+              </span>
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+              <span style={{ fontSize: 10, fontWeight: 600, color: '#64748b' }}>From</span>
+              <input
+                type="datetime-local"
+                value={schedFrom}
+                onChange={(e) => setSchedFrom(e.target.value)}
+                style={{ fontSize: 11, padding: '4px 8px', borderRadius: 8, border: '1px solid #e2e8f0', color: '#334155' }}
+              />
+              <span style={{ fontSize: 10, fontWeight: 600, color: '#64748b' }}>Until</span>
+              <input
+                type="datetime-local"
+                value={schedUntil}
+                onChange={(e) => setSchedUntil(e.target.value)}
+                style={{ fontSize: 11, padding: '4px 8px', borderRadius: 8, border: '1px solid #e2e8f0', color: '#334155' }}
+              />
             </div>
             {upcomingScheduledForList.length === 0 ? (
               <p style={{ fontSize: 12, color: '#94a3b8' }}>No scheduled posts this month.</p>
+            ) : upcomingScheduledFiltered.length === 0 ? (
+              <p style={{ fontSize: 12, color: '#94a3b8' }}>
+                {(schedFrom || schedUntil) ? 'No scheduled posts in this date/time range. Adjust From / Until (e.g. include the run time).' : 'No scheduled posts this month.'}
+              </p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {[...upcomingScheduledForList].sort((a, b) => {
+                {[...upcomingScheduledFiltered].sort((a, b) => {
                   const da = a.dateTime || a.scheduledAt || a.date || '';
                   const db = b.dateTime || b.scheduledAt || b.date || '';
                   return da.localeCompare(db);
@@ -2402,10 +2524,6 @@ function parseYouTubeInput(raw) {
 }
 
 function CompetitorTab({ authHeaders }) {
-  // ── Platform switcher ─────────────────────────────────────────
-  const [competitorPlatform, setCompetitorPlatform] = useState('youtube');
-
-  // ── YouTube state ─────────────────────────────────────────────
   const [query,        setQuery]        = useState('');
   const [searching,    setSearching]    = useState(false);
   const [channels,     setChannels]     = useState(null);
@@ -2413,22 +2531,6 @@ function CompetitorTab({ authHeaders }) {
   const [analysis,     setAnalysis]     = useState(null);
   const [loadAnalysis, setLoadAnalysis] = useState(false);
   const [ytError,      setYtError]      = useState('');
-
-  // ── Reddit state ──────────────────────────────────────────────
-  const [redditQuery,      setRedditQuery]      = useState('');
-  const [searchingReddit,  setSearchingReddit]  = useState(false);
-  const [subreddits,       setSubreddits]       = useState(null);
-  const [selectedSub,      setSelectedSub]      = useState(null);
-  const [subAnalysis,      setSubAnalysis]      = useState(null);
-  const [loadSubAnalysis,  setLoadSubAnalysis]  = useState(false);
-  const [redditError,      setRedditError]      = useState('');
-
-  // ── Google Trends state ───────────────────────────────────────
-  const [trendsInput,    setTrendsInput]    = useState('');
-  const [trendsKeywords, setTrendsKeywords] = useState([]);
-  const [trendsData,     setTrendsData]     = useState(null);
-  const [trendsLoading,  setTrendsLoading]  = useState(false);
-  const [trendsError,    setTrendsError]    = useState('');
 
   // Cleaned query shown as a hint when user pastes a YouTube URL
   const cleanedQuery = useMemo(() => parseYouTubeInput(query), [query]);
@@ -2467,111 +2569,8 @@ function CompetitorTab({ authHeaders }) {
     }
   };
 
-  // ── Reddit functions ──────────────────────────────────────────
-  function parseRedditInput(raw) {
-    if (!raw) return '';
-    let s = raw.trim();
-    // Strip reddit.com/r/... URL
-    const urlMatch = s.match(/reddit\.com\/r\/([A-Za-z0-9_]+)/i);
-    if (urlMatch) return urlMatch[1];
-    // Strip "r/" prefix
-    if (s.startsWith('r/')) return s.slice(2);
-    return s;
-  }
-
-  const doRedditSearch = async () => {
-    const q = parseRedditInput(redditQuery);
-    if (!q) return;
-    setSearchingReddit(true); setSubreddits(null); setSelectedSub(null); setSubAnalysis(null); setRedditError('');
-    try {
-      const res = await fetch(`${API}/api/analytics/competitors/reddit?query=${encodeURIComponent(q)}`,
-        { headers: authHeaders() });
-      const data = await res.json();
-      if (!res.ok) { setRedditError(data.error || 'Search failed'); return; }
-      setSubreddits(data.subreddits || []);
-    } catch {
-      setRedditError('Search failed.');
-    } finally {
-      setSearchingReddit(false);
-    }
-  };
-
-  const doSubredditAnalyze = async (name) => {
-    setSelectedSub(name); setLoadSubAnalysis(true); setSubAnalysis(null); setRedditError('');
-    try {
-      const res = await fetch(`${API}/api/analytics/competitors/reddit/${encodeURIComponent(name)}`,
-        { headers: authHeaders() });
-      const data = await res.json();
-      if (!res.ok) { setRedditError(data.error || 'Analysis failed'); return; }
-      setSubAnalysis(data);
-    } catch {
-      setRedditError('Analysis failed.');
-    } finally {
-      setLoadSubAnalysis(false);
-    }
-  };
-
-  // ── Google Trends function ───────────────────────────────────
-  const doTrendsSearch = async () => {
-    const raw = trendsInput.trim();
-    if (!raw) return;
-    const kws = raw.split(',').map(k => k.trim()).filter(Boolean).slice(0, 5);
-    setTrendsKeywords(kws);
-    setTrendsLoading(true); setTrendsData(null); setTrendsError('');
-    try {
-      const res = await fetch(
-        `${API}/api/analytics/competitors/trends?keywords=${encodeURIComponent(kws.join(','))}`,
-        { headers: authHeaders() }
-      );
-      const data = await res.json();
-      if (!res.ok || data.error) {
-        setTrendsError(
-          data.error === 'rate_limited'
-            ? 'Google Trends is rate-limiting requests. Please wait a few minutes and try again.'
-            : data.error || 'Failed to load trends data.'
-        );
-        return;
-      }
-      setTrendsData(data);
-    } catch {
-      setTrendsError('Google Trends unavailable. Try again later.');
-    } finally {
-      setTrendsLoading(false);
-    }
-  };
-
-  const redditOrange = '#FF4500';
-
   return (
     <div>
-      {/* ── Platform switcher ── */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
-        {[
-          { id: 'youtube', label: 'YouTube',       logo: 'youtube',      color: '#FF0000' },
-          { id: 'reddit',  label: 'Reddit',         logo: 'reddit',       color: '#FF4500' },
-          { id: 'trends',  label: 'Google Trends',  logo: 'google',       color: '#4285F4' },
-        ].map(pl => (
-          <button key={pl.id} onClick={() => setCompetitorPlatform(pl.id)} style={{
-            display: 'flex', alignItems: 'center', gap: 6,
-            padding: '7px 16px', borderRadius: 20, border: 'none', cursor: 'pointer',
-            fontWeight: 600, fontSize: 13,
-            background: competitorPlatform === pl.id ? pl.color : '#f1f5f9',
-            color: competitorPlatform === pl.id ? '#fff' : '#475569',
-            transition: 'all 0.15s',
-          }}>
-            <img
-              src={`https://cdn.simpleicons.org/${pl.logo}/${competitorPlatform === pl.id ? 'ffffff' : pl.color.replace('#', '')}`}
-              alt={pl.label} width={14} height={14}
-              onError={e => { e.target.style.display = 'none'; }}
-            />
-            {pl.label}
-          </button>
-        ))}
-      </div>
-
-      {/* ════════════ YOUTUBE ════════════ */}
-      {competitorPlatform === 'youtube' && (
-        <div>
           <p style={{ fontSize: 13, color: '#64748b', marginBottom: 16 }}>
             Search any YouTube channel to see their stats, recent videos, and engagement.
             <strong style={{ color: '#e74c3c' }}> Requires YouTube account connected.</strong>
@@ -2702,312 +2701,6 @@ function CompetitorTab({ authHeaders }) {
               </div>
             </div>
           )}
-        </div>
-      )}
-
-      {/* ════════════ REDDIT ════════════ */}
-      {competitorPlatform === 'reddit' && (
-        <div>
-          <p style={{ fontSize: 13, color: '#64748b', marginBottom: 16 }}>
-            Search any subreddit to see its subscriber count, active users, and top posts from the last month.
-            <strong style={{ color: '#FF4500' }}> No Reddit account required.</strong>
-          </p>
-
-          {/* Search bar */}
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input
-                value={redditQuery}
-                onChange={e => setRedditQuery(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && doRedditSearch()}
-                placeholder="e.g. r/reactjs, reactjs, or paste a Reddit URL"
-                style={{
-                  flex: 1, padding: '10px 14px',
-                  border: '1.5px solid #e2e8f0',
-                  borderRadius: 10, fontSize: 13, color: '#1e293b', outline: 'none',
-                }}
-              />
-              <button onClick={doRedditSearch} disabled={searchingReddit || !redditQuery.trim()} style={{
-                padding: '10px 20px', background: redditOrange, color: '#fff', border: 'none',
-                borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                opacity: searchingReddit || !redditQuery.trim() ? 0.6 : 1,
-              }}>
-                {searchingReddit ? '⏳' : '🔍 Search'}
-              </button>
-            </div>
-          </div>
-
-          {redditError && <div style={{ background: '#fff5f0', color: '#c0392b', borderRadius: 8, padding: '10px 14px', fontSize: 13, marginBottom: 16 }}>{redditError}</div>}
-
-          {subreddits && subreddits.length === 0 && !searchingReddit && (
-            <p style={{ color: '#94a3b8', fontSize: 13 }}>No subreddits found. Try a different search term.</p>
-          )}
-          {subreddits && subreddits.length > 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
-              {subreddits.map(sub => (
-                <div key={sub.name}
-                  onClick={() => doSubredditAnalyze(sub.name)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 14,
-                    background: selectedSub === sub.name ? '#fff5f0' : '#fff',
-                    border: `1.5px solid ${selectedSub === sub.name ? redditOrange : '#e2e8f0'}`,
-                    borderRadius: 12, padding: '12px 16px', cursor: 'pointer', transition: 'all 0.15s',
-                  }}>
-                  {sub.iconUrl ? (
-                    <img src={sub.iconUrl} alt={sub.displayName} style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
-                  ) : (
-                    <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#ff4500', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <img src="https://cdn.simpleicons.org/reddit/ffffff" alt="reddit" width={26} height={26} />
-                    </div>
-                  )}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 700, fontSize: 14, color: '#1e293b', marginBottom: 2 }}>{sub.displayName}</div>
-                    {sub.description && (
-                      <div style={{ fontSize: 12, color: '#64748b', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{sub.description}</div>
-                    )}
-                    <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 4 }}>
-                      <span style={{ fontSize: 12, color: '#64748b' }}>👥 {fmtNum(sub.subscribers)} members</span>
-                      <span style={{ fontSize: 12, color: '#22c55e' }}>🟢 {fmtNum(sub.activeUsers)} online</span>
-                    </div>
-                  </div>
-                  <span style={{ color: redditOrange, fontSize: 13, fontWeight: 600 }}>Analyze →</span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {loadSubAnalysis && <div style={s.loadingRow}><div style={s.spinner} /> Loading analysis…</div>}
-          {subAnalysis && (
-            <div>
-              {/* Subreddit header */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16, background: '#fff', border: `1.5px solid ${redditOrange}22`, borderRadius: 16, padding: '20px 24px', marginBottom: 16 }}>
-                {subAnalysis.subreddit?.iconUrl ? (
-                  <img src={subAnalysis.subreddit.iconUrl} alt="" style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover' }} />
-                ) : (
-                  <div style={{ width: 64, height: 64, borderRadius: '50%', background: redditOrange, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <img src="https://cdn.simpleicons.org/reddit/ffffff" alt="reddit" width={36} height={36} />
-                  </div>
-                )}
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 800, fontSize: 18, color: '#1e293b', marginBottom: 4 }}>{subAnalysis.subreddit?.displayName}</div>
-                  {subAnalysis.subreddit?.title && (
-                    <div style={{ fontSize: 12, color: '#64748b', marginBottom: 4 }}>{subAnalysis.subreddit.title}</div>
-                  )}
-                  {subAnalysis.subreddit?.description && (
-                    <div style={{ fontSize: 12, color: '#94a3b8', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-                      {subAnalysis.subreddit.description}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Stats row */}
-              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
-                {[
-                  ['👥 Members',       fmtNum(subAnalysis.subreddit?.subscribers)],
-                  ['🟢 Online Now',    fmtNum(subAnalysis.subreddit?.activeUsers)],
-                  ['📅 Created',       subAnalysis.subreddit?.createdAt ? new Date(subAnalysis.subreddit.createdAt).getFullYear() : '—'],
-                  ['📊 Avg Score',     fmtNum(subAnalysis.avgScore)],
-                  ['💬 Avg Comments',  fmtNum(subAnalysis.avgComments)],
-                  ['⬆️ Avg Upvote %',  `${subAnalysis.avgUpvoteRatio}%`],
-                ].map(([label, value]) => (
-                  <div key={label} style={{ background: '#f8fafc', borderRadius: 12, padding: '12px 16px', minWidth: 120, flex: '1 1 120px', textAlign: 'center' }}>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: '#1e293b' }}>{value}</div>
-                    <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 2 }}>{label}</div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Top posts table */}
-              <div style={{ background: '#fff', border: '1.5px solid #e2e8f0', borderRadius: 16, overflow: 'hidden' }}>
-                <div style={{ padding: '14px 20px', borderBottom: '1px solid #e2e8f0', fontWeight: 700, fontSize: 14, color: '#1e293b' }}>
-                  Top Posts — Last 30 Days
-                </div>
-                {(subAnalysis.topPosts || []).map((p, i) => (
-                  <div key={i} style={{
-                    display: 'flex', alignItems: 'flex-start', gap: 12,
-                    padding: '12px 20px', borderBottom: i < subAnalysis.topPosts.length - 1 ? '1px solid #f1f5f9' : 'none',
-                  }}>
-                    <div style={{ minWidth: 48, textAlign: 'center', paddingTop: 2 }}>
-                      <div style={{ fontSize: 14, fontWeight: 800, color: redditOrange }}>{fmtNum(p.score)}</div>
-                      <div style={{ fontSize: 10, color: '#94a3b8' }}>score</div>
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <a href={p.url} target="_blank" rel="noreferrer"
-                        style={{ fontSize: 13, fontWeight: 600, color: '#1e293b', textDecoration: 'none',
-                                 overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-                        {p.title}
-                      </a>
-                      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 4 }}>
-                        <span style={{ fontSize: 11, color: '#64748b' }}>💬 {fmtNum(p.commentCount)}</span>
-                        <span style={{ fontSize: 11, color: '#22c55e' }}>⬆️ {Math.round((p.upvoteRatio || 0) * 100)}%</span>
-                        {p.flair && <span style={{ fontSize: 11, background: '#f1f5f9', color: '#475569', borderRadius: 4, padding: '1px 6px' }}>{p.flair}</span>}
-                        <span style={{ fontSize: 11, color: '#94a3b8' }}>{p.author}</span>
-                      </div>
-                    </div>
-                    <div style={{ fontSize: 11, color: '#94a3b8', flexShrink: 0 }}>
-                      {p.publishedAt ? new Date(p.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ════════════ GOOGLE TRENDS ════════════ */}
-      {competitorPlatform === 'trends' && (
-        <div>
-          <p style={{ fontSize: 13, color: '#64748b', marginBottom: 16 }}>
-            Compare keyword interest over the last 12 months using Google Trends.
-            Enter up to 5 keywords separated by commas.
-            <strong style={{ color: '#4285F4' }}> No account required.</strong>
-          </p>
-
-          {/* Search bar */}
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input
-                value={trendsInput}
-                onChange={e => setTrendsInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && doTrendsSearch()}
-                placeholder="e.g. toyota, honda, ford (comma-separated)"
-                style={{ flex: 1, padding: '10px 14px', border: '1.5px solid #e2e8f0', borderRadius: 10, fontSize: 13, color: '#1e293b', outline: 'none' }}
-              />
-              <button onClick={doTrendsSearch} disabled={trendsLoading || !trendsInput.trim()} style={{
-                padding: '10px 20px', background: '#4285F4', color: '#fff', border: 'none',
-                borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                opacity: (trendsLoading || !trendsInput.trim()) ? 0.6 : 1,
-              }}>
-                {trendsLoading ? '⏳ Loading…' : '🔍 Search'}
-              </button>
-            </div>
-          </div>
-
-          {trendsError && (
-            <div style={{ background: '#fff5f0', color: '#c0392b', borderRadius: 8, padding: '10px 14px', fontSize: 13, marginBottom: 16 }}>
-              {trendsError}
-            </div>
-          )}
-
-          {trendsLoading && (
-            <div style={{ textAlign: 'center', color: '#64748b', fontSize: 13, padding: '32px 0' }}>
-              Fetching Google Trends data…
-            </div>
-          )}
-
-          {trendsData && (() => {
-            const colors = ['#4285F4','#EA4335','#FBBC04','#34A853','#FF6D00'];
-            const timeline = trendsData.timeline || [];
-            const keywords = trendsData.keywords || [];
-            const rising   = trendsData.rising   || [];
-            const CHART_W = 520, CHART_H = 130, PAD = 4;
-
-            // Compute per-keyword averages and max for summary cards
-            const kwStats = keywords.map((kw, ki) => {
-              const vals = timeline.map(p => Number((p.values || [])[ki] || 0));
-              const avg  = vals.length ? Math.round(vals.reduce((a,b) => a+b, 0) / vals.length) : 0;
-              const peak = vals.length ? Math.max(...vals) : 0;
-              return { kw, avg, peak, vals };
-            });
-
-            // SVG line chart
-            const maxV = Math.max(...kwStats.flatMap(s => s.vals), 1);
-            const svgPaths = kwStats.map((s, ki) => {
-              if (s.vals.length < 2) return null;
-              const pts = s.vals.map((v, i) => {
-                const x = PAD + (i / (s.vals.length - 1)) * (CHART_W - PAD * 2);
-                const y = PAD + (1 - v / maxV) * (CHART_H - PAD * 2);
-                return `${x.toFixed(1)},${y.toFixed(1)}`;
-              }).join(' ');
-              return (
-                <polyline key={ki} points={pts} fill="none"
-                  stroke={colors[ki % colors.length]} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
-              );
-            });
-
-            const trendsUrl = `https://trends.google.com/trends/explore?q=${keywords.map(k => encodeURIComponent(k)).join(',')}&date=today+12-m`;
-
-            return (
-              <div>
-                {/* Keyword summary cards */}
-                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 20 }}>
-                  {kwStats.map((s, i) => (
-                    <div key={i} style={{
-                      flex: '1 1 140px', background: '#fff', border: `2px solid ${colors[i % colors.length]}22`,
-                      borderRadius: 12, padding: '12px 16px',
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                        <span style={{ width: 10, height: 10, borderRadius: '50%', background: colors[i % colors.length], flexShrink: 0 }} />
-                        <span style={{ fontSize: 13, fontWeight: 700, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.kw}</span>
-                      </div>
-                      <div style={{ fontSize: 22, fontWeight: 800, color: colors[i % colors.length] }}>{s.avg}</div>
-                      <div style={{ fontSize: 11, color: '#94a3b8' }}>avg interest · peak {s.peak}</div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* SVG line chart */}
-                {timeline.length > 1 && (
-                  <div style={{ background: '#fff', border: '1.5px solid #e2e8f0', borderRadius: 14, padding: '16px 16px 8px', marginBottom: 16 }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: '#64748b', marginBottom: 8 }}>Interest Over Time (last 12 months)</div>
-                    <svg width="100%" viewBox={`0 0 ${CHART_W} ${CHART_H}`} style={{ display: 'block', overflow: 'visible' }}>
-                      {/* Grid lines */}
-                      {[0, 25, 50, 75, 100].map(v => {
-                        const y = PAD + (1 - v / 100) * (CHART_H - PAD * 2);
-                        return (
-                          <g key={v}>
-                            <line x1={PAD} y1={y} x2={CHART_W - PAD} y2={y} stroke="#f1f5f9" strokeWidth="1" />
-                            <text x={PAD - 2} y={y + 4} textAnchor="end" fontSize="9" fill="#94a3b8">{v}</text>
-                          </g>
-                        );
-                      })}
-                      {svgPaths}
-                    </svg>
-                    {/* X-axis labels (first, mid, last) */}
-                    {timeline.length > 0 && (
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#94a3b8', marginTop: 2, paddingLeft: 24 }}>
-                        <span>{timeline[0]?.date}</span>
-                        {timeline[Math.floor(timeline.length / 2)] && <span>{timeline[Math.floor(timeline.length / 2)]?.date}</span>}
-                        <span>{timeline[timeline.length - 1]?.date}</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Rising queries */}
-                {rising.length > 0 && (
-                  <div style={{ background: '#fff', border: '1.5px solid #e2e8f0', borderRadius: 14, padding: '16px', marginBottom: 16 }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: '#1e293b', marginBottom: 10 }}>🔥 Rising Searches</div>
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                      {rising.map((r, i) => (
-                        <span key={i} style={{
-                          background: r.rising ? '#fff5f0' : '#f8fafc',
-                          color: r.rising ? '#c0392b' : '#475569',
-                          border: `1px solid ${r.rising ? '#fca5a533' : '#e2e8f0'}`,
-                          borderRadius: 20, padding: '4px 12px', fontSize: 12, fontWeight: 600,
-                        }}>
-                          {r.rising ? '↑ ' : ''}{r.query}
-                          {r.formattedValue ? <span style={{ opacity: 0.6, marginLeft: 4 }}>{r.formattedValue}</span> : null}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Open full report link */}
-                <div style={{ textAlign: 'right' }}>
-                  <a href={trendsUrl} target="_blank" rel="noopener noreferrer"
-                    style={{ fontSize: 12, color: '#4285F4', textDecoration: 'none', fontWeight: 600 }}>
-                    Open full report on Google Trends →
-                  </a>
-                </div>
-              </div>
-            );
-          })()}
-        </div>
-      )}
     </div>
   );
 }
@@ -3201,12 +2894,12 @@ export default function DeepAnalytics() {
                 platformLabel={platformConfig.label}
                 platformColor={platformConfig.color}
               />
+              <PlatformBestTimeCards bestTime={bestTime} />
               <PostHeatmap
                 resolved={bestTimeResolved}
                 postsDetail={bestTime.postsDetail || []}
                 platformLabel={platformConfig.label}
               />
-              <PlatformBestTimeCards bestTime={bestTime} />
             </>
           )}
         </div>

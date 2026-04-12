@@ -1,20 +1,12 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import PlatformIcon, { LinkedInLogo } from "./PlatformIcon";
-import { WINTAI_SOCIAL } from "../config/brandSocial";
+import { LinkedInLogo } from "./PlatformIcon";
 import { filterEnabledPlatforms, isPlatformDisabled } from "../config/disabledPlatforms";
 import "./LandingSection.css";
 
 /** Simple Icons CDN — same source as PlatformIcon (production- recognizable marks). */
 const SI = "https://cdn.simpleicons.org";
 
-/** Real infrastructure we describe on the marketing footer strip (AWS, edge, DB, runtime). */
-const infraStackLogos = [
-  { label: "AWS", fullLabel: "Amazon Web Services", slug: "amazonwebservices", color: "232F3E", href: "https://aws.amazon.com" },
-  { label: "Cloudflare", fullLabel: "Cloudflare", slug: "cloudflare", color: "F38020", href: "https://www.cloudflare.com" },
-  { label: "PostgreSQL", fullLabel: "PostgreSQL", slug: "postgresql", color: "4169E1", href: "https://www.postgresql.org" },
-  { label: "Java", fullLabel: "OpenJDK / Java", slug: "openjdk", color: "437291", href: "https://openjdk.org" },
-];
 
 /** Publish destinations shown on marketing (mirrors in-app picker; some may be temporarily hidden). */
 const landingPublishPlatforms = filterEnabledPlatforms([
@@ -433,16 +425,6 @@ const steps = [
   },
 ];
 
-const techStack = [
-  { label: "Spring AI", url: "https://spring.io/projects/spring-ai" },
-  { label: "React 19", url: "https://react.dev" },
-  { label: "Java 21", url: "https://openjdk.org" },
-  { label: "PostgreSQL", url: "https://postgresql.org" },
-  { label: "AWS", url: "https://aws.amazon.com" },
-  { label: "Cloudflare", url: "https://cloudflare.com" },
-  { label: "Stripe Payments", url: "https://stripe.com" },
-  { label: "Docker", url: "https://docker.com" },
-];
 
 const landingGallery = [
   "c__Users_wintk_AppData_Roaming_Cursor_User_workspaceStorage_69bc542c894986623db97e4396cf2017_images_image-079a4005-12cf-4525-a9ea-c9074eea79eb.png",

@@ -741,7 +741,7 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
   const [actionMsg, setActionMsg] = useState('');
   const [hoverPreview, setHoverPreview] = useState(null); // { post, x, y }
   const [composeOpen, setComposeOpen]   = useState(false);
-  const [composeDate, setComposeDate]   = useState(null); // pre-fill date when clicking a day
+  const [composeDate]                   = useState(null); // pre-fill date when clicking a day
   const [reschedulingJob, setReschedulingJob] = useState(null); // { jobId, current }
   const [newDateTime, setNewDateTime]   = useState('');
   const [dragPost,    setDragPost]      = useState(null); // post being drag-rescheduled

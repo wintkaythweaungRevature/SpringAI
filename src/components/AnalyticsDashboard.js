@@ -388,29 +388,16 @@ function PerformanceInsightsGrid({ platform, data, analyticsData, monthlyStats, 
     const platforms = ad.platforms ?? {};
     const ownPosts = ad.ownPosts ?? {};
 
-    const totalFollowers = connected.reduce((sum, pid) => {
+    const ov = ad.overviewPerformance ?? {};
+
+    const totalViews = connected.reduce((sum, pid) => {
       const d = platforms[pid] ?? {};
-      return sum + (d.followers ?? d.subscribers ?? d.fans ?? 0);
+      return sum + (d.totalViews ?? d.profileViews ?? d.videoViews ?? 0);
     }, 0);
     const totalEngagement = connected.reduce((sum, pid) => {
       const d = platforms[pid] ?? {};
       return sum + (d.recentLikes ?? 0) + (d.recentComments ?? 0) + (d.talkingAbout ?? 0) + (d.totalLikes ?? 0);
     }, 0);
-    const totalViews = connected.reduce((sum, pid) => {
-      const d = platforms[pid] ?? {};
-      return sum + (d.totalViews ?? d.profileViews ?? d.videoViews ?? 0);
-    }, 0);
-    const totalVisits = sumVisitsAcrossPlatforms(platforms, connected);
-
-    const ov = ad.overviewPerformance ?? {};
-    const dViews = pickDeltaPct(ov, ['viewsDeltaPct']);
-    const dInt = pickDeltaPct(ov, ['interactionsDeltaPct']);
-    const dVis = pickDeltaPct(ov, ['visitsDeltaPct']);
-    const dAud = pickDeltaPct(ov, ['audienceDeltaPct']);
-    const sparkViews = Array.isArray(ov.viewsTrend) ? ov.viewsTrend : ad.overviewViewsTrend;
-    const sparkInt = Array.isArray(ov.interactionsTrend) ? ov.interactionsTrend : ad.overviewInteractionsTrend;
-    const sparkVis = Array.isArray(ov.visitsTrend) ? ov.visitsTrend : ad.overviewVisitsTrend;
-    const sparkAud = Array.isArray(ov.audienceTrend) ? ov.audienceTrend : ad.overviewAudienceTrend;
 
     const nConnected = connected.length;
     const breakdownPlatforms = [...connected]
@@ -423,12 +410,6 @@ function PerformanceInsightsGrid({ platform, data, analyticsData, monthlyStats, 
       .filter((x) => x.value != null)
       .sort((a, b) => Number(b.value) - Number(a.value))
       .slice(0, 3);
-
-    const viewsBreakdownOv = breakdownPlatforms.map((row) => ({
-      label: row.label,
-      valueText: fmt(row.value),
-      deltaPct: null,
-    }));
 
     return (
       <div
@@ -791,7 +772,7 @@ export default function AnalyticsDashboard() {
   const [topMetricTab,    setTopMetricTab]    = useState('views');
   const [hoveredPlatform, setHoveredPlatform] = useState(null);
   const [monthlyStats,    setMonthlyStats]    = useState(null);
-  const [activeChartTab,  setActiveChartTab]  = useState('Views');
+  const [activeChartTab]  = useState('Views');
   const [loadMonthly,     setLoadMonthly]     = useState(false);
   const [monthlyFrom,     setMonthlyFrom]     = useState('');
   const [monthlyTo,       setMonthlyTo]       = useState('');
@@ -875,21 +856,6 @@ export default function AnalyticsDashboard() {
     const list = Array.isArray(recent) ? recent : [];
     return list.filter((p) => p?.id == null || !hiddenActivityIds.has(String(p.id)));
   }, [recent, hiddenActivityIds]);
-
-  const totalFollowers = connected.reduce((sum, pid) => {
-    const d = platforms[pid] ?? {};
-    return sum + (d.followers ?? d.subscribers ?? d.fans ?? 0);
-  }, 0);
-
-  const totalEngagement = connected.reduce((sum, pid) => {
-    const d = platforms[pid] ?? {};
-    return sum + (d.recentLikes ?? 0) + (d.recentComments ?? 0) + (d.talkingAbout ?? 0) + (d.totalLikes ?? 0);
-  }, 0);
-
-  const totalViews = connected.reduce((sum, pid) => {
-    const d = platforms[pid] ?? {};
-    return sum + (d.totalViews ?? d.profileViews ?? 0);
-  }, 0);
 
   const byPlatform          = ownPosts.byPlatform          ?? {};
   const byType              = ownPosts.byType              ?? {};

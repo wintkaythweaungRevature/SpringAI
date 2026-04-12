@@ -119,13 +119,6 @@ export default function AccountSettings() {
     setTimeout(() => setMessage(null), 5000);
   };
 
-  const handleUpgrade = async () => {
-    setLoading("upgrade");
-    try { await checkoutSubscription(); }
-    catch (e) { showMessage(e.message || "Checkout failed", true); }
-    finally { setLoading(null); }
-  };
-
   const handleCancelSub = async () => {
     if (!confirmCancelSub) { setConfirmCancelSub(true); return; }
     setLoading("cancel-sub");

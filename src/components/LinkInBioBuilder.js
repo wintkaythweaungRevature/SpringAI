@@ -214,7 +214,7 @@ export default function LinkInBioBuilder() {
             <input
               style={s.slugInput}
               value={slug}
-              onChange={e => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9_\-]/g, ''))}
+              onChange={e => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))}
               placeholder="yourname"
               maxLength={40}
             />

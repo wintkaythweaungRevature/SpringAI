@@ -6,18 +6,6 @@ import Signup from "./Signup";
 import VerifyEmailBlock from "./VerifyEmailBlock";
 import "./MemberGate.css";
 
-const BENEFITS = [
-  "Unlimited AI content, captions & hashtags",
-  "Deep analytics, trends & SEO-style insights",
-  "Priority support when you need it most",
-];
-
-const MINI_PLANS = [
-  { name: "Starter", monthly: 19, note: "Includes 7-day trial (if eligible)" },
-  { name: "Pro", monthly: 39, note: "Most popular" },
-  { name: "Growth", monthly: 79, note: "Best value" },
-];
-
 const UPGRADE_PLANS = [
   {
     name: "Pro",

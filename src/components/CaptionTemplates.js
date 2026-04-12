@@ -469,7 +469,7 @@ const TEMPLATES = [
   },
   {
     id: 'dm35', name: 'Service Packages Menu', category: 'Business', Preview: ServiceMenuPreview,
-    caption: `📌 Pick your package — [Brand / Your Name]\n\n🟣 Starter — [what's included] — [price or \"DM for quote\"]\n🟣 Growth — [what's included] — [price or \"DM for quote\"]\n🟣 Pro — [what's included] — [price or \"DM for quote\"]\n\nNot sure which fits? DM me \"HELP\" and I'll point you in the right direction.\n\n#services #packages #[niche] #consulting #booking`,
+    caption: `📌 Pick your package — [Brand / Your Name]\n\n🟣 Starter — [what's included] — [price or 'DM for quote']\n🟣 Growth — [what's included] — [price or 'DM for quote']\n🟣 Pro — [what's included] — [price or 'DM for quote']\n\nNot sure which fits? DM me 'HELP' and I'll point you in the right direction.\n\n#services #packages #[niche] #consulting #booking`,
   },
   {
     id: 'bn36', name: 'Myth vs Fact Listicle', category: 'Content', Preview: MythFactPreview,
@@ -644,8 +644,8 @@ const TEMPLATES = [
     caption: `🌍 Earth Day pledge from [Brand Name]\n\nThis year we’re committing to:\n• [Pledge 1]\n• [Pledge 2]\n• [Pledge 3]\n\nShop our [eco product line] — [X]% to [cause] through [Date].\n\n#earthday #sustainable #[niche] #giveback #eco`,
   },
   {
-    id: ‘hx79’, name: ‘Founder’s Note’, category: ‘Business’, Preview: FoundersNotePreview,
-    caption: `A note from [Your Name], founder of [Brand Name]:\n\nWhen we started, we wanted to [mission in one sentence].\n\nToday [milestone or thank-you].\n\nWhat’s next: [teaser].\n\nThank you for being here. 💜\n\n#founder #letter #[niche] #startup #community`,
+    id: 'hx79', name: "Founder's Note", category: 'Business', Preview: FoundersNotePreview,
+    caption: `A note from [Your Name], founder of [Brand Name]:\n\nWhen we started, we wanted to [mission in one sentence].\n\nToday [milestone or thank-you].\n\nWhat's next: [teaser].\n\nThank you for being here. 💜\n\n#founder #letter #[niche] #startup #community`,
   },
   {
     id: 'hx80', name: 'Year‑End Inventory Clearance', category: 'Sale', Preview: FlashSale,
@@ -1915,9 +1915,7 @@ function getHint(p) {
 function CustomizeModal({ template, onClose, onConfirm, onDownloadDesign, designDownloading, initialThemeId, onThemeChange }) {
   const placeholders = [...new Set(template.caption.match(/\[[^\]]+\]/g) || [])];
   const [values, setValues]         = useState(Object.fromEntries(placeholders.map(p => [p, ''])));
-  const [footerDlOpen, setFooterDlOpen] = useState(false);
   const [themeId, setThemeId]       = useState(initialThemeId || 'default');
-  const [showCustom, setShowCustom] = useState(false);
   const [customColors, setCustomColors] = useState({ primary: '#FF4C46', bg: '#DFFFDE', text: '#012B3A' });
   const [activeTab, setActiveTab]   = useState('text'); // 'text' | 'design'
 
@@ -1933,16 +1931,8 @@ function CustomizeModal({ template, onClose, onConfirm, onDownloadDesign, design
   // notify parent so download uses same theme
   const pickTheme = (id) => {
     setThemeId(id);
-    if (id !== 'custom') setShowCustom(false);
     if (onThemeChange) onThemeChange(id === 'custom' ? 'custom' : id);
   };
-
-  useEffect(() => {
-    if (!footerDlOpen) return;
-    const close = () => setFooterDlOpen(false);
-    window.addEventListener('click', close);
-    return () => window.removeEventListener('click', close);
-  }, [footerDlOpen]);
 
   // small design preview scale inside modal
   const PREV_W = 420, PREV_H = Math.round(420 * PH / PW);
@@ -2032,7 +2022,7 @@ function CustomizeModal({ template, onClose, onConfirm, onDownloadDesign, design
                   ))}
 
                   {/* Custom tile */}
-                  <button onClick={() => { pickTheme('custom'); setShowCustom(true); }} style={{
+                  <button onClick={() => pickTheme('custom')} style={{
                     border: isCustom ? '2px solid #f97316' : '2px solid #e2e8f0',
                     borderRadius:10, padding:0, cursor:'pointer', background:'none', position:'relative',
                   }}>

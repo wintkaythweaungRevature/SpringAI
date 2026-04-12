@@ -1,805 +1,466 @@
 import React, { useState } from 'react';
 
-/* ═══════════════════════════════════════════════════════════
-   TEMPLATE TYPES  — 5 distinct content types
-═══════════════════════════════════════════════════════════ */
-const TEMPLATE_TYPES = [
+const CATS = ['All','Business','Sale','Content','Holiday','Product'];
+const PW = 780, PH = 440, CW = 300, CH = 170;
+const SC = CW / PW; // ≈ 0.3846
+
+/* ══════════════════════════════════════════════════════════
+   PREVIEW COMPONENTS  — each renders at 780×440
+══════════════════════════════════════════════════════════ */
+
+function NavyBizCover() {
+  return (
+    <div style={{width:PW,height:PH,background:'#1a3a5c',display:'flex',alignItems:'center',padding:'0 64px',gap:48,fontFamily:'Arial,sans-serif',boxSizing:'border-box'}}>
+      <div style={{flex:1,color:'#fff'}}>
+        <div style={{color:'#8ecde8',fontSize:16,marginBottom:10}}>📱 yourhandle &nbsp;•&nbsp; 📧 yourbusiness@gmail.com</div>
+        <div style={{fontSize:64,fontWeight:900,lineHeight:1,marginBottom:12,letterSpacing:-2}}>your<br/>business<br/>name</div>
+        <div style={{color:'#8ecde8',fontSize:14,marginTop:18,letterSpacing:1}}>www.yourwebsite.com</div>
+      </div>
+      <div style={{width:190,height:310,background:'#243d5e',borderRadius:14,overflow:'hidden',flexShrink:0,display:'flex',alignItems:'flex-end',justifyContent:'center',position:'relative'}}>
+        <div style={{width:95,height:250,background:'#4a80aa',borderRadius:'48px 48px 0 0'}}/>
+        <div style={{position:'absolute',top:50,left:'50%',transform:'translateX(-50%)',width:64,height:64,background:'#3a6a90',borderRadius:'50%'}}/>
+      </div>
+    </div>
+  );
+}
+
+function WhiteBrand() {
+  return (
+    <div style={{width:PW,height:PH,background:'#f8f9fc',display:'flex',alignItems:'center',padding:'0 64px',gap:48,fontFamily:'Arial,sans-serif',boxSizing:'border-box',position:'relative',overflow:'hidden'}}>
+      <div style={{position:'absolute',right:-100,top:-100,width:460,height:460,borderRadius:'50%',background:'#dde8f5'}}/>
+      <div style={{width:190,height:190,borderRadius:'50%',background:'#b8d0e8',flexShrink:0,zIndex:1,overflow:'hidden',display:'flex',alignItems:'flex-end',justifyContent:'center'}}>
+        <div style={{width:84,height:160,background:'#7fafd0',borderRadius:'42px 42px 0 0'}}/>
+      </div>
+      <div style={{flex:1,zIndex:1}}>
+        <div style={{fontSize:15,color:'#8090a0',letterSpacing:3,textTransform:'uppercase',marginBottom:4}}>YOUR AMAZING</div>
+        <div style={{fontSize:54,fontWeight:900,color:'#1a3a5c',lineHeight:1.05,marginBottom:8}}>Business<br/>Name</div>
+        <div style={{fontSize:15,color:'#8090a0',marginBottom:20}}>by Your Name</div>
+        <div style={{fontSize:13,color:'#555',marginBottom:16}}>📱 yourhandle &nbsp;&nbsp; 📧 youremail@gmail.com</div>
+        <div style={{borderTop:'2px solid #1a3a5c',paddingTop:10,fontSize:13,color:'#1a3a5c',fontWeight:700,letterSpacing:1}}>www.yourwebsite.com</div>
+      </div>
+    </div>
+  );
+}
+
+function DigitalExpert() {
+  return (
+    <div style={{width:PW,height:PH,display:'flex',fontFamily:'Arial,sans-serif',overflow:'hidden'}}>
+      <div style={{flex:1,background:'#9ab5cc',position:'relative',overflow:'hidden'}}>
+        <div style={{position:'absolute',bottom:0,left:'50%',transform:'translateX(-50%)',width:190,height:370,background:'#7095b5',borderRadius:'95px 95px 0 0'}}/>
+        <div style={{position:'absolute',bottom:240,left:'50%',transform:'translateX(-50%) translateY(-50%)',width:90,height:90,background:'#5c80a5',borderRadius:'50%'}}/>
+      </div>
+      <div style={{width:390,background:'#1a3a5c',padding:'60px 44px',display:'flex',flexDirection:'column',justifyContent:'center',color:'#fff',boxSizing:'border-box'}}>
+        <div style={{fontSize:13,color:'#7fc4e8',letterSpacing:2,marginBottom:16}}>📱 YOURHANDLE &nbsp; 📧 EMAIL@GMAIL.COM</div>
+        <div style={{fontSize:44,fontWeight:900,lineHeight:1.15,marginBottom:10}}>Digital<br/>Marketing<br/><span style={{color:'#7fc4e8'}}>Manager</span></div>
+        <div style={{fontSize:16,color:'#c0d8ec',marginBottom:24}}>Business Development</div>
+        <div style={{borderTop:'1px solid #2d5580',paddingTop:18,fontSize:13,color:'#7fc4e8'}}>www.yourwebsite.com</div>
+      </div>
+    </div>
+  );
+}
+
+function ThanksgivingSale() {
+  return (
+    <div style={{width:PW,height:PH,display:'flex',fontFamily:'Arial,sans-serif',overflow:'hidden'}}>
+      <div style={{width:270,background:'#3a8fa0',padding:'50px 36px',display:'flex',flexDirection:'column',justifyContent:'center',color:'#fff',boxSizing:'border-box',position:'relative',overflow:'hidden'}}>
+        <div style={{position:'absolute',bottom:-60,right:-60,width:180,height:180,borderRadius:'50%',background:'rgba(255,255,255,0.07)'}}/>
+        <div style={{fontSize:26,fontWeight:800,marginBottom:2}}>Thanksgiving</div>
+        <div style={{fontSize:40,fontWeight:900,marginBottom:18}}>SALE</div>
+        <div style={{fontSize:13,color:'#c8eef7',marginBottom:4}}>up to</div>
+        <div style={{fontSize:90,fontWeight:900,lineHeight:0.85,color:'#fff'}}>30<span style={{fontSize:44}}>%</span></div>
+        <div style={{fontSize:20,color:'#c8eef7',marginBottom:24}}>off</div>
+        <div style={{fontSize:11,color:'#a0dded',borderTop:'1px solid rgba(255,255,255,0.25)',paddingTop:12}}>www.youramazingwebsite.com</div>
+      </div>
+      <div style={{flex:1,background:'#f5f0eb',padding:'50px 44px',position:'relative',overflow:'hidden'}}>
+        <div style={{position:'absolute',top:20,right:20,width:210,height:210,background:'#e0d5c8',borderRadius:'50%'}}/>
+        <div style={{position:'relative',zIndex:1}}>
+          <div style={{fontSize:14,color:'#666',lineHeight:1.9,marginBottom:20}}>
+            Croissant pastry dessert marzipan sesame snaps.<br/>
+            Biscuit marzipan candy canes cotton candy icing.<br/>
+            Tootsie roll jelly-o sweet roll.
+          </div>
+          <div style={{width:80,height:4,background:'#3a8fa0',borderRadius:2}}/>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LimitedOffer() {
+  return (
+    <div style={{width:PW,height:PH,background:'#f5f8fc',fontFamily:'Arial,sans-serif',position:'relative',overflow:'hidden',display:'flex',alignItems:'center',justifyContent:'center'}}>
+      <div style={{position:'absolute',top:0,left:0,right:0,height:'60%',background:'#3a8fa0',borderRadius:'0 0 55% 55%'}}/>
+      <div style={{position:'relative',zIndex:1,textAlign:'center',display:'flex',flexDirection:'column',alignItems:'center',width:'100%'}}>
+        <div style={{color:'rgba(255,255,255,0.85)',fontSize:20,letterSpacing:4,marginBottom:4}}>LIMITED TIME</div>
+        <div style={{color:'#fff',fontSize:96,fontWeight:900,lineHeight:0.9,marginBottom:0}}>OFFER</div>
+        <div style={{marginTop:30,background:'#fff',borderRadius:'20px 20px 0 0',padding:'28px 52px 0',width:400,boxSizing:'border-box',boxShadow:'0 -8px 24px rgba(0,0,0,0.08)'}}>
+          <div style={{fontSize:14,color:'#666',marginBottom:20,lineHeight:1.7}}>Croissant pastry dessert marzipan sesame snaps.<br/>Biscuit marzipan candy canes cotton candy icing.</div>
+          <div style={{background:'#3a8fa0',color:'#fff',padding:'14px 36px',borderRadius:8,display:'inline-block',fontWeight:700,fontSize:16,letterSpacing:2}}>CTA GOES HERE</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EasterSale() {
+  return (
+    <div style={{width:PW,height:PH,background:'#f5f0e8',fontFamily:'Arial,sans-serif',overflow:'hidden',display:'flex',alignItems:'center',position:'relative'}}>
+      <div style={{position:'absolute',left:0,top:0,width:'52%',height:'100%',background:'#4a9bb5',clipPath:'polygon(0 0,85% 0,70% 100%,0 100%)'}}/>
+      <div style={{position:'relative',zIndex:1,width:340,padding:'0 44px',color:'#fff',boxSizing:'border-box'}}>
+        <div style={{fontSize:13,letterSpacing:4,marginBottom:10,opacity:0.8}}>COMING SOON</div>
+        <div style={{fontSize:32,fontWeight:800,marginBottom:2}}>Easter Sunday</div>
+        <div style={{fontSize:58,fontWeight:900,marginBottom:20,lineHeight:1}}>SALE</div>
+        <div style={{fontSize:13,color:'#c8eaf7',marginBottom:22,lineHeight:1.7}}>Croissant pastry dessert marzipan sesame snaps. Biscuit marzipan candy canes.</div>
+        <div style={{borderTop:'1px solid rgba(255,255,255,0.35)',paddingTop:14,fontSize:14,color:'#c8eaf7',fontWeight:600}}>Brush up on all our latest products →</div>
+      </div>
+      <div style={{position:'absolute',right:0,top:0,width:'43%',height:'100%',display:'grid',gridTemplateColumns:'1fr 1fr',gridTemplateRows:'1fr 1fr',gap:8,padding:8,boxSizing:'border-box'}}>
+        <div style={{background:'#d4a890',borderRadius:10}}/>
+        <div style={{background:'#7abdd9',borderRadius:10}}/>
+        <div style={{background:'#a8c8b0',borderRadius:10}}/>
+        <div style={{background:'#d4b8a0',borderRadius:10}}/>
+      </div>
+    </div>
+  );
+}
+
+function BigNumber() {
+  return (
+    <div style={{width:PW,height:PH,background:'#fff',fontFamily:'Arial,sans-serif',overflow:'hidden',display:'flex',alignItems:'center',position:'relative'}}>
+      <div style={{position:'absolute',top:0,right:0,width:'56%',height:'100%',background:'#e8f4f8',clipPath:'polygon(16% 0,100% 0,100% 100%,0 100%)'}}/>
+      <div style={{paddingLeft:56,zIndex:1,position:'relative'}}>
+        <div style={{fontSize:220,fontWeight:900,color:'#1a3a5c',lineHeight:0.85,opacity:0.1,position:'absolute',top:'50%',left:30,transform:'translateY(-50%)'}}>42</div>
+        <div style={{fontSize:170,fontWeight:900,color:'#1a3a5c',lineHeight:0.9,position:'relative',zIndex:1}}>42</div>
+      </div>
+      <div style={{position:'absolute',right:48,zIndex:1,width:320}}>
+        <div style={{fontSize:44,fontWeight:800,color:'#2e7d9e',lineHeight:1.2,marginBottom:14}}>Social Media<br/>Post Ideas</div>
+        <div style={{fontSize:14,color:'#888',lineHeight:1.8}}>Biscuit lollipop jelly-o cake cookie caramels. Brownie donut muffin biscuit jelly is sweet.</div>
+      </div>
+    </div>
+  );
+}
+
+function UltimateGuide() {
+  return (
+    <div style={{width:PW,height:PH,display:'flex',fontFamily:'Arial,sans-serif',overflow:'hidden'}}>
+      <div style={{width:430,background:'#1a3a5c',padding:'56px 48px',display:'flex',flexDirection:'column',justifyContent:'center',color:'#fff',boxSizing:'border-box'}}>
+        <div style={{fontSize:12,color:'#7fc4e8',letterSpacing:2,marginBottom:14}}>THE ULTIMATE GUIDE</div>
+        <div style={{fontSize:46,fontWeight:900,lineHeight:1.1,marginBottom:10}}>Pinterest<br/><span style={{color:'#7fc4e8'}}>Marketing</span></div>
+        <div style={{fontSize:18,color:'#c0d8ec',fontStyle:'italic',marginBottom:24}}>The Ultimate Guide</div>
+        <div style={{fontSize:13,color:'#a0c8e0',lineHeight:1.8,marginBottom:24}}>Croissant pastry dessert marzipan sesame snaps. Biscuit marzipan candy canes cotton candy icing.</div>
+        <div style={{fontSize:13,color:'#7fc4e8',fontWeight:600}}>www.youramazingwebsite.com</div>
+      </div>
+      <div style={{flex:1,background:'#e0cfc2',position:'relative',overflow:'hidden'}}>
+        <div style={{position:'absolute',top:-50,right:-50,width:220,height:220,borderRadius:'50%',background:'rgba(26,58,92,0.12)'}}/>
+        <div style={{position:'absolute',bottom:0,left:'50%',transform:'translateX(-50%)',width:220,height:370,background:'#c4b0a0',borderRadius:'110px 110px 0 0'}}/>
+        <div style={{position:'absolute',bottom:250,left:'50%',transform:'translateX(-50%)',width:84,height:84,background:'#a89080',borderRadius:'50%'}}/>
+      </div>
+    </div>
+  );
+}
+
+function BloggingTips() {
+  return (
+    <div style={{width:PW,height:PH,background:'#fff',fontFamily:'Arial,sans-serif',overflow:'hidden',display:'flex'}}>
+      <div style={{width:260,background:'#d4c8bc',position:'relative',overflow:'hidden',flexShrink:0}}>
+        <div style={{position:'absolute',bottom:0,left:'50%',transform:'translateX(-50%)',width:160,height:330,background:'#c0b0a0',borderRadius:'80px 80px 0 0'}}/>
+        <div style={{position:'absolute',bottom:230,left:'50%',transform:'translateX(-50%)',width:72,height:72,background:'#a89080',borderRadius:'50%'}}/>
+      </div>
+      <div style={{flex:1,padding:'52px 48px',boxSizing:'border-box'}}>
+        <div style={{fontSize:30,fontWeight:800,color:'#1a3a5c',marginBottom:6}}>Blogging Tips</div>
+        <div style={{fontSize:18,color:'#2e7d9e',marginBottom:24}}>for Beginners</div>
+        <div style={{fontSize:13,color:'#666',lineHeight:1.9,marginBottom:24}}>
+          Jelly-o cheesecake cookie donut soufflé.<br/>
+          Biscuit marzipan candy canes tootsie roll.<br/>
+          Sweet roll jelly-o candy is sweet.
+        </div>
+        {[1,2,3].map(i => (
+          <div key={i} style={{display:'flex',alignItems:'center',gap:10,marginBottom:12}}>
+            <div style={{width:26,height:26,borderRadius:'50%',background:'#2e7d9e',color:'#fff',fontSize:12,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,flexShrink:0}}>{i}</div>
+            <div style={{height:10,background:'#e8f4f8',borderRadius:5,flex:1}}/>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function HomeDecorPost() {
+  return (
+    <div style={{width:PW,height:PH,background:'#f5f0eb',fontFamily:'Arial,sans-serif',overflow:'hidden',display:'flex',alignItems:'center',padding:'0 56px',gap:48,boxSizing:'border-box'}}>
+      <div style={{flexShrink:0,textAlign:'center'}}>
+        <div style={{fontSize:160,fontWeight:900,color:'#1a3a5c',lineHeight:1}}>15</div>
+        <div style={{fontSize:24,fontWeight:700,color:'#2e7d9e',lineHeight:1.3,maxWidth:160}}>Home<br/>Decor<br/>Ideas</div>
+        <div style={{fontSize:13,color:'#888',marginTop:10,maxWidth:160,lineHeight:1.5}}>The best ways to organize your space</div>
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gridTemplateRows:'1fr 1fr',gap:10,width:260,height:260,flexShrink:0}}>
+        <div style={{background:'#c8b8a8',borderRadius:10}}/>
+        <div style={{background:'#9cc4b8',borderRadius:10}}/>
+        <div style={{background:'#d4a880',borderRadius:10}}/>
+        <div style={{background:'#b8c8d8',borderRadius:10}}/>
+      </div>
+      <div style={{flex:1}}>
+        <div style={{fontSize:14,color:'#666',lineHeight:1.9}}>Biscuit lollipop jelly muffin soufflé sweet roll toffee. Candy cotton candy canes icing bear claw.</div>
+      </div>
+    </div>
+  );
+}
+
+function CourseLaunch() {
+  return (
+    <div style={{width:PW,height:PH,background:'#1a3a5c',fontFamily:'Arial,sans-serif',overflow:'hidden',display:'flex',alignItems:'center',padding:'0 56px',gap:48,boxSizing:'border-box'}}>
+      <div style={{flex:1,color:'#fff'}}>
+        <div style={{fontSize:13,color:'#7fc4e8',letterSpacing:2,marginBottom:10}}>✨ INTRODUCING</div>
+        <div style={{fontSize:16,color:'#c0d8ec',marginBottom:2}}>Your Amazing</div>
+        <div style={{fontSize:56,fontWeight:900,lineHeight:1,marginBottom:16}}>COURSE<br/><span style={{color:'#7fc4e8'}}>LAUNCH</span></div>
+        <div style={{fontSize:13,color:'#a0c8e0',lineHeight:1.8,marginBottom:24}}>Everything you need to achieve your goal and transform your career or business.</div>
+        <div style={{background:'#2e7d9e',color:'#fff',padding:'13px 28px',borderRadius:8,display:'inline-block',fontSize:14,fontWeight:700,letterSpacing:1}}>ENROLL NOW →</div>
+      </div>
+      <div style={{display:'flex',flexDirection:'column',gap:16,flexShrink:0}}>
+        <div style={{width:220,height:140,background:'#4a7ab5',borderRadius:14,overflow:'hidden',display:'flex',alignItems:'flex-end',justifyContent:'center'}}>
+          <div style={{width:90,height:120,background:'#6a9ad5',borderRadius:'45px 45px 0 0'}}/>
+        </div>
+        <div style={{width:220,height:140,background:'#2d5a8a',borderRadius:14,overflow:'hidden',display:'flex',alignItems:'flex-end',justifyContent:'center'}}>
+          <div style={{width:90,height:120,background:'#4a7ab5',borderRadius:'45px 45px 0 0'}}/>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function NewProduct() {
+  return (
+    <div style={{width:PW,height:PH,fontFamily:'Arial,sans-serif',overflow:'hidden',position:'relative',background:'#0f2a45'}}>
+      <div style={{position:'absolute',inset:0,background:'linear-gradient(135deg,#0f2a45 0%,#1e5080 55%,#0f2a45 100%)'}}/>
+      <div style={{position:'absolute',top:-100,right:-100,width:360,height:360,borderRadius:'50%',background:'rgba(100,180,230,0.08)'}}/>
+      <div style={{position:'absolute',bottom:-80,left:-80,width:290,height:290,borderRadius:'50%',background:'rgba(100,180,230,0.06)'}}/>
+      <div style={{position:'relative',zIndex:1,display:'flex',alignItems:'center',height:'100%',padding:'0 64px',boxSizing:'border-box'}}>
+        <div style={{color:'#fff',maxWidth:540}}>
+          <div style={{fontSize:14,color:'#7fc4e8',letterSpacing:3,marginBottom:14}}>✦ NEW ARRIVAL ✦</div>
+          <div style={{fontSize:76,fontWeight:900,lineHeight:0.88,marginBottom:14,background:'linear-gradient(90deg,#ffffff,#7fc4e8)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>Product<br/>Launch</div>
+          <div style={{fontSize:16,color:'#a0c8e0',marginBottom:34,lineHeight:1.6}}>The perfect solution for your audience. Built to deliver real results.</div>
+          <div style={{display:'flex',gap:16}}>
+            <div style={{background:'#2e7d9e',color:'#fff',padding:'13px 32px',borderRadius:8,fontWeight:700,fontSize:14,letterSpacing:1}}>SHOP NOW</div>
+            <div style={{border:'2px solid #4a9bc0',color:'#7fc4e8',padding:'13px 26px',borderRadius:8,fontWeight:600,fontSize:14}}>Learn More</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════
+   TEMPLATE DATA
+══════════════════════════════════════════════════════════ */
+const TEMPLATES = [
   {
-    id: 'caption',
-    emoji: '✍️',
-    title: 'Caption Templates',
-    description: 'Ready-to-use captions for any niche. Fill the blanks, publish.',
-    color: '#6366f1',
-    bg: '#eef2ff',
-    count: 12,
-    tags: ['Product', 'Lifestyle', 'Promo', 'Education'],
+    id:'nb1', name:'Navy Business Cover', category:'Business', Preview:NavyBizCover,
+    caption:`✨ Elevating [Your Niche] one step at a time.\n\nBehind every great brand is a story worth telling — here's ours.\n\nWe help [target audience] achieve [goal] without [pain point].\n\n🔗 Link in bio\n\n#[yourniche] #business #branding #[yourname]`,
   },
   {
-    id: 'hashtag',
-    emoji: '#️⃣',
-    title: 'Hashtag Sets',
-    description: 'Curated hashtag bundles by niche and platform to maximize reach.',
-    color: '#0ea5e9',
-    bg: '#f0f9ff',
-    count: 10,
-    tags: ['Instagram', 'TikTok', 'LinkedIn', 'YouTube'],
+    id:'wb2', name:'Clean White Brand', category:'Business', Preview:WhiteBrand,
+    caption:`Welcome to [Your Amazing Business Name] 🌟\n\nWe help [target audience] achieve [goal] without [pain point].\n\n👉 Follow for daily [topic] tips\n🔗 Link in bio for [your offer]\n\n#[yourniche] #[yourbrand] #business #[industry]`,
   },
   {
-    id: 'script',
-    emoji: '🎬',
-    title: 'Video Scripts',
-    description: 'Full short-form video scripts — hook, body, CTA — ready to record.',
-    color: '#f59e0b',
-    bg: '#fffbeb',
-    count: 8,
-    tags: ['Tutorial', 'Story', 'Review', 'Viral'],
+    id:'dm3', name:'Digital Expert Banner', category:'Business', Preview:DigitalExpert,
+    caption:`Your go-to [role] for [niche] 💼\n\nHelping businesses grow through [strategy/service].\n\n📌 What I offer:\n• [Service 1]\n• [Service 2]\n• [Service 3]\n\nReady to level up? DM me or click the link in bio 🚀\n\n#digitalmarketing #business #marketing #[niche]`,
   },
   {
-    id: 'hook',
-    emoji: '🪝',
-    title: 'Hook Lines',
-    description: 'First-line hooks that stop the scroll. Use them as openers for any post.',
-    color: '#ef4444',
-    bg: '#fff1f2',
-    count: 20,
-    tags: ['Curiosity', 'Controversy', 'Question', 'Bold'],
+    id:'ts4', name:'Thanksgiving Sale', category:'Sale', Preview:ThanksgivingSale,
+    caption:`🔥 [HOLIDAY] SALE — Up to 30% OFF!\n\n[Brief description of items on sale]\n\n⏰ Limited time only — ends [date]\n🛍️ Shop now → link in bio\n\nUse code SAVE30 at checkout!\n\n#sale #discount #shopping #[yourniche]`,
   },
   {
-    id: 'cta',
-    emoji: '📣',
-    title: 'Call-to-Actions',
-    description: 'Proven CTAs that drive likes, saves, follows, link clicks, and DMs.',
-    color: '#10b981',
-    bg: '#ecfdf5',
-    count: 15,
-    tags: ['Engagement', 'Sales', 'Follow', 'DM'],
-  },
-];
-
-/* ═══════════════════════════════════════════════════════════
-   CAPTION templates
-═══════════════════════════════════════════════════════════ */
-const CAPTION_TEMPLATES = [
-  {
-    id: 'c1', label: '🛍️ Product', title: 'New Product Launch',
-    preview: '✨ Introducing [Product Name] — the [adjective] way to [benefit].',
-    body: `✨ Introducing [Product Name] — the [adjective] way to [benefit].
-
-We've been working on this for [time], and we can't wait for you to try it.
-
-🎯 What makes it special:
-• [Feature 1]
-• [Feature 2]
-• [Feature 3]
-
-👉 Shop now — link in bio.
-
-[Hashtags]`,
-    tags: ['#newproduct', '#launch', '#shopnow'],
+    id:'lo5', name:'Limited Time Offer', category:'Sale', Preview:LimitedOffer,
+    caption:`⏰ LIMITED TIME OFFER — Don't miss this!\n\n[Product/Service Name] is [X]% off for the next [timeframe].\n\n✅ [Benefit 1]\n✅ [Benefit 2]\n✅ [Benefit 3]\n\n👉 Tap the link in bio to grab it now!\n\n#limitedoffer #sale #[yourniche] #deal`,
   },
   {
-    id: 'c2', label: '🌿 Lifestyle', title: 'Morning Routine',
-    preview: '🌅 My [adjective] morning routine that changed my life.',
-    body: `🌅 My [adjective] morning routine that changed my life.
-
-⏰ [Time] — [Activity 1]
-⏰ [Time] — [Activity 2]
-⏰ [Time] — [Activity 3]
-⏰ [Time] — [Activity 4]
-
-The key? [Main tip].
-
-What does YOUR morning look like? Tell me below 👇
-
-[Hashtags]`,
-    tags: ['#morningroutine', '#lifestyle', '#selfcare'],
+    id:'es6', name:'Easter / Holiday Sale', category:'Holiday', Preview:EasterSale,
+    caption:`🎉 [HOLIDAY] SALE — Shop our biggest sale of the season!\n\nBrush up on all our latest products and treat yourself 🛍️\n\n[Top 3 products on sale]\n\n🔗 Shop link in bio\n\n#[holiday]sale #[yourniche] #sale #discount`,
   },
   {
-    id: 'c3', label: '📚 Education', title: '3 Tips Format',
-    preview: '3 tips to [goal] that nobody talks about 👇',
-    body: `3 tips to [goal] that nobody talks about 👇
-
-1️⃣ [Tip 1]
-→ [Explanation]
-
-2️⃣ [Tip 2]
-→ [Explanation]
-
-3️⃣ [Tip 3]
-→ [Explanation]
-
-Save this for later 🔖
-
-Which tip was most helpful? Comment below!
-
-[Hashtags]`,
-    tags: ['#tips', '#howto', '#learneveryday'],
+    id:'bn7', name:'Big Number Ideas', category:'Content', Preview:BigNumber,
+    caption:`✨ 42 Social Media Post Ideas you can use RIGHT NOW!\n\nSave this for later 🔖 — come back whenever you need fresh content inspiration.\n\nMy top 3 favorites:\n1️⃣ [Idea 1]\n2️⃣ [Idea 2]\n3️⃣ [Idea 3]\n\n👇 Drop your favorite content type below!\n\n#contentcreator #socialmediatips #contentideas #marketing`,
   },
   {
-    id: 'c4', label: '🔥 Promo', title: 'Flash Sale',
-    preview: '⚡ FLASH SALE — [X]% OFF for the next [time]!',
-    body: `⚡ FLASH SALE — [X]% OFF for the next [time]!
-
-This is your sign to finally grab [Product Name].
-
-✅ [Benefit 1]
-✅ [Benefit 2]
-✅ [Benefit 3]
-
-Use code [CODE] at checkout. Link in bio 🔗
-
-Only [X] left — don't miss out!
-
-[Hashtags]`,
-    tags: ['#sale', '#discount', '#limitedtime'],
+    id:'ug8', name:'Ultimate Guide', category:'Content', Preview:UltimateGuide,
+    caption:`📖 The Ultimate [Topic] Guide — everything you need to know!\n\nI've compiled my best tips into this guide:\n\n📌 [Key Point 1]\n📌 [Key Point 2]\n📌 [Key Point 3]\n📌 [Key Point 4]\n\nSave this post and share with someone who needs it! 🔖\n\n#[topic]guide #tips #[niche] #education`,
   },
   {
-    id: 'c5', label: '💪 Motivation', title: 'Transformation Story',
-    preview: '6 months ago I was [past]. Today I [present].',
-    body: `6 months ago I was [past state].
-Today I [current state].
-
-Here's what changed:
-🔑 [Key change 1]
-🔑 [Key change 2]
-🔑 [Key change 3]
-
-It wasn't easy. But [motivating lesson].
-
-If you're still in your [past state] era — keep going. 👊
-
-[Hashtags]`,
-    tags: ['#transformation', '#motivation', '#journey'],
+    id:'bt9', name:'Blogging Tips', category:'Content', Preview:BloggingTips,
+    caption:`✍️ Blogging Tips for Beginners 🖊️\n\nThe exact strategies I used to grow from 0 to [number] monthly readers:\n\n1. [Tip 1]\n2. [Tip 2]\n3. [Tip 3]\n4. [Tip 4]\n5. [Tip 5]\n\n📌 Save this post — you'll thank yourself later!\n\n#blogging #bloggingtips #contentcreator #writing`,
   },
   {
-    id: 'c6', label: '🎁 Giveaway', title: 'Giveaway Post',
-    preview: '🎁 GIVEAWAY! Win [prize] — here\'s how to enter.',
-    body: `🎁 GIVEAWAY! Win [prize] worth $[value]!
-
-To enter:
-1️⃣ Follow @[account]
-2️⃣ Like this post
-3️⃣ Tag [number] friends in the comments
-
-🎉 Winner announced on [date].
-Open to: [location/everyone]
-
-Good luck! 🍀
-
-[Hashtags]`,
-    tags: ['#giveaway', '#win', '#contest'],
+    id:'hd10', name:'Home Decor Ideas', category:'Content', Preview:HomeDecorPost,
+    caption:`🏠 15 [Topic] Ideas to [transform/upgrade] your [life/home/routine]!\n\nMy absolute favorites:\n\n1. [Idea 1]\n2. [Idea 2]\n3. [Idea 3]\n\n📸 Which one will you try first? Comment below! 👇\n💾 Save this for later!\n\n#[topic]ideas #[niche] #tips #inspiration`,
   },
   {
-    id: 'c7', label: '🎬 Behind Scenes', title: 'Process Reveal',
-    preview: '🎬 Here\'s how I make [thing] — from start to finish.',
-    body: `🎬 Here's how I make [thing] — from start to finish.
-
-Step 1: [Step description]
-Step 2: [Step description]
-Step 3: [Step description]
-Final result: [Outcome] ✨
-
-Total time: [Duration]
-Hardest part: [Challenge]
-
-Which step surprised you? 👇
-
-[Hashtags]`,
-    tags: ['#behindthescenes', '#process', '#howimade'],
+    id:'cl11', name:'Course Launch', category:'Product', Preview:CourseLaunch,
+    caption:`🎓 YOUR AMAZING COURSE LAUNCH IS HERE!\n\n[Course Name] — the complete [topic] course for [target audience].\n\n✅ [Module/Benefit 1]\n✅ [Module/Benefit 2]\n✅ [Module/Benefit 3]\n\n🔥 Enrollment NOW OPEN — limited spots available!\n👉 Tap the link in bio to join\n\n#course #[niche] #courselaunch #onlinelearning`,
   },
   {
-    id: 'c8', label: '❓ Engagement', title: 'This or That',
-    preview: '[Option A] or [Option B]? Drop your answer 👇',
-    body: `[Option A] or [Option B]?
-
-I'm a [your answer] person, but I get both sides.
-
-[Option A] people: [trait/reason]
-[Option B] people: [trait/reason]
-
-Drop your answer below 👇 Let's see which side wins!
-
-[Hashtags]`,
-    tags: ['#thisor that', '#poll', '#debate'],
-  },
-  {
-    id: 'c9', label: '🧠 Did You Know', title: 'Surprising Fact',
-    preview: '🧠 Did you know that [surprising fact]?',
-    body: `🧠 Did you know that [surprising fact]?
-
-Most people think [common misconception], but the truth is [real fact].
-
-Here's why it matters:
-• [Reason 1]
-• [Reason 2]
-
-Share this if it blew your mind 🤯
-
-[Hashtags]`,
-    tags: ['#didyouknow', '#facts', '#mindblown'],
-  },
-  {
-    id: 'c10', label: '🔥 Hot Take', title: 'Controversial Opinion',
-    preview: '🔥 Unpopular opinion: [your opinion]. Hear me out 👇',
-    body: `🔥 Unpopular opinion: [your opinion].
-
-Hear me out 👇
-
-[Argument 1]
-[Argument 2]
-[Argument 3]
-
-Agree or disagree? Be honest — I can take it 😅
-
-[Hashtags]`,
-    tags: ['#unpopularopinion', '#hottake', '#debate'],
-  },
-  {
-    id: 'c11', label: '📅 Day in Life', title: 'Day in My Life',
-    preview: '📅 A day in my life as a [role/title].',
-    body: `📅 A day in my life as a [role/title].
-
-🌅 Morning: [Activity]
-☀️ Afternoon: [Activity]
-🌙 Evening: [Activity]
-
-Funniest moment of the day: [funny thing]
-
-Follow for more of my [theme] life! ✨
-
-[Hashtags]`,
-    tags: ['#dayinmylife', '#vlog', '#lifestyle'],
-  },
-  {
-    id: 'c12', label: '💭 Mindset', title: 'Mindset Shift',
-    preview: '💭 Stop saying "[negative]". Start saying "[positive]".',
-    body: `💭 Stop saying "[negative phrase]".
-Start saying "[positive phrase]".
-
-The words you use shape the life you live.
-
-❌ [Negative phrase] → [Negative consequence]
-✅ [Positive phrase] → [Positive result]
-
-Small shift. Big difference. 💥
-
-Save this as a reminder 🔖
-
-[Hashtags]`,
-    tags: ['#mindset', '#affirmations', '#growthmindset'],
-  },
-];
-
-/* ═══════════════════════════════════════════════════════════
-   HASHTAG SETS
-═══════════════════════════════════════════════════════════ */
-const HASHTAG_SETS = [
-  { id: 'h1', label: '📸 Instagram', title: 'General Lifestyle', tags: ['#lifestyle', '#dailylife', '#instagood', '#photooftheday', '#motivation', '#love', '#happy', '#inspiration', '#life', '#style', '#mood', '#vibes', '#instadaily', '#explore', '#trending'] },
-  { id: 'h2', label: '🎵 TikTok', title: 'Viral / Trending', tags: ['#fyp', '#foryou', '#foryoupage', '#viral', '#trending', '#tiktokviral', '#tiktok', '#learnontiktok', '#trend', '#xyzbca'] },
-  { id: 'h3', label: '🛍️ E-commerce', title: 'Product / Shop', tags: ['#shopnow', '#newproduct', '#productlaunch', '#smallbusiness', '#shoplocal', '#handmade', '#etsy', '#onlineshopping', '#deals', '#sale', '#discount', '#buynow', '#limitedoffer'] },
-  { id: 'h4', label: '💼 LinkedIn', title: 'Business & Career', tags: ['#entrepreneur', '#business', '#leadership', '#career', '#networking', '#success', '#growth', '#innovation', '#startup', '#mindset', '#personaldevelopment', '#professionaldevelopment'] },
-  { id: 'h5', label: '💪 Fitness', title: 'Health & Wellness', tags: ['#fitness', '#gym', '#workout', '#fitnessmotivation', '#health', '#healthy', '#training', '#bodybuilding', '#fitlife', '#exercise', '#gains', '#personaltrainer', '#nutrition', '#wellness'] },
-  { id: 'h6', label: '🍕 Food', title: 'Food & Recipe', tags: ['#food', '#foodie', '#foodphotography', '#recipe', '#cooking', '#homemade', '#delicious', '#instafood', '#yummy', '#chef', '#foodblogger', '#eatwell', '#foodlover', '#mealprep'] },
-  { id: 'h7', label: '✈️ Travel', title: 'Travel & Adventure', tags: ['#travel', '#wanderlust', '#travelgram', '#adventure', '#explore', '#vacation', '#travelphotography', '#instatravel', '#traveltheworld', '#travellife', '#roadtrip', '#backpacker'] },
-  { id: 'h8', label: '🎓 Education', title: 'Learning & Tips', tags: ['#education', '#learning', '#tips', '#howto', '#tutorial', '#knowledge', '#studygram', '#learneveryday', '#facts', '#didyouknow', '#selfimprovement', '#growthmindset'] },
-  { id: 'h9', label: '💄 Beauty', title: 'Beauty & Fashion', tags: ['#beauty', '#makeup', '#fashion', '#style', '#skincare', '#ootd', '#fashionblogger', '#beautytips', '#glam', '#selfcare', '#fashionista', '#model', '#outfitoftheday'] },
-  { id: 'h10', label: '📱 Tech', title: 'Tech & AI', tags: ['#tech', '#technology', '#ai', '#artificialintelligence', '#startup', '#software', '#coding', '#developer', '#innovation', '#futuretech', '#machinelearning', '#programming', '#buildinpublic'] },
-];
-
-/* ═══════════════════════════════════════════════════════════
-   VIDEO SCRIPTS
-═══════════════════════════════════════════════════════════ */
-const SCRIPT_TEMPLATES = [
-  {
-    id: 's1', label: '📖 Tutorial', title: 'How-To Tutorial',
-    preview: 'Hook → teach 3 steps → recap → CTA',
-    body: `🎬 HOOK (0–3s):
-"[Bold statement OR question that creates curiosity]"
-
-📌 INTRO (3–8s):
-"In this video I'm going to show you exactly how to [result] in [timeframe]."
-
-📚 STEP 1 (8–25s):
-"First, [action]. The reason this works is [explanation]."
-
-📚 STEP 2 (25–40s):
-"Next, [action]. Most people skip this — don't. [Why it matters]."
-
-📚 STEP 3 (40–55s):
-"Finally, [action]. This is the step that ties everything together."
-
-✅ RECAP (55–65s):
-"So to recap: [Step 1], [Step 2], [Step 3]."
-
-📣 CTA (65–75s):
-"If this helped, follow for more [topic] content every week. Drop a 🔖 if you're saving this."`,
-    tags: ['#tutorial', '#howto', '#learnontiktok'],
-  },
-  {
-    id: 's2', label: '📣 Product Review', title: 'Honest Product Review',
-    preview: 'First impression → test → verdict → CTA',
-    body: `🎬 HOOK (0–3s):
-"I bought [Product] so you don't have to. Here's my honest opinion."
-
-📌 CONTEXT (3–10s):
-"I've been using [Product] for [duration]. Here's what I expected vs what I actually got."
-
-👀 FIRST IMPRESSION (10–25s):
-"Out of the box: [what it looks/feels like]. My first thought was [reaction]."
-
-🧪 REAL TEST (25–50s):
-"After [duration] of real use: [specific result / issue / surprise].
-The best part? [Highlight].
-The worst part? [Honest downside]."
-
-⭐ VERDICT (50–65s):
-"Is it worth it? [Yes/No/Depends]. I'd recommend it if [condition]. Skip it if [condition]."
-
-📣 CTA (65–75s):
-"Have you tried it? Let me know in the comments. And follow for more honest reviews."`,
-    tags: ['#review', '#honest', '#productreview'],
-  },
-  {
-    id: 's3', label: '🔥 Viral Story', title: 'Story-Driven Viral Video',
-    preview: 'Setup → conflict → resolution → lesson',
-    body: `🎬 HOOK (0–3s):
-"[Start mid-story] '...and that's when I realized I had made a huge mistake.'"
-
-📖 SETUP (3–15s):
-"So it started when [context — keep it simple]. I thought [assumption]."
-
-⚡ CONFLICT (15–35s):
-"But then [twist or problem happened]. I remember thinking [emotion/reaction].
-[Add a relatable or funny detail here to keep engagement]."
-
-💡 RESOLUTION (35–55s):
-"Here's what I did: [action]. And honestly? [Outcome — surprising or satisfying]."
-
-🎓 LESSON (55–65s):
-"What I learned: [takeaway in one sentence]."
-
-📣 CTA (65–75s):
-"Has something like this ever happened to you? Comment below — I read every one."`,
-    tags: ['#storytime', '#viral', '#relatable'],
-  },
-  {
-    id: 's4', label: '💡 Tips Video', title: 'Quick Tips (Listicle)',
-    preview: 'Hook → 5 fast tips → save CTA',
-    body: `🎬 HOOK (0–3s):
-"[Number] things about [topic] that changed everything for me."
-
-📌 SETUP (3–7s):
-"These are [quick/easy/free] and most people have no idea about them."
-
-💡 TIP 1 (7–18s):
-"[Tip 1]: [one-line explanation]. Why? [Brief reason]."
-
-💡 TIP 2 (18–28s):
-"[Tip 2]: [explanation]. This one alone [specific result]."
-
-💡 TIP 3 (28–38s):
-"[Tip 3]: [explanation]. Seriously underrated."
-
-💡 TIP 4 (38–48s):
-"[Tip 4]: [explanation]. Most people do the opposite."
-
-💡 TIP 5 (48–58s):
-"[Tip 5]: [explanation]. Save this one — you'll thank me later."
-
-📣 CTA (58–68s):
-"Which tip are you trying first? Comment the number below 👇 Follow for more."`,
-    tags: ['#tips', '#hacks', '#quicktips'],
-  },
-  {
-    id: 's5', label: '🪝 POV / Relatable', title: 'POV Relatable Moment',
-    preview: 'Relatable POV setup → funny/real moment → tag someone CTA',
-    body: `🎬 HOOK (0–3s):
-"POV: You're [relatable situation]"
-
-😂 SCENE (3–30s):
-[Show or describe the relatable scenario — the more specific, the better]
-
-"You know that feeling when [emotion]? That's exactly what [happened]."
-
-[Add the twist, funny detail, or realness here — this is where engagement happens]
-
-💬 CONNECTION (30–50s):
-"If you've ever [relatable action], this is for you."
-
-📣 CTA (50–60s):
-"Tag someone who needs to see this 👇 And follow if you felt personally attacked by this video."`,
-    tags: ['#pov', '#relatable', '#fyp'],
-  },
-  {
-    id: 's6', label: '📣 Brand Promo', title: 'Product/Brand Promo',
-    preview: 'Pain point → solution (your product) → offer → CTA',
-    body: `🎬 HOOK (0–3s):
-"If you're tired of [pain point], this is for you."
-
-😩 PAIN POINT (3–12s):
-"Most people dealing with [problem] try [common solution]. But here's the issue: [why it fails]."
-
-✨ SOLUTION (12–35s):
-"That's why we created [Product/Brand]. It [main benefit] without [the downside].
-Here's how it works: [simple 1-2 sentence explanation]."
-
-🏆 PROOF (35–50s):
-"Since using it, [result/testimonial/stat]. [Specific outcome] in [timeframe]."
-
-🎁 OFFER (50–62s):
-"Right now you can get [offer/discount]. Link in bio — [urgency if any]."
-
-📣 CTA (62–70s):
-"Questions? Drop them below. Follow us for more [niche] content."`,
-    tags: ['#ad', '#sponsored', '#promo'],
-  },
-  {
-    id: 's7', label: '🎤 Talking Head', title: 'Opinion / Hot Take',
-    preview: 'Bold claim → argument → counter → conclusion',
-    body: `🎬 HOOK (0–3s):
-"[Controversial or bold statement]. I said what I said."
-
-📌 CONTEXT (3–10s):
-"Here's why I think [opinion], and why it matters for [audience]."
-
-💬 ARGUMENT 1 (10–25s):
-"First: [Point]. Think about it — [supporting detail or example]."
-
-💬 ARGUMENT 2 (25–40s):
-"Second: [Point]. And before you say [common counter] — [rebuttal]."
-
-💬 ARGUMENT 3 (40–55s):
-"And finally: [Point]. This is the one most people miss."
-
-🏁 CONCLUSION (55–65s):
-"So yeah. [Restate opinion]. If you disagree, I want to hear it."
-
-📣 CTA (65–73s):
-"Drop your take in the comments. Follow if you like [unpopular/honest/real] takes."`,
-    tags: ['#opinion', '#hottake', '#realtalk'],
-  },
-  {
-    id: 's8', label: '🌱 Transformation', title: 'Before & After Journey',
-    preview: 'Where I was → the turning point → where I am now',
-    body: `🎬 HOOK (0–3s):
-"[Time period] ago I was [past state]. This is what changed."
-
-📖 BEFORE (3–18s):
-"I was [honest description of past situation]. I felt [emotion]. I tried [what didn't work] and nothing stuck."
-
-⚡ TURNING POINT (18–35s):
-"Then [event/decision/discovery happened]. I decided to [action taken]. The first thing I did was [first step]."
-
-🌟 THE JOURNEY (35–52s):
-"It wasn't linear. There were days I [struggle]. But the thing that kept me going was [motivation]."
-
-✅ AFTER (52–65s):
-"Today, [current result]. I [what's different now]. And honestly? [Reflection]."
-
-📣 CTA (65–75s):
-"If you're at the start of your journey, drop ❤️ below. Follow for the full story."`,
-    tags: ['#transformation', '#glow up', '#journey'],
+    id:'np12', name:'New Product Launch', category:'Product', Preview:NewProduct,
+    caption:`🚀 INTRODUCING [Product Name] — the [adjective] way to [key benefit]!\n\nWe've been working on this for [time] and can't wait for you to try it.\n\n⭐ [Feature 1]\n⭐ [Feature 2]\n⭐ [Feature 3]\n\n🛍️ Available now → link in bio\n\n#newproduct #productlaunch #[brand] #[niche]`,
   },
 ];
 
-/* ═══════════════════════════════════════════════════════════
-   HOOK LINES
-═══════════════════════════════════════════════════════════ */
-const HOOK_TEMPLATES = [
-  { id: 'hk1',  label: '🤔 Curiosity',    title: 'The Curiosity Hook',    preview: 'I learned something about [topic] that completely changed how I think about it.',        body: 'I learned something about [topic] that completely changed how I think about it.' },
-  { id: 'hk2',  label: '🤔 Curiosity',    title: 'Nobody Talks About',   preview: 'Nobody talks about the [fact/issue] with [topic]. So I will.',                            body: 'Nobody talks about the [fact/issue] with [topic]. So I will.' },
-  { id: 'hk3',  label: '❓ Question',     title: 'Direct Question',       preview: 'What if I told you that [surprising claim]?',                                            body: 'What if I told you that [surprising claim]?' },
-  { id: 'hk4',  label: '❓ Question',     title: 'Are You Making This?',  preview: 'Are you making this [topic] mistake without even knowing it?',                          body: 'Are you making this [topic] mistake without even knowing it?' },
-  { id: 'hk5',  label: '🔥 Bold Claim',   title: 'Strong Statement',      preview: '[Controversial opinion]. And I\'m not sorry about it.',                                  body: '[Controversial opinion]. And I\'m not sorry about it.' },
-  { id: 'hk6',  label: '🔥 Bold Claim',   title: 'The Hard Truth',        preview: 'The hard truth about [topic] that nobody wants to admit:',                              body: 'The hard truth about [topic] that nobody wants to admit:' },
-  { id: 'hk7',  label: '😂 Funny',        title: 'Relatable Humor',       preview: 'Me before [thing] vs me after [thing] 😭',                                              body: 'Me before [thing] vs me after [thing] 😭' },
-  { id: 'hk8',  label: '😂 Funny',        title: 'Self-Roast',            preview: 'Hiring a [role] vs doing it yourself. I was NOT prepared.',                            body: 'Hiring a [role] vs doing it yourself. I was NOT prepared.' },
-  { id: 'hk9',  label: '😱 Shocking',     title: 'Surprising Number',     preview: '[Number]% of people don\'t know that [surprising fact]. Are you one of them?',          body: '[Number]% of people don\'t know that [surprising fact]. Are you one of them?' },
-  { id: 'hk10', label: '😱 Shocking',     title: 'Story Mid-Start',       preview: 'So there I was, [dramatic situation], and I had [time] to fix it.',                    body: 'So there I was, [dramatic situation], and I had [time] to fix it.' },
-  { id: 'hk11', label: '💡 Value',        title: 'The Payoff Promise',    preview: 'By the end of this, you\'ll know exactly how to [desired result]. Let\'s go.',          body: 'By the end of this, you\'ll know exactly how to [desired result]. Let\'s go.' },
-  { id: 'hk12', label: '💡 Value',        title: 'The List Tease',        preview: '[Number] things I wish I knew about [topic] before I started.',                         body: '[Number] things I wish I knew about [topic] before I started.' },
-  { id: 'hk13', label: '🎯 Specific',     title: 'For a Specific Person', preview: 'This is specifically for people who [specific situation].',                            body: 'This is specifically for people who [specific situation].' },
-  { id: 'hk14', label: '🎯 Specific',     title: 'Time-Specific',         preview: 'If you\'re trying to [goal] in [timeframe], watch this.',                               body: 'If you\'re trying to [goal] in [timeframe], watch this.' },
-  { id: 'hk15', label: '⚠️ Warning',      title: 'Stop Doing This',       preview: 'Stop doing [common thing]. Here\'s why it\'s [hurting/wasting/costing] you.',           body: 'Stop doing [common thing]. Here\'s why it\'s [hurting/wasting/costing] you.' },
-  { id: 'hk16', label: '⚠️ Warning',      title: 'The Mistake',           preview: 'I made a $[amount] mistake with [topic] so you don\'t have to.',                        body: 'I made a $[amount] mistake with [topic] so you don\'t have to.' },
-  { id: 'hk17', label: '✨ Aspiration',   title: 'Dream Outcome',         preview: 'Imagine [ideal outcome]. That\'s what [product/habit/skill] can do.',                   body: 'Imagine [ideal outcome]. That\'s what [product/habit/skill] can do.' },
-  { id: 'hk18', label: '✨ Aspiration',   title: 'The Glow-Up',           preview: '[Timeframe] from now, you could [amazing result]. Here\'s the exact path.',             body: '[Timeframe] from now, you could [amazing result]. Here\'s the exact path.' },
-  { id: 'hk19', label: '🔁 Pattern Break', title: 'Expectation Flip',     preview: 'Everyone says [common advice]. I tried it. Here\'s what actually happened.',           body: 'Everyone says [common advice]. I tried it. Here\'s what actually happened.' },
-  { id: 'hk20', label: '🔁 Pattern Break', title: 'Counterintuitive',     preview: 'The MORE you [common action], the LESS you [desired result]. Here\'s why.',             body: 'The MORE you [common action], the LESS you [desired result]. Here\'s why.' },
-];
+function getCatColor(cat) {
+  const map = {
+    Business: { bg:'#eff6ff', text:'#1d4ed8' },
+    Sale:     { bg:'#fef2f2', text:'#dc2626' },
+    Content:  { bg:'#f0fdf4', text:'#15803d' },
+    Holiday:  { bg:'#fff7ed', text:'#c2410c' },
+    Product:  { bg:'#faf5ff', text:'#7c3aed' },
+  };
+  return map[cat] || { bg:'#f1f5f9', text:'#64748b' };
+}
 
-/* ═══════════════════════════════════════════════════════════
-   CALL-TO-ACTIONS
-═══════════════════════════════════════════════════════════ */
-const CTA_TEMPLATES = [
-  { id: 'ct1',  label: '❤️ Engagement', title: 'Like + Save',         preview: 'Like this if it helped, and save it for when you need it later.',           body: 'Like this if it helped, and save it for when you need it later.' },
-  { id: 'ct2',  label: '❤️ Engagement', title: 'Double Tap',          preview: 'Double tap if you needed to hear this today 💛',                           body: 'Double tap if you needed to hear this today 💛' },
-  { id: 'ct3',  label: '❤️ Engagement', title: 'Comment Prompt',      preview: 'Drop a [emoji] in the comments if this resonated with you!',               body: 'Drop a [emoji] in the comments if this resonated with you!' },
-  { id: 'ct4',  label: '👥 Follow',     title: 'Follow for More',     preview: 'Follow for more [topic] content every [frequency].',                        body: 'Follow for more [topic] content every [frequency].' },
-  { id: 'ct5',  label: '👥 Follow',     title: 'Follow + Benefit',    preview: 'Follow @[handle] if you want [specific benefit] — I post every [day].',     body: 'Follow @[handle] if you want [specific benefit] — I post every [day].' },
-  { id: 'ct6',  label: '🔗 Link in Bio', title: 'Shop Link',          preview: 'Get yours now — link in bio 🔗',                                           body: 'Get yours now — link in bio 🔗' },
-  { id: 'ct7',  label: '🔗 Link in Bio', title: 'Resource Link',      preview: 'Full guide linked in my bio — it\'s free 👆',                               body: 'Full guide linked in my bio — it\'s free 👆' },
-  { id: 'ct8',  label: '📩 DM',         title: 'DM for Info',         preview: 'DM me "[keyword]" and I\'ll send you the [resource/link/info] directly.',   body: 'DM me "[keyword]" and I\'ll send you the [resource/link/info] directly.' },
-  { id: 'ct9',  label: '📩 DM',         title: 'DM to Chat',          preview: 'Want to chat about [topic]? DM me "let\'s talk" — I reply to everyone.',   body: 'Want to chat about [topic]? DM me "let\'s talk" — I reply to everyone.' },
-  { id: 'ct10', label: '📤 Share',      title: 'Tag a Friend',        preview: 'Tag someone who needs to see this 👇',                                     body: 'Tag someone who needs to see this 👇' },
-  { id: 'ct11', label: '📤 Share',      title: 'Send to Someone',     preview: 'Send this to a friend who is going through [situation] right now.',         body: 'Send this to a friend who is going through [situation] right now.' },
-  { id: 'ct12', label: '💰 Sales',      title: 'Urgency Close',       preview: 'Only [X] spots left at this price. Link in bio before it\'s gone.',         body: 'Only [X] spots left at this price. Link in bio before it\'s gone.' },
-  { id: 'ct13', label: '💰 Sales',      title: 'Free Trial CTA',      preview: 'Try [Product] free for [X] days — no credit card needed. Link in bio.',    body: 'Try [Product] free for [X] days — no credit card needed. Link in bio.' },
-  { id: 'ct14', label: '💬 Comment',    title: 'Question to Comment', preview: 'What\'s your biggest struggle with [topic]? Drop it below 👇',              body: 'What\'s your biggest struggle with [topic]? Drop it below 👇' },
-  { id: 'ct15', label: '💬 Comment',    title: 'Vote in Comments',    preview: 'Comment "A" for [option A] or "B" for [option B] — let\'s vote!',           body: 'Comment "A" for [option A] or "B" for [option B] — let\'s vote!' },
-];
-
-const TYPE_DATA = {
-  caption: CAPTION_TEMPLATES,
-  hashtag: HASHTAG_SETS,
-  script:  SCRIPT_TEMPLATES,
-  hook:    HOOK_TEMPLATES,
-  cta:     CTA_TEMPLATES,
-};
-
-/* ═══════════════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════════
    MAIN COMPONENT
-═══════════════════════════════════════════════════════════ */
+══════════════════════════════════════════════════════════ */
 export default function CaptionTemplates({ onBack, onUseTemplate }) {
-  const [activeType, setActiveType] = useState(null); // null = home screen
-  const [search,     setSearch]     = useState('');
-  const [copiedId,   setCopiedId]   = useState(null);
-  const [previewId,  setPreviewId]  = useState(null);
+  const [cat, setCat]         = useState('All');
+  const [preview, setPreview] = useState(null);
+  const [copied, setCopied]   = useState(null);
 
-  const typeConfig = activeType ? TEMPLATE_TYPES.find(t => t.id === activeType) : null;
-  const items      = activeType ? (TYPE_DATA[activeType] || []) : [];
+  const filtered = TEMPLATES.filter(t => cat === 'All' || t.category === cat);
 
-  const filtered = items.filter(item => {
-    const q = search.toLowerCase();
-    return !q || item.title.toLowerCase().includes(q) || item.preview.toLowerCase().includes(q) || (item.tags || []).some(t => t.toLowerCase().includes(q));
-  });
-
-  const handleCopy = (item) => {
-    const text = activeType === 'hashtag'
-      ? item.tags.join(' ')
-      : item.body || item.preview;
+  const handleCopy = (text, id) => {
     navigator.clipboard.writeText(text).catch(() => {});
-    setCopiedId(item.id);
-    setTimeout(() => setCopiedId(null), 2000);
+    setCopied(id);
+    setTimeout(() => setCopied(null), 2000);
   };
 
-  const handleUse = (item) => {
-    const text = activeType === 'hashtag'
-      ? item.tags.join(' ')
-      : (item.body || item.preview);
-    if (onUseTemplate) onUseTemplate(text);
+  const handleUse = (t) => {
+    if (onUseTemplate) onUseTemplate(t.caption);
     if (onBack) onBack();
   };
 
-  const goBack = () => {
-    if (activeType) { setActiveType(null); setSearch(''); setPreviewId(null); }
-    else if (onBack) onBack();
-  };
-
-  const previewItem = previewId != null ? items.find(i => i.id === previewId) : null;
-
-  /* ── HOME ── */
-  if (!activeType) {
-    return (
-      <div style={s.page}>
-        <div style={s.headerRow}>
-          <button type="button" onClick={onBack} style={s.backBtn}>← Back</button>
-          <div>
-            <h2 style={s.heading}>📋 Templates</h2>
-            <p style={s.sub}>Choose a template type to get started</p>
-          </div>
-        </div>
-
-        <div style={s.typeGrid}>
-          {TEMPLATE_TYPES.map(t => (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => setActiveType(t.id)}
-              style={{ ...s.typeCard, borderColor: t.color + '33', '--hover-border': t.color }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = t.color; e.currentTarget.style.boxShadow = `0 4px 20px ${t.color}22`; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = t.color + '33'; e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.06)'; }}
-            >
-              <div style={{ ...s.typeEmoji, background: t.bg, color: t.color }}>{t.emoji}</div>
-              <div style={s.typeTitle}>{t.title}</div>
-              <div style={s.typeDesc}>{t.description}</div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, margin: '12px 0' }}>
-                {t.tags.map(tg => (
-                  <span key={tg} style={{ ...s.typePill, background: t.bg, color: t.color }}>{tg}</span>
-                ))}
-              </div>
-              <div style={{ ...s.typeCount, color: t.color, background: t.bg }}>
-                {t.count} templates →
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  /* ── TEMPLATE LIST ── */
   return (
-    <div style={s.page}>
-      {/* Header */}
-      <div style={s.headerRow}>
-        <button type="button" onClick={goBack} style={s.backBtn}>← Back</button>
+    <div style={{ minHeight:'100vh', background:'#f1f5f9', fontFamily:'"Segoe UI",Arial,sans-serif' }}>
+
+      {/* ── Header ── */}
+      <div style={{ background:'#fff', borderBottom:'1px solid #e2e8f0', padding:'18px 32px', display:'flex', alignItems:'center', gap:16 }}>
+        <button onClick={onBack}
+          style={{ background:'#f1f5f9', border:'none', cursor:'pointer', fontSize:14, color:'#6366f1', padding:'8px 16px', borderRadius:8, fontWeight:700 }}>
+          ← Back
+        </button>
         <div>
-          <h2 style={s.heading}>{typeConfig?.emoji} {typeConfig?.title}</h2>
-          <p style={s.sub}>{typeConfig?.description}</p>
+          <div style={{ fontSize:20, fontWeight:800, color:'#1e293b' }}>🎨 Design Templates</div>
+          <div style={{ fontSize:13, color:'#64748b' }}>12 professional social media designs — preview, copy caption, customize &amp; post</div>
         </div>
       </div>
 
-      {/* Search */}
-      <div style={s.searchWrap}>
-        <span style={s.searchIcon}>🔍</span>
-        <input
-          type="text"
-          placeholder="Search templates…"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          style={s.searchInput}
-        />
-        {search && <button type="button" onClick={() => setSearch('')} style={s.clearBtn}>✕</button>}
+      {/* ── Category Pills ── */}
+      <div style={{ padding:'20px 32px 4px', display:'flex', gap:10, flexWrap:'wrap' }}>
+        {CATS.map(c => (
+          <button key={c} onClick={() => setCat(c)}
+            style={{
+              padding:'7px 20px', borderRadius:24, fontSize:13, fontWeight:600,
+              cursor:'pointer', border:'none', transition:'all 0.15s',
+              background: cat === c ? '#6366f1' : '#fff',
+              color: cat === c ? '#fff' : '#64748b',
+              boxShadow:'0 1px 4px rgba(0,0,0,0.08)',
+            }}>{c}
+          </button>
+        ))}
       </div>
 
-      {/* Grid */}
-      <div style={activeType === 'hook' || activeType === 'cta' ? s.listGrid : s.grid}>
-        {filtered.length === 0 && (
-          <div style={s.empty}>No templates match your search.</div>
-        )}
-
-        {filtered.map(item => {
-          const isHashtag = activeType === 'hashtag';
-          const isHookCta = activeType === 'hook' || activeType === 'cta';
-          const tc = typeConfig;
-
-          if (isHookCta) {
-            /* ── Compact row for hooks / CTAs ── */
-            return (
-              <div key={item.id} style={{ ...s.rowCard, borderLeftColor: tc.color }}>
-                <span style={{ ...s.rowBadge, background: tc.bg, color: tc.color }}>{item.label}</span>
-                <div style={s.rowTitle}>{item.title}</div>
-                <div style={s.rowPreview}>"{item.preview}"</div>
-                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                  <button type="button" onClick={() => handleCopy(item)} style={{ ...s.smBtn, ...s.smGhost }}>
-                    {copiedId === item.id ? '✅ Copied' : '📋 Copy'}
-                  </button>
-                  <button type="button" onClick={() => handleUse(item)} style={{ ...s.smBtn, background: tc.color, color: '#fff', border: 'none' }}>
-                    Use →
-                  </button>
-                </div>
-              </div>
-            );
-          }
-
-          if (isHashtag) {
-            /* ── Hashtag card ── */
-            return (
-              <div key={item.id} style={s.card}>
-                <span style={{ ...s.rowBadge, background: tc.bg, color: tc.color, marginBottom: 6, display: 'inline-block' }}>{item.label}</span>
-                <div style={s.cardTitle}>{item.title}</div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, margin: '10px 0 14px' }}>
-                  {item.tags.map(tg => (
-                    <span key={tg} style={s.hashTag}>{tg}</span>
-                  ))}
-                </div>
-                <div style={{ display: 'flex', gap: 8, marginTop: 'auto' }}>
-                  <button type="button" onClick={() => handleCopy(item)} style={{ ...s.smBtn, ...s.smGhost, flex: 1 }}>
-                    {copiedId === item.id ? '✅ Copied' : '📋 Copy All'}
-                  </button>
-                  <button type="button" onClick={() => handleUse(item)} style={{ ...s.smBtn, flex: 1, background: tc.color, color: '#fff', border: 'none' }}>
-                    Use →
-                  </button>
-                </div>
-              </div>
-            );
-          }
-
-          /* ── Caption / Script card ── */
+      {/* ── Template Grid ── */}
+      <div style={{ padding:'20px 32px 40px', display:'flex', flexWrap:'wrap', gap:24 }}>
+        {filtered.map(t => {
+          const PreviewComp = t.Preview;
           return (
-            <div key={item.id} style={s.card}>
-              <span style={{ ...s.rowBadge, background: tc.bg, color: tc.color, marginBottom: 8, display: 'inline-block' }}>{item.label}</span>
-              <div style={s.cardTitle}>{item.title}</div>
-              <div style={s.cardPreview}>{item.preview}</div>
-
-              {item.tags && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, margin: '8px 0 12px' }}>
-                  {item.tags.map(tg => <span key={tg} style={s.hashTag}>{tg}</span>)}
+            <div key={t.id}
+              style={{ width:CW, background:'#fff', borderRadius:16, overflow:'hidden', boxShadow:'0 2px 10px rgba(0,0,0,0.07)', flexShrink:0 }}
+            >
+              {/* Scaled visual preview */}
+              <div
+                onClick={() => setPreview(t)}
+                style={{ width:CW, height:CH, overflow:'hidden', position:'relative', cursor:'pointer', background:'#e8edf2' }}
+                onMouseEnter={e => { e.currentTarget.querySelector('.hov').style.background='rgba(99,102,241,0.14)'; e.currentTarget.querySelector('.hovlabel').style.opacity='1'; }}
+                onMouseLeave={e => { e.currentTarget.querySelector('.hov').style.background='transparent'; e.currentTarget.querySelector('.hovlabel').style.opacity='0'; }}
+              >
+                <div style={{ position:'absolute', top:0, left:0, width:PW, height:PH, transformOrigin:'top left', transform:`scale(${SC})` }}>
+                  <PreviewComp />
                 </div>
-              )}
-
-              <div style={{ display: 'flex', gap: 8, marginTop: 'auto' }}>
-                <button type="button" onClick={() => setPreviewId(previewId === item.id ? null : item.id)} style={{ ...s.smBtn, ...s.smGhost, flex: 1 }}>
-                  {previewId === item.id ? 'Hide' : '👁 Preview'}
-                </button>
-                <button type="button" onClick={() => handleCopy(item)} style={{ ...s.smBtn, ...s.smGhost, flex: 1 }}>
-                  {copiedId === item.id ? '✅ Copied' : '📋 Copy'}
-                </button>
-                <button type="button" onClick={() => handleUse(item)} style={{ ...s.smBtn, flex: 1, background: tc.color, color: '#fff', border: 'none' }}>
-                  Use →
-                </button>
+                <div className="hov" style={{ position:'absolute', inset:0, background:'transparent', transition:'background 0.2s', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                  <span className="hovlabel" style={{ background:'rgba(255,255,255,0.95)', padding:'6px 16px', borderRadius:20, fontSize:12, fontWeight:700, color:'#4f46e5', opacity:0, transition:'opacity 0.2s' }}>
+                    👁 Preview
+                  </span>
+                </div>
               </div>
 
-              {previewId === item.id && (
-                <pre style={s.previewBox}>{item.body}</pre>
-              )}
+              {/* Footer */}
+              <div style={{ padding:'14px 16px' }}>
+                <div style={{ fontSize:14, fontWeight:700, color:'#1e293b', marginBottom:6 }}>{t.name}</div>
+                <span style={{ fontSize:11, background:getCatColor(t.category).bg, color:getCatColor(t.category).text, padding:'3px 10px', borderRadius:12, fontWeight:600 }}>
+                  {t.category}
+                </span>
+                <div style={{ display:'flex', gap:8, marginTop:12 }}>
+                  <button onClick={() => handleCopy(t.caption, t.id)}
+                    style={{ flex:1, padding:'8px 6px', borderRadius:8, border:'1.5px solid #e2e8f0', background: copied===t.id ? '#f0fdf4' : '#fff', color: copied===t.id ? '#15803d' : '#64748b', fontSize:12, fontWeight:600, cursor:'pointer' }}>
+                    {copied===t.id ? '✓ Copied' : '📋 Copy'}
+                  </button>
+                  <button onClick={() => handleUse(t)}
+                    style={{ flex:1, padding:'8px 6px', borderRadius:8, border:'none', background:'#6366f1', color:'#fff', fontSize:12, fontWeight:600, cursor:'pointer' }}>
+                    Use →
+                  </button>
+                </div>
+              </div>
             </div>
           );
         })}
       </div>
 
-      {/* Modal preview */}
-      {previewItem && (
-        <div style={s.overlay} onClick={() => setPreviewId(null)}>
-          <div style={s.modal} onClick={e => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14, alignItems: 'center' }}>
-              <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700 }}>{previewItem.title}</h3>
-              <button type="button" onClick={() => setPreviewId(null)} style={s.closeBtn}>✕</button>
-            </div>
-            <pre style={{ ...s.previewBox, maxHeight: '58vh', overflowY: 'auto', marginBottom: 14 }}>
-              {previewItem.body}
-            </pre>
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button type="button" onClick={() => handleCopy(previewItem)} style={{ ...s.smBtn, ...s.smGhost, flex: 1, padding: '10px' }}>
-                {copiedId === previewItem.id ? '✅ Copied!' : '📋 Copy'}
-              </button>
-              <button type="button" onClick={() => handleUse(previewItem)} style={{ ...s.smBtn, flex: 1, padding: '10px', background: typeConfig?.color, color: '#fff', border: 'none' }}>
-                Use This Template →
-              </button>
+      {/* ── Preview Modal ── */}
+      {preview && (() => {
+        const PreviewComp = preview.Preview;
+        return (
+          <div
+            style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.65)', zIndex:9000, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}
+            onClick={() => setPreview(null)}
+          >
+            <div
+              style={{ background:'#fff', borderRadius:20, overflow:'hidden', maxWidth:860, width:'100%', maxHeight:'90vh', overflowY:'auto', boxShadow:'0 28px 64px rgba(0,0,0,0.35)' }}
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Modal header */}
+              <div style={{ padding:'18px 24px', borderBottom:'1px solid #f1f5f9', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                <div>
+                  <div style={{ fontSize:17, fontWeight:800, color:'#1e293b', marginBottom:4 }}>{preview.name}</div>
+                  <span style={{ fontSize:12, background:getCatColor(preview.category).bg, color:getCatColor(preview.category).text, padding:'2px 10px', borderRadius:10, fontWeight:600 }}>{preview.category}</span>
+                </div>
+                <button onClick={() => setPreview(null)}
+                  style={{ background:'#f1f5f9', border:'none', fontSize:16, cursor:'pointer', color:'#64748b', width:34, height:34, borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center' }}>✕</button>
+              </div>
+
+              {/* Large design preview */}
+              <div style={{ background:'#f1f5f9', padding:24, display:'flex', justifyContent:'center' }}>
+                <div style={{ width:'100%', maxWidth:PW, aspectRatio:`${PW}/${PH}`, overflow:'hidden', borderRadius:14, boxShadow:'0 4px 20px rgba(0,0,0,0.12)' }}>
+                  <PreviewComp />
+                </div>
+              </div>
+
+              {/* Caption */}
+              <div style={{ padding:'20px 24px 28px' }}>
+                <div style={{ fontSize:12, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:1, marginBottom:10 }}>Caption Template</div>
+                <pre style={{ background:'#f8fafc', border:'1px solid #e2e8f0', borderRadius:12, padding:'16px 18px', fontSize:13, color:'#334155', lineHeight:1.8, whiteSpace:'pre-wrap', fontFamily:'"Segoe UI",Arial,sans-serif', margin:0 }}>
+                  {preview.caption}
+                </pre>
+                <div style={{ marginTop:16, display:'flex', gap:10, justifyContent:'flex-end' }}>
+                  <button onClick={() => handleCopy(preview.caption, preview.id)}
+                    style={{ padding:'10px 22px', borderRadius:8, border:'1.5px solid #6366f1', background: copied===preview.id ? '#f0fdf4' : '#fff', color: copied===preview.id ? '#15803d' : '#6366f1', fontSize:13, fontWeight:600, cursor:'pointer' }}>
+                    {copied===preview.id ? '✓ Copied!' : '📋 Copy Caption'}
+                  </button>
+                  <button onClick={() => handleUse(preview)}
+                    style={{ padding:'10px 26px', borderRadius:8, border:'none', background:'#6366f1', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer' }}>
+                    Use in Publisher →
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
-
-/* ─── Styles ─────────────────────────────────────────────── */
-const s = {
-  page:       { maxWidth: 1100, margin: '0 auto', padding: '24px 20px 60px', fontFamily: 'inherit' },
-  headerRow:  { display: 'flex', alignItems: 'flex-start', gap: 16, marginBottom: 28 },
-  backBtn:    { padding: '8px 14px', border: '1.5px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', fontSize: 13, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', marginTop: 2 },
-  heading:    { margin: 0, fontSize: 22, fontWeight: 800, color: '#1e293b' },
-  sub:        { margin: '4px 0 0', fontSize: 13, color: '#64748b' },
-
-  /* Type cards (home) */
-  typeGrid:   { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 20 },
-  typeCard:   { background: '#fff', border: '2px solid #e2e8f0', borderRadius: 16, padding: '22px 20px', cursor: 'pointer', textAlign: 'left', transition: 'border-color 0.15s, box-shadow 0.15s', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' },
-  typeEmoji:  { width: 52, height: 52, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, marginBottom: 14 },
-  typeTitle:  { fontSize: 16, fontWeight: 800, color: '#1e293b', marginBottom: 6 },
-  typeDesc:   { fontSize: 13, color: '#64748b', lineHeight: 1.5 },
-  typePill:   { fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 999 },
-  typeCount:  { fontSize: 12, fontWeight: 700, padding: '5px 12px', borderRadius: 8, display: 'inline-block', marginTop: 4 },
-
-  /* Template grids */
-  grid:     { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))', gap: 18 },
-  listGrid: { display: 'flex', flexDirection: 'column', gap: 12 },
-
-  /* Cards */
-  card:     { background: '#fff', border: '1.5px solid #e2e8f0', borderRadius: 14, padding: 18, display: 'flex', flexDirection: 'column', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' },
-  cardTitle:  { fontSize: 15, fontWeight: 700, color: '#1e293b', marginBottom: 6 },
-  cardPreview:{ fontSize: 13, color: '#475569', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' },
-
-  /* Row cards (hooks/CTAs) */
-  rowCard:   { background: '#fff', border: '1.5px solid #e2e8f0', borderLeft: '4px solid', borderRadius: 10, padding: '14px 16px' },
-  rowBadge:  { fontSize: 11, fontWeight: 700, padding: '2px 9px', borderRadius: 999 },
-  rowTitle:  { fontSize: 14, fontWeight: 700, color: '#1e293b', margin: '4px 0 4px' },
-  rowPreview:{ fontSize: 13, color: '#475569', fontStyle: 'italic', lineHeight: 1.5 },
-
-  hashTag:   { fontSize: 11, color: '#6366f1', background: '#eef2ff', padding: '2px 7px', borderRadius: 5, fontWeight: 600 },
-  previewBox:{ marginTop: 12, padding: '14px 16px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, fontSize: 12, color: '#334155', whiteSpace: 'pre-wrap', lineHeight: 1.6, fontFamily: 'inherit' },
-
-  smBtn:     { padding: '7px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'opacity 0.12s', textAlign: 'center' },
-  smGhost:   { border: '1.5px solid #e2e8f0', background: '#fff', color: '#475569' },
-
-  searchWrap:  { position: 'relative', marginBottom: 20 },
-  searchIcon:  { position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 14, pointerEvents: 'none' },
-  searchInput: { width: '100%', padding: '10px 36px', borderRadius: 10, border: '1.5px solid #e2e8f0', fontSize: 14, outline: 'none', background: '#f8fafc', boxSizing: 'border-box' },
-  clearBtn:    { position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: 13, padding: '2px 4px' },
-  empty:       { textAlign: 'center', color: '#94a3b8', padding: '48px 0', fontSize: 14 },
-
-  overlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 20 },
-  modal:   { background: '#fff', borderRadius: 16, padding: 28, width: '100%', maxWidth: 540, boxShadow: '0 20px 50px rgba(0,0,0,0.25)' },
-  closeBtn:{ padding: '4px 10px', border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', color: '#64748b', fontSize: 14, cursor: 'pointer' },
-};

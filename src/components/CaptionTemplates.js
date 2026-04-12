@@ -1,6 +1,28 @@
-import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect, useContext, createContext, useMemo, useCallback } from 'react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
+
+/** Context that injects user-typed design text into every Preview component */
+const DesignTextCtx = createContext({});
+/**
+ * In a Preview component call:  const t = useText({ headline:'Default', subtitle:'Default', ... })
+ * Any key filled by the user in the Customize modal will override the default.
+ */
+function useText(defaults) {
+  const ctx = useContext(DesignTextCtx);
+  // Auto-report defaults so the Customize modal discovers editable fields
+  const onDefaults = ctx.__onDefaults;
+  const defaultsRef = useRef(defaults);
+  useEffect(() => {
+    if (onDefaults) onDefaults(defaultsRef.current);
+  }, [onDefaults]);
+  const out = { ...defaults };
+  Object.keys(defaults).forEach(k => {
+    const v = ctx[k];
+    if (typeof v === 'string' && v.trim()) out[k] = v;
+  });
+  return out;
+}
 
 const CATS = ['All','Business','Sale','Content','Holiday','Product','Quote','Event','Announce'];
 const PW = 780, PH = 440, CW = 300, CH = 170;
@@ -29,15 +51,21 @@ function getPreviewTheme(themeId) {
   return PREVIEW_THEMES.find((t) => t.id === themeId) || PREVIEW_THEMES[0];
 }
 
+/** User text or a clear slot label — never fake sample emails/handles/URLs */
+function previewText(value, slotLabel) {
+  const v = value != null && String(value).trim() !== '' ? String(value).trim() : '';
+  return v || `[${slotLabel}]`;
+}
+
 /* ══════════════════════════════════════════════════════════
    PREVIEW COMPONENTS  — each renders at 780×440
 ══════════════════════════════════════════════════════════ */
 
 function NavyBizCover({ fields = {} }) {
-  const biz     = fields.businessName || 'Your Business';
-  const handle  = fields.handle  || 'yourhandle';
-  const email   = fields.email   || 'youremail@gmail.com';
-  const website = fields.website || 'www.yourwebsite.com';
+  const biz     = previewText(fields.businessName, 'Business / brand name');
+  const handle  = previewText(fields.handle, 'Social handle');
+  const email   = previewText(fields.email, 'Contact email');
+  const website = previewText(fields.website, 'Website URL');
   return (
     <div style={{width:PW,height:PH,background:'#1a3a5c',display:'flex',alignItems:'center',padding:'0 64px',gap:48,fontFamily:'Arial,sans-serif',boxSizing:'border-box'}}>
       <div style={{flex:1,color:'#fff'}}>
@@ -54,11 +82,11 @@ function NavyBizCover({ fields = {} }) {
 }
 
 function WhiteBrand({ fields = {} }) {
-  const biz     = fields.businessName || 'Business Name';
-  const author  = fields.name || 'Your Name';
-  const handle  = fields.handle  || 'yourhandle';
-  const email   = fields.email   || 'youremail@gmail.com';
-  const website = fields.website || 'www.yourwebsite.com';
+  const biz     = previewText(fields.businessName, 'Business / brand name');
+  const author  = previewText(fields.name, 'Your name');
+  const handle  = previewText(fields.handle, 'Social handle');
+  const email   = previewText(fields.email, 'Contact email');
+  const website = previewText(fields.website, 'Website URL');
   return (
     <div style={{width:PW,height:PH,background:'#f8f9fc',display:'flex',alignItems:'center',padding:'0 64px',gap:48,fontFamily:'Arial,sans-serif',boxSizing:'border-box',position:'relative',overflow:'hidden'}}>
       <div style={{position:'absolute',right:-100,top:-100,width:460,height:460,borderRadius:'50%',background:'#dde8f5'}}/>
@@ -66,7 +94,7 @@ function WhiteBrand({ fields = {} }) {
         <div style={{width:84,height:160,background:'#7fafd0',borderRadius:'42px 42px 0 0'}}/>
       </div>
       <div style={{flex:1,zIndex:1}}>
-        <div style={{fontSize:15,color:'#8090a0',letterSpacing:3,textTransform:'uppercase',marginBottom:4}}>YOUR AMAZING</div>
+        <div style={{fontSize:15,color:'#8090a0',letterSpacing:3,textTransform:'uppercase',marginBottom:4}}>[Section label]</div>
         <div style={{fontSize:54,fontWeight:900,color:'#1a3a5c',lineHeight:1.05,marginBottom:8}}>{biz}</div>
         <div style={{fontSize:15,color:'#8090a0',marginBottom:20}}>by {author}</div>
         <div style={{fontSize:13,color:'#555',marginBottom:16}}>📱 {handle} &nbsp;&nbsp; 📧 {email}</div>
@@ -77,9 +105,15 @@ function WhiteBrand({ fields = {} }) {
 }
 
 function DigitalExpert({ fields = {} }) {
-  const handle  = (fields.handle  || 'yourhandle').toUpperCase();
-  const email   = (fields.email   || 'email@gmail.com').toUpperCase();
-  const website = fields.website || 'www.yourwebsite.com';
+  const handle  = previewText(fields.handle, 'Social handle').toUpperCase();
+  const email   = previewText(fields.email, 'Contact email').toUpperCase();
+  const website = previewText(fields.website, 'Website URL');
+  const t = useText({
+    line1: '[Headline 1]',
+    line2: '[Headline 2]',
+    lineAccent: '[Accent line]',
+    sub: '[Subtitle — e.g. role or tagline]',
+  });
   return (
     <div style={{width:PW,height:PH,display:'flex',fontFamily:'Arial,sans-serif',overflow:'hidden'}}>
       <div style={{flex:1,background:'#9ab5cc',position:'relative',overflow:'hidden'}}>
@@ -88,8 +122,8 @@ function DigitalExpert({ fields = {} }) {
       </div>
       <div style={{width:390,background:'#1a3a5c',padding:'60px 44px',display:'flex',flexDirection:'column',justifyContent:'center',color:'#fff',boxSizing:'border-box'}}>
         <div style={{fontSize:13,color:'#7fc4e8',letterSpacing:2,marginBottom:16}}>📱 {handle} &nbsp; 📧 {email}</div>
-        <div style={{fontSize:44,fontWeight:900,lineHeight:1.15,marginBottom:10}}>Digital<br/>Marketing<br/><span style={{color:'#7fc4e8'}}>Manager</span></div>
-        <div style={{fontSize:16,color:'#c0d8ec',marginBottom:24}}>Business Development</div>
+        <div style={{fontSize:44,fontWeight:900,lineHeight:1.15,marginBottom:10}}>{t.line1}<br/>{t.line2}<br/><span style={{color:'#7fc4e8'}}>{t.lineAccent}</span></div>
+        <div style={{fontSize:16,color:'#c0d8ec',marginBottom:24}}>{t.sub}</div>
         <div style={{borderTop:'1px solid #2d5580',paddingTop:18,fontSize:13,color:'#7fc4e8'}}>{website}</div>
       </div>
     </div>
@@ -97,24 +131,28 @@ function DigitalExpert({ fields = {} }) {
 }
 
 function ThanksgivingSale() {
+  const t = useText({
+    holiday: 'Thanksgiving',
+    discount: '30',
+    website: '[Website URL]',
+    body: '[Sale or promo copy — edit in Customize]',
+  });
   return (
     <div style={{width:PW,height:PH,display:'flex',fontFamily:'Arial,sans-serif',overflow:'hidden'}}>
       <div style={{width:270,background:'#3a8fa0',padding:'50px 36px',display:'flex',flexDirection:'column',justifyContent:'center',color:'#fff',boxSizing:'border-box',position:'relative',overflow:'hidden'}}>
         <div style={{position:'absolute',bottom:-60,right:-60,width:180,height:180,borderRadius:'50%',background:'rgba(255,255,255,0.07)'}}/>
-        <div style={{fontSize:26,fontWeight:800,marginBottom:2}}>Thanksgiving</div>
+        <div style={{fontSize:26,fontWeight:800,marginBottom:2}}>{t.holiday}</div>
         <div style={{fontSize:40,fontWeight:900,marginBottom:18}}>SALE</div>
         <div style={{fontSize:13,color:'#c8eef7',marginBottom:4}}>up to</div>
-        <div style={{fontSize:90,fontWeight:900,lineHeight:0.85,color:'#fff'}}>30<span style={{fontSize:44}}>%</span></div>
+        <div style={{fontSize:90,fontWeight:900,lineHeight:0.85,color:'#fff'}}>{t.discount}<span style={{fontSize:44}}>%</span></div>
         <div style={{fontSize:20,color:'#c8eef7',marginBottom:24}}>off</div>
-        <div style={{fontSize:11,color:'#a0dded',borderTop:'1px solid rgba(255,255,255,0.25)',paddingTop:12}}>www.youramazingwebsite.com</div>
+        <div style={{fontSize:11,color:'#a0dded',borderTop:'1px solid rgba(255,255,255,0.25)',paddingTop:12}}>{t.website}</div>
       </div>
       <div style={{flex:1,background:'#f5f0eb',padding:'50px 44px',position:'relative',overflow:'hidden'}}>
         <div style={{position:'absolute',top:20,right:20,width:210,height:210,background:'#e0d5c8',borderRadius:'50%'}}/>
         <div style={{position:'relative',zIndex:1}}>
-          <div style={{fontSize:14,color:'#666',lineHeight:1.9,marginBottom:20}}>
-            Croissant pastry dessert marzipan sesame snaps.<br/>
-            Biscuit marzipan candy canes cotton candy icing.<br/>
-            Tootsie roll jelly-o sweet roll.
+          <div style={{fontSize:14,color:'#666',lineHeight:1.9,marginBottom:20,whiteSpace:'pre-line'}}>
+            {t.body}
           </div>
           <div style={{width:80,height:4,background:'#3a8fa0',borderRadius:2}}/>
         </div>
@@ -124,15 +162,21 @@ function ThanksgivingSale() {
 }
 
 function LimitedOffer() {
+  const t = useText({
+    badge: 'LIMITED TIME',
+    headline: 'OFFER',
+    body: 'Croissant pastry dessert marzipan sesame snaps.\nBiscuit marzipan candy canes cotton candy icing.',
+    cta: 'CTA GOES HERE',
+  });
   return (
     <div style={{width:PW,height:PH,background:'#f5f8fc',fontFamily:'Arial,sans-serif',position:'relative',overflow:'hidden',display:'flex',alignItems:'center',justifyContent:'center'}}>
       <div style={{position:'absolute',top:0,left:0,right:0,height:'60%',background:'#3a8fa0',borderRadius:'0 0 55% 55%'}}/>
       <div style={{position:'relative',zIndex:1,textAlign:'center',display:'flex',flexDirection:'column',alignItems:'center',width:'100%'}}>
-        <div style={{color:'rgba(255,255,255,0.85)',fontSize:20,letterSpacing:4,marginBottom:4}}>LIMITED TIME</div>
-        <div style={{color:'#fff',fontSize:96,fontWeight:900,lineHeight:0.9,marginBottom:0}}>OFFER</div>
+        <div style={{color:'rgba(255,255,255,0.85)',fontSize:20,letterSpacing:4,marginBottom:4}}>{t.badge}</div>
+        <div style={{color:'#fff',fontSize:96,fontWeight:900,lineHeight:0.9,marginBottom:0}}>{t.headline}</div>
         <div style={{marginTop:30,background:'#fff',borderRadius:'20px 20px 0 0',padding:'28px 52px 0',width:400,boxSizing:'border-box',boxShadow:'0 -8px 24px rgba(0,0,0,0.08)'}}>
-          <div style={{fontSize:14,color:'#666',marginBottom:20,lineHeight:1.7}}>Croissant pastry dessert marzipan sesame snaps.<br/>Biscuit marzipan candy canes cotton candy icing.</div>
-          <div style={{background:'#3a8fa0',color:'#fff',padding:'14px 36px',borderRadius:8,display:'inline-block',fontWeight:700,fontSize:16,letterSpacing:2}}>CTA GOES HERE</div>
+          <div style={{fontSize:14,color:'#666',marginBottom:20,lineHeight:1.7,whiteSpace:'pre-line'}}>{t.body}</div>
+          <div style={{background:'#3a8fa0',color:'#fff',padding:'14px 36px',borderRadius:8,display:'inline-block',fontWeight:700,fontSize:16,letterSpacing:2}}>{t.cta}</div>
         </div>
       </div>
     </div>
@@ -140,15 +184,22 @@ function LimitedOffer() {
 }
 
 function EasterSale() {
+  const t = useText({
+    badge: 'COMING SOON',
+    holiday: 'Easter Sunday',
+    headline: 'SALE',
+    body: 'Croissant pastry dessert marzipan sesame snaps. Biscuit marzipan candy canes.',
+    cta: 'Brush up on all our latest products →',
+  });
   return (
     <div style={{width:PW,height:PH,background:'#f5f0e8',fontFamily:'Arial,sans-serif',overflow:'hidden',display:'flex',alignItems:'center',position:'relative'}}>
       <div style={{position:'absolute',left:0,top:0,width:'52%',height:'100%',background:'#4a9bb5',clipPath:'polygon(0 0,85% 0,70% 100%,0 100%)'}}/>
       <div style={{position:'relative',zIndex:1,width:340,padding:'0 44px',color:'#fff',boxSizing:'border-box'}}>
-        <div style={{fontSize:13,letterSpacing:4,marginBottom:10,opacity:0.8}}>COMING SOON</div>
-        <div style={{fontSize:32,fontWeight:800,marginBottom:2}}>Easter Sunday</div>
-        <div style={{fontSize:58,fontWeight:900,marginBottom:20,lineHeight:1}}>SALE</div>
-        <div style={{fontSize:13,color:'#c8eaf7',marginBottom:22,lineHeight:1.7}}>Croissant pastry dessert marzipan sesame snaps. Biscuit marzipan candy canes.</div>
-        <div style={{borderTop:'1px solid rgba(255,255,255,0.35)',paddingTop:14,fontSize:14,color:'#c8eaf7',fontWeight:600}}>Brush up on all our latest products →</div>
+        <div style={{fontSize:13,letterSpacing:4,marginBottom:10,opacity:0.8}}>{t.badge}</div>
+        <div style={{fontSize:32,fontWeight:800,marginBottom:2}}>{t.holiday}</div>
+        <div style={{fontSize:58,fontWeight:900,marginBottom:20,lineHeight:1}}>{t.headline}</div>
+        <div style={{fontSize:13,color:'#c8eaf7',marginBottom:22,lineHeight:1.7}}>{t.body}</div>
+        <div style={{borderTop:'1px solid rgba(255,255,255,0.35)',paddingTop:14,fontSize:14,color:'#c8eaf7',fontWeight:600}}>{t.cta}</div>
       </div>
       <div style={{position:'absolute',right:0,top:0,width:'43%',height:'100%',display:'grid',gridTemplateColumns:'1fr 1fr',gridTemplateRows:'1fr 1fr',gap:8,padding:8,boxSizing:'border-box'}}>
         <div style={{background:'#d4a890',borderRadius:10}}/>
@@ -161,30 +212,43 @@ function EasterSale() {
 }
 
 function BigNumber() {
+  const t = useText({
+    number: '42',
+    headline: 'Social Media\nPost Ideas',
+    body: 'Biscuit lollipop jelly-o cake cookie caramels. Brownie donut muffin biscuit jelly is sweet.',
+  });
   return (
     <div style={{width:PW,height:PH,background:'#fff',fontFamily:'Arial,sans-serif',overflow:'hidden',display:'flex',alignItems:'center',position:'relative'}}>
       <div style={{position:'absolute',top:0,right:0,width:'56%',height:'100%',background:'#e8f4f8',clipPath:'polygon(16% 0,100% 0,100% 100%,0 100%)'}}/>
       <div style={{paddingLeft:56,zIndex:1,position:'relative'}}>
-        <div style={{fontSize:220,fontWeight:900,color:'#1a3a5c',lineHeight:0.85,opacity:0.1,position:'absolute',top:'50%',left:30,transform:'translateY(-50%)'}}>42</div>
-        <div style={{fontSize:170,fontWeight:900,color:'#1a3a5c',lineHeight:0.9,position:'relative',zIndex:1}}>42</div>
+        <div style={{fontSize:220,fontWeight:900,color:'#1a3a5c',lineHeight:0.85,opacity:0.1,position:'absolute',top:'50%',left:30,transform:'translateY(-50%)'}}>{t.number}</div>
+        <div style={{fontSize:170,fontWeight:900,color:'#1a3a5c',lineHeight:0.9,position:'relative',zIndex:1}}>{t.number}</div>
       </div>
       <div style={{position:'absolute',right:48,zIndex:1,width:320}}>
-        <div style={{fontSize:44,fontWeight:800,color:'#2e7d9e',lineHeight:1.2,marginBottom:14}}>Social Media<br/>Post Ideas</div>
-        <div style={{fontSize:14,color:'#888',lineHeight:1.8}}>Biscuit lollipop jelly-o cake cookie caramels. Brownie donut muffin biscuit jelly is sweet.</div>
+        <div style={{fontSize:44,fontWeight:800,color:'#2e7d9e',lineHeight:1.2,marginBottom:14,whiteSpace:'pre-line'}}>{t.headline}</div>
+        <div style={{fontSize:14,color:'#888',lineHeight:1.8}}>{t.body}</div>
       </div>
     </div>
   );
 }
 
 function UltimateGuide() {
+  const t = useText({
+    badge: 'THE ULTIMATE GUIDE',
+    topic: 'Pinterest',
+    subtopic: 'Marketing',
+    subtitle: 'The Ultimate Guide',
+    body: '[Body copy — edit in Customize]',
+    website: '[Website URL]',
+  });
   return (
     <div style={{width:PW,height:PH,display:'flex',fontFamily:'Arial,sans-serif',overflow:'hidden'}}>
       <div style={{width:430,background:'#1a3a5c',padding:'56px 48px',display:'flex',flexDirection:'column',justifyContent:'center',color:'#fff',boxSizing:'border-box'}}>
-        <div style={{fontSize:12,color:'#7fc4e8',letterSpacing:2,marginBottom:14}}>THE ULTIMATE GUIDE</div>
-        <div style={{fontSize:46,fontWeight:900,lineHeight:1.1,marginBottom:10}}>Pinterest<br/><span style={{color:'#7fc4e8'}}>Marketing</span></div>
-        <div style={{fontSize:18,color:'#c0d8ec',fontStyle:'italic',marginBottom:24}}>The Ultimate Guide</div>
-        <div style={{fontSize:13,color:'#a0c8e0',lineHeight:1.8,marginBottom:24}}>Croissant pastry dessert marzipan sesame snaps. Biscuit marzipan candy canes cotton candy icing.</div>
-        <div style={{fontSize:13,color:'#7fc4e8',fontWeight:600}}>www.youramazingwebsite.com</div>
+        <div style={{fontSize:12,color:'#7fc4e8',letterSpacing:2,marginBottom:14}}>{t.badge}</div>
+        <div style={{fontSize:46,fontWeight:900,lineHeight:1.1,marginBottom:10}}>{t.topic}<br/><span style={{color:'#7fc4e8'}}>{t.subtopic}</span></div>
+        <div style={{fontSize:18,color:'#c0d8ec',fontStyle:'italic',marginBottom:24}}>{t.subtitle}</div>
+        <div style={{fontSize:13,color:'#a0c8e0',lineHeight:1.8,marginBottom:24}}>{t.body}</div>
+        <div style={{fontSize:13,color:'#7fc4e8',fontWeight:600}}>{t.website}</div>
       </div>
       <div style={{flex:1,background:'#e0cfc2',position:'relative',overflow:'hidden'}}>
         <div style={{position:'absolute',top:-50,right:-50,width:220,height:220,borderRadius:'50%',background:'rgba(26,58,92,0.12)'}}/>
@@ -196,6 +260,11 @@ function UltimateGuide() {
 }
 
 function BloggingTips() {
+  const t = useText({
+    headline: 'Blogging Tips',
+    subtitle: 'for Beginners',
+    body: 'Jelly-o cheesecake cookie donut soufflé.\nBiscuit marzipan candy canes tootsie roll.\nSweet roll jelly-o candy is sweet.',
+  });
   return (
     <div style={{width:PW,height:PH,background:'#fff',fontFamily:'Arial,sans-serif',overflow:'hidden',display:'flex'}}>
       <div style={{width:260,background:'#d4c8bc',position:'relative',overflow:'hidden',flexShrink:0}}>
@@ -203,12 +272,10 @@ function BloggingTips() {
         <div style={{position:'absolute',bottom:230,left:'50%',transform:'translateX(-50%)',width:72,height:72,background:'#a89080',borderRadius:'50%'}}/>
       </div>
       <div style={{flex:1,padding:'52px 48px',boxSizing:'border-box'}}>
-        <div style={{fontSize:30,fontWeight:800,color:'#1a3a5c',marginBottom:6}}>Blogging Tips</div>
-        <div style={{fontSize:18,color:'#2e7d9e',marginBottom:24}}>for Beginners</div>
-        <div style={{fontSize:13,color:'#666',lineHeight:1.9,marginBottom:24}}>
-          Jelly-o cheesecake cookie donut soufflé.<br/>
-          Biscuit marzipan candy canes tootsie roll.<br/>
-          Sweet roll jelly-o candy is sweet.
+        <div style={{fontSize:30,fontWeight:800,color:'#1a3a5c',marginBottom:6}}>{t.headline}</div>
+        <div style={{fontSize:18,color:'#2e7d9e',marginBottom:24}}>{t.subtitle}</div>
+        <div style={{fontSize:13,color:'#666',lineHeight:1.9,marginBottom:24,whiteSpace:'pre-line'}}>
+          {t.body}
         </div>
         {[1,2,3].map(i => (
           <div key={i} style={{display:'flex',alignItems:'center',gap:10,marginBottom:12}}>
@@ -222,12 +289,18 @@ function BloggingTips() {
 }
 
 function HomeDecorPost() {
+  const t = useText({
+    number: '15',
+    topic: 'Home\nDecor\nIdeas',
+    subtitle: 'The best ways to organize your space',
+    body: 'Biscuit lollipop jelly muffin soufflé sweet roll toffee. Candy cotton candy canes icing bear claw.',
+  });
   return (
     <div style={{width:PW,height:PH,background:'#f5f0eb',fontFamily:'Arial,sans-serif',overflow:'hidden',display:'flex',alignItems:'center',padding:'0 56px',gap:48,boxSizing:'border-box'}}>
       <div style={{flexShrink:0,textAlign:'center'}}>
-        <div style={{fontSize:160,fontWeight:900,color:'#1a3a5c',lineHeight:1}}>15</div>
-        <div style={{fontSize:24,fontWeight:700,color:'#2e7d9e',lineHeight:1.3,maxWidth:160}}>Home<br/>Decor<br/>Ideas</div>
-        <div style={{fontSize:13,color:'#888',marginTop:10,maxWidth:160,lineHeight:1.5}}>The best ways to organize your space</div>
+        <div style={{fontSize:160,fontWeight:900,color:'#1a3a5c',lineHeight:1}}>{t.number}</div>
+        <div style={{fontSize:24,fontWeight:700,color:'#2e7d9e',lineHeight:1.3,maxWidth:160,whiteSpace:'pre-line'}}>{t.topic}</div>
+        <div style={{fontSize:13,color:'#888',marginTop:10,maxWidth:160,lineHeight:1.5}}>{t.subtitle}</div>
       </div>
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gridTemplateRows:'1fr 1fr',gap:10,width:260,height:260,flexShrink:0}}>
         <div style={{background:'#c8b8a8',borderRadius:10}}/>
@@ -236,21 +309,29 @@ function HomeDecorPost() {
         <div style={{background:'#b8c8d8',borderRadius:10}}/>
       </div>
       <div style={{flex:1}}>
-        <div style={{fontSize:14,color:'#666',lineHeight:1.9}}>Biscuit lollipop jelly muffin soufflé sweet roll toffee. Candy cotton candy canes icing bear claw.</div>
+        <div style={{fontSize:14,color:'#666',lineHeight:1.9}}>{t.body}</div>
       </div>
     </div>
   );
 }
 
 function CourseLaunch() {
+  const t = useText({
+    badge: '✨ INTRODUCING',
+    preheadline: 'Your Amazing',
+    headline: 'COURSE',
+    headlineAccent: 'LAUNCH',
+    body: 'Everything you need to achieve your goal and transform your career or business.',
+    cta: 'ENROLL NOW →',
+  });
   return (
     <div style={{width:PW,height:PH,background:'#1a3a5c',fontFamily:'Arial,sans-serif',overflow:'hidden',display:'flex',alignItems:'center',padding:'0 56px',gap:48,boxSizing:'border-box'}}>
       <div style={{flex:1,color:'#fff'}}>
-        <div style={{fontSize:13,color:'#7fc4e8',letterSpacing:2,marginBottom:10}}>✨ INTRODUCING</div>
-        <div style={{fontSize:16,color:'#c0d8ec',marginBottom:2}}>Your Amazing</div>
-        <div style={{fontSize:56,fontWeight:900,lineHeight:1,marginBottom:16}}>COURSE<br/><span style={{color:'#7fc4e8'}}>LAUNCH</span></div>
-        <div style={{fontSize:13,color:'#a0c8e0',lineHeight:1.8,marginBottom:24}}>Everything you need to achieve your goal and transform your career or business.</div>
-        <div style={{background:'#2e7d9e',color:'#fff',padding:'13px 28px',borderRadius:8,display:'inline-block',fontSize:14,fontWeight:700,letterSpacing:1}}>ENROLL NOW →</div>
+        <div style={{fontSize:13,color:'#7fc4e8',letterSpacing:2,marginBottom:10}}>{t.badge}</div>
+        <div style={{fontSize:16,color:'#c0d8ec',marginBottom:2}}>{t.preheadline}</div>
+        <div style={{fontSize:56,fontWeight:900,lineHeight:1,marginBottom:16}}>{t.headline}<br/><span style={{color:'#7fc4e8'}}>{t.headlineAccent}</span></div>
+        <div style={{fontSize:13,color:'#a0c8e0',lineHeight:1.8,marginBottom:24}}>{t.body}</div>
+        <div style={{background:'#2e7d9e',color:'#fff',padding:'13px 28px',borderRadius:8,display:'inline-block',fontSize:14,fontWeight:700,letterSpacing:1}}>{t.cta}</div>
       </div>
       <div style={{display:'flex',flexDirection:'column',gap:16,flexShrink:0}}>
         <div style={{width:220,height:140,background:'#4a7ab5',borderRadius:14,overflow:'hidden',display:'flex',alignItems:'flex-end',justifyContent:'center'}}>
@@ -266,6 +347,14 @@ function CourseLaunch() {
 
 /** Distinct from CourseLaunch: diagonal split, numbered mini-lesson row, warm accent (not navy + stacked cards). */
 function MiniCourseTeaserPreview() {
+  const t = useText({
+    badge: 'NEW · MINI PROGRAM',
+    headline: 'Teaser',
+    headlineAccent: 'Track',
+    rightHeadline: '3 bite-sized\nlessons',
+    rightBody: 'Hook → teach → soft CTA. Built for busy learners.',
+    cta: 'Watch preview →',
+  });
   return (
     <div
       style={{
@@ -280,9 +369,9 @@ function MiniCourseTeaserPreview() {
       }}
     >
       <div style={{ flex: 1, padding: '38px 48px', color: '#fff' }}>
-        <div style={{ fontSize: 11, letterSpacing: 3, color: '#c4b5fd', marginBottom: 8 }}>NEW · MINI PROGRAM</div>
+        <div style={{ fontSize: 11, letterSpacing: 3, color: '#c4b5fd', marginBottom: 8 }}>{t.badge}</div>
         <div style={{ fontSize: 46, fontWeight: 900, lineHeight: 1.02, marginBottom: 14 }}>
-          Teaser<br /><span style={{ color: '#fde68a' }}>Track</span>
+          {t.headline}<br /><span style={{ color: '#fde68a' }}>{t.headlineAccent}</span>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {[1, 2, 3].map((n) => (
@@ -310,15 +399,23 @@ function MiniCourseTeaserPreview() {
         </div>
       </div>
       <div style={{ width: 280, padding: '36px 40px 36px 0', boxSizing: 'border-box' }}>
-        <div style={{ fontSize: 28, fontWeight: 900, color: '#78350f', lineHeight: 1.1, marginBottom: 10 }}>3 bite‑sized<br />lessons</div>
-        <div style={{ fontSize: 13, color: '#92400e', lineHeight: 1.55, marginBottom: 16 }}>Hook → teach → soft CTA. Built for busy learners.</div>
-        <div style={{ background: '#d97706', color: '#fff', padding: '11px 22px', borderRadius: 8, fontWeight: 700, fontSize: 13, display: 'inline-block' }}>Watch preview →</div>
+        <div style={{ fontSize: 28, fontWeight: 900, color: '#78350f', lineHeight: 1.1, marginBottom: 10, whiteSpace: 'pre-line' }}>{t.rightHeadline}</div>
+        <div style={{ fontSize: 13, color: '#92400e', lineHeight: 1.55, marginBottom: 16 }}>{t.rightBody}</div>
+        <div style={{ background: '#d97706', color: '#fff', padding: '11px 22px', borderRadius: 8, fontWeight: 700, fontSize: 13, display: 'inline-block' }}>{t.cta}</div>
       </div>
     </div>
   );
 }
 
 function NewProduct() {
+  const t = useText({
+    badge: '✦ NEW ARRIVAL ✦',
+    headline: 'Product',
+    headlineAccent: 'Launch',
+    subtitle: 'The perfect solution for your audience. Built to deliver real results.',
+    cta1: 'SHOP NOW',
+    cta2: 'Learn More',
+  });
   return (
     <div style={{width:PW,height:PH,fontFamily:'Arial,sans-serif',overflow:'hidden',position:'relative',background:'#0f2a45'}}>
       <div style={{position:'absolute',inset:0,background:'linear-gradient(135deg,#0f2a45 0%,#1e5080 55%,#0f2a45 100%)'}}/>
@@ -326,12 +423,12 @@ function NewProduct() {
       <div style={{position:'absolute',bottom:-80,left:-80,width:290,height:290,borderRadius:'50%',background:'rgba(100,180,230,0.06)'}}/>
       <div style={{position:'relative',zIndex:1,display:'flex',alignItems:'center',height:'100%',padding:'0 64px',boxSizing:'border-box'}}>
         <div style={{color:'#fff',maxWidth:540}}>
-          <div style={{fontSize:14,color:'#7fc4e8',letterSpacing:3,marginBottom:14}}>✦ NEW ARRIVAL ✦</div>
-          <div style={{fontSize:76,fontWeight:900,lineHeight:0.88,marginBottom:14,background:'linear-gradient(90deg,#ffffff,#7fc4e8)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>Product<br/>Launch</div>
-          <div style={{fontSize:16,color:'#a0c8e0',marginBottom:34,lineHeight:1.6}}>The perfect solution for your audience. Built to deliver real results.</div>
+          <div style={{fontSize:14,color:'#7fc4e8',letterSpacing:3,marginBottom:14}}>{t.badge}</div>
+          <div style={{fontSize:76,fontWeight:900,lineHeight:0.88,marginBottom:14,background:'linear-gradient(90deg,#ffffff,#7fc4e8)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>{t.headline}<br/>{t.headlineAccent}</div>
+          <div style={{fontSize:16,color:'#a0c8e0',marginBottom:34,lineHeight:1.6}}>{t.subtitle}</div>
           <div style={{display:'flex',gap:16}}>
-            <div style={{background:'#2e7d9e',color:'#fff',padding:'13px 32px',borderRadius:8,fontWeight:700,fontSize:14,letterSpacing:1}}>SHOP NOW</div>
-            <div style={{border:'2px solid #4a9bc0',color:'#7fc4e8',padding:'13px 26px',borderRadius:8,fontWeight:600,fontSize:14}}>Learn More</div>
+            <div style={{background:'#2e7d9e',color:'#fff',padding:'13px 32px',borderRadius:8,fontWeight:700,fontSize:14,letterSpacing:1}}>{t.cta1}</div>
+            <div style={{border:'2px solid #4a9bc0',color:'#7fc4e8',padding:'13px 26px',borderRadius:8,fontWeight:600,fontSize:14}}>{t.cta2}</div>
           </div>
         </div>
       </div>
@@ -686,14 +783,17 @@ const TEMPLATES = [
 ══════════════════════════════════════════════════════════ */
 
 function MotivationalQuote({ fields = {} }) {
-  const byline = fields.name || fields.businessName || 'Your Name / Brand';
+  const byline = previewText(fields.name || fields.businessName, 'Name or brand (byline)');
+  const t = useText({
+    quote: 'The best time to start was yesterday. The next best time is right now.',
+  });
   return (
     <div style={{width:PW,height:PH,background:'#0f172a',fontFamily:'Georgia,serif',display:'flex',alignItems:'center',justifyContent:'center',position:'relative',overflow:'hidden'}}>
       <div style={{position:'absolute',top:-80,left:-80,width:320,height:320,borderRadius:'50%',background:'rgba(99,102,241,0.12)'}}/>
       <div style={{position:'absolute',bottom:-60,right:-60,width:260,height:260,borderRadius:'50%',background:'rgba(99,102,241,0.08)'}}/>
       <div style={{position:'relative',zIndex:1,textAlign:'center',padding:'0 80px',maxWidth:680}}>
         <div style={{fontSize:80,color:'#6366f1',lineHeight:0.6,marginBottom:16,fontFamily:'serif'}}>"</div>
-        <div style={{fontSize:34,color:'#f1f5f9',lineHeight:1.5,fontStyle:'italic',marginBottom:24}}>The best time to start was yesterday. The next best time is right now.</div>
+        <div style={{fontSize:34,color:'#f1f5f9',lineHeight:1.5,fontStyle:'italic',marginBottom:24}}>{t.quote}</div>
         <div style={{fontSize:80,color:'#6366f1',lineHeight:0.6,transform:'rotate(180deg)',display:'inline-block',marginBottom:20,fontFamily:'serif'}}>"</div>
         <div style={{borderTop:'1px solid rgba(99,102,241,0.4)',paddingTop:16,fontSize:16,color:'#94a3b8',letterSpacing:2}}>— {byline}</div>
       </div>
@@ -702,14 +802,17 @@ function MotivationalQuote({ fields = {} }) {
 }
 
 function BoldQuoteCard({ fields = {} }) {
-  const authorName = fields.name || fields.businessName || 'Your Name';
-  const handle = fields.handle || 'yourhandle';
+  const authorName = previewText(fields.name || fields.businessName, 'Your name');
+  const handle = previewText(fields.handle, 'Social handle');
+  const t = useText({
+    quote: 'Done is better than perfect. Start before you feel ready.',
+  });
   return (
     <div style={{width:PW,height:PH,display:'flex',fontFamily:'Arial,sans-serif',overflow:'hidden'}}>
       <div style={{width:16,background:'#f59e0b',flexShrink:0}}/>
       <div style={{flex:1,background:'#fffbeb',padding:'56px 64px',display:'flex',flexDirection:'column',justifyContent:'center'}}>
         <div style={{fontSize:100,color:'#f59e0b',lineHeight:0.7,marginBottom:10,fontFamily:'Georgia,serif'}}>❝</div>
-        <div style={{fontSize:36,fontWeight:800,color:'#1e293b',lineHeight:1.4,marginBottom:28}}>Done is better than perfect. Start before you feel ready.</div>
+        <div style={{fontSize:36,fontWeight:800,color:'#1e293b',lineHeight:1.4,marginBottom:28}}>{t.quote}</div>
         <div style={{display:'flex',alignItems:'center',gap:16}}>
           <div style={{width:52,height:52,borderRadius:'50%',background:'#fde68a',display:'flex',alignItems:'center',justifyContent:'center',fontSize:22}}>✨</div>
           <div>
@@ -723,6 +826,15 @@ function BoldQuoteCard({ fields = {} }) {
 }
 
 function WebinarPromo() {
+  const t = useText({
+    badge: 'FREE WEBINAR',
+    headline: 'Join Us',
+    headlineAccent: 'Live!',
+    body: '[Topic] — Everything you need to know about [subject].',
+    date: '[Date]',
+    time: '[Time]',
+    cta: 'REGISTER FREE →',
+  });
   return (
     <div style={{width:PW,height:PH,background:'#0f172a',fontFamily:'Arial,sans-serif',overflow:'hidden',position:'relative',display:'flex',alignItems:'center'}}>
       <div style={{position:'absolute',top:0,right:0,width:'45%',height:'100%',background:'linear-gradient(135deg,#312e81,#4f46e5)',clipPath:'polygon(20% 0,100% 0,100% 100%,0 100%)'}}/>
@@ -730,33 +842,41 @@ function WebinarPromo() {
         <div style={{width:160,height:160,borderRadius:'50%',background:'rgba(255,255,255,0.1)',border:'2px dashed rgba(255,255,255,0.3)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:60}}>📅</div>
       </div>
       <div style={{position:'relative',zIndex:1,padding:'0 60px',maxWidth:460,color:'#fff'}}>
-        <div style={{fontSize:13,color:'#a5b4fc',letterSpacing:3,marginBottom:14}}>FREE WEBINAR</div>
-        <div style={{fontSize:44,fontWeight:900,lineHeight:1.1,marginBottom:16}}>Join Us<br/><span style={{color:'#a5b4fc'}}>Live!</span></div>
-        <div style={{fontSize:15,color:'#cbd5e1',marginBottom:24,lineHeight:1.6}}>[Topic] — Everything you need to know about [subject].</div>
+        <div style={{fontSize:13,color:'#a5b4fc',letterSpacing:3,marginBottom:14}}>{t.badge}</div>
+        <div style={{fontSize:44,fontWeight:900,lineHeight:1.1,marginBottom:16}}>{t.headline}<br/><span style={{color:'#a5b4fc'}}>{t.headlineAccent}</span></div>
+        <div style={{fontSize:15,color:'#cbd5e1',marginBottom:24,lineHeight:1.6}}>{t.body}</div>
         <div style={{display:'flex',gap:16,marginBottom:24}}>
-          <div style={{background:'rgba(165,180,252,0.15)',border:'1px solid #a5b4fc',borderRadius:8,padding:'10px 18px',fontSize:13,color:'#a5b4fc',fontWeight:600}}>📅 [Date]</div>
-          <div style={{background:'rgba(165,180,252,0.15)',border:'1px solid #a5b4fc',borderRadius:8,padding:'10px 18px',fontSize:13,color:'#a5b4fc',fontWeight:600}}>⏰ [Time]</div>
+          <div style={{background:'rgba(165,180,252,0.15)',border:'1px solid #a5b4fc',borderRadius:8,padding:'10px 18px',fontSize:13,color:'#a5b4fc',fontWeight:600}}>📅 {t.date}</div>
+          <div style={{background:'rgba(165,180,252,0.15)',border:'1px solid #a5b4fc',borderRadius:8,padding:'10px 18px',fontSize:13,color:'#a5b4fc',fontWeight:600}}>⏰ {t.time}</div>
         </div>
-        <div style={{background:'#4f46e5',color:'#fff',padding:'13px 28px',borderRadius:8,display:'inline-block',fontWeight:700,fontSize:14,letterSpacing:1}}>REGISTER FREE →</div>
+        <div style={{background:'#4f46e5',color:'#fff',padding:'13px 28px',borderRadius:8,display:'inline-block',fontWeight:700,fontSize:14,letterSpacing:1}}>{t.cta}</div>
       </div>
     </div>
   );
 }
 
 function GiveawayPost() {
+  const t = useText({
+    badge: '✨ WE\'RE CELEBRATING ✨',
+    headline: 'GIVE\nAWAY',
+    prize: '[What you\'re giving away]',
+    step1: '❤️ Like this post',
+    step2: '👥 Tag a friend',
+    step3: '🔔 Follow us',
+  });
   return (
     <div style={{width:PW,height:PH,background:'#fdf2f8',fontFamily:'Arial,sans-serif',overflow:'hidden',position:'relative',display:'flex',alignItems:'center',justifyContent:'center'}}>
       <div style={{position:'absolute',top:-100,left:'50%',transform:'translateX(-50%)',width:500,height:500,borderRadius:'50%',background:'rgba(236,72,153,0.08)'}}/>
       <div style={{position:'absolute',top:30,right:40,fontSize:60,opacity:0.15}}>🎁</div>
       <div style={{position:'absolute',bottom:30,left:40,fontSize:50,opacity:0.12}}>🎉</div>
       <div style={{position:'relative',zIndex:1,textAlign:'center',padding:'0 60px'}}>
-        <div style={{fontSize:18,color:'#db2777',letterSpacing:4,fontWeight:700,marginBottom:8}}>✨ WE'RE CELEBRATING ✨</div>
-        <div style={{fontSize:90,fontWeight:900,color:'#be185d',lineHeight:0.9,marginBottom:10,background:'linear-gradient(135deg,#db2777,#9333ea)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>GIVE<br/>AWAY</div>
-        <div style={{fontSize:16,color:'#6b21a8',fontWeight:600,marginBottom:20}}>Prize: [What you're giving away]</div>
+        <div style={{fontSize:18,color:'#db2777',letterSpacing:4,fontWeight:700,marginBottom:8}}>{t.badge}</div>
+        <div style={{fontSize:90,fontWeight:900,color:'#be185d',lineHeight:0.9,marginBottom:10,background:'linear-gradient(135deg,#db2777,#9333ea)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',whiteSpace:'pre-line'}}>{t.headline}</div>
+        <div style={{fontSize:16,color:'#6b21a8',fontWeight:600,marginBottom:20}}>Prize: {t.prize}</div>
         <div style={{display:'flex',justifyContent:'center',gap:20,fontSize:14,color:'#9333ea',fontWeight:600}}>
-          <span>❤️ Like this post</span>
-          <span>👥 Tag a friend</span>
-          <span>🔔 Follow us</span>
+          <span>{t.step1}</span>
+          <span>{t.step2}</span>
+          <span>{t.step3}</span>
         </div>
       </div>
     </div>
@@ -811,47 +931,65 @@ function TestimonialCard() {
 }
 
 function FlashSale() {
+  const t = useText({
+    badge: '⚡ TODAY ONLY ⚡',
+    headline: 'FLASH',
+    headlineAccent: 'SALE',
+    discount: '70',
+    timerHrs: '50',
+    timerMin: '00',
+    timerSec: '00',
+  });
   return (
     <div style={{width:PW,height:PH,background:'#7f1d1d',fontFamily:'Arial,sans-serif',overflow:'hidden',position:'relative',display:'flex',alignItems:'center',justifyContent:'center'}}>
       <div style={{position:'absolute',inset:0,background:'linear-gradient(135deg,#7f1d1d 0%,#b91c1c 50%,#7f1d1d 100%)'}}/>
       <div style={{position:'absolute',top:-100,right:-100,width:400,height:400,borderRadius:'50%',background:'rgba(255,255,255,0.04)'}}/>
       <div style={{position:'relative',zIndex:1,textAlign:'center',color:'#fff'}}>
-        <div style={{fontSize:16,letterSpacing:6,color:'#fca5a5',marginBottom:6}}>⚡ TODAY ONLY ⚡</div>
-        <div style={{fontSize:56,fontWeight:900,lineHeight:1,marginBottom:4}}>FLASH</div>
-        <div style={{fontSize:56,fontWeight:900,lineHeight:1,color:'#fca5a5',marginBottom:20}}>SALE</div>
+        <div style={{fontSize:16,letterSpacing:6,color:'#fca5a5',marginBottom:6}}>{t.badge}</div>
+        <div style={{fontSize:56,fontWeight:900,lineHeight:1,marginBottom:4}}>{t.headline}</div>
+        <div style={{fontSize:56,fontWeight:900,lineHeight:1,color:'#fca5a5',marginBottom:20}}>{t.headlineAccent}</div>
         <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:4,marginBottom:24}}>
           <div style={{background:'rgba(255,255,255,0.15)',border:'2px solid rgba(255,255,255,0.3)',borderRadius:8,padding:'8px 16px',textAlign:'center'}}>
-            <div style={{fontSize:36,fontWeight:900,lineHeight:1}}>50</div>
+            <div style={{fontSize:36,fontWeight:900,lineHeight:1}}>{t.timerHrs}</div>
             <div style={{fontSize:11,color:'#fca5a5',letterSpacing:1}}>HRS</div>
           </div>
           <div style={{fontSize:28,fontWeight:900,paddingBottom:12}}>:</div>
           <div style={{background:'rgba(255,255,255,0.15)',border:'2px solid rgba(255,255,255,0.3)',borderRadius:8,padding:'8px 16px',textAlign:'center'}}>
-            <div style={{fontSize:36,fontWeight:900,lineHeight:1}}>00</div>
+            <div style={{fontSize:36,fontWeight:900,lineHeight:1}}>{t.timerMin}</div>
             <div style={{fontSize:11,color:'#fca5a5',letterSpacing:1}}>MIN</div>
           </div>
           <div style={{fontSize:28,fontWeight:900,paddingBottom:12}}>:</div>
           <div style={{background:'rgba(255,255,255,0.15)',border:'2px solid rgba(255,255,255,0.3)',borderRadius:8,padding:'8px 16px',textAlign:'center'}}>
-            <div style={{fontSize:36,fontWeight:900,lineHeight:1}}>00</div>
+            <div style={{fontSize:36,fontWeight:900,lineHeight:1}}>{t.timerSec}</div>
             <div style={{fontSize:11,color:'#fca5a5',letterSpacing:1}}>SEC</div>
           </div>
         </div>
-        <div style={{fontSize:24,fontWeight:800}}>Up to <span style={{color:'#fca5a5',fontSize:40}}>70%</span> OFF</div>
+        <div style={{fontSize:24,fontWeight:800}}>Up to <span style={{color:'#fca5a5',fontSize:40}}>{t.discount}%</span> OFF</div>
       </div>
     </div>
   );
 }
 
 function ProductAnnounce() {
+  const t = useText({
+    badge: '🎉 BIG ANNOUNCEMENT',
+    headline: 'Something',
+    headlineAccent: 'Amazing',
+    headlineSub: 'is Coming!',
+    body: 'We\'ve been working on something big and we\'re almost ready to share it with you. Stay tuned — you won\'t want to miss this! 🚀',
+    cta1: 'Get Notified →',
+    cta2: 'Learn More',
+  });
   return (
     <div style={{width:PW,height:PH,fontFamily:'Arial,sans-serif',overflow:'hidden',background:'#f0fdf4',display:'flex',alignItems:'center',padding:'0 64px',gap:56,boxSizing:'border-box',position:'relative'}}>
       <div style={{position:'absolute',top:-80,right:-80,width:320,height:320,borderRadius:'50%',background:'rgba(16,185,129,0.08)'}}/>
       <div style={{flex:1,zIndex:1}}>
-        <div style={{display:'inline-block',background:'#d1fae5',color:'#065f46',fontSize:13,fontWeight:700,padding:'6px 16px',borderRadius:20,marginBottom:16,letterSpacing:1}}>🎉 BIG ANNOUNCEMENT</div>
-        <div style={{fontSize:50,fontWeight:900,color:'#064e3b',lineHeight:1.1,marginBottom:16}}>Something<br/><span style={{color:'#059669'}}>Amazing</span><br/>is Coming!</div>
-        <div style={{fontSize:15,color:'#065f46',lineHeight:1.7,marginBottom:28}}>We've been working on something big and we're almost ready to share it with you. Stay tuned — you won't want to miss this! 🚀</div>
+        <div style={{display:'inline-block',background:'#d1fae5',color:'#065f46',fontSize:13,fontWeight:700,padding:'6px 16px',borderRadius:20,marginBottom:16,letterSpacing:1}}>{t.badge}</div>
+        <div style={{fontSize:50,fontWeight:900,color:'#064e3b',lineHeight:1.1,marginBottom:16}}>{t.headline}<br/><span style={{color:'#059669'}}>{t.headlineAccent}</span><br/>{t.headlineSub}</div>
+        <div style={{fontSize:15,color:'#065f46',lineHeight:1.7,marginBottom:28}}>{t.body}</div>
         <div style={{display:'flex',gap:16}}>
-          <div style={{background:'#059669',color:'#fff',padding:'13px 28px',borderRadius:8,fontWeight:700,fontSize:14}}>Get Notified →</div>
-          <div style={{border:'2px solid #059669',color:'#059669',padding:'13px 24px',borderRadius:8,fontWeight:600,fontSize:14}}>Learn More</div>
+          <div style={{background:'#059669',color:'#fff',padding:'13px 28px',borderRadius:8,fontWeight:700,fontSize:14}}>{t.cta1}</div>
+          <div style={{border:'2px solid #059669',color:'#059669',padding:'13px 24px',borderRadius:8,fontWeight:600,fontSize:14}}>{t.cta2}</div>
         </div>
       </div>
       <div style={{width:220,height:280,flexShrink:0,zIndex:1,display:'flex',flexDirection:'column',gap:12}}>
@@ -863,6 +1001,11 @@ function ProductAnnounce() {
 }
 
 function SummerVibes() {
+  const t = useText({
+    headline: 'Summer\nVibes',
+    body: 'Bring the heat this season with [your product/service]. Shop our summer collection now!',
+    cta: 'SHOP NOW 🌊',
+  });
   return (
     <div style={{width:PW,height:PH,fontFamily:'Arial,sans-serif',overflow:'hidden',position:'relative',display:'flex'}}>
       <div style={{position:'absolute',inset:0,background:'linear-gradient(135deg,#fbbf24 0%,#f97316 40%,#ef4444 100%)'}}/>
@@ -871,9 +1014,9 @@ function SummerVibes() {
       <div style={{position:'relative',zIndex:1,display:'flex',alignItems:'center',padding:'0 64px',gap:48,width:'100%',boxSizing:'border-box'}}>
         <div style={{color:'#fff',flex:1}}>
           <div style={{fontSize:80,marginBottom:0,lineHeight:1}}>☀️</div>
-          <div style={{fontSize:60,fontWeight:900,lineHeight:1,marginBottom:8,textShadow:'0 2px 12px rgba(0,0,0,0.2)'}}>Summer<br/>Vibes</div>
-          <div style={{fontSize:16,color:'rgba(255,255,255,0.85)',lineHeight:1.6,marginBottom:24}}>Bring the heat this season with [your product/service]. Shop our summer collection now!</div>
-          <div style={{background:'rgba(255,255,255,0.25)',backdropFilter:'blur(8px)',border:'2px solid rgba(255,255,255,0.5)',color:'#fff',padding:'12px 28px',borderRadius:8,display:'inline-block',fontWeight:700,fontSize:14,letterSpacing:1}}>SHOP NOW 🌊</div>
+          <div style={{fontSize:60,fontWeight:900,lineHeight:1,marginBottom:8,textShadow:'0 2px 12px rgba(0,0,0,0.2)',whiteSpace:'pre-line'}}>{t.headline}</div>
+          <div style={{fontSize:16,color:'rgba(255,255,255,0.85)',lineHeight:1.6,marginBottom:24}}>{t.body}</div>
+          <div style={{background:'rgba(255,255,255,0.25)',backdropFilter:'blur(8px)',border:'2px solid rgba(255,255,255,0.5)',color:'#fff',padding:'12px 28px',borderRadius:8,display:'inline-block',fontWeight:700,fontSize:14,letterSpacing:1}}>{t.cta}</div>
         </div>
         <div style={{flexShrink:0,display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,width:200,height:200}}>
           <div style={{background:'rgba(255,255,255,0.2)',borderRadius:12}}/>
@@ -887,6 +1030,16 @@ function SummerVibes() {
 }
 
 function EventCountdown() {
+  const t = useText({
+    badge: 'MARK YOUR CALENDAR',
+    eventName: '[Event Name]',
+    subheadline: 'is happening!',
+    body: 'Join us for [description of event]. An experience you won\'t forget.',
+    date: '[Month Day]',
+    time: '[X:XX PM]',
+    location: '[Location]',
+    cta: 'RSVP NOW →',
+  });
   return (
     <div style={{width:PW,height:PH,background:'#1e1b4b',fontFamily:'Arial,sans-serif',overflow:'hidden',position:'relative',display:'flex',alignItems:'center'}}>
       <div style={{position:'absolute',inset:0,background:'radial-gradient(ellipse at top,#312e81 0%,#1e1b4b 70%)'}}/>
@@ -894,23 +1047,23 @@ function EventCountdown() {
         <div key={i} style={{position:'absolute',width:3,height:3,borderRadius:'50%',background:'rgba(255,255,255,0.4)',top:`${10+Math.random()*80}%`,left:`${Math.random()*100}%`}}/>
       ))}
       <div style={{position:'relative',zIndex:1,padding:'0 60px',color:'#fff',width:'100%',boxSizing:'border-box'}}>
-        <div style={{fontSize:14,color:'#a5b4fc',letterSpacing:3,marginBottom:10}}>MARK YOUR CALENDAR</div>
-        <div style={{fontSize:50,fontWeight:900,lineHeight:1.1,marginBottom:8}}>[Event Name]<br/><span style={{color:'#a5b4fc',fontSize:36}}>is happening!</span></div>
-        <div style={{fontSize:15,color:'#c7d2fe',marginBottom:28,lineHeight:1.6}}>Join us for [description of event]. An experience you won't forget.</div>
+        <div style={{fontSize:14,color:'#a5b4fc',letterSpacing:3,marginBottom:10}}>{t.badge}</div>
+        <div style={{fontSize:50,fontWeight:900,lineHeight:1.1,marginBottom:8}}>{t.eventName}<br/><span style={{color:'#a5b4fc',fontSize:36}}>{t.subheadline}</span></div>
+        <div style={{fontSize:15,color:'#c7d2fe',marginBottom:28,lineHeight:1.6}}>{t.body}</div>
         <div style={{display:'flex',gap:16,flexWrap:'wrap'}}>
           <div style={{background:'rgba(165,180,252,0.15)',border:'1px solid #6366f1',borderRadius:10,padding:'12px 20px'}}>
             <div style={{fontSize:11,color:'#a5b4fc',letterSpacing:2,marginBottom:4}}>DATE</div>
-            <div style={{fontSize:20,fontWeight:700}}>[Month Day]</div>
+            <div style={{fontSize:20,fontWeight:700}}>{t.date}</div>
           </div>
           <div style={{background:'rgba(165,180,252,0.15)',border:'1px solid #6366f1',borderRadius:10,padding:'12px 20px'}}>
             <div style={{fontSize:11,color:'#a5b4fc',letterSpacing:2,marginBottom:4}}>TIME</div>
-            <div style={{fontSize:20,fontWeight:700}}>[X:XX PM]</div>
+            <div style={{fontSize:20,fontWeight:700}}>{t.time}</div>
           </div>
           <div style={{background:'rgba(165,180,252,0.15)',border:'1px solid #6366f1',borderRadius:10,padding:'12px 20px'}}>
             <div style={{fontSize:11,color:'#a5b4fc',letterSpacing:2,marginBottom:4}}>WHERE</div>
-            <div style={{fontSize:20,fontWeight:700}}>[Location]</div>
+            <div style={{fontSize:20,fontWeight:700}}>{t.location}</div>
           </div>
-          <div style={{background:'#4f46e5',borderRadius:10,padding:'12px 24px',display:'flex',alignItems:'center',fontSize:15,fontWeight:700,letterSpacing:1}}>RSVP NOW →</div>
+          <div style={{background:'#4f46e5',borderRadius:10,padding:'12px 24px',display:'flex',alignItems:'center',fontSize:15,fontWeight:700,letterSpacing:1}}>{t.cta}</div>
         </div>
       </div>
     </div>
@@ -918,13 +1071,20 @@ function EventCountdown() {
 }
 
 function LeadMagnetPreview() {
+  const t = useText({
+    badge: 'FREE DOWNLOAD',
+    topic: '[Topic]',
+    kitName: 'Starter Kit',
+    body: 'PDF checklist + templates. No spam — unsubscribe anytime.',
+    cta: 'GET IT FREE →',
+  });
   return (
     <div style={{ width: PW, height: PH, background: 'linear-gradient(145deg,#1e1b4b,#312e81)', fontFamily: 'Arial,sans-serif', display: 'flex', alignItems: 'center', padding: '0 56px', gap: 40, boxSizing: 'border-box' }}>
       <div style={{ flex: 1, color: '#fff' }}>
-        <div style={{ fontSize: 13, color: '#a5b4fc', letterSpacing: 3, marginBottom: 10 }}>FREE DOWNLOAD</div>
-        <div style={{ fontSize: 48, fontWeight: 900, lineHeight: 1.05, marginBottom: 12 }}>The [Topic]<br /><span style={{ color: '#a5b4fc' }}>Starter Kit</span></div>
-        <div style={{ fontSize: 14, color: '#c7d2fe', lineHeight: 1.6, marginBottom: 20 }}>PDF checklist + templates. No spam — unsubscribe anytime.</div>
-        <div style={{ background: '#4f46e5', padding: '12px 22px', borderRadius: 8, display: 'inline-block', fontWeight: 700, fontSize: 14 }}>GET IT FREE →</div>
+        <div style={{ fontSize: 13, color: '#a5b4fc', letterSpacing: 3, marginBottom: 10 }}>{t.badge}</div>
+        <div style={{ fontSize: 48, fontWeight: 900, lineHeight: 1.05, marginBottom: 12 }}>The {t.topic}<br /><span style={{ color: '#a5b4fc' }}>{t.kitName}</span></div>
+        <div style={{ fontSize: 14, color: '#c7d2fe', lineHeight: 1.6, marginBottom: 20 }}>{t.body}</div>
+        <div style={{ background: '#4f46e5', padding: '12px 22px', borderRadius: 8, display: 'inline-block', fontWeight: 700, fontSize: 14 }}>{t.cta}</div>
       </div>
       <div style={{ width: 200, height: 260, background: 'rgba(255,255,255,0.08)', borderRadius: 16, border: '2px dashed rgba(165,180,252,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 56 }}>📎</div>
     </div>
@@ -932,52 +1092,77 @@ function LeadMagnetPreview() {
 }
 
 function PodcastEpPreview() {
+  const t = useText({
+    badge: 'NEW EPISODE',
+    episodeNum: '[X]',
+    title: '[Episode Title]',
+    body: 'With [Guest Name] — we unpack [hook topic] in under [minutes] minutes.',
+  });
   return (
     <div style={{ width: PW, height: PH, background: '#0f172a', fontFamily: 'Arial,sans-serif', display: 'flex', alignItems: 'center', padding: '0 56px', gap: 36, boxSizing: 'border-box' }}>
       <div style={{ width: 160, height: 160, borderRadius: 20, background: 'linear-gradient(135deg,#6366f1,#a855f7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 72, flexShrink: 0 }}>🎙️</div>
       <div style={{ flex: 1, color: '#fff' }}>
-        <div style={{ fontSize: 12, color: '#94a3b8', letterSpacing: 2, marginBottom: 8 }}>NEW EPISODE</div>
-        <div style={{ fontSize: 38, fontWeight: 900, lineHeight: 1.15, marginBottom: 10 }}>Ep. [X]: [Episode Title]</div>
-        <div style={{ fontSize: 14, color: '#cbd5e1', lineHeight: 1.6 }}>With [Guest Name] — we unpack [hook topic] in under [minutes] minutes.</div>
+        <div style={{ fontSize: 12, color: '#94a3b8', letterSpacing: 2, marginBottom: 8 }}>{t.badge}</div>
+        <div style={{ fontSize: 38, fontWeight: 900, lineHeight: 1.15, marginBottom: 10 }}>Ep. {t.episodeNum}: {t.title}</div>
+        <div style={{ fontSize: 14, color: '#cbd5e1', lineHeight: 1.6 }}>{t.body}</div>
       </div>
     </div>
   );
 }
 
 function CarouselSwipePreview() {
+  const t = useText({
+    badge: 'CAROUSEL ALERT',
+    headline: 'Swipe for',
+    number: '[Number]',
+    suffix: 'tips →',
+    cta: 'Save this post 🔖',
+  });
   return (
     <div style={{ width: PW, height: PH, background: '#fefce8', fontFamily: 'Arial,sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
       <div style={{ position: 'absolute', inset: 0, background: 'repeating-linear-gradient(90deg,transparent,transparent 38px,rgba(234,179,8,0.08) 38px,rgba(234,179,8,0.08) 40px)' }} />
       <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', padding: '0 48px' }}>
-        <div style={{ fontSize: 22, fontWeight: 800, color: '#854d0e', marginBottom: 8 }}>CAROUSEL ALERT</div>
-        <div style={{ fontSize: 52, fontWeight: 900, color: '#713f12', lineHeight: 1.05, marginBottom: 12 }}>Swipe for<br />[Number] tips →</div>
-        <div style={{ fontSize: 15, color: '#a16207', fontWeight: 600 }}>Save this post 🔖</div>
+        <div style={{ fontSize: 22, fontWeight: 800, color: '#854d0e', marginBottom: 8 }}>{t.badge}</div>
+        <div style={{ fontSize: 52, fontWeight: 900, color: '#713f12', lineHeight: 1.05, marginBottom: 12 }}>{t.headline}<br />{t.number} {t.suffix}</div>
+        <div style={{ fontSize: 15, color: '#a16207', fontWeight: 600 }}>{t.cta}</div>
       </div>
     </div>
   );
 }
 
 function WaitlistPreview() {
+  const t = useText({
+    badge: 'COMING SOON',
+    productName: '[Product Name]',
+    body: 'Join the waitlist — be first to know when we launch.',
+    cta: 'JOIN WAITLIST',
+  });
   return (
     <div style={{ width: PW, height: PH, background: 'linear-gradient(160deg,#0c4a6e,#0369a1)', fontFamily: 'Arial,sans-serif', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#fff', textAlign: 'center', padding: '0 48px', boxSizing: 'border-box' }}>
-      <div style={{ fontSize: 14, letterSpacing: 4, color: '#7dd3fc', marginBottom: 10 }}>COMING SOON</div>
-      <div style={{ fontSize: 48, fontWeight: 900, lineHeight: 1.1, marginBottom: 12 }}>[Product Name]</div>
-      <div style={{ fontSize: 15, color: '#bae6fd', maxWidth: 520, lineHeight: 1.6, marginBottom: 24 }}>Join the waitlist — be first to know when we launch.</div>
-      <div style={{ background: '#fff', color: '#0369a1', padding: '12px 28px', borderRadius: 8, fontWeight: 800, fontSize: 14 }}>JOIN WAITLIST</div>
+      <div style={{ fontSize: 14, letterSpacing: 4, color: '#7dd3fc', marginBottom: 10 }}>{t.badge}</div>
+      <div style={{ fontSize: 48, fontWeight: 900, lineHeight: 1.1, marginBottom: 12 }}>{t.productName}</div>
+      <div style={{ fontSize: 15, color: '#bae6fd', maxWidth: 520, lineHeight: 1.6, marginBottom: 24 }}>{t.body}</div>
+      <div style={{ background: '#fff', color: '#0369a1', padding: '12px 28px', borderRadius: 8, fontWeight: 800, fontSize: 14 }}>{t.cta}</div>
     </div>
   );
 }
 
 function AMASessionPreview() {
+  const t = useText({
+    headline: 'Ask Me\nAnything',
+    body: 'Live on [Date] — drop your questions in the comments.',
+    sampleQ: 'Q: [Sample question]?',
+    sampleA: 'A: [Your teaser answer]…',
+  });
   return (
     <div style={{ width: PW, height: PH, background: '#f8fafc', fontFamily: 'Arial,sans-serif', display: 'flex', alignItems: 'center', padding: '0 52px', gap: 28, boxSizing: 'border-box' }}>
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 36, fontWeight: 900, color: '#0f172a', marginBottom: 10 }}>Ask Me<br />Anything</div>
-        <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.7 }}>Live on [Date] — drop your questions in the comments.</div>
+        <div style={{ fontSize: 36, fontWeight: 900, color: '#0f172a', marginBottom: 10, whiteSpace: 'pre-line' }}>{t.headline}</div>
+        <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.7 }}>{t.body}</div>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: 280 }}>
-        <div style={{ background: '#e2e8f0', borderRadius: 14, padding: '12px 16px', fontSize: 13, color: '#475569' }}>Q: [Sample question]?</div>
-        <div style={{ background: '#6366f1', borderRadius: 14, padding: '12px 16px', fontSize: 13, color: '#fff', alignSelf: 'flex-end' }}>A: [Your teaser answer]…</div>
+        <div style={{ background: '#e2e8f0', borderRadius: 14, padding: '12px 16px', fontSize: 13, color: '#475569' }}>{t.sampleQ}</div>
+        <div style={{ background: '#6366f1', borderRadius: 14, padding: '12px 16px', fontSize: 13, color: '#fff', alignSelf: 'flex-end' }}>{t.sampleA}</div>
       </div>
     </div>
   );
@@ -1014,50 +1199,69 @@ function TrendingTopicsPreview() {
 }
 
 function ClientWinPreview() {
+  const t = useText({
+    badge: 'CLIENT WIN',
+    headline: '[Result headline]',
+    body: 'How [Client Name] hit [metric] in [timeframe].',
+  });
   return (
     <div style={{ width: PW, height: PH, background: 'linear-gradient(90deg,#ecfdf5,#d1fae5)', fontFamily: 'Arial,sans-serif', display: 'flex', alignItems: 'center', padding: '0 56px', gap: 40, boxSizing: 'border-box' }}>
       <div style={{ fontSize: 80, lineHeight: 1 }}>🏆</div>
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 13, color: '#059669', fontWeight: 800, letterSpacing: 2, marginBottom: 8 }}>CLIENT WIN</div>
-        <div style={{ fontSize: 34, fontWeight: 900, color: '#064e3b', lineHeight: 1.15, marginBottom: 10 }}>[Result headline]</div>
-        <div style={{ fontSize: 14, color: '#047857', lineHeight: 1.6 }}>How [Client Name] hit [metric] in [timeframe].</div>
+        <div style={{ fontSize: 13, color: '#059669', fontWeight: 800, letterSpacing: 2, marginBottom: 8 }}>{t.badge}</div>
+        <div style={{ fontSize: 34, fontWeight: 900, color: '#064e3b', lineHeight: 1.15, marginBottom: 10 }}>{t.headline}</div>
+        <div style={{ fontSize: 14, color: '#047857', lineHeight: 1.6 }}>{t.body}</div>
       </div>
     </div>
   );
 }
 
 function RestockPreview() {
+  const t = useText({
+    badge: 'BACK IN STOCK',
+    productName: '[Product Name]',
+    body: 'Limited quantities — tap link in bio 🛒',
+  });
   return (
     <div style={{ width: PW, height: PH, background: '#fffbeb', fontFamily: 'Arial,sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0 40px', boxSizing: 'border-box' }}>
       <div>
-        <div style={{ fontSize: 20, fontWeight: 800, color: '#b45309', marginBottom: 6 }}>BACK IN STOCK</div>
-        <div style={{ fontSize: 46, fontWeight: 900, color: '#92400e', marginBottom: 10 }}>[Product Name]</div>
-        <div style={{ fontSize: 15, color: '#a16207' }}>Limited quantities — tap link in bio 🛒</div>
+        <div style={{ fontSize: 20, fontWeight: 800, color: '#b45309', marginBottom: 6 }}>{t.badge}</div>
+        <div style={{ fontSize: 46, fontWeight: 900, color: '#92400e', marginBottom: 10 }}>{t.productName}</div>
+        <div style={{ fontSize: 15, color: '#a16207' }}>{t.body}</div>
       </div>
     </div>
   );
 }
 
 function HiringBannerPreview() {
+  const t = useText({
+    badge: "WE'RE HIRING",
+    role: '[Role Title]',
+    details: '[Location / Remote] · [Employment type]',
+  });
   return (
     <div style={{ width: PW, height: PH, background: 'linear-gradient(135deg,#14532d,#166534)', fontFamily: 'Arial,sans-serif', display: 'flex', alignItems: 'center', padding: '0 56px', gap: 36, boxSizing: 'border-box', color: '#fff' }}>
       <div style={{ fontSize: 72, lineHeight: 1 }}>👋</div>
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 13, letterSpacing: 3, color: '#bbf7d0', marginBottom: 8 }}>WE&apos;RE HIRING</div>
-        <div style={{ fontSize: 44, fontWeight: 900, lineHeight: 1.1, marginBottom: 10 }}>[Role Title]</div>
-        <div style={{ fontSize: 15, color: '#dcfce7', lineHeight: 1.6 }}>[Location / Remote] · [Employment type]</div>
+        <div style={{ fontSize: 13, letterSpacing: 3, color: '#bbf7d0', marginBottom: 8 }}>{t.badge}</div>
+        <div style={{ fontSize: 44, fontWeight: 900, lineHeight: 1.1, marginBottom: 10 }}>{t.role}</div>
+        <div style={{ fontSize: 15, color: '#dcfce7', lineHeight: 1.6 }}>{t.details}</div>
       </div>
     </div>
   );
 }
 
 function ReferEarnPreview() {
+  const t = useText({
+    headline: 'Refer & Earn',
+    body: 'Give [reward], get [reward]',
+  });
   return (
     <div style={{ width: PW, height: PH, background: '#faf5ff', fontFamily: 'Arial,sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0 48px', boxSizing: 'border-box' }}>
       <div>
         <div style={{ fontSize: 56, marginBottom: 8 }}>🎁</div>
-        <div style={{ fontSize: 28, fontWeight: 900, color: '#6b21a8', marginBottom: 8 }}>Refer &amp; Earn</div>
-        <div style={{ fontSize: 15, color: '#7c3aed', fontWeight: 600 }}>Give [reward], get [reward]</div>
+        <div style={{ fontSize: 28, fontWeight: 900, color: '#6b21a8', marginBottom: 8 }}>{t.headline}</div>
+        <div style={{ fontSize: 15, color: '#7c3aed', fontWeight: 600 }}>{t.body}</div>
       </div>
     </div>
   );
@@ -1079,93 +1283,128 @@ function PollVotesPreview() {
 }
 
 function DayChallengePreview() {
+  const t = useText({
+    badge: 'CHALLENGE',
+    days: '[X]',
+    name: '[Challenge name]',
+    body: 'Starts [Date] — join us!',
+  });
   return (
     <div style={{ width: PW, height: PH, background: 'linear-gradient(180deg,#1e293b,#0f172a)', fontFamily: 'Arial,sans-serif', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#fff', textAlign: 'center', padding: '0 40px', boxSizing: 'border-box' }}>
-      <div style={{ fontSize: 14, color: '#94a3b8', letterSpacing: 3, marginBottom: 8 }}>CHALLENGE</div>
-      <div style={{ fontSize: 52, fontWeight: 900, lineHeight: 1.05, marginBottom: 12 }}>[X]-Day<br /><span style={{ color: '#38bdf8' }}>[Challenge name]</span></div>
-      <div style={{ fontSize: 14, color: '#cbd5e1' }}>Starts [Date] — join us!</div>
+      <div style={{ fontSize: 14, color: '#94a3b8', letterSpacing: 3, marginBottom: 8 }}>{t.badge}</div>
+      <div style={{ fontSize: 52, fontWeight: 900, lineHeight: 1.05, marginBottom: 12 }}>{t.days}-Day<br /><span style={{ color: '#38bdf8' }}>{t.name}</span></div>
+      <div style={{ fontSize: 14, color: '#cbd5e1' }}>{t.body}</div>
     </div>
   );
 }
 
 function WinterSalePreview() {
+  const t = useText({
+    headline: 'Winter\nSale',
+    body: 'Cozy deals on [category] — limited time.',
+  });
   return (
     <div style={{ width: PW, height: PH, background: 'linear-gradient(160deg,#1e3a5f,#0c4a6e)', fontFamily: 'Arial,sans-serif', display: 'flex', alignItems: 'center', padding: '0 48px', gap: 28, boxSizing: 'border-box', color: '#fff' }}>
       <div style={{ fontSize: 80, lineHeight: 1 }}>❄️</div>
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 40, fontWeight: 900, lineHeight: 1.1, marginBottom: 8 }}>Winter<br />Sale</div>
-        <div style={{ fontSize: 15, color: '#bae6fd' }}>Cozy deals on [category] — limited time.</div>
+        <div style={{ fontSize: 40, fontWeight: 900, lineHeight: 1.1, marginBottom: 8, whiteSpace: 'pre-line' }}>{t.headline}</div>
+        <div style={{ fontSize: 15, color: '#bae6fd' }}>{t.body}</div>
       </div>
     </div>
   );
 }
 
 function TipTuesdayPreview() {
+  const t = useText({
+    badge: 'TIP TUESDAY',
+    headline: '[One-line tip headline]',
+  });
   return (
     <div style={{ width: PW, height: PH, background: 'linear-gradient(135deg,#fef3c7,#fed7aa)', fontFamily: 'Arial,sans-serif', display: 'flex', alignItems: 'center', padding: '0 52px', gap: 28, boxSizing: 'border-box' }}>
       <div style={{ fontSize: 64 }}>💡</div>
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 13, fontWeight: 800, color: '#b45309', letterSpacing: 2, marginBottom: 6 }}>TIP TUESDAY</div>
-        <div style={{ fontSize: 32, fontWeight: 900, color: '#78350f', lineHeight: 1.2 }}>[One-line tip headline]</div>
+        <div style={{ fontSize: 13, fontWeight: 800, color: '#b45309', letterSpacing: 2, marginBottom: 6 }}>{t.badge}</div>
+        <div style={{ fontSize: 32, fontWeight: 900, color: '#78350f', lineHeight: 1.2 }}>{t.headline}</div>
       </div>
     </div>
   );
 }
 
 function UrgentUpdatePreview() {
+  const t = useText({
+    badge: 'IMPORTANT UPDATE',
+    headline: '[Headline about change or outage]',
+    body: 'What you need to know — short and clear.',
+  });
   return (
     <div style={{ width: PW, height: PH, background: '#fff', fontFamily: 'Arial,sans-serif', boxSizing: 'border-box', borderTop: '12px solid #dc2626' }}>
       <div style={{ padding: '40px 48px' }}>
-        <div style={{ fontSize: 12, fontWeight: 800, color: '#dc2626', letterSpacing: 2, marginBottom: 10 }}>IMPORTANT UPDATE</div>
-        <div style={{ fontSize: 34, fontWeight: 900, color: '#0f172a', lineHeight: 1.15, marginBottom: 12 }}>[Headline about change or outage]</div>
-        <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.7 }}>What you need to know — short and clear.</div>
+        <div style={{ fontSize: 12, fontWeight: 800, color: '#dc2626', letterSpacing: 2, marginBottom: 10 }}>{t.badge}</div>
+        <div style={{ fontSize: 34, fontWeight: 900, color: '#0f172a', lineHeight: 1.15, marginBottom: 12 }}>{t.headline}</div>
+        <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.7 }}>{t.body}</div>
       </div>
     </div>
   );
 }
 
 function CommunityQuestionPreview() {
+  const t = useText({
+    headline: 'Question for you 👇',
+    question: '[Your question to the audience]?',
+  });
   return (
     <div style={{ width: PW, height: PH, background: '#ecfeff', fontFamily: 'Arial,sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 48px', boxSizing: 'border-box', textAlign: 'center' }}>
       <div>
-        <div style={{ fontSize: 22, fontWeight: 800, color: '#0e7490', marginBottom: 12 }}>Question for you 👇</div>
-        <div style={{ fontSize: 26, fontWeight: 700, color: '#134e4a', lineHeight: 1.35 }}>[Your question to the audience]?</div>
+        <div style={{ fontSize: 22, fontWeight: 800, color: '#0e7490', marginBottom: 12 }}>{t.headline}</div>
+        <div style={{ fontSize: 26, fontWeight: 700, color: '#134e4a', lineHeight: 1.35 }}>{t.question}</div>
       </div>
     </div>
   );
 }
 
 function FeatureComparePreview() {
+  const t = useText({
+    optionA: '[Name A]',
+    optionB: '[Name B]',
+  });
   return (
     <div style={{ width: PW, height: PH, background: '#f8fafc', fontFamily: 'Arial,sans-serif', display: 'flex', alignItems: 'stretch', boxSizing: 'border-box' }}>
       <div style={{ flex: 1, padding: '36px 32px', background: '#e2e8f0', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
         <div style={{ fontSize: 12, fontWeight: 800, color: '#64748b', marginBottom: 8 }}>OPTION A</div>
-        <div style={{ fontSize: 22, fontWeight: 900, color: '#1e293b' }}>[Name A]</div>
+        <div style={{ fontSize: 22, fontWeight: 900, color: '#1e293b' }}>{t.optionA}</div>
       </div>
       <div style={{ width: 56, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: 20, color: '#6366f1', background: '#fff' }}>VS</div>
       <div style={{ flex: 1, padding: '36px 32px', background: '#ede9fe', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
         <div style={{ fontSize: 12, fontWeight: 800, color: '#6d28d9', marginBottom: 8 }}>OPTION B</div>
-        <div style={{ fontSize: 22, fontWeight: 900, color: '#1e293b' }}>[Name B]</div>
+        <div style={{ fontSize: 22, fontWeight: 900, color: '#1e293b' }}>{t.optionB}</div>
       </div>
     </div>
   );
 }
 
 function ThankYouCustomersPreview() {
+  const t = useText({
+    headline: 'Thank you',
+    body: '[Milestone or holiday message]',
+  });
   return (
     <div style={{ width: PW, height: PH, background: 'linear-gradient(135deg,#fdf2f8,#fff1f2)', fontFamily: 'Arial,sans-serif', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0 48px', boxSizing: 'border-box' }}>
       <div style={{ fontSize: 56, marginBottom: 12 }}>🙏</div>
-      <div style={{ fontSize: 32, fontWeight: 900, color: '#9d174d', marginBottom: 8 }}>Thank you</div>
-      <div style={{ fontSize: 15, color: '#be185d', fontWeight: 600 }}>[Milestone or holiday message]</div>
+      <div style={{ fontSize: 32, fontWeight: 900, color: '#9d174d', marginBottom: 8 }}>{t.headline}</div>
+      <div style={{ fontSize: 15, color: '#be185d', fontWeight: 600 }}>{t.body}</div>
     </div>
   );
 }
 
 function CaseStudyPreview() {
+  const t = useText({
+    badge: 'CASE STUDY',
+    clientName: '[Client / project name]',
+  });
   return (
     <div style={{ width: PW, height: PH, background: '#f8fafc', fontFamily: 'Arial,sans-serif', padding: '36px 48px', boxSizing: 'border-box' }}>
-      <div style={{ fontSize: 12, fontWeight: 800, color: '#64748b', letterSpacing: 2, marginBottom: 14 }}>CASE STUDY</div>
-      <div style={{ fontSize: 30, fontWeight: 900, color: '#0f172a', marginBottom: 20, lineHeight: 1.2 }}>[Client / project name]</div>
+      <div style={{ fontSize: 12, fontWeight: 800, color: '#64748b', letterSpacing: 2, marginBottom: 14 }}>{t.badge}</div>
+      <div style={{ fontSize: 30, fontWeight: 900, color: '#0f172a', marginBottom: 20, lineHeight: 1.2 }}>{t.clientName}</div>
       <div style={{ display: 'flex', gap: 16 }}>
         {['Problem', 'Approach', 'Result'].map((label, i) => (
           <div key={label} style={{ flex: 1, background: '#fff', borderRadius: 12, padding: '14px 16px', border: '1.5px solid #e2e8f0' }}>
@@ -1179,39 +1418,53 @@ function CaseStudyPreview() {
 }
 
 function FreebieDropPreview() {
+  const t = useText({
+    badge: 'FREE DOWNLOAD',
+    title: '[Resource title]',
+    body: 'PDF · [page count] pages · No email required [optional]',
+  });
   return (
     <div style={{ width: PW, height: PH, background: 'linear-gradient(145deg,#0ea5e9,#0369a1)', fontFamily: 'Arial,sans-serif', display: 'flex', alignItems: 'center', padding: '0 52px', gap: 32, boxSizing: 'border-box', color: '#fff' }}>
       <div style={{ width: 120, height: 140, background: 'rgba(255,255,255,0.2)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 52 }}>📥</div>
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 13, letterSpacing: 2, color: '#bae6fd', marginBottom: 8 }}>FREE DOWNLOAD</div>
-        <div style={{ fontSize: 36, fontWeight: 900, lineHeight: 1.1, marginBottom: 8 }}>[Resource title]</div>
-        <div style={{ fontSize: 14, color: '#e0f2fe' }}>PDF · [page count] pages · No email required [optional]</div>
+        <div style={{ fontSize: 13, letterSpacing: 2, color: '#bae6fd', marginBottom: 8 }}>{t.badge}</div>
+        <div style={{ fontSize: 36, fontWeight: 900, lineHeight: 1.1, marginBottom: 8 }}>{t.title}</div>
+        <div style={{ fontSize: 14, color: '#e0f2fe' }}>{t.body}</div>
       </div>
     </div>
   );
 }
 
 function MeetTeamPreview() {
+  const t = useText({
+    badge: 'MEET THE TEAM',
+    spotlight: '[Role spotlight: Name]',
+  });
   return (
     <div style={{ width: PW, height: PH, background: '#fff7ed', fontFamily: 'Arial,sans-serif', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 40px', boxSizing: 'border-box', textAlign: 'center' }}>
-      <div style={{ fontSize: 13, fontWeight: 800, color: '#c2410c', letterSpacing: 2, marginBottom: 14 }}>MEET THE TEAM</div>
+      <div style={{ fontSize: 13, fontWeight: 800, color: '#c2410c', letterSpacing: 2, marginBottom: 14 }}>{t.badge}</div>
       <div style={{ display: 'flex', gap: 14, marginBottom: 16 }}>
         {[1, 2, 3, 4].map((n) => (
           <div key={n} style={{ width: 64, height: 64, borderRadius: '50%', background: `hsl(${n * 50}, 70%, 65%)`, border: '3px solid #fff', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }} />
         ))}
       </div>
-      <div style={{ fontSize: 26, fontWeight: 900, color: '#7c2d12' }}>[Role spotlight: Name]</div>
+      <div style={{ fontSize: 26, fontWeight: 900, color: '#7c2d12' }}>{t.spotlight}</div>
     </div>
   );
 }
 
 function MindsetReframePreview() {
+  const t = useText({
+    intro: 'Instead of thinking…',
+    oldBelief: '[Old belief]',
+    newBelief: 'Try: [New belief]',
+  });
   return (
     <div style={{ width: PW, height: PH, background: 'linear-gradient(180deg,#1e1b4b,#312e81)', fontFamily: 'Georgia,serif', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 64px', boxSizing: 'border-box', textAlign: 'center' }}>
       <div>
-        <div style={{ fontSize: 15, color: '#a5b4fc', fontStyle: 'italic', marginBottom: 16 }}>Instead of thinking…</div>
-        <div style={{ fontSize: 28, fontWeight: 700, color: '#94a3b8', textDecoration: 'line-through', marginBottom: 20 }}>[Old belief]</div>
-        <div style={{ fontSize: 34, fontWeight: 700, color: '#f8fafc', lineHeight: 1.35 }}>Try: [New belief]</div>
+        <div style={{ fontSize: 15, color: '#a5b4fc', fontStyle: 'italic', marginBottom: 16 }}>{t.intro}</div>
+        <div style={{ fontSize: 28, fontWeight: 700, color: '#94a3b8', textDecoration: 'line-through', marginBottom: 20 }}>{t.oldBelief}</div>
+        <div style={{ fontSize: 34, fontWeight: 700, color: '#f8fafc', lineHeight: 1.35 }}>{t.newBelief}</div>
       </div>
     </div>
   );
@@ -1228,13 +1481,18 @@ function ObjectionBusterPreview() {
 }
 
 function CollabInvitePreview() {
+  const t = useText({
+    badge: 'COLLAB',
+    headline: '[Brand A] × [Brand B]',
+    body: '[What you built together]',
+  });
   return (
     <div style={{ width: PW, height: PH, background: 'linear-gradient(135deg,#fce7f3,#e0e7ff)', fontFamily: 'Arial,sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 28, padding: '0 48px', boxSizing: 'border-box' }}>
       <div style={{ fontSize: 72 }}>🤝</div>
       <div>
-        <div style={{ fontSize: 13, fontWeight: 800, color: '#7c3aed', letterSpacing: 2, marginBottom: 6 }}>COLLAB</div>
-        <div style={{ fontSize: 32, fontWeight: 900, color: '#4c1d95', lineHeight: 1.15 }}>[Brand A] × [Brand B]</div>
-        <div style={{ fontSize: 14, color: '#6b21a8', marginTop: 8 }}>[What you built together]</div>
+        <div style={{ fontSize: 13, fontWeight: 800, color: '#7c3aed', letterSpacing: 2, marginBottom: 6 }}>{t.badge}</div>
+        <div style={{ fontSize: 32, fontWeight: 900, color: '#4c1d95', lineHeight: 1.15 }}>{t.headline}</div>
+        <div style={{ fontSize: 14, color: '#6b21a8', marginTop: 8 }}>{t.body}</div>
       </div>
     </div>
   );
@@ -1270,25 +1528,34 @@ function LiveShoppingPreview() {
 }
 
 function NewsletterSignupPreview() {
+  const t = useText({
+    name: '[Newsletter name]',
+    body: '[One-line value prop] — link in bio to subscribe.',
+  });
   return (
     <div style={{ width: PW, height: PH, background: '#fafafa', fontFamily: 'Arial,sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 56px', boxSizing: 'border-box' }}>
       <div style={{ maxWidth: 520, textAlign: 'center' }}>
         <div style={{ fontSize: 48, marginBottom: 12 }}>✉️</div>
-        <div style={{ fontSize: 28, fontWeight: 900, color: '#171717', marginBottom: 10 }}>[Newsletter name]</div>
-        <div style={{ fontSize: 15, color: '#525252', lineHeight: 1.6 }}>[One-line value prop] — link in bio to subscribe.</div>
+        <div style={{ fontSize: 28, fontWeight: 900, color: '#171717', marginBottom: 10 }}>{t.name}</div>
+        <div style={{ fontSize: 15, color: '#525252', lineHeight: 1.6 }}>{t.body}</div>
       </div>
     </div>
   );
 }
 
 function StudentWinPreview() {
+  const t = useText({
+    badge: 'STUDENT WIN',
+    headline: '[Outcome headline]',
+    body: 'From [starting point] to [result] — [timeframe]',
+  });
   return (
     <div style={{ width: PW, height: PH, background: 'linear-gradient(135deg,#ecfdf5,#d1fae5)', fontFamily: 'Arial,sans-serif', display: 'flex', alignItems: 'center', padding: '0 52px', gap: 28, boxSizing: 'border-box' }}>
       <div style={{ fontSize: 76 }}>🎓</div>
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 13, fontWeight: 800, color: '#047857', letterSpacing: 2, marginBottom: 6 }}>STUDENT WIN</div>
-        <div style={{ fontSize: 30, fontWeight: 900, color: '#064e3b', lineHeight: 1.2, marginBottom: 8 }}>[Outcome headline]</div>
-        <div style={{ fontSize: 14, color: '#065f46' }}>From [starting point] to [result] — [timeframe]</div>
+        <div style={{ fontSize: 13, fontWeight: 800, color: '#047857', letterSpacing: 2, marginBottom: 6 }}>{t.badge}</div>
+        <div style={{ fontSize: 30, fontWeight: 900, color: '#064e3b', lineHeight: 1.2, marginBottom: 8 }}>{t.headline}</div>
+        <div style={{ fontSize: 14, color: '#065f46' }}>{t.body}</div>
       </div>
     </div>
   );
@@ -1296,15 +1563,21 @@ function StudentWinPreview() {
 
 /** Seasonal / holiday — each uses a unique layout & palette (no shared art between these). */
 function HalloweenPromoPreview() {
+  const t = useText({
+    badge: 'HALLOWEEN',
+    headline: 'Spooky',
+    headlineAccent: 'Savings',
+    body: 'Treats, no tricks — limited time.',
+  });
   return (
     <div style={{ width: PW, height: PH, background: 'linear-gradient(160deg,#1e0533,#312e81)', fontFamily: 'Arial,sans-serif', display: 'flex', alignItems: 'center', padding: '0 52px', gap: 32, boxSizing: 'border-box', position: 'relative', overflow: 'hidden' }}>
       <div style={{ position: 'absolute', top: 24, right: 40, fontSize: 44, opacity: 0.35 }}>🦇</div>
       <div style={{ position: 'absolute', bottom: 20, left: 50, fontSize: 36, opacity: 0.3 }}>🎃</div>
       <div style={{ fontSize: 88, lineHeight: 1, zIndex: 1 }}>🕯️</div>
       <div style={{ flex: 1, zIndex: 1, color: '#fff' }}>
-        <div style={{ fontSize: 13, letterSpacing: 4, color: '#fb923c', fontWeight: 800, marginBottom: 8 }}>HALLOWEEN</div>
-        <div style={{ fontSize: 46, fontWeight: 900, lineHeight: 1.05, marginBottom: 8 }}>Spooky<br /><span style={{ color: '#c4b5fd' }}>Savings</span></div>
-        <div style={{ fontSize: 14, color: '#e9d5ff', opacity: 0.95 }}>Treats, no tricks — limited time.</div>
+        <div style={{ fontSize: 13, letterSpacing: 4, color: '#fb923c', fontWeight: 800, marginBottom: 8 }}>{t.badge}</div>
+        <div style={{ fontSize: 46, fontWeight: 900, lineHeight: 1.05, marginBottom: 8 }}>{t.headline}<br /><span style={{ color: '#c4b5fd' }}>{t.headlineAccent}</span></div>
+        <div style={{ fontSize: 14, color: '#e9d5ff', opacity: 0.95 }}>{t.body}</div>
       </div>
     </div>
   );
@@ -1329,14 +1602,19 @@ function ChristmasPromoPreview() {
 }
 
 function NewYearsPromoPreview() {
+  const t = useText({
+    badge: 'NEW YEAR',
+    headline: 'Fresh Start',
+    body: 'Goals, resets & [your offer] — link in bio.',
+  });
   return (
     <div style={{ width: PW, height: PH, background: 'radial-gradient(ellipse at 30% 20%,#1e293b 0%,#020617 65%)', fontFamily: 'Arial,sans-serif', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0 48px', boxSizing: 'border-box', color: '#fff', position: 'relative', overflow: 'hidden' }}>
       {[12, 28, 55, 72, 88].map((l, i) => (
         <div key={i} style={{ position: 'absolute', left: `${l}%`, top: `${15 + (i * 17) % 55}%`, width: 6, height: 6, borderRadius: '50%', background: i % 2 ? '#fbbf24' : '#fde68a', opacity: 0.7 }} />
       ))}
-      <div style={{ fontSize: 14, color: '#94a3b8', letterSpacing: 4, marginBottom: 10 }}>NEW YEAR</div>
-      <div style={{ fontSize: 56, fontWeight: 900, background: 'linear-gradient(135deg,#fef08a,#fbbf24,#f59e0b)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: 12 }}>Fresh Start</div>
-      <div style={{ fontSize: 15, color: '#cbd5e1', maxWidth: 440, lineHeight: 1.5 }}>Goals, resets &amp; [your offer] — link in bio.</div>
+      <div style={{ fontSize: 14, color: '#94a3b8', letterSpacing: 4, marginBottom: 10 }}>{t.badge}</div>
+      <div style={{ fontSize: 56, fontWeight: 900, background: 'linear-gradient(135deg,#fef08a,#fbbf24,#f59e0b)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: 12 }}>{t.headline}</div>
+      <div style={{ fontSize: 15, color: '#cbd5e1', maxWidth: 440, lineHeight: 1.5 }}>{t.body}</div>
     </div>
   );
 }
@@ -1407,8 +1685,13 @@ function ChristmasShipByPreview() {
 /* ── Unique replacements for every duplicate ─────────────── */
 
 function FounderFridayPreview({ fields = {} }) {
-  const founderName = fields.name || fields.businessName || 'Your Name';
-  const brandName   = fields.businessName || fields.name || 'Brand Name';
+  const founderName = previewText(fields.name || fields.businessName, 'Your name');
+  const brandName   = previewText(fields.businessName || fields.name, 'Brand name');
+  const t = useText({
+    badge: 'Founder Friday',
+    headline: "This week's\nlesson",
+    body: 'What I learned building your brand this week',
+  });
   return (
     <div style={{ width:PW, height:PH, background:'#111827', fontFamily:'Arial,sans-serif', display:'flex', overflow:'hidden', position:'relative' }}>
       <div style={{ position:'absolute', top:0, left:0, width:260, height:'100%', background:'linear-gradient(180deg,#1d4ed8,#1e3a8a)' }} />
@@ -1420,9 +1703,9 @@ function FounderFridayPreview({ fields = {} }) {
         <div style={{ color:'#fff', fontSize:15, fontWeight:900, marginTop:4 }}>{founderName}</div>
       </div>
       <div style={{ marginLeft:260, flex:1, padding:'44px 44px', display:'flex', flexDirection:'column', justifyContent:'center', boxSizing:'border-box' }}>
-        <div style={{ color:'#3b82f6', fontSize:12, fontWeight:700, letterSpacing:3, textTransform:'uppercase', marginBottom:8 }}>Founder Friday</div>
-        <div style={{ color:'#fff', fontSize:40, fontWeight:900, lineHeight:1.1, marginBottom:16 }}>This week's<br/>lesson</div>
-        <div style={{ color:'#94a3b8', fontSize:14, lineHeight:1.7, marginBottom:24 }}>What I learned building your brand this week</div>
+        <div style={{ color:'#3b82f6', fontSize:12, fontWeight:700, letterSpacing:3, textTransform:'uppercase', marginBottom:8 }}>{t.badge}</div>
+        <div style={{ color:'#fff', fontSize:40, fontWeight:900, lineHeight:1.1, marginBottom:16, whiteSpace:'pre-line' }}>{t.headline}</div>
+        <div style={{ color:'#94a3b8', fontSize:14, lineHeight:1.7, marginBottom:24 }}>{t.body}</div>
         <div style={{ display:'flex', alignItems:'center', gap:8 }}>
           <div style={{ width:32, height:3, background:'#3b82f6' }} />
           <div style={{ color:'#3b82f6', fontSize:12, fontWeight:700 }}>{brandName}</div>
@@ -1433,11 +1716,15 @@ function FounderFridayPreview({ fields = {} }) {
 }
 
 function BrandValuesPreview() {
+  const t = useText({
+    badge: 'Our Values',
+    headline: 'What we\nstand for',
+  });
   return (
     <div style={{ width:PW, height:PH, background:'#f0fdf4', fontFamily:'Arial,sans-serif', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'40px 60px', boxSizing:'border-box', position:'relative', overflow:'hidden' }}>
       <div style={{ position:'absolute', top:-80, right:-80, width:300, height:300, borderRadius:'50%', background:'#bbf7d0', opacity:0.5 }} />
-      <div style={{ fontSize:12, color:'#16a34a', fontWeight:700, letterSpacing:3, textTransform:'uppercase', marginBottom:12 }}>Our Values</div>
-      <div style={{ fontSize:42, fontWeight:900, color:'#14532d', marginBottom:32, textAlign:'center', lineHeight:1.1 }}>What we<br/>stand for</div>
+      <div style={{ fontSize:12, color:'#16a34a', fontWeight:700, letterSpacing:3, textTransform:'uppercase', marginBottom:12 }}>{t.badge}</div>
+      <div style={{ fontSize:42, fontWeight:900, color:'#14532d', marginBottom:32, textAlign:'center', lineHeight:1.1, whiteSpace:'pre-line' }}>{t.headline}</div>
       <div style={{ display:'flex', gap:20, width:'100%' }}>
         {['💚 [Value 1]','🌱 [Value 2]','✨ [Value 3]'].map((v,i) => (
           <div key={i} style={{ flex:1, background:'#fff', borderRadius:14, padding:'18px 20px', border:'1.5px solid #86efac', boxShadow:'0 4px 12px rgba(0,0,0,0.06)' }}>
@@ -1451,13 +1738,17 @@ function BrandValuesPreview() {
 }
 
 function ServiceMenuPreview({ fields = {} }) {
-  const brandName  = fields.businessName || fields.name || 'Brand Name';
-  const expertName = fields.name || fields.businessName || 'Your Name';
+  const brandName  = previewText(fields.businessName || fields.name, 'Brand name');
+  const expertName = previewText(fields.name || fields.businessName, 'Your name');
+  const t = useText({
+    badge: 'Services',
+    headline: 'Pick your\npackage',
+  });
   return (
     <div style={{ width:PW, height:PH, background:'#0f172a', fontFamily:'Arial,sans-serif', display:'flex', alignItems:'stretch', overflow:'hidden' }}>
       <div style={{ flex:1, padding:'44px 40px', boxSizing:'border-box', display:'flex', flexDirection:'column', justifyContent:'center' }}>
-        <div style={{ color:'#f472b6', fontSize:11, fontWeight:700, letterSpacing:3, textTransform:'uppercase', marginBottom:12 }}>Services</div>
-        <div style={{ color:'#fff', fontSize:38, fontWeight:900, lineHeight:1.1, marginBottom:8 }}>Pick your<br/>package</div>
+        <div style={{ color:'#f472b6', fontSize:11, fontWeight:700, letterSpacing:3, textTransform:'uppercase', marginBottom:12 }}>{t.badge}</div>
+        <div style={{ color:'#fff', fontSize:38, fontWeight:900, lineHeight:1.1, marginBottom:8, whiteSpace:'pre-line' }}>{t.headline}</div>
         <div style={{ color:'#94a3b8', fontSize:13, marginBottom:28 }}>{brandName} — specialist</div>
         {[['Starter','For beginners'],['Growth','Scale your reach'],['Pro','Full service']].map(([t,d],i)=>(
           <div key={i} style={{ display:'flex', alignItems:'center', gap:12, marginBottom:12, padding:'10px 14px', background:'#1e293b', borderRadius:10, borderLeft:`3px solid ${['#f472b6','#c084fc','#818cf8'][i]}` }}>
@@ -1480,15 +1771,19 @@ function ServiceMenuPreview({ fields = {} }) {
 }
 
 function FoundersNotePreview({ fields = {} }) {
-  const founderName = fields.name || fields.businessName || 'Your Name';
-  const brandName   = fields.businessName || fields.name || 'Brand Name';
+  const founderName = previewText(fields.name || fields.businessName, 'Your name');
+  const brandName   = previewText(fields.businessName || fields.name, 'Brand name');
+  const t = useText({
+    sectionLabel: 'A note from the founder',
+    quote: 'We started with a simple mission — to create something meaningful. Every day, that mission drives us forward.',
+  });
   return (
     <div style={{ width:PW, height:PH, background:'#fef9f0', fontFamily:'Georgia,serif', display:'flex', alignItems:'center', justifyContent:'center', padding:'48px 72px', boxSizing:'border-box', position:'relative' }}>
       <div style={{ position:'absolute', top:20, left:20, right:20, bottom:20, border:'2px solid #d97706', borderRadius:4, opacity:0.3 }} />
       <div style={{ position:'absolute', top:0, left:72, width:2, height:'100%', background:'#fde68a', opacity:0.6 }} />
       <div style={{ flex:1, paddingLeft:28 }}>
-        <div style={{ color:'#b45309', fontSize:12, fontWeight:700, letterSpacing:2, textTransform:'uppercase', marginBottom:16 }}>A note from the founder</div>
-        <div style={{ color:'#1c1917', fontSize:22, fontStyle:'italic', lineHeight:1.7, marginBottom:20 }}>"We started with a simple mission — to create something meaningful. Every day, that mission drives us forward."</div>
+        <div style={{ color:'#b45309', fontSize:12, fontWeight:700, letterSpacing:2, textTransform:'uppercase', marginBottom:16 }}>{t.sectionLabel}</div>
+        <div style={{ color:'#1c1917', fontSize:22, fontStyle:'italic', lineHeight:1.7, marginBottom:20 }}>"{t.quote}"</div>
         <div style={{ display:'flex', alignItems:'center', gap:12, marginTop:16 }}>
           <div style={{ width:40, height:40, borderRadius:'50%', background:'#fde68a', border:'2px solid #d97706' }} />
           <div>
@@ -1635,42 +1930,60 @@ function BundleDealPreview() {
 }
 
 function FlashGiveawayPreview() {
+  const t = useText({
+    badge: '⚡ FLASH GIVEAWAY',
+    headline: 'WIN',
+    prize: '[Prize]',
+    step1: '❤️ Like',
+    step2: '👥 Tag 2',
+    step3: '🔔 Follow',
+    ending: 'Ends in [timeframe]',
+  });
   return (
     <div style={{ width:PW, height:PH, background:'linear-gradient(135deg,#ec4899,#8b5cf6)', fontFamily:'Arial,sans-serif', display:'flex', alignItems:'center', justifyContent:'center', padding:'40px 56px', boxSizing:'border-box', position:'relative', overflow:'hidden' }}>
       {['⭐','🎉','✨','🎊','💫','⭐','🎉','✨'].map((e,i)=>(
         <div key={i} style={{ position:'absolute', fontSize:20, opacity:0.4, top:`${[10,20,70,80,15,55,45,85][i]}%`, left:`${[5,85,8,80,40,2,92,50][i]}%` }}>{e}</div>
       ))}
       <div style={{ textAlign:'center', position:'relative' }}>
-        <div style={{ color:'#fdf2f8', fontSize:13, fontWeight:700, letterSpacing:3, marginBottom:12 }}>⚡ FLASH GIVEAWAY</div>
-        <div style={{ color:'#fff', fontSize:60, fontWeight:900, lineHeight:1, marginBottom:8 }}>WIN</div>
-        <div style={{ color:'#fde68a', fontSize:26, fontWeight:800, marginBottom:20 }}>[Prize]</div>
+        <div style={{ color:'#fdf2f8', fontSize:13, fontWeight:700, letterSpacing:3, marginBottom:12 }}>{t.badge}</div>
+        <div style={{ color:'#fff', fontSize:60, fontWeight:900, lineHeight:1, marginBottom:8 }}>{t.headline}</div>
+        <div style={{ color:'#fde68a', fontSize:26, fontWeight:800, marginBottom:20 }}>{t.prize}</div>
         <div style={{ display:'flex', gap:12, justifyContent:'center' }}>
-          {['❤️ Like','👥 Tag 2','🔔 Follow'].map((s,i)=>(
+          {[t.step1, t.step2, t.step3].map((s,i)=>(
             <div key={i} style={{ background:'rgba(255,255,255,0.2)', borderRadius:50, padding:'8px 18px', color:'#fff', fontSize:13, fontWeight:700, backdropFilter:'blur(4px)' }}>{s}</div>
           ))}
         </div>
-        <div style={{ color:'#fde68a', fontSize:12, marginTop:16 }}>Ends in [timeframe]</div>
+        <div style={{ color:'#fde68a', fontSize:12, marginTop:16 }}>{t.ending}</div>
       </div>
     </div>
   );
 }
 
 function HourPriceDropPreview() {
+  const t = useText({
+    timerLabel: '48\nHours',
+    badge: 'Price Drop Alert',
+    productName: '[Product Name]',
+    discount: '[X]',
+    body: 'Limited window — no code needed.',
+    cta: 'Shop Now →',
+    endDate: 'Ends [Date]',
+  });
   return (
     <div style={{ width:PW, height:PH, background:'#1e293b', fontFamily:'Arial,sans-serif', display:'flex', alignItems:'center', overflow:'hidden', position:'relative' }}>
       <div style={{ position:'absolute', top:'50%', left:220, transform:'translateY(-50%)', width:340, height:340, borderRadius:'50%', border:'40px solid #f97316', opacity:0.15 }} />
       <div style={{ width:260, height:'100%', background:'#f97316', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:32, boxSizing:'border-box' }}>
         <div style={{ fontSize:56 }}>⏰</div>
-        <div style={{ color:'#fff', fontSize:36, fontWeight:900, textAlign:'center', lineHeight:1.1, marginTop:12 }}>48<br/>Hours</div>
+        <div style={{ color:'#fff', fontSize:36, fontWeight:900, textAlign:'center', lineHeight:1.1, marginTop:12, whiteSpace:'pre-line' }}>{t.timerLabel}</div>
         <div style={{ color:'#ffedd5', fontSize:13, marginTop:8, textAlign:'center' }}>Only</div>
       </div>
       <div style={{ flex:1, padding:'40px 44px', boxSizing:'border-box' }}>
-        <div style={{ color:'#f97316', fontSize:12, fontWeight:700, letterSpacing:3, textTransform:'uppercase', marginBottom:10 }}>Price Drop Alert</div>
-        <div style={{ color:'#fff', fontSize:38, fontWeight:900, lineHeight:1.1, marginBottom:16 }}>[Product Name]<br/>Now [X]% Off</div>
-        <div style={{ color:'#94a3b8', fontSize:13, lineHeight:1.7, marginBottom:20 }}>Limited window — no code needed.</div>
+        <div style={{ color:'#f97316', fontSize:12, fontWeight:700, letterSpacing:3, textTransform:'uppercase', marginBottom:10 }}>{t.badge}</div>
+        <div style={{ color:'#fff', fontSize:38, fontWeight:900, lineHeight:1.1, marginBottom:16 }}>{t.productName}<br/>Now {t.discount}% Off</div>
+        <div style={{ color:'#94a3b8', fontSize:13, lineHeight:1.7, marginBottom:20 }}>{t.body}</div>
         <div style={{ display:'flex', gap:10 }}>
-          <div style={{ background:'#f97316', color:'#fff', fontSize:12, fontWeight:700, padding:'10px 20px', borderRadius:8 }}>Shop Now →</div>
-          <div style={{ background:'#1e293b', color:'#64748b', fontSize:12, fontWeight:700, padding:'10px 20px', borderRadius:8, border:'1px solid #334155' }}>Ends [Date]</div>
+          <div style={{ background:'#f97316', color:'#fff', fontSize:12, fontWeight:700, padding:'10px 20px', borderRadius:8 }}>{t.cta}</div>
+          <div style={{ background:'#1e293b', color:'#64748b', fontSize:12, fontWeight:700, padding:'10px 20px', borderRadius:8, border:'1px solid #334155' }}>{t.endDate}</div>
         </div>
       </div>
     </div>
@@ -1678,15 +1991,20 @@ function HourPriceDropPreview() {
 }
 
 function VIPPerksPreview() {
+  const t = useText({
+    badge: 'VIP Member Perks',
+    headline: 'Exclusive\nbenefits, just\nfor you',
+    cta: 'Join VIP →',
+  });
   return (
     <div style={{ width:PW, height:PH, background:'linear-gradient(135deg,#1c1917,#292524)', fontFamily:'Arial,sans-serif', display:'flex', alignItems:'center', padding:'40px 56px', boxSizing:'border-box', position:'relative', overflow:'hidden' }}>
       <div style={{ position:'absolute', top:-40, right:-40, width:260, height:260, borderRadius:'50%', background:'radial-gradient(circle,#fbbf24,transparent)', opacity:0.2 }} />
       <div style={{ flex:1 }}>
         <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:16 }}>
           <span style={{ fontSize:28 }}>👑</span>
-          <div style={{ color:'#fbbf24', fontSize:12, fontWeight:700, letterSpacing:3, textTransform:'uppercase' }}>VIP Member Perks</div>
+          <div style={{ color:'#fbbf24', fontSize:12, fontWeight:700, letterSpacing:3, textTransform:'uppercase' }}>{t.badge}</div>
         </div>
-        <div style={{ color:'#fff', fontSize:40, fontWeight:900, lineHeight:1.1, marginBottom:20 }}>Exclusive<br/>benefits, just<br/>for you</div>
+        <div style={{ color:'#fff', fontSize:40, fontWeight:900, lineHeight:1.1, marginBottom:20, whiteSpace:'pre-line' }}>{t.headline}</div>
         {['[Benefit 1]','[Benefit 2]','[Benefit 3]'].map((b,i)=>(
           <div key={i} style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10 }}>
             <div style={{ width:6, height:6, borderRadius:'50%', background:'#fbbf24' }} />
@@ -1697,7 +2015,7 @@ function VIPPerksPreview() {
       <div style={{ width:220, display:'flex', flexDirection:'column', alignItems:'center', gap:16 }}>
         <div style={{ width:120, height:120, borderRadius:'50%', background:'linear-gradient(135deg,#fbbf24,#d97706)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:52 }}>👑</div>
         <div style={{ background:'#fbbf24', borderRadius:50, padding:'10px 28px' }}>
-          <div style={{ color:'#18181b', fontSize:13, fontWeight:900 }}>Join VIP →</div>
+          <div style={{ color:'#18181b', fontSize:13, fontWeight:900 }}>{t.cta}</div>
         </div>
       </div>
     </div>
@@ -1705,29 +2023,38 @@ function VIPPerksPreview() {
 }
 
 function MicroAffirmPreview() {
+  const t = useText({
+    badge: 'Gentle Reminder',
+    quote: "You don't have to\n[unrealistic expectation].\nYou only need to [small step].",
+    cta: 'Save if you needed this 🤍',
+  });
   return (
     <div style={{ width:PW, height:PH, background:'linear-gradient(135deg,#fdf4ff,#fce7f3)', fontFamily:'Georgia,serif', display:'flex', alignItems:'center', justifyContent:'center', padding:'48px 72px', boxSizing:'border-box', position:'relative', overflow:'hidden' }}>
       <div style={{ position:'absolute', top:20, left:20, right:20, bottom:20, border:'1px solid #f9a8d4', borderRadius:20, opacity:0.5 }} />
       <div style={{ textAlign:'center', position:'relative' }}>
         <div style={{ fontSize:36, marginBottom:20 }}>🌿</div>
-        <div style={{ color:'#701a75', fontSize:14, fontWeight:700, letterSpacing:3, textTransform:'uppercase', marginBottom:20 }}>Gentle Reminder</div>
-        <div style={{ color:'#4a044e', fontSize:28, fontStyle:'italic', lineHeight:1.6, marginBottom:24 }}>"You don't have to<br/>[unrealistic expectation].<br/>You only need to [small step]."</div>
-        <div style={{ color:'#c026d3', fontSize:13, fontWeight:600 }}>Save if you needed this 🤍</div>
+        <div style={{ color:'#701a75', fontSize:14, fontWeight:700, letterSpacing:3, textTransform:'uppercase', marginBottom:20 }}>{t.badge}</div>
+        <div style={{ color:'#4a044e', fontSize:28, fontStyle:'italic', lineHeight:1.6, marginBottom:24, whiteSpace:'pre-line' }}>"{t.quote}"</div>
+        <div style={{ color:'#c026d3', fontSize:13, fontWeight:600 }}>{t.cta}</div>
       </div>
     </div>
   );
 }
 
 function BoldOneLinerPreview() {
+  const t = useText({
+    quote: '[Powerful one-liner quote]',
+    attribution: '[Attribution]',
+  });
   return (
     <div style={{ width:PW, height:PH, background:'#0f172a', fontFamily:'Arial,sans-serif', display:'flex', alignItems:'center', justifyContent:'center', padding:'48px 80px', boxSizing:'border-box', position:'relative', overflow:'hidden' }}>
       <div style={{ position:'absolute', left:0, top:'50%', transform:'translateY(-50%)', width:6, height:'60%', background:'linear-gradient(180deg,#6366f1,#a855f7)' }} />
       <div style={{ textAlign:'center' }}>
         <div style={{ color:'#64748b', fontSize:36, marginBottom:16 }}>❝</div>
-        <div style={{ color:'#fff', fontSize:36, fontWeight:900, lineHeight:1.3, marginBottom:16 }}>[Powerful one-liner quote]</div>
+        <div style={{ color:'#fff', fontSize:36, fontWeight:900, lineHeight:1.3, marginBottom:16 }}>{t.quote}</div>
         <div style={{ color:'#64748b', fontSize:36, marginBottom:24 }}>❞</div>
         <div style={{ display:'inline-flex', alignItems:'center', gap:8, background:'rgba(99,102,241,0.2)', borderRadius:50, padding:'8px 20px' }}>
-          <div style={{ color:'#818cf8', fontSize:13, fontWeight:700 }}>— [Attribution]</div>
+          <div style={{ color:'#818cf8', fontSize:13, fontWeight:700 }}>— {t.attribution}</div>
         </div>
       </div>
     </div>
@@ -1735,17 +2062,24 @@ function BoldOneLinerPreview() {
 }
 
 function LunchLearnPreview() {
+  const t = useText({
+    sideTitle: 'Lunch &\nLearn',
+    topic: '[Topic]',
+    badge: "You're Invited",
+    headline: 'Join us for a casual\nQ&A session',
+    cta: 'RSVP Free →',
+  });
   return (
     <div style={{ width:PW, height:PH, background:'#fff7ed', fontFamily:'Arial,sans-serif', display:'flex', alignItems:'stretch', overflow:'hidden' }}>
       <div style={{ width:240, background:'#ea580c', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:32, boxSizing:'border-box' }}>
         <div style={{ fontSize:52, marginBottom:12 }}>🥪</div>
-        <div style={{ color:'#fff', fontSize:18, fontWeight:900, textAlign:'center' }}>Lunch &<br/>Learn</div>
+        <div style={{ color:'#fff', fontSize:18, fontWeight:900, textAlign:'center', whiteSpace:'pre-line' }}>{t.sideTitle}</div>
         <div style={{ marginTop:12, width:40, height:3, background:'rgba(255,255,255,0.4)' }} />
-        <div style={{ color:'#fed7aa', fontSize:12, marginTop:10, textAlign:'center' }}>[Topic]</div>
+        <div style={{ color:'#fed7aa', fontSize:12, marginTop:10, textAlign:'center' }}>{t.topic}</div>
       </div>
       <div style={{ flex:1, padding:'40px 44px', boxSizing:'border-box', display:'flex', flexDirection:'column', justifyContent:'center' }}>
-        <div style={{ color:'#9a3412', fontSize:11, fontWeight:700, letterSpacing:3, textTransform:'uppercase', marginBottom:14 }}>You're Invited</div>
-        <div style={{ color:'#1c1917', fontSize:32, fontWeight:900, lineHeight:1.2, marginBottom:20 }}>Join us for a casual<br/>Q&A session</div>
+        <div style={{ color:'#9a3412', fontSize:11, fontWeight:700, letterSpacing:3, textTransform:'uppercase', marginBottom:14 }}>{t.badge}</div>
+        <div style={{ color:'#1c1917', fontSize:32, fontWeight:900, lineHeight:1.2, marginBottom:20, whiteSpace:'pre-line' }}>{t.headline}</div>
         <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
           {[['📅','[Date]'],['⏰','[Time] [Timezone]'],['📍','[Location / Zoom]']].map(([ic,t],i)=>(
             <div key={i} style={{ display:'flex', alignItems:'center', gap:10 }}>
@@ -1754,28 +2088,36 @@ function LunchLearnPreview() {
             </div>
           ))}
         </div>
-        <div style={{ background:'#ea580c', color:'#fff', fontSize:13, fontWeight:700, padding:'10px 24px', borderRadius:8, marginTop:20, display:'inline-block', width:'fit-content' }}>RSVP Free →</div>
+        <div style={{ background:'#ea580c', color:'#fff', fontSize:13, fontWeight:700, padding:'10px 24px', borderRadius:8, marginTop:20, display:'inline-block', width:'fit-content' }}>{t.cta}</div>
       </div>
     </div>
   );
 }
 
 function LaunchCountdownPreview() {
+  const t = useText({
+    badge: '⏳ Launching In',
+    days: '[X] Days',
+    eventName: '[Event Name]',
+    highlight1: '🚀 [Highlight 1]',
+    highlight2: '✨ [Highlight 2]',
+    cta: '🔔 Set reminder → link in bio',
+  });
   return (
     <div style={{ width:PW, height:PH, background:'#030712', fontFamily:'Arial,sans-serif', display:'flex', alignItems:'center', justifyContent:'center', padding:'40px 60px', boxSizing:'border-box', position:'relative', overflow:'hidden' }}>
       {[...Array(20)].map((_,i)=>(
         <div key={i} style={{ position:'absolute', width:2, height:2, borderRadius:'50%', background:'#fff', opacity:Math.random()*0.6+0.1, top:`${Math.random()*100}%`, left:`${Math.random()*100}%` }} />
       ))}
       <div style={{ textAlign:'center', position:'relative' }}>
-        <div style={{ color:'#6366f1', fontSize:12, fontWeight:700, letterSpacing:4, textTransform:'uppercase', marginBottom:12 }}>⏳ Launching In</div>
-        <div style={{ color:'#fff', fontSize:56, fontWeight:900, lineHeight:1, marginBottom:16 }}>[X] Days</div>
-        <div style={{ color:'#94a3b8', fontSize:18, marginBottom:28 }}>[Event Name]</div>
+        <div style={{ color:'#6366f1', fontSize:12, fontWeight:700, letterSpacing:4, textTransform:'uppercase', marginBottom:12 }}>{t.badge}</div>
+        <div style={{ color:'#fff', fontSize:56, fontWeight:900, lineHeight:1, marginBottom:16 }}>{t.days}</div>
+        <div style={{ color:'#94a3b8', fontSize:18, marginBottom:28 }}>{t.eventName}</div>
         <div style={{ display:'flex', gap:12, justifyContent:'center', marginBottom:24 }}>
-          {['🚀 [Highlight 1]','✨ [Highlight 2]'].map((h,i)=>(
+          {[t.highlight1, t.highlight2].map((h,i)=>(
             <div key={i} style={{ background:'rgba(99,102,241,0.2)', border:'1px solid #4f46e5', borderRadius:8, padding:'8px 16px', color:'#c7d2fe', fontSize:12 }}>{h}</div>
           ))}
         </div>
-        <div style={{ color:'#6366f1', fontSize:13, fontWeight:700 }}>🔔 Set reminder → link in bio</div>
+        <div style={{ color:'#6366f1', fontSize:13, fontWeight:700 }}>{t.cta}</div>
       </div>
     </div>
   );
@@ -1831,16 +2173,24 @@ function CoffeeChatPreview() {
 }
 
 function InfluencerTakeoverPreview() {
+  const t = useText({
+    badge: '📣 Takeover Alert',
+    handle: '@[handle]',
+    subheadline: 'takes over!',
+    body: "They're running our account on [Date] — sharing [theme] + a surprise for followers.",
+    cta: 'Set Reminder 🔔',
+    date: '[Date]',
+  });
   return (
     <div style={{ width:PW, height:PH, background:'#2e1065', fontFamily:'Arial,sans-serif', display:'flex', alignItems:'center', padding:'40px 60px', boxSizing:'border-box', position:'relative', overflow:'hidden' }}>
       <div style={{ position:'absolute', top:-80, right:-80, width:320, height:320, borderRadius:'50%', background:'radial-gradient(circle,#a855f7,transparent)', opacity:0.4 }} />
       <div style={{ flex:1 }}>
-        <div style={{ color:'#d8b4fe', fontSize:12, fontWeight:700, letterSpacing:3, textTransform:'uppercase', marginBottom:12 }}>📣 Takeover Alert</div>
-        <div style={{ color:'#fff', fontSize:40, fontWeight:900, lineHeight:1.1, marginBottom:20 }}>@[handle]<br/>takes over!</div>
-        <div style={{ color:'#c4b5fd', fontSize:14, lineHeight:1.7, marginBottom:24 }}>They're running our account on [Date] — sharing [theme] + a surprise for followers.</div>
+        <div style={{ color:'#d8b4fe', fontSize:12, fontWeight:700, letterSpacing:3, textTransform:'uppercase', marginBottom:12 }}>{t.badge}</div>
+        <div style={{ color:'#fff', fontSize:40, fontWeight:900, lineHeight:1.1, marginBottom:20 }}>{t.handle}<br/>{t.subheadline}</div>
+        <div style={{ color:'#c4b5fd', fontSize:14, lineHeight:1.7, marginBottom:24 }}>{t.body}</div>
         <div style={{ display:'flex', gap:12 }}>
-          <div style={{ background:'#a855f7', color:'#fff', fontSize:13, fontWeight:700, padding:'10px 24px', borderRadius:8 }}>Set Reminder 🔔</div>
-          <div style={{ background:'rgba(168,85,247,0.2)', color:'#d8b4fe', fontSize:13, fontWeight:700, padding:'10px 24px', borderRadius:8, border:'1px solid #7c3aed' }}>[Date]</div>
+          <div style={{ background:'#a855f7', color:'#fff', fontSize:13, fontWeight:700, padding:'10px 24px', borderRadius:8 }}>{t.cta}</div>
+          <div style={{ background:'rgba(168,85,247,0.2)', color:'#d8b4fe', fontSize:13, fontWeight:700, padding:'10px 24px', borderRadius:8, border:'1px solid #7c3aed' }}>{t.date}</div>
         </div>
       </div>
       <div style={{ width:200, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:12 }}>
@@ -1852,18 +2202,26 @@ function InfluencerTakeoverPreview() {
 }
 
 function FeatureDropPreview() {
+  const t = useText({
+    badge: 'New Feature Drop',
+    productName: '[Product Name]',
+    feature1: '✨ [Feature 1]',
+    feature2: '✨ [Feature 2]',
+    feature3: '✨ [Feature 3]',
+    cta: 'Try it now →',
+  });
   return (
     <div style={{ width:PW, height:PH, background:'#0f172a', fontFamily:'Arial,sans-serif', display:'flex', alignItems:'stretch', overflow:'hidden' }}>
       <div style={{ flex:1, padding:'40px 44px', boxSizing:'border-box', display:'flex', flexDirection:'column', justifyContent:'center' }}>
         <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:14 }}>
           <div style={{ background:'#10b981', width:8, height:8, borderRadius:'50%' }} />
-          <div style={{ color:'#34d399', fontSize:11, fontWeight:700, letterSpacing:3, textTransform:'uppercase' }}>New Feature Drop</div>
+          <div style={{ color:'#34d399', fontSize:11, fontWeight:700, letterSpacing:3, textTransform:'uppercase' }}>{t.badge}</div>
         </div>
-        <div style={{ color:'#fff', fontSize:36, fontWeight:900, lineHeight:1.1, marginBottom:20 }}>Now live in<br/>[Product Name]</div>
-        {['✨ [Feature 1]','✨ [Feature 2]','✨ [Feature 3]'].map((f,i)=>(
+        <div style={{ color:'#fff', fontSize:36, fontWeight:900, lineHeight:1.1, marginBottom:20 }}>Now live in<br/>{t.productName}</div>
+        {[t.feature1, t.feature2, t.feature3].map((f,i)=>(
           <div key={i} style={{ color:'#94a3b8', fontSize:14, marginBottom:8, paddingLeft:4 }}>{f}</div>
         ))}
-        <div style={{ background:'#10b981', color:'#fff', fontSize:13, fontWeight:700, padding:'10px 24px', borderRadius:8, marginTop:20, width:'fit-content' }}>Try it now →</div>
+        <div style={{ background:'#10b981', color:'#fff', fontSize:13, fontWeight:700, padding:'10px 24px', borderRadius:8, marginTop:20, width:'fit-content' }}>{t.cta}</div>
       </div>
       <div style={{ width:240, background:'#1e293b', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:32, gap:12 }}>
         <div style={{ background:'#0f172a', borderRadius:14, padding:20, width:'100%', border:'1px solid #334155' }}>
@@ -1942,6 +2300,17 @@ function CustomizeModal({ template, onClose, onConfirm, onDownloadDesign, design
   const [designFields, setDesignFields] = useState({ businessName: '', name: '', handle: '', email: '', website: '' });
   const setDField = (k, v) => setDesignFields(prev => ({ ...prev, [k]: v }));
 
+  // ── Inline design-text editing ──
+  const [designText, setDesignText]           = useState({});
+  const [discoveredDefaults, setDiscoveredDefaults] = useState(null);
+  const handleDefaults = useCallback((defs) => {
+    setDiscoveredDefaults(prev => prev || defs);
+  }, []);
+  const textCtxValue = useMemo(() => ({
+    ...designText,
+    __onDefaults: handleDefaults,
+  }), [designText, handleDefaults]);
+
   const filled = template.caption.replace(/\[[^\]]+\]/g, m => values[m] || m);
   const set = (p, v) => setValues(prev => ({ ...prev, [p]: v }));
 
@@ -2008,6 +2377,34 @@ function CustomizeModal({ template, onClose, onConfirm, onDownloadDesign, design
             {/* ── TEXT TAB ── */}
             {activeTab === 'text' && (
               <div style={{ flex:1, overflowY:'auto', padding:'16px 20px' }}>
+
+                {/* ── Edit Design Text — inline text editing ── */}
+                {discoveredDefaults && Object.keys(discoveredDefaults).length > 0 && (
+                  <>
+                    <div style={{ fontSize:11, fontWeight:700, color:'#e11d48', textTransform:'uppercase', letterSpacing:1, marginBottom:10 }}>
+                      ✏️ Edit Design Text
+                    </div>
+                    <div style={{ fontSize:11, color:'#94a3b8', marginBottom:12, lineHeight:1.5 }}>
+                      Change the words shown in the design (headline, buttons, etc.)
+                    </div>
+                    {Object.entries(discoveredDefaults).map(([key, defaultVal]) => (
+                      <div key={key} style={{ marginBottom:10 }}>
+                        <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#475569', marginBottom:4 }}>
+                          {key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase())}
+                        </label>
+                        <input
+                          value={designText[key] || ''}
+                          onChange={e => setDesignText(prev => ({ ...prev, [key]: e.target.value }))}
+                          placeholder={defaultVal}
+                          style={{ width:'100%', padding:'7px 10px', borderRadius:8, border:'1.5px solid #fecdd3', fontSize:12, color:'#1e293b', outline:'none', boxSizing:'border-box', fontFamily:'"Segoe UI",Arial,sans-serif', background:'#fff5f7' }}
+                          onFocus={e => e.target.style.borderColor='#e11d48'}
+                          onBlur={e  => e.target.style.borderColor='#fecdd3'}
+                        />
+                      </div>
+                    ))}
+                    <div style={{ borderTop:'1px solid #f1f5f9', margin:'16px 0 14px' }} />
+                  </>
+                )}
 
                 {/* ── Design Info fields (update the visual template) ── */}
                 <div style={{ fontSize:11, fontWeight:700, color:'#6366f1', textTransform:'uppercase', letterSpacing:1, marginBottom:10 }}>
@@ -2137,7 +2534,9 @@ function CustomizeModal({ template, onClose, onConfirm, onDownloadDesign, design
               <div style={{ fontSize:11, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:1, marginBottom:10 }}>Design Preview</div>
               <div style={{ width:PREV_W, height:PREV_H, overflow:'hidden', borderRadius:10, border:'1px solid #e2e8f0', position:'relative', maxWidth:'100%' }}>
                 <div style={{ width:PW, height:PH, transform:`scale(${PREV_SC})`, transformOrigin:'top left', filter:designFilter }}>
-                  <template.Preview fields={resolvedFields} />
+                  <DesignTextCtx.Provider value={textCtxValue}>
+                    <template.Preview fields={resolvedFields} />
+                  </DesignTextCtx.Provider>
                 </div>
                 {/* Custom bg overlay */}
                 {isCustom && (
@@ -2169,7 +2568,7 @@ function CustomizeModal({ template, onClose, onConfirm, onDownloadDesign, design
                   <div style={{ display:'flex', gap:8 }}>
                     {[['png','🖼 PNG'],['jpg','📷 JPG'],['pdf','📄 PDF']].map(([fmt, label]) => (
                       <button key={fmt} type="button"
-                        onClick={e => onDownloadDesign(fmt, e, filled, resolvedFields)}
+                        onClick={e => onDownloadDesign(fmt, e, filled, resolvedFields, designText, themeId === 'custom' ? customColors : null)}
                         disabled={!!designDownloading}
                         style={{
                           flex:1, padding:'10px 8px', borderRadius:9, border:'1.5px solid #e2e8f0',
@@ -2248,9 +2647,13 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
   // off-screen fixed nodes often paint only the design (780×440), which broke "download right after fill".
   useLayoutEffect(() => {
     if (!dlTarget) return;
-    const { template, format, filledCaption, exportThemeId } = dlTarget;
+    const { template, format, filledCaption, exportThemeId, customColors: dlCustomColors } = dlTarget;
     const withCaption = typeof filledCaption === 'string';
     const theme = getPreviewTheme(exportThemeId || 'default');
+    const isCustomDl = exportThemeId === 'custom' && dlCustomColors;
+    const dlFilter = isCustomDl
+      ? `hue-rotate(${hexToHue(dlCustomColors.primary)}deg) saturate(1.1)`
+      : (theme.filter && theme.filter !== 'none' ? theme.filter : null);
     let cancelled = false;
 
     const run = async () => {
@@ -2291,18 +2694,32 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
               art.style.height = `${PH}px`;
               art.style.overflow = 'hidden';
               art.style.flexShrink = '0';
-              if (theme.filter && theme.filter !== 'none') {
-                art.style.filter = theme.filter;
-              }
+              // Remove CSS filter — html2canvas can't render it; we apply it post-capture
+              art.style.filter = 'none';
             }
           },
         });
         if (cancelled) return;
+
+        // Apply theme filter post-capture using Canvas 2D filter API
+        // (html2canvas ignores CSS filter like hue-rotate/saturate)
+        let outputCanvas = canvas;
+        if (dlFilter) {
+          const filtered = document.createElement('canvas');
+          filtered.width = canvas.width;
+          filtered.height = canvas.height;
+          const fCtx = filtered.getContext('2d');
+          fCtx.filter = dlFilter;
+          fCtx.drawImage(canvas, 0, 0);
+          fCtx.filter = 'none';
+          outputCanvas = filtered;
+        }
+
         const filename = template.name.replace(/\s+/g, '-').toLowerCase();
         const suffix = withCaption ? '-caption' : '';
         const baseName = `${filename}${suffix}`;
-        const cw = canvas.width;
-        const ch = canvas.height;
+        const cw = outputCanvas.width;
+        const ch = outputCanvas.height;
 
         if (format === 'pdf') {
           const pdf = new jsPDF({
@@ -2310,13 +2727,13 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
             unit: 'px',
             format: [cw, ch],
           });
-          pdf.addImage(canvas.toDataURL('image/png', 1.0), 'PNG', 0, 0, cw, ch);
+          pdf.addImage(outputCanvas.toDataURL('image/png', 1.0), 'PNG', 0, 0, cw, ch);
           pdf.save(`${baseName}.pdf`);
         } else {
           const mime = format === 'jpg' ? 'image/jpeg' : 'image/png';
           const link = document.createElement('a');
           link.download = `${baseName}.${format}`;
-          link.href = canvas.toDataURL(mime, 0.95);
+          link.href = outputCanvas.toDataURL(mime, 0.95);
           link.click();
         }
       } catch (err) {
@@ -2343,13 +2760,13 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
   };
 
   /** Customize modal: download the visual design only (no caption text). */
-  const handleModalCaptionExport = (format, e, _filledText, designFields) => {
+  const handleModalCaptionExport = (format, e, _filledText, designFields, designText, customColors) => {
     e.stopPropagation();
     setDlMenu(null);
     const t = customize;
     if (!t) return;
     setDlLoading(t.id);
-    setDlTarget({ template: t, format, exportThemeId: previewTheme, designFields: designFields || {} });
+    setDlTarget({ template: t, format, exportThemeId: previewTheme, designFields: designFields || {}, designText: designText || {}, customColors: customColors || null });
   };
 
   const handleCopy = (text, id) => {
@@ -2372,7 +2789,6 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
       {dlTarget && (() => {
         const P = dlTarget.template.Preview;
         const withCaption = typeof dlTarget.filledCaption === 'string';
-        const capTheme = getPreviewTheme(dlTarget.exportThemeId || 'default');
         return (
           <div
             ref={captureRef}
@@ -2396,10 +2812,11 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
                 width: PW,
                 height: PH,
                 overflow: 'hidden',
-                filter: capTheme.filter === 'none' ? undefined : capTheme.filter,
               }}
             >
-              <P fields={dlTarget.designFields || {}} />
+              <DesignTextCtx.Provider value={dlTarget.designText || {}}>
+                <P fields={dlTarget.designFields || {}} />
+              </DesignTextCtx.Provider>
             </div>
             {withCaption && (
               <div

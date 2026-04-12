@@ -25,6 +25,10 @@ export default function LinkInBioBuilder() {
   const [themeColor, setTheme]    = useState('#6366f1');
   const [publicUrl, setPublicUrl] = useState('');
   const [links, setLinks]         = useState([]);
+  const [avatarUrl, setAvatarUrl] = useState('');
+  const [socialHandle, setSocialHandle] = useState('');
+  const [contactEmail, setContactEmail] = useState('');
+  const [websiteUrl, setWebsiteUrl] = useState('');
 
   /* ── UI state ── */
   const [loading, setLoading]     = useState(true);
@@ -52,6 +56,10 @@ export default function LinkInBioBuilder() {
       setTheme(data.themeColor || '#6366f1');
       setPublicUrl(data.publicUrl || '');
       setLinks(data.links || []);
+      setAvatarUrl(data.avatarUrl || '');
+      setSocialHandle(data.socialHandle || '');
+      setContactEmail(data.contactEmail || '');
+      setWebsiteUrl(data.websiteUrl || '');
     }
   }, []);
 
@@ -74,7 +82,16 @@ export default function LinkInBioBuilder() {
       const res = await fetch(`${API}/api/bio`, {
         method: 'POST',
         headers: { ...authHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slug: slug.trim(), displayName, bio, themeColor }),
+        body: JSON.stringify({
+          slug: slug.trim(),
+          displayName,
+          bio,
+          themeColor,
+          avatarUrl: avatarUrl.trim(),
+          socialHandle: socialHandle.trim(),
+          contactEmail: contactEmail.trim(),
+          websiteUrl: websiteUrl.trim(),
+        }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Save failed'); return; }
@@ -188,7 +205,7 @@ export default function LinkInBioBuilder() {
       <div style={s.header}>
         <div>
           <h2 style={s.title}>🔗 Link in Bio</h2>
-          <p style={s.sub}>One link for all your content. Put <strong>www.wintaibot.com/u/{slug || 'yourname'}</strong> in your Instagram bio.</p>
+          <p style={s.sub}>One link for all your content. Put <strong>www.wintaibot.com/u/{slug || 'your-slug'}</strong> in your Instagram bio.</p>
         </div>
         {exists && publicUrl && (
           <div style={s.urlRow}>
@@ -215,25 +232,58 @@ export default function LinkInBioBuilder() {
               style={s.slugInput}
               value={slug}
               onChange={e => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))}
-              placeholder="yourname"
+              placeholder="unique-url-slug"
               maxLength={40}
             />
           </div>
 
-          <label style={s.label}>Display Name</label>
+          <label style={s.label}>Display name (main title on your page)</label>
           <input
             style={s.input}
             value={displayName}
             onChange={e => setDisplay(e.target.value)}
-            placeholder="John Doe"
+            placeholder="Shown on your public page — your brand or name"
           />
 
-          <label style={s.label}>Bio</label>
+          <label style={s.label}>Social handle (optional)</label>
+          <input
+            style={s.input}
+            value={socialHandle}
+            onChange={e => setSocialHandle(e.target.value)}
+            placeholder="@username or handle (shown under your title)"
+          />
+
+          <label style={s.label}>Contact email (optional)</label>
+          <input
+            style={s.input}
+            type="email"
+            value={contactEmail}
+            onChange={e => setContactEmail(e.target.value)}
+            placeholder="hello@yourdomain.com"
+          />
+
+          <label style={s.label}>Website (optional)</label>
+          <input
+            style={s.input}
+            value={websiteUrl}
+            onChange={e => setWebsiteUrl(e.target.value)}
+            placeholder="https://yourdomain.com"
+          />
+
+          <label style={s.label}>Profile image URL (optional)</label>
+          <input
+            style={s.input}
+            value={avatarUrl}
+            onChange={e => setAvatarUrl(e.target.value)}
+            placeholder="https://… direct image link (square works best)"
+          />
+
+          <label style={s.label}>Short bio</label>
           <textarea
             style={s.textarea}
             value={bio}
             onChange={e => setBio(e.target.value)}
-            placeholder="Creator · Entrepreneur · Fitness Coach"
+            placeholder="A few lines visitors see under your title"
             rows={3}
           />
 
@@ -383,30 +433,56 @@ export default function LinkInBioBuilder() {
 
       </div>
 
-      {/* ── PREVIEW ── */}
-      {exists && (
-        <div style={{ ...s.card, marginTop: 24 }}>
-          <h3 style={s.cardTitle}>Preview</h3>
-          <p style={s.previewHint}>
-            This is how your page looks at{' '}
-            <a href={publicUrl} target="_blank" rel="noreferrer" style={{ color: themeColor }}>{publicUrl}</a>
-          </p>
-          <div style={{ ...s.previewCard, borderTop: `4px solid ${themeColor}` }}>
+      {/* ── LIVE PREVIEW: all copy comes from the form above ── */}
+      <div style={{ ...s.card, marginTop: 24 }}>
+        <h3 style={s.cardTitle}>Live preview</h3>
+        <p style={s.previewHint}>
+          {exists && publicUrl ? (
+            <>
+              Public URL:{' '}
+              <a href={publicUrl} target="_blank" rel="noreferrer" style={{ color: themeColor }}>{publicUrl}</a>
+            </>
+          ) : (
+            <>Set a slug and save to publish. Preview updates as you type.</>
+          )}
+        </p>
+        <div style={{ ...s.previewCard, borderTop: `4px solid ${themeColor}` }}>
+          {avatarUrl.trim() ? (
+            <img src={avatarUrl.trim()} alt="" style={{ width: 60, height: 60, borderRadius: '50%', objectFit: 'cover', border: `3px solid ${themeColor}`, marginBottom: 12 }} onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+          ) : (
             <div style={{ ...s.previewAvatar, background: themeColor }}>
-              {(displayName || slug || '?')[0].toUpperCase()}
+              {(displayName.trim() || slug.trim() || '?')[0].toUpperCase()}
             </div>
-            <h4 style={s.previewName}>{displayName || slug || 'Your Name'}</h4>
-            {bio && <p style={s.previewBio}>{bio}</p>}
-            <div style={{ marginTop: 16, width: '100%' }}>
-              {links.filter(l => l.isActive).map(l => (
-                <div key={l.id} style={{ ...s.previewLinkBtn, background: themeColor }}>
-                  {l.title}
-                </div>
-              ))}
-            </div>
+          )}
+          {(socialHandle.trim() || contactEmail.trim()) ? (
+            <p style={{ ...s.previewMeta, margin: '0 0 8px' }}>
+              {socialHandle.trim() ? <span>{socialHandle.trim().startsWith('@') ? socialHandle.trim() : `@${socialHandle.trim()}`}</span> : null}
+              {socialHandle.trim() && contactEmail.trim() ? <span style={{ opacity: 0.5, margin: '0 6px' }}>·</span> : null}
+              {contactEmail.trim() ? <span>{contactEmail.trim()}</span> : null}
+            </p>
+          ) : null}
+          <h4 style={s.previewName}>
+            {displayName.trim() ? displayName.trim() : (slug.trim() ? slug.trim() : <span style={{ color: '#94a3b8', fontWeight: 500 }}>Add a display name →</span>)}
+          </h4>
+          {websiteUrl.trim() ? (
+            <p style={{ ...s.previewWebsite, margin: '0 0 8px' }}>
+              <span style={{ color: themeColor, fontWeight: 600 }}>{websiteUrl.trim().replace(/^https?:\/\//, '')}</span>
+            </p>
+          ) : null}
+          {bio.trim() ? <p style={s.previewBio}>{bio}</p> : <p style={{ ...s.previewBio, fontStyle: 'italic', color: '#94a3b8' }}>Optional bio — add text in the form above</p>}
+          <div style={{ marginTop: 16, width: '100%' }}>
+            {exists ? links.filter(l => l.isActive).map(l => (
+              <div key={l.id} style={{ ...s.previewLinkBtn, background: themeColor }}>
+                {l.title}
+              </div>
+            )) : (
+              <p style={{ ...s.previewBio, fontStyle: 'italic', color: '#94a3b8', margin: 0 }}>
+                Link buttons appear here after you save and add links.
+              </p>
+            )}
           </div>
         </div>
-      )}
+      </div>
 
     </div>
   );
@@ -587,6 +663,8 @@ const s = {
     color: '#fff', fontSize: 24, fontWeight: 700, marginBottom: 12,
   },
   previewName: { fontSize: 17, fontWeight: 700, color: '#1e293b', margin: '0 0 6px' },
+  previewMeta: { fontSize: 11, color: '#64748b' },
+  previewWebsite: { fontSize: 12 },
   previewBio:  { fontSize: 12, color: '#64748b', margin: '0 0 4px' },
   previewLinkBtn: {
     display: 'block', color: '#fff', borderRadius: 10,

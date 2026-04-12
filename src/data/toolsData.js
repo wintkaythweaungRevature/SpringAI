@@ -254,7 +254,7 @@ export const TOOLS = [
       { icon: '📈', title: 'Growth Forecasting', desc: 'Visualize follower trends over 30/90 days and discover your peak engagement windows.' },
       { icon: '💡', title: 'AI Content Ideas', desc: 'Ask "What should I post next?" — AI answers using YOUR actual post history and top performers.' },
       { icon: '🤖', title: 'Auto Reply', desc: 'Set rules and let AI reply to Instagram, Facebook, and YouTube comments 24/7 in your voice.' },
-      { icon: '🔗', title: 'Link in Bio', desc: 'Create a public page at wintaibot.com/u/yourname with unlimited links and click tracking.' },
+      { icon: '🔗', title: 'Link in Bio', desc: 'Create a public page at wintaibot.com/u/your-slug with unlimited links and click tracking. You choose every line of text on the page.' },
     ],
     examplePrompts: [
       'Show my follower growth over the last 90 days',

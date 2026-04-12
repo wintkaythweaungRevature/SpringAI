@@ -685,7 +685,8 @@ const TEMPLATES = [
    EXTRA PREVIEW COMPONENTS
 ══════════════════════════════════════════════════════════ */
 
-function MotivationalQuote() {
+function MotivationalQuote({ fields = {} }) {
+  const byline = fields.name || fields.businessName || 'Your Name / Brand';
   return (
     <div style={{width:PW,height:PH,background:'#0f172a',fontFamily:'Georgia,serif',display:'flex',alignItems:'center',justifyContent:'center',position:'relative',overflow:'hidden'}}>
       <div style={{position:'absolute',top:-80,left:-80,width:320,height:320,borderRadius:'50%',background:'rgba(99,102,241,0.12)'}}/>
@@ -694,13 +695,15 @@ function MotivationalQuote() {
         <div style={{fontSize:80,color:'#6366f1',lineHeight:0.6,marginBottom:16,fontFamily:'serif'}}>"</div>
         <div style={{fontSize:34,color:'#f1f5f9',lineHeight:1.5,fontStyle:'italic',marginBottom:24}}>The best time to start was yesterday. The next best time is right now.</div>
         <div style={{fontSize:80,color:'#6366f1',lineHeight:0.6,transform:'rotate(180deg)',display:'inline-block',marginBottom:20,fontFamily:'serif'}}>"</div>
-        <div style={{borderTop:'1px solid rgba(99,102,241,0.4)',paddingTop:16,fontSize:16,color:'#94a3b8',letterSpacing:2}}>— [Your Name / Brand]</div>
+        <div style={{borderTop:'1px solid rgba(99,102,241,0.4)',paddingTop:16,fontSize:16,color:'#94a3b8',letterSpacing:2}}>— {byline}</div>
       </div>
     </div>
   );
 }
 
-function BoldQuoteCard() {
+function BoldQuoteCard({ fields = {} }) {
+  const authorName = fields.name || fields.businessName || 'Your Name';
+  const handle = fields.handle || 'yourhandle';
   return (
     <div style={{width:PW,height:PH,display:'flex',fontFamily:'Arial,sans-serif',overflow:'hidden'}}>
       <div style={{width:16,background:'#f59e0b',flexShrink:0}}/>
@@ -710,8 +713,8 @@ function BoldQuoteCard() {
         <div style={{display:'flex',alignItems:'center',gap:16}}>
           <div style={{width:52,height:52,borderRadius:'50%',background:'#fde68a',display:'flex',alignItems:'center',justifyContent:'center',fontSize:22}}>✨</div>
           <div>
-            <div style={{fontSize:16,fontWeight:700,color:'#1e293b'}}>[Your Name]</div>
-            <div style={{fontSize:13,color:'#f59e0b',fontWeight:600}}>@[yourhandle]</div>
+            <div style={{fontSize:16,fontWeight:700,color:'#1e293b'}}>{authorName}</div>
+            <div style={{fontSize:13,color:'#f59e0b',fontWeight:600}}>@{handle.replace(/^@/, '')}</div>
           </div>
         </div>
       </div>
@@ -1403,7 +1406,9 @@ function ChristmasShipByPreview() {
 
 /* ── Unique replacements for every duplicate ─────────────── */
 
-function FounderFridayPreview() {
+function FounderFridayPreview({ fields = {} }) {
+  const founderName = fields.name || fields.businessName || 'Your Name';
+  const brandName   = fields.businessName || fields.name || 'Brand Name';
   return (
     <div style={{ width:PW, height:PH, background:'#111827', fontFamily:'Arial,sans-serif', display:'flex', overflow:'hidden', position:'relative' }}>
       <div style={{ position:'absolute', top:0, left:0, width:260, height:'100%', background:'linear-gradient(180deg,#1d4ed8,#1e3a8a)' }} />
@@ -1412,15 +1417,15 @@ function FounderFridayPreview() {
           <div style={{ width:50, height:80, background:'#2563eb', borderRadius:'25px 25px 0 0' }} />
         </div>
         <div style={{ color:'#93c5fd', fontSize:11, fontWeight:700, letterSpacing:2, textTransform:'uppercase' }}>Founder</div>
-        <div style={{ color:'#fff', fontSize:15, fontWeight:900, marginTop:4 }}>[Your Name]</div>
+        <div style={{ color:'#fff', fontSize:15, fontWeight:900, marginTop:4 }}>{founderName}</div>
       </div>
       <div style={{ marginLeft:260, flex:1, padding:'44px 44px', display:'flex', flexDirection:'column', justifyContent:'center', boxSizing:'border-box' }}>
         <div style={{ color:'#3b82f6', fontSize:12, fontWeight:700, letterSpacing:3, textTransform:'uppercase', marginBottom:8 }}>Founder Friday</div>
         <div style={{ color:'#fff', fontSize:40, fontWeight:900, lineHeight:1.1, marginBottom:16 }}>This week's<br/>lesson</div>
-        <div style={{ color:'#94a3b8', fontSize:14, lineHeight:1.7, marginBottom:24 }}>[Lesson in one sentence — what you learned building your brand]</div>
+        <div style={{ color:'#94a3b8', fontSize:14, lineHeight:1.7, marginBottom:24 }}>What I learned building your brand this week</div>
         <div style={{ display:'flex', alignItems:'center', gap:8 }}>
           <div style={{ width:32, height:3, background:'#3b82f6' }} />
-          <div style={{ color:'#3b82f6', fontSize:12, fontWeight:700 }}>[Brand Name]</div>
+          <div style={{ color:'#3b82f6', fontSize:12, fontWeight:700 }}>{brandName}</div>
         </div>
       </div>
     </div>
@@ -1445,13 +1450,15 @@ function BrandValuesPreview() {
   );
 }
 
-function ServiceMenuPreview() {
+function ServiceMenuPreview({ fields = {} }) {
+  const brandName  = fields.businessName || fields.name || 'Brand Name';
+  const expertName = fields.name || fields.businessName || 'Your Name';
   return (
     <div style={{ width:PW, height:PH, background:'#0f172a', fontFamily:'Arial,sans-serif', display:'flex', alignItems:'stretch', overflow:'hidden' }}>
       <div style={{ flex:1, padding:'44px 40px', boxSizing:'border-box', display:'flex', flexDirection:'column', justifyContent:'center' }}>
         <div style={{ color:'#f472b6', fontSize:11, fontWeight:700, letterSpacing:3, textTransform:'uppercase', marginBottom:12 }}>Services</div>
         <div style={{ color:'#fff', fontSize:38, fontWeight:900, lineHeight:1.1, marginBottom:8 }}>Pick your<br/>package</div>
-        <div style={{ color:'#94a3b8', fontSize:13, marginBottom:28 }}>[Brand Name] — [niche] specialist</div>
+        <div style={{ color:'#94a3b8', fontSize:13, marginBottom:28 }}>{brandName} — specialist</div>
         {[['Starter','For beginners'],['Growth','Scale your reach'],['Pro','Full service']].map(([t,d],i)=>(
           <div key={i} style={{ display:'flex', alignItems:'center', gap:12, marginBottom:12, padding:'10px 14px', background:'#1e293b', borderRadius:10, borderLeft:`3px solid ${['#f472b6','#c084fc','#818cf8'][i]}` }}>
             <div style={{ width:8, height:8, borderRadius:'50%', background:['#f472b6','#c084fc','#818cf8'][i] }} />
@@ -1465,26 +1472,28 @@ function ServiceMenuPreview() {
       </div>
       <div style={{ width:220, background:'linear-gradient(180deg,#7c3aed,#4f46e5)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:32 }}>
         <div style={{ width:80, height:80, borderRadius:'50%', background:'rgba(255,255,255,0.15)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:36, marginBottom:16 }}>💼</div>
-        <div style={{ color:'#fff', fontSize:14, fontWeight:800, textAlign:'center' }}>[Your Name]</div>
-        <div style={{ color:'#c4b5fd', fontSize:11, textAlign:'center', marginTop:6 }}>Expert in [niche]</div>
+        <div style={{ color:'#fff', fontSize:14, fontWeight:800, textAlign:'center' }}>{expertName}</div>
+        <div style={{ color:'#c4b5fd', fontSize:11, textAlign:'center', marginTop:6 }}>Expert &amp; Specialist</div>
       </div>
     </div>
   );
 }
 
-function FoundersNotePreview() {
+function FoundersNotePreview({ fields = {} }) {
+  const founderName = fields.name || fields.businessName || 'Your Name';
+  const brandName   = fields.businessName || fields.name || 'Brand Name';
   return (
     <div style={{ width:PW, height:PH, background:'#fef9f0', fontFamily:'Georgia,serif', display:'flex', alignItems:'center', justifyContent:'center', padding:'48px 72px', boxSizing:'border-box', position:'relative' }}>
       <div style={{ position:'absolute', top:20, left:20, right:20, bottom:20, border:'2px solid #d97706', borderRadius:4, opacity:0.3 }} />
       <div style={{ position:'absolute', top:0, left:72, width:2, height:'100%', background:'#fde68a', opacity:0.6 }} />
       <div style={{ flex:1, paddingLeft:28 }}>
         <div style={{ color:'#b45309', fontSize:12, fontWeight:700, letterSpacing:2, textTransform:'uppercase', marginBottom:16 }}>A note from the founder</div>
-        <div style={{ color:'#1c1917', fontSize:22, fontStyle:'italic', lineHeight:1.7, marginBottom:20 }}>"[Your heartfelt message to your community — 2-3 sentences about why you started and what drives you forward.]"</div>
+        <div style={{ color:'#1c1917', fontSize:22, fontStyle:'italic', lineHeight:1.7, marginBottom:20 }}>"We started with a simple mission — to create something meaningful. Every day, that mission drives us forward."</div>
         <div style={{ display:'flex', alignItems:'center', gap:12, marginTop:16 }}>
           <div style={{ width:40, height:40, borderRadius:'50%', background:'#fde68a', border:'2px solid #d97706' }} />
           <div>
-            <div style={{ color:'#1c1917', fontSize:14, fontWeight:700 }}>[Your Name]</div>
-            <div style={{ color:'#b45309', fontSize:12 }}>Founder, [Brand Name]</div>
+            <div style={{ color:'#1c1917', fontSize:14, fontWeight:700 }}>{founderName}</div>
+            <div style={{ color:'#b45309', fontSize:12 }}>Founder, {brandName}</div>
           </div>
         </div>
       </div>
@@ -1936,6 +1945,15 @@ function CustomizeModal({ template, onClose, onConfirm, onDownloadDesign, design
   const filled = template.caption.replace(/\[[^\]]+\]/g, m => values[m] || m);
   const set = (p, v) => setValues(prev => ({ ...prev, [p]: v }));
 
+  // Auto-populate design fields from caption values so users don't fill twice
+  const resolvedFields = {
+    businessName: designFields.businessName || values['[Brand Name]'] || values['[Your Brand]'] || values['[business name]'] || '',
+    name:         designFields.name         || values['[Your Name]'] || values['[Author / Your Name]'] || values['[your name]'] || '',
+    handle:       designFields.handle       || values['[handle]'] || values['[yourhandle]'] || values['[your handle]'] || '',
+    email:        designFields.email        || values['[email]'] || '',
+    website:      designFields.website      || values['[website]'] || '',
+  };
+
   const isCustom = themeId === 'custom';
   const activeTheme = isCustom ? null : getPreviewTheme(themeId);
   const designFilter = isCustom
@@ -1996,7 +2014,7 @@ function CustomizeModal({ template, onClose, onConfirm, onDownloadDesign, design
                   🖼 Design Info
                 </div>
                 <div style={{ fontSize:11, color:'#94a3b8', marginBottom:12, lineHeight:1.5 }}>
-                  These appear directly inside the template design.
+                  Appears inside the visual design. Auto-fills from Caption Fields below if left empty.
                 </div>
                 {[
                   { key:'businessName', label:'Business / Brand Name', ph:'e.g. Spring AI' },
@@ -2119,7 +2137,7 @@ function CustomizeModal({ template, onClose, onConfirm, onDownloadDesign, design
               <div style={{ fontSize:11, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:1, marginBottom:10 }}>Design Preview</div>
               <div style={{ width:PREV_W, height:PREV_H, overflow:'hidden', borderRadius:10, border:'1px solid #e2e8f0', position:'relative', maxWidth:'100%' }}>
                 <div style={{ width:PW, height:PH, transform:`scale(${PREV_SC})`, transformOrigin:'top left', filter:designFilter }}>
-                  <template.Preview fields={designFields} />
+                  <template.Preview fields={resolvedFields} />
                 </div>
                 {/* Custom bg overlay */}
                 {isCustom && (
@@ -2151,7 +2169,7 @@ function CustomizeModal({ template, onClose, onConfirm, onDownloadDesign, design
                   <div style={{ display:'flex', gap:8 }}>
                     {[['png','🖼 PNG'],['jpg','📷 JPG'],['pdf','📄 PDF']].map(([fmt, label]) => (
                       <button key={fmt} type="button"
-                        onClick={e => onDownloadDesign(fmt, e, filled, designFields)}
+                        onClick={e => onDownloadDesign(fmt, e, filled, resolvedFields)}
                         disabled={!!designDownloading}
                         style={{
                           flex:1, padding:'10px 8px', borderRadius:9, border:'1.5px solid #e2e8f0',

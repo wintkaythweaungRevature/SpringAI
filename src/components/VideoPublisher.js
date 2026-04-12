@@ -371,7 +371,7 @@ function validateImage(file) {
 }
 
 /* ─── Component ─────────────────────────────────────────────── */
-export default function VideoPublisher({ onNavigateToSocialConnect, onOpenTemplates }) {
+export default function VideoPublisher({ onNavigateToSocialConnect, onOpenTemplates, templateCaption, onTemplateCaptionUsed }) {
   const { apiBase, token, logout, user } = useAuth();
   const isGrowth = user?.membershipType === 'GROWTH';
   const base = apiBase || 'https://api.wintaibot.com';
@@ -420,6 +420,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect, onOpenTempla
   const [captionOptions, setCaptionOptions] = useState({}); // { [pid]: [{id,label,text}] }
   const [selectedOptionIdx, setSelectedOptionIdx] = useState({}); // { [pid]: number }
   const [captionHistory, setCaptionHistory] = useState({}); // { [pid]: string[] }
+  const [templateToast, setTemplateToast]   = useState(false);
   const [showCaptionGuide, setShowCaptionGuide] = useState(() => {
     try { return localStorage.getItem('wintaibot_caption_guide_seen') !== '1'; } catch (_) { return true; }
   });
@@ -460,6 +461,21 @@ export default function VideoPublisher({ onNavigateToSocialConnect, onOpenTempla
   };
 
   useEffect(() => { loadDashboard(); }, [base, token]); // eslint-disable-line
+
+  // Apply template caption to all selected platforms when coming back from Templates page
+  useEffect(() => {
+    if (!templateCaption) return;
+    setVariants(prev => {
+      const next = { ...prev };
+      selectedPlatforms.forEach(pid => {
+        next[pid] = { ...(next[pid] || {}), caption: templateCaption };
+      });
+      return next;
+    });
+    setTemplateToast(true);
+    setTimeout(() => setTemplateToast(false), 3000);
+    if (onTemplateCaptionUsed) onTemplateCaptionUsed();
+  }, [templateCaption]); // eslint-disable-line
 
   useEffect(() => {
     if (!video || postType !== 'video') {
@@ -1383,6 +1399,19 @@ export default function VideoPublisher({ onNavigateToSocialConnect, onOpenTempla
           }}
           onCancel={() => setShowTrimmer(false)}
         />
+      )}
+
+      {/* ── Template applied toast ── */}
+      {templateToast && (
+        <div style={{
+          position: 'fixed', bottom: 32, left: '50%', transform: 'translateX(-50%)',
+          background: '#1e293b', color: '#fff', padding: '12px 24px', borderRadius: 12,
+          fontSize: 14, fontWeight: 600, zIndex: 9999, display: 'flex', alignItems: 'center', gap: 10,
+          boxShadow: '0 8px 24px rgba(0,0,0,0.25)', animation: 'fadeInUp 0.3s ease',
+        }}>
+          <span style={{ fontSize: 18 }}>📋</span>
+          Template caption applied to all platforms!
+        </div>
       )}
 
       {/* ── Publish error modal ── */}

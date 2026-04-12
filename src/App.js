@@ -289,6 +289,7 @@ function MarketingNav({ go, onLogin, onSignup }) {
 /* ─── App ─────────────────────────────────────────────────── */
 function App() {
   const [activeTab, setActiveTab] = useState(null);
+  const [templateCaption, setTemplateCaption] = useState(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   // authMode: 'login' | 'signup' | 'forgot-password'
   const [authMode, setAuthMode] = useState('login');
@@ -592,8 +593,8 @@ function App() {
           {activeTab === 'Content'          && <MemberGate featureName="Reply Enchanter"><Content /></MemberGate>}
           {activeTab === 'Resume'           && <MemberGate featureName="Career Alchemist"><Resume /></MemberGate>}
           {activeTab === 'account'          && <AskAIGate  featureName="Account"><AccountSettings /></AskAIGate>}
-          {activeTab === 'video-publisher'  && <MemberGate featureName="Video Publisher"><VideoPublisher onNavigateToSocialConnect={() => go('social-connect')} onOpenTemplates={() => go('caption-templates')} /></MemberGate>}
-          {activeTab === 'caption-templates' && <CaptionTemplates onBack={() => go('video-publisher')} onUseTemplate={(text) => { go('video-publisher'); }} />}
+          {activeTab === 'video-publisher'  && <MemberGate featureName="Video Publisher"><VideoPublisher onNavigateToSocialConnect={() => go('social-connect')} onOpenTemplates={() => go('caption-templates')} templateCaption={templateCaption} onTemplateCaptionUsed={() => setTemplateCaption(null)} /></MemberGate>}
+          {activeTab === 'caption-templates' && <CaptionTemplates onBack={() => go('video-publisher')} onUseTemplate={(text) => { setTemplateCaption(text); go('video-publisher'); }} />}
           {activeTab === 'messages'         && <MemberGate featureName="Messages"><ProGate featureName="Messages"><MessagesInbox onOpenConnectedAccounts={() => go('social-connect')} onOpenAutoReply={() => go('auto-reply')} /></ProGate></MemberGate>}
           {activeTab === 'social-connect'   && <MemberGate featureName="Connected Accounts"><SocialConnect /></MemberGate>}
           {activeTab === 'bio'              && <MemberGate featureName="Link in Bio"><LinkInBioBuilder /></MemberGate>}

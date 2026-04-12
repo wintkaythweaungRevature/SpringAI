@@ -370,7 +370,7 @@ function validateImage(file) {
 }
 
 /* ─── Component ─────────────────────────────────────────────── */
-export default function VideoPublisher({ onNavigateToSocialConnect, onOpenTemplates, templateCaption, onTemplateCaptionUsed }) {
+export default function VideoPublisher({ onNavigateToSocialConnect, templateCaption, onTemplateCaptionUsed }) {
   const { apiBase, token, logout, user } = useAuth();
   const isGrowth = user?.membershipType === 'GROWTH';
   const base = apiBase || 'https://api.wintaibot.com';
@@ -1509,25 +1509,10 @@ export default function VideoPublisher({ onNavigateToSocialConnect, onOpenTempla
               ))}
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-              <div style={s.sectionTitle} >
+            <div style={{ marginBottom: '16px' }}>
+              <div style={s.sectionTitle}>
                 {postType === 'video' ? '🎬 Upload Video' : postType === 'image' ? '🖼️ Upload Image' : '✍️ Write Your Post'}
               </div>
-              <button
-                type="button"
-                onClick={() => onOpenTemplates && onOpenTemplates()}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '6px',
-                  padding: '8px 14px', borderRadius: '8px', cursor: 'pointer',
-                  border: '1.5px solid #6366f1', background: '#f5f3ff',
-                  color: '#4f46e5', fontSize: '13px', fontWeight: 600,
-                  whiteSpace: 'nowrap', transition: 'all 0.15s',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.background = '#ede9fe'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = '#f5f3ff'; }}
-              >
-                📋 Templates
-              </button>
             </div>
 
             {/* Publish type selector — story supported for video/image on Instagram/Facebook */}

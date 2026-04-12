@@ -8,8 +8,9 @@ import Box from '@mui/material/Box';
 import { HiHome, HiChatBubbleLeftRight, HiPhoto, HiSparkles } from 'react-icons/hi2';
 import { HiDocumentText, HiMicrophone } from 'react-icons/hi2';
 import { HiChatBubbleOvalLeft, HiArrowTrendingUp, HiLink } from 'react-icons/hi2';
-import { HiPencilSquare, HiDocumentMagnifyingGlass } from 'react-icons/hi2';
+import { HiPencilSquare, HiDocumentMagnifyingGlass, HiRectangleGroup } from 'react-icons/hi2';
 import { HiCog6Tooth, HiCreditCard, HiQuestionMarkCircle } from 'react-icons/hi2';
+import PlatformIcon from './components/PlatformIcon';
 import HelpPanel from './components/HelpPanel';
 import ImageGenerator from './components/ImageGenerator';
 import ChatComponent from './components/ChatComponent';
@@ -296,7 +297,20 @@ function App() {
   const [templateCaption, setTemplateCaption] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [aiDockOpen, setAiDockOpen] = useState(false);
+  const [connectedPlatforms, setConnectedPlatforms] = useState([]);
   const { user, logout, loading, token, apiBase, refetchUser } = useAuth();
+
+  // Platform metadata used for topbar icons
+  const ALL_PLATFORMS = [
+    { id: 'youtube',   label: 'YouTube',    color: '#FF0000', logo: 'youtube',   emoji: '▶️' },
+    { id: 'instagram', label: 'Instagram',  color: '#E1306C', logo: 'instagram', emoji: '📸' },
+    { id: 'tiktok',    label: 'TikTok',     color: '#010101', logo: 'tiktok',    emoji: '🎵' },
+    { id: 'linkedin',  label: 'LinkedIn',   color: '#0A66C2', logo: 'linkedin',  emoji: '💼' },
+    { id: 'facebook',  label: 'Facebook',   color: '#1877F2', logo: 'facebook',  emoji: '👍' },
+    { id: 'x',         label: 'X',          color: '#000000', logo: 'x',         emoji: '🐦' },
+    { id: 'threads',   label: 'Threads',    color: '#101010', logo: 'threads',   emoji: '🧵' },
+    { id: 'pinterest', label: 'Pinterest',  color: '#E60023', logo: 'pinterest', emoji: '📌' },
+  ];
   const isMobile = useMediaQuery('(max-width: 768px)');
   const isTablet = useMediaQuery('(max-width: 1024px)');
 
@@ -322,6 +336,17 @@ function App() {
       setActiveTab(null);
     }
   }, []);
+
+  // Fetch connected social platforms for topbar icons
+  useEffect(() => {
+    if (!user || !token) { setConnectedPlatforms([]); return; }
+    const base = apiBase || 'https://api.wintaibot.com';
+    fetch(`${base}/api/social/status`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data?.connected) setConnectedPlatforms(data.connected); })
+      .catch(() => {});
+  }, [user, token, apiBase]);
+
   const handleChoosePlan = async (plan) => {
     if (!user) { setAuthMode('signup'); setShowAuthModal(true); return; }
     const base = apiBase || 'https://api.wintaibot.com';
@@ -457,8 +482,9 @@ function App() {
 
             <div style={s.navDivider} role="separator" aria-hidden="true" />
             <div style={s.groupLabel}>{SIDEBAR_GROUPS.socialHq}</div>
-            <NavItem icon={<HiPhoto size={17} />}                    label="Content Calendar"   active={activeTab === 'calendar'}         onClick={() => { go('calendar'); if (isMobile || isTablet) setSidebarOpen(false); }} />
-            <NavItem icon={<HiLink size={17} />}                     label="Connected Accounts" active={activeTab === 'social-connect'}    onClick={() => { go('social-connect'); if (isMobile || isTablet) setSidebarOpen(false); }} />
+            <NavItem icon={<HiPhoto size={17} />}                    label="Content Calendar"   active={activeTab === 'calendar'}          onClick={() => { go('calendar'); if (isMobile || isTablet) setSidebarOpen(false); }} />
+            <NavItem icon={<HiRectangleGroup size={17} />}           label="Templates"          active={activeTab === 'caption-templates'} onClick={() => { go('caption-templates'); if (isMobile || isTablet) setSidebarOpen(false); }} />
+            <NavItem icon={<HiLink size={17} />}                     label="Connected Accounts" active={activeTab === 'social-connect'}     onClick={() => { go('social-connect'); if (isMobile || isTablet) setSidebarOpen(false); }} />
             <NavItem icon={<HiChatBubbleOvalLeft size={17} />}       label="Inbox"              active={activeTab === 'messages'}         onClick={() => { go('messages'); if (isMobile || isTablet) setSidebarOpen(false); }} />
             <NavItem icon={<HiArrowTrendingUp size={17} />}          label="Growth Planner"     active={activeTab === 'trends'}           onClick={() => { go('trends'); if (isMobile || isTablet) setSidebarOpen(false); }} />
 
@@ -519,6 +545,43 @@ function App() {
               >
                 ←
               </button>
+            )}
+
+            {/* Connected platform icons — click to go to Connected Accounts */}
+            {connectedPlatforms.length > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginLeft: 8 }}>
+                {connectedPlatforms.map(pid => {
+                  const p = ALL_PLATFORMS.find(x => x.id === pid);
+                  if (!p) return null;
+                  // Use white bg so ALL brand-color logos (incl. black TikTok/X/Threads) are visible
+                  return (
+                    <button
+                      key={pid}
+                      onClick={() => go('social-connect')}
+                      title={`${p.label} — connected`}
+                      style={{
+                        width: 30, height: 30, borderRadius: '50%',
+                        background: '#ffffff',
+                        border: `2px solid #e2e8f0`,
+                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        padding: 0, flexShrink: 0,
+                        transition: 'border-color 0.15s, box-shadow 0.15s',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
+                      }}
+                      onMouseEnter={e => {
+                        e.currentTarget.style.borderColor = p.color;
+                        e.currentTarget.style.boxShadow = `0 0 0 3px ${p.color}33`;
+                      }}
+                      onMouseLeave={e => {
+                        e.currentTarget.style.borderColor = '#e2e8f0';
+                        e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.15)';
+                      }}
+                    >
+                      <PlatformIcon platform={p} size={16} />
+                    </button>
+                  );
+                })}
+              </div>
             )}
 
             <div style={{ flex: 1 }} />
@@ -593,7 +656,7 @@ function App() {
           {activeTab === 'Content'          && <MemberGate featureName="Reply Enchanter"><Content /></MemberGate>}
           {activeTab === 'Resume'           && <MemberGate featureName="Career Alchemist"><Resume /></MemberGate>}
           {activeTab === 'account'          && <AskAIGate  featureName="Account"><AccountSettings /></AskAIGate>}
-          {activeTab === 'video-publisher'  && <MemberGate featureName="Video Publisher"><VideoPublisher onNavigateToSocialConnect={() => go('social-connect')} onOpenTemplates={() => go('caption-templates')} templateCaption={templateCaption} onTemplateCaptionUsed={() => setTemplateCaption(null)} /></MemberGate>}
+          {activeTab === 'video-publisher'  && <MemberGate featureName="Video Publisher"><VideoPublisher onNavigateToSocialConnect={() => go('social-connect')} templateCaption={templateCaption} onTemplateCaptionUsed={() => setTemplateCaption(null)} /></MemberGate>}
           {activeTab === 'caption-templates' && <CaptionTemplates onBack={() => go('video-publisher')} onUseTemplate={(text) => { setTemplateCaption(text); go('video-publisher'); }} />}
           {activeTab === 'messages'         && <MemberGate featureName="Messages"><ProGate featureName="Messages"><MessagesInbox onOpenConnectedAccounts={() => go('social-connect')} onOpenAutoReply={() => go('auto-reply')} /></ProGate></MemberGate>}
           {activeTab === 'social-connect'   && <MemberGate featureName="Connected Accounts"><SocialConnect /></MemberGate>}

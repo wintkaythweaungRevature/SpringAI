@@ -8,15 +8,18 @@ const SC = CW / PW; // ≈ 0.3846
 
 /** Gallery / export colour themes (swatches ≈ reference UI). `filter` tints the artwork inside the frame. */
 const PREVIEW_THEMES = [
-  { id: 'default', label: 'Default', frameBg: '#e8edf2', filter: 'none', swatch: ['#64748b', '#94a3b8', '#e2e8f0'] },
-  { id: 'earth', label: 'Earth', frameBg: 'linear-gradient(160deg,#e4e9e0,#c9d4c2)', filter: 'saturate(0.92) hue-rotate(-12deg)', swatch: ['#3d4a38', '#8b9a7d', '#f8faf8'] },
-  { id: 'neutral', label: 'Neutral', frameBg: 'linear-gradient(160deg,#f3eee8,#dcd7d0)', filter: 'saturate(0.88) hue-rotate(5deg)', swatch: ['#d6cfc4', '#faf8f5', '#2d2a28'] },
-  { id: 'floral', label: 'Floral', frameBg: 'linear-gradient(160deg,#ede4f0,#f5e6ea)', filter: 'hue-rotate(18deg) saturate(1.08)', swatch: ['#9d7a8c', '#c9b8c8', '#faf5f7'] },
-  { id: 'corporate', label: 'Corporate', frameBg: 'linear-gradient(160deg,#dbeafe,#e0f2fe)', filter: 'hue-rotate(165deg) saturate(1.05)', swatch: ['#0e7490', '#f8fafc', '#0f172a'] },
-  { id: 'warm', label: 'Warm', frameBg: 'linear-gradient(160deg,#fff4e6,#fde68a)', filter: 'hue-rotate(-22deg) saturate(1.12)', swatch: ['#c2410c', '#fef3c7', '#fefce8'] },
-  { id: 'grey', label: 'Grey', frameBg: 'linear-gradient(160deg,#e2e8f0,#cbd5e1)', filter: 'saturate(0.75) contrast(1.08)', swatch: ['#475569', '#f1f5f9', '#1e293b'] },
-  { id: 'navy', label: 'Navy', frameBg: 'linear-gradient(160deg,#dbeafe,#bfdbfe)', filter: 'hue-rotate(195deg) saturate(0.95)', swatch: ['#1e3a8a', '#ffffff', '#1e40af'] },
-  { id: 'mono', label: 'Mono', frameBg: 'linear-gradient(160deg,#f4f4f5,#d4d4d8)', filter: 'grayscale(0.45) contrast(1.06)', swatch: ['#18181b', '#fafafa', '#52525b'] },
+  { id: 'default',   label: 'Default',   frameBg: '#e8edf2',                              filter: 'none',                                    swatch: ['#1a3a5c','#94a3b8','#e2e8f0'] },
+  { id: 'earth',     label: 'Earth',     frameBg: 'linear-gradient(160deg,#e4e9e0,#c9d4c2)', filter: 'saturate(0.92) hue-rotate(-12deg)',       swatch: ['#3d4a38','#8b9a7d','#f8faf8'] },
+  { id: 'neutral',   label: 'Neutral',   frameBg: 'linear-gradient(160deg,#f3eee8,#dcd7d0)', filter: 'saturate(0.88) hue-rotate(5deg)',         swatch: ['#d6cfc4','#faf8f5','#2d2a28'] },
+  { id: 'floral',    label: 'Floral',    frameBg: 'linear-gradient(160deg,#ede4f0,#f5e6ea)', filter: 'hue-rotate(18deg) saturate(1.08)',        swatch: ['#9d7a8c','#c9b8c8','#faf5f7'] },
+  { id: 'corporate', label: 'Corporate', frameBg: 'linear-gradient(160deg,#dbeafe,#e0f2fe)', filter: 'hue-rotate(165deg) saturate(1.05)',       swatch: ['#0e7490','#f8fafc','#0f172a'] },
+  { id: 'warm',      label: 'Warm',      frameBg: 'linear-gradient(160deg,#fff4e6,#fde68a)', filter: 'hue-rotate(-22deg) saturate(1.12)',       swatch: ['#c2410c','#fef3c7','#fefce8'] },
+  { id: 'grey',      label: 'Grey',      frameBg: 'linear-gradient(160deg,#e2e8f0,#cbd5e1)', filter: 'saturate(0.75) contrast(1.08)',           swatch: ['#475569','#f1f5f9','#1e293b'] },
+  { id: 'navy',      label: 'Navy',      frameBg: 'linear-gradient(160deg,#dbeafe,#bfdbfe)', filter: 'hue-rotate(195deg) saturate(0.95)',       swatch: ['#1e3a8a','#ffffff','#1e40af'] },
+  { id: 'mono',      label: 'Mono',      frameBg: 'linear-gradient(160deg,#f4f4f5,#d4d4d8)', filter: 'grayscale(0.45) contrast(1.06)',          swatch: ['#18181b','#fafafa','#52525b'] },
+  { id: 'rose',      label: 'Rose',      frameBg: 'linear-gradient(160deg,#ffe4e6,#fecdd3)', filter: 'hue-rotate(320deg) saturate(1.1)',        swatch: ['#be185d','#fda4af','#fff1f2'] },
+  { id: 'forest',    label: 'Forest',    frameBg: 'linear-gradient(160deg,#dcfce7,#bbf7d0)', filter: 'hue-rotate(100deg) saturate(1.05)',       swatch: ['#166534','#86efac','#f0fdf4'] },
+  { id: 'sunset',    label: 'Sunset',    frameBg: 'linear-gradient(160deg,#ffedd5,#fde68a)', filter: 'hue-rotate(-35deg) saturate(1.2) brightness(1.04)', swatch: ['#c2410c','#f97316','#fff7ed'] },
 ];
 
 function getPreviewTheme(themeId) {
@@ -1418,14 +1421,30 @@ function getHint(p) {
 /* ══════════════════════════════════════════════════════════
    CUSTOMIZE MODAL
 ══════════════════════════════════════════════════════════ */
-function CustomizeModal({ template, onClose, onConfirm, onDownloadDesign, designDownloading }) {
+function CustomizeModal({ template, onClose, onConfirm, onDownloadDesign, designDownloading, initialThemeId, onThemeChange }) {
   const placeholders = [...new Set(template.caption.match(/\[[^\]]+\]/g) || [])];
-  const [values, setValues] = useState(Object.fromEntries(placeholders.map(p => [p, ''])));
+  const [values, setValues]         = useState(Object.fromEntries(placeholders.map(p => [p, ''])));
   const [footerDlOpen, setFooterDlOpen] = useState(false);
+  const [themeId, setThemeId]       = useState(initialThemeId || 'default');
+  const [showCustom, setShowCustom] = useState(false);
+  const [customColors, setCustomColors] = useState({ primary: '#FF4C46', bg: '#DFFFDE', text: '#012B3A' });
+  const [activeTab, setActiveTab]   = useState('text'); // 'text' | 'design'
 
   const filled = template.caption.replace(/\[[^\]]+\]/g, m => values[m] || m);
-
   const set = (p, v) => setValues(prev => ({ ...prev, [p]: v }));
+
+  const isCustom = themeId === 'custom';
+  const activeTheme = isCustom ? null : getPreviewTheme(themeId);
+  const designFilter = isCustom
+    ? `hue-rotate(${hexToHue(customColors.primary)}deg) saturate(1.1)`
+    : (activeTheme?.filter || 'none');
+
+  // notify parent so download uses same theme
+  const pickTheme = (id) => {
+    setThemeId(id);
+    if (id !== 'custom') setShowCustom(false);
+    if (onThemeChange) onThemeChange(id === 'custom' ? 'custom' : id);
+  };
 
   useEffect(() => {
     if (!footerDlOpen) return;
@@ -1434,102 +1453,196 @@ function CustomizeModal({ template, onClose, onConfirm, onDownloadDesign, design
     return () => window.removeEventListener('click', close);
   }, [footerDlOpen]);
 
+  // small design preview scale inside modal
+  const PREV_W = 420, PREV_H = Math.round(420 * PH / PW);
+  const PREV_SC = PREV_W / PW;
+
   return (
-    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', zIndex:9100, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}
+    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.65)', zIndex:9100, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}
       onClick={onClose}>
-      <div style={{ background:'#fff', borderRadius:20, width:'100%', maxWidth:900, maxHeight:'90vh', display:'flex', flexDirection:'column', boxShadow:'0 28px 64px rgba(0,0,0,0.3)', overflow:'hidden' }}
+      <div style={{ background:'#fff', borderRadius:20, width:'100%', maxWidth:980, maxHeight:'94vh', display:'flex', flexDirection:'column', boxShadow:'0 32px 80px rgba(0,0,0,0.35)', overflow:'hidden' }}
         onClick={e => e.stopPropagation()}>
 
-        {/* Header */}
-        <div style={{ padding:'18px 24px', borderBottom:'1px solid #f1f5f9', display:'flex', justifyContent:'space-between', alignItems:'center', flexShrink:0 }}>
+        {/* ── Header ── */}
+        <div style={{ padding:'16px 24px', borderBottom:'1px solid #f1f5f9', display:'flex', justifyContent:'space-between', alignItems:'center', flexShrink:0 }}>
           <div>
-            <div style={{ fontSize:17, fontWeight:800, color:'#1e293b' }}>✏️ Customize Template</div>
-            <div style={{ fontSize:13, color:'#64748b', marginTop:2 }}>Fill in your details — see the live preview update on the right</div>
+            <div style={{ fontSize:16, fontWeight:800, color:'#1e293b' }}>✏️ Customize Template</div>
+            <div style={{ fontSize:12, color:'#64748b', marginTop:2 }}>Fill in your details, pick colors, then download or send to Publisher</div>
           </div>
-          <button onClick={onClose} style={{ background:'#f1f5f9', border:'none', cursor:'pointer', color:'#64748b', width:34, height:34, borderRadius:8, fontSize:16, display:'flex', alignItems:'center', justifyContent:'center' }}>✕</button>
+          <button onClick={onClose} style={{ background:'#f1f5f9', border:'none', cursor:'pointer', color:'#64748b', width:32, height:32, borderRadius:8, fontSize:15, display:'flex', alignItems:'center', justifyContent:'center' }}>✕</button>
         </div>
 
-        {/* Body */}
+        {/* ── Body ── */}
         <div style={{ display:'flex', flex:1, overflow:'hidden', minHeight:0 }}>
 
-          {/* Left — input fields */}
-          <div style={{ width:340, borderRight:'1px solid #f1f5f9', padding:'20px 24px', overflowY:'auto', flexShrink:0 }}>
-            <div style={{ fontSize:12, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:1, marginBottom:16 }}>
-              {placeholders.length} fields to fill
+          {/* ── LEFT — inputs + color picker ── */}
+          <div style={{ width:320, borderRight:'1px solid #f1f5f9', display:'flex', flexDirection:'column', flexShrink:0, overflow:'hidden' }}>
+
+            {/* Tab switcher */}
+            <div style={{ display:'flex', borderBottom:'1px solid #f1f5f9', flexShrink:0 }}>
+              {[['text','✏️ Text'],['color','🎨 Colour']].map(([id, label]) => (
+                <button key={id} onClick={() => setActiveTab(id)} style={{
+                  flex:1, padding:'11px 0', border:'none', cursor:'pointer', fontSize:13, fontWeight:700,
+                  background: activeTab === id ? '#fff' : '#f8fafc',
+                  color: activeTab === id ? '#6366f1' : '#94a3b8',
+                  borderBottom: activeTab === id ? '2px solid #6366f1' : '2px solid transparent',
+                }}>
+                  {label}
+                </button>
+              ))}
             </div>
-            {placeholders.length === 0 && (
-              <div style={{ fontSize:13, color:'#94a3b8', textAlign:'center', padding:'20px 0' }}>No placeholders found.<br/>Ready to use as-is!</div>
-            )}
-            {placeholders.map(p => (
-              <div key={p} style={{ marginBottom:16 }}>
-                <label style={{ display:'block', fontSize:12, fontWeight:700, color:'#475569', marginBottom:6 }}>
-                  {p.replace(/\[|\]/g,'')}
-                </label>
-                <input
-                  value={values[p]}
-                  onChange={e => set(p, e.target.value)}
-                  placeholder={getHint(p)}
-                  style={{ width:'100%', padding:'9px 12px', borderRadius:8, border:'1.5px solid #e2e8f0', fontSize:13, color:'#1e293b', outline:'none', boxSizing:'border-box',
-                    fontFamily:'"Segoe UI",Arial,sans-serif' }}
-                  onFocus={e => e.target.style.borderColor='#6366f1'}
-                  onBlur={e => e.target.style.borderColor='#e2e8f0'}
-                />
+
+            {/* ── TEXT TAB ── */}
+            {activeTab === 'text' && (
+              <div style={{ flex:1, overflowY:'auto', padding:'16px 20px' }}>
+                <div style={{ fontSize:11, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:1, marginBottom:14 }}>
+                  {placeholders.length} field{placeholders.length !== 1 ? 's' : ''} to fill
+                </div>
+                {placeholders.length === 0 && (
+                  <div style={{ fontSize:13, color:'#94a3b8', textAlign:'center', padding:'20px 0' }}>No placeholders found.<br/>Ready to use as-is!</div>
+                )}
+                {placeholders.map(p => (
+                  <div key={p} style={{ marginBottom:14 }}>
+                    <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#475569', marginBottom:5 }}>
+                      {p.replace(/\[|\]/g,'')}
+                    </label>
+                    <input value={values[p]} onChange={e => set(p, e.target.value)} placeholder={getHint(p)}
+                      style={{ width:'100%', padding:'8px 11px', borderRadius:8, border:'1.5px solid #e2e8f0', fontSize:13, color:'#1e293b', outline:'none', boxSizing:'border-box', fontFamily:'"Segoe UI",Arial,sans-serif' }}
+                      onFocus={e => e.target.style.borderColor='#6366f1'}
+                      onBlur={e  => e.target.style.borderColor='#e2e8f0'}
+                    />
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
+
+            {/* ── COLOUR TAB ── */}
+            {activeTab === 'color' && (
+              <div style={{ flex:1, overflowY:'auto', padding:'16px 20px' }}>
+
+                {/* Themes grid */}
+                <div style={{ fontSize:11, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:1, marginBottom:10 }}>Themes</div>
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:8, marginBottom:18 }}>
+                  {PREVIEW_THEMES.map(th => (
+                    <button key={th.id} onClick={() => pickTheme(th.id)} title={th.label} style={{
+                      border: themeId === th.id ? '2px solid #6366f1' : '2px solid transparent',
+                      borderRadius:10, padding:0, cursor:'pointer', background:'none', position:'relative',
+                    }}>
+                      <div style={{ borderRadius:8, overflow:'hidden', height:44, display:'flex', background:'#f1f5f9' }}>
+                        {th.swatch.map((c,i) => (
+                          <div key={i} style={{ flex:1, background:c }} />
+                        ))}
+                      </div>
+                      {themeId === th.id && (
+                        <div style={{ position:'absolute', top:3, right:3, width:14, height:14, borderRadius:'50%', background:'#6366f1', display:'flex', alignItems:'center', justifyContent:'center', fontSize:8, color:'#fff' }}>✓</div>
+                      )}
+                      <div style={{ fontSize:10, color:'#64748b', marginTop:3, textAlign:'center' }}>{th.label}</div>
+                    </button>
+                  ))}
+
+                  {/* Custom tile */}
+                  <button onClick={() => { pickTheme('custom'); setShowCustom(true); }} style={{
+                    border: isCustom ? '2px solid #f97316' : '2px solid #e2e8f0',
+                    borderRadius:10, padding:0, cursor:'pointer', background:'none', position:'relative',
+                  }}>
+                    <div style={{ borderRadius:8, height:44, display:'flex', background:'#f8fafc', alignItems:'center', justifyContent:'center', fontSize:18 }}>🎨</div>
+                    {isCustom && (
+                      <div style={{ position:'absolute', top:3, right:3, width:14, height:14, borderRadius:'50%', background:'#f97316', display:'flex', alignItems:'center', justifyContent:'center', fontSize:8, color:'#fff' }}>✓</div>
+                    )}
+                    <div style={{ fontSize:10, color:'#64748b', marginTop:3, textAlign:'center' }}>Custom</div>
+                  </button>
+                </div>
+
+                {/* Custom colour pickers */}
+                {isCustom && (
+                  <div style={{ background:'#f8fafc', borderRadius:12, padding:'14px 14px', border:'1px solid #e2e8f0' }}>
+                    <div style={{ fontSize:11, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:1, marginBottom:12 }}>Customize</div>
+                    {[
+                      { key:'primary', label:'Primary colour' },
+                      { key:'bg',      label:'Background colour' },
+                      { key:'text',    label:'Font colour' },
+                    ].map(({ key, label }) => (
+                      <div key={key} style={{ display:'flex', alignItems:'center', gap:10, marginBottom:12 }}>
+                        <div style={{ position:'relative', flexShrink:0 }}>
+                          <div style={{ width:36, height:36, borderRadius:8, background:customColors[key], border:'2px solid #e2e8f0', cursor:'pointer' }} />
+                          <input type="color" value={customColors[key]}
+                            onChange={e => setCustomColors(prev => ({ ...prev, [key]: e.target.value }))}
+                            style={{ position:'absolute', inset:0, opacity:0, cursor:'pointer', width:'100%', height:'100%' }}
+                          />
+                        </div>
+                        <div style={{ flex:1 }}>
+                          <div style={{ fontSize:11, fontWeight:600, color:'#475569', marginBottom:3 }}>{label}</div>
+                          <input value={customColors[key].toUpperCase()}
+                            onChange={e => { if (/^#[0-9A-Fa-f]{0,6}$/.test(e.target.value)) setCustomColors(prev => ({ ...prev, [key]: e.target.value })); }}
+                            style={{ width:'100%', padding:'5px 8px', borderRadius:6, border:'1.5px solid #e2e8f0', fontSize:11, fontWeight:700, color:'#334155', fontFamily:'monospace', outline:'none', boxSizing:'border-box', letterSpacing:1 }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                    <div style={{ fontSize:10, color:'#94a3b8', lineHeight:1.5 }}>
+                      Primary colour controls the hue of the entire design.
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Right — live preview */}
-          <div style={{ flex:1, padding:'20px 24px', overflowY:'auto', background:'#f8fafc' }}>
-            <div style={{ fontSize:12, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:1, marginBottom:12 }}>Live Preview</div>
-            <pre style={{ background:'#fff', border:'1px solid #e2e8f0', borderRadius:12, padding:'16px 18px', fontSize:13, color:'#334155', lineHeight:1.9, whiteSpace:'pre-wrap', fontFamily:'"Segoe UI",Arial,sans-serif', margin:0, minHeight:200 }}>
-              {filled.split(/(\[[^\]]+\])/g).map((part, i) =>
-                /^\[[^\]]+\]$/.test(part)
-                  ? <mark key={i} style={{ background:'#fef9c3', color:'#92400e', borderRadius:3, padding:'0 2px' }}>{part}</mark>
-                  : part
-              )}
-            </pre>
-            <div style={{ fontSize:12, color:'#94a3b8', marginTop:10 }}>
-              💡 Yellow = still a placeholder. Everything else matches what will appear in your file.
-              <br />
-              Use footer <strong>Download with your text</strong> for PNG / JPG / PDF: your design plus this caption exactly as shown above.
+          {/* ── RIGHT — design preview + caption ── */}
+          <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden', background:'#f8fafc' }}>
+
+            {/* Design preview */}
+            <div style={{ flexShrink:0, padding:'16px 20px 12px', borderBottom:'1px solid #f1f5f9', background:'#fff' }}>
+              <div style={{ fontSize:11, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:1, marginBottom:10 }}>Design Preview</div>
+              <div style={{ width:PREV_W, height:PREV_H, overflow:'hidden', borderRadius:10, border:'1px solid #e2e8f0', position:'relative', maxWidth:'100%' }}>
+                <div style={{ width:PW, height:PH, transform:`scale(${PREV_SC})`, transformOrigin:'top left', filter:designFilter }}>
+                  <template.Preview />
+                </div>
+                {/* Custom bg overlay */}
+                {isCustom && (
+                  <div style={{ position:'absolute', inset:0, background:customColors.bg, opacity:0.25, pointerEvents:'none', borderRadius:10 }} />
+                )}
+              </div>
+            </div>
+
+            {/* Caption live preview */}
+            <div style={{ flex:1, overflowY:'auto', padding:'14px 20px' }}>
+              <div style={{ fontSize:11, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:1, marginBottom:10 }}>Caption Preview</div>
+              <pre style={{ background:'#fff', border:'1px solid #e2e8f0', borderRadius:10, padding:'14px 16px', fontSize:13, color:'#334155', lineHeight:1.85, whiteSpace:'pre-wrap', fontFamily:'"Segoe UI",Arial,sans-serif', margin:0, minHeight:120 }}>
+                {filled.split(/(\[[^\]]+\])/g).map((part, i) =>
+                  /^\[[^\]]+\]$/.test(part)
+                    ? <mark key={i} style={{ background:'#fef9c3', color:'#92400e', borderRadius:3, padding:'0 2px' }}>{part}</mark>
+                    : part
+                )}
+              </pre>
+              <div style={{ fontSize:11, color:'#94a3b8', marginTop:8 }}>
+                💡 Yellow highlights = unfilled placeholders
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Footer */}
-        <div style={{ padding:'16px 24px', borderTop:'1px solid #f1f5f9', display:'flex', justifyContent:'flex-end', alignItems:'center', gap:10, flexShrink:0, background:'#fff' }}>
+        {/* ── Footer ── */}
+        <div style={{ padding:'14px 20px', borderTop:'1px solid #f1f5f9', display:'flex', justifyContent:'flex-end', alignItems:'center', gap:8, flexShrink:0, background:'#fff' }}>
           <button onClick={onClose}
-            style={{ padding:'10px 22px', borderRadius:8, border:'1.5px solid #e2e8f0', background:'#fff', color:'#64748b', fontSize:13, fontWeight:600, cursor:'pointer' }}>
+            style={{ padding:'9px 20px', borderRadius:8, border:'1.5px solid #e2e8f0', background:'#fff', color:'#64748b', fontSize:13, fontWeight:600, cursor:'pointer' }}>
             Cancel
           </button>
           {onDownloadDesign && (
             <div style={{ position:'relative' }}>
-              <button
-                type="button"
-                onClick={e => { e.stopPropagation(); setFooterDlOpen(o => !o); }}
-                style={{ padding:'10px 16px', borderRadius:8, border:'1.5px solid #e2e8f0', background:'#fff', color:'#334155', fontSize:13, fontWeight:600, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}
-                title="Exports the template image plus the Live Preview caption (uses every value you typed here)"
-              >
+              <button type="button" onClick={e => { e.stopPropagation(); setFooterDlOpen(o => !o); }}
+                style={{ padding:'9px 14px', borderRadius:8, border:'1.5px solid #e2e8f0', background:'#fff', color:'#334155', fontSize:13, fontWeight:600, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
                 {designDownloading ? '⏳' : '⬇'} Download with your text
               </button>
               {footerDlOpen && (
-                <div
-                  style={{ position:'absolute', bottom:'100%', right:0, marginBottom:6, background:'#fff', border:'1px solid #e2e8f0', borderRadius:10, boxShadow:'0 4px 16px rgba(0,0,0,0.12)', overflow:'hidden', zIndex:20, minWidth:148 }}
-                  onClick={e => e.stopPropagation()}
-                >
-                  <div style={{ padding:'6px 10px', fontSize:10, fontWeight:700, color:'#64748b', lineHeight:1.35, borderBottom:'1px solid #f1f5f9' }}>
-                    Includes your filled fields (same as Live Preview)
-                  </div>
-                  <div style={{ padding:'4px 10px', fontSize:10, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:1, borderBottom:'1px solid #f1f5f9' }}>Format</div>
+                <div style={{ position:'absolute', bottom:'100%', right:0, marginBottom:6, background:'#fff', border:'1px solid #e2e8f0', borderRadius:10, boxShadow:'0 4px 16px rgba(0,0,0,0.12)', overflow:'hidden', zIndex:20, minWidth:148 }}
+                  onClick={e => e.stopPropagation()}>
+                  <div style={{ padding:'5px 10px', fontSize:10, fontWeight:700, color:'#64748b', borderBottom:'1px solid #f1f5f9' }}>Current theme applied to download</div>
                   {[['png','🖼 PNG'],['jpg','📷 JPG'],['pdf','📄 PDF']].map(([fmt, label]) => (
-                    <button
-                      key={fmt}
-                      type="button"
-                      onClick={e => { onDownloadDesign(fmt, e, filled); setFooterDlOpen(false); }}
+                    <button key={fmt} type="button" onClick={e => { onDownloadDesign(fmt, e, filled); setFooterDlOpen(false); }}
                       style={{ width:'100%', padding:'9px 14px', border:'none', background:'none', textAlign:'left', fontSize:13, fontWeight:600, cursor:'pointer', color:'#1e293b', display:'flex', alignItems:'center', gap:8 }}
                       onMouseEnter={e => { e.currentTarget.style.background = '#f8fafc'; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
-                    >
+                      onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
                       {label}
                     </button>
                   ))}
@@ -1538,13 +1651,24 @@ function CustomizeModal({ template, onClose, onConfirm, onDownloadDesign, design
             </div>
           )}
           <button type="button" onClick={() => onConfirm(filled)}
-            style={{ padding:'10px 28px', borderRadius:8, border:'none', background:'#6366f1', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer' }}>
+            style={{ padding:'9px 24px', borderRadius:8, border:'none', background:'#6366f1', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer' }}>
             Use in Publisher →
           </button>
         </div>
       </div>
     </div>
   );
+}
+
+/** Convert a hex colour to approximate hue degrees for hue-rotate filter */
+function hexToHue(hex) {
+  const r = parseInt(hex.slice(1,3),16)/255;
+  const g = parseInt(hex.slice(3,5),16)/255;
+  const b = parseInt(hex.slice(5,7),16)/255;
+  const max = Math.max(r,g,b), min = Math.min(r,g,b), d = max - min;
+  if (d === 0) return 0;
+  let h = max === r ? ((g-b)/d + (g<b?6:0)) : max === g ? ((b-r)/d + 2) : ((r-g)/d + 4);
+  return Math.round(h * 60);
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -1975,6 +2099,8 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
           onConfirm={handleCustomizeConfirm}
           onDownloadDesign={handleModalCaptionExport}
           designDownloading={dlLoading === customize.id}
+          initialThemeId={previewTheme}
+          onThemeChange={(id) => setPreviewTheme(id)}
         />
       )}
     </div>

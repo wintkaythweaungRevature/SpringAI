@@ -523,23 +523,41 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
 
       {/* ── WHAT IS WINTAIBOT ───────────────────────────────── */}
       <section className="ls-section ls-what" aria-labelledby="what-heading">
-        <h2 id="what-heading">One workspace for social video — and the rest of your work</h2>
-        <div className="ls-what-showcase">
-          <p className="ls-what-short">
-            <strong>W!ntAi</strong> is built for teams who publish <strong>video everywhere</strong> without re-exporting — same login for docs, transcription, email, and interview prep (no stack of five subscriptions).
-          </p>
-          <VideoPublishShowcaseGraphic variant="compact" />
-        </div>
-        <ul className="ls-what-bullets" aria-label="What you get">
-          <li><strong>Per-platform video</strong> — right shape and framing for each network you choose</li>
-          <li><strong>Thumbnails &amp; copy</strong> — pick frames or AI; always editable before publish</li>
-          <li><strong>One dashboard</strong> — schedule, inbox, auto-reply, analytics, Social AI on your data</li>
-        </ul>
-        <div className="ls-stat-row">
-          <div className="ls-stat"><span className="ls-stat-num">8</span><span>AI Tools</span></div>
-          <div className="ls-stat"><span className="ls-stat-num">Free</span><span>To Start</span></div>
-          <div className="ls-stat"><span className="ls-stat-num">$19+</span><span>Paid plans / mo</span></div>
-          <div className="ls-stat"><span className="ls-stat-num">0</span><span>Installs Required</span></div>
+        <div className="ls-what-header">
+          <div className="ls-what-header__text">
+            <h2 id="what-heading">One workspace.<br/>Not five subscriptions.</h2>
+            <p className="ls-what-short">
+              <strong>W!ntAi</strong> combines every tool a creator needs — video publishing, scheduling, inbox, analytics, AI writing, image generation, and more — in a single login.
+            </p>
+            <div className="ls-stat-row">
+              <div className="ls-stat"><span className="ls-stat-num">8</span><span>AI Tools</span></div>
+              <div className="ls-stat"><span className="ls-stat-num">Free</span><span>To Start</span></div>
+              <div className="ls-stat"><span className="ls-stat-num">$19+</span><span>Paid plans / mo</span></div>
+              <div className="ls-stat"><span className="ls-stat-num">0</span><span>Installs Required</span></div>
+            </div>
+          </div>
+
+          {/* Tool cards grid — visually distinct from hero */}
+          <div className="ls-tool-grid" aria-label="All tools in W!ntAi">
+            {[
+              { emoji: '🎬', name: 'Video Publisher',   desc: 'Upload once, post everywhere',      accent: '#6366f1' },
+              { emoji: '📅', name: 'Content Calendar',  desc: 'Schedule & track posts',            accent: '#0ea5e9' },
+              { emoji: '📊', name: 'Analytics',         desc: 'Growth & engagement data',          accent: '#10b981' },
+              { emoji: '💬', name: 'Messages Inbox',    desc: 'DMs & comments in one place',       accent: '#f59e0b' },
+              { emoji: '🤖', name: 'Auto Reply',        desc: 'AI-powered smart responses',        accent: '#8b5cf6' },
+              { emoji: '🖼️', name: 'Image Generator',  desc: 'AI art for posts & thumbnails',     accent: '#ec4899' },
+              { emoji: '🎤', name: 'EchoScribe',        desc: 'Audio & video transcription',       accent: '#14b8a6' },
+              { emoji: '📄', name: 'DocuWizard',        desc: 'Summarize & analyze documents',     accent: '#f97316' },
+            ].map(({ emoji, name, desc, accent }) => (
+              <div key={name} className="ls-tool-card" style={{ '--tool-accent': accent }}>
+                <span className="ls-tool-card__icon">{emoji}</span>
+                <div>
+                  <div className="ls-tool-card__name">{name}</div>
+                  <div className="ls-tool-card__desc">{desc}</div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 

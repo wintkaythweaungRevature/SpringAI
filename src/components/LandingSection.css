@@ -1442,25 +1442,81 @@
   margin-bottom: 32px;
 }
 
-.ls-what-showcase {
+/* ── What section — new two-column layout ─────────────────── */
+.ls-what-header {
   display: grid;
-  gap: 28px 36px;
-  align-items: center;
-  margin-bottom: 32px;
+  gap: 40px 56px;
+  align-items: start;
+  margin-bottom: 0;
 }
 
-@media (min-width: 768px) {
-  .ls-what-showcase {
-    grid-template-columns: minmax(0, 1fr) minmax(220px, 320px);
+@media (min-width: 820px) {
+  .ls-what-header {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
 }
 
+.ls-what-header__text h2 {
+  font-size: clamp(1.6rem, 3.5vw, 2.4rem);
+  font-weight: 900;
+  line-height: 1.15;
+  color: var(--ls-text-head);
+  margin: 0 0 18px;
+}
+
 .ls-what-short {
-  margin: 0;
+  margin: 0 0 28px;
   font-size: 1.0625rem;
   line-height: 1.75;
   color: var(--ls-text-body);
-  max-width: 640px;
+  max-width: 480px;
+}
+
+/* ── Tool cards grid ───────────────────────────────────────── */
+.ls-tool-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.ls-tool-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--ls-glass);
+  backdrop-filter: var(--ls-blur);
+  -webkit-backdrop-filter: var(--ls-blur);
+  border: 1px solid var(--ls-border);
+  border-left: 3px solid var(--tool-accent, #6366f1);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.ls-tool-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+}
+
+.ls-tool-card__icon {
+  font-size: 1.4rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.ls-tool-card__name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--ls-text-head);
+  line-height: 1.3;
+}
+
+.ls-tool-card__desc {
+  font-size: 0.73rem;
+  color: var(--ls-text-muted);
+  line-height: 1.4;
+  margin-top: 2px;
 }
 
 /* ── What Is ─────────────────────────────────────────────── */

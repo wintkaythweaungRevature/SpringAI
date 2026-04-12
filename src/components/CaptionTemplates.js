@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const CATS = ['All','Business','Sale','Content','Holiday','Product'];
+const CATS = ['All','Business','Sale','Content','Holiday','Product','Quote','Event','Announce'];
 const PW = 780, PH = 440, CW = 300, CH = 170;
 const SC = CW / PW; // ≈ 0.3846
 
@@ -300,7 +300,281 @@ const TEMPLATES = [
     id:'np12', name:'New Product Launch', category:'Product', Preview:NewProduct,
     caption:`🚀 INTRODUCING [Product Name] — the [adjective] way to [key benefit]!\n\nWe've been working on this for [time] and can't wait for you to try it.\n\n⭐ [Feature 1]\n⭐ [Feature 2]\n⭐ [Feature 3]\n\n🛍️ Available now → link in bio\n\n#newproduct #productlaunch #[brand] #[niche]`,
   },
+  {
+    id:'mq13', name:'Motivational Quote', category:'Quote', Preview:MotivationalQuote,
+    caption:`💫 "[Your motivational quote here]"\n\n— [Author / Your Name]\n\nSave this for when you need a reminder 🔖\n\nWhich part resonates with you most? Drop it in the comments 👇\n\n#motivation #mindset #quotes #inspiration #[yourniche]`,
+  },
+  {
+    id:'bq14', name:'Bold Quote Card', category:'Quote', Preview:BoldQuoteCard,
+    caption:`❝ [Your bold quote here] ❞\n\nThis is something I truly believe in. It changed how I approach [topic].\n\nDouble tap if this hit different 💛\nShare with someone who needs to hear this today!\n\n#quote #motivation #[niche] #mindset #dailyquote`,
+  },
+  {
+    id:'wp15', name:'Webinar / Live Event', category:'Event', Preview:WebinarPromo,
+    caption:`🎙️ FREE WEBINAR ALERT!\n\nJoin me LIVE for [Topic] — I'll be covering:\n\n✅ [Key Topic 1]\n✅ [Key Topic 2]\n✅ [Key Topic 3]\n\n📅 Date: [Date]\n⏰ Time: [Time] [Timezone]\n🔗 Register free → link in bio\n\nSpots are limited — grab yours now!\n\n#webinar #free #[niche] #livetraining #[topic]`,
+  },
+  {
+    id:'gv16', name:'Giveaway Post', category:'Announce', Preview:GiveawayPost,
+    caption:`🎁 GIVEAWAY TIME! We're giving away [prize]!\n\nTo enter:\n❤️ Like this post\n👥 Tag 2 friends in the comments\n🔔 Follow our page\n\n🏆 Winner announced on [date]!\n\nGood luck everyone! Share to spread the word 🎉\n\n#giveaway #win #free #[niche] #contest`,
+  },
+  {
+    id:'ba17', name:'Before & After', category:'Content', Preview:BeforeAfter,
+    caption:`The transformation is REAL 🔥\n\nBEFORE: [describe the before state]\nAFTER: [describe the amazing result]\n\nThis didn't happen overnight — it took [timeframe] of [effort/method].\n\nWant to know exactly how? Drop "INFO" in the comments and I'll DM you! 👇\n\n#beforeandafter #transformation #[niche] #results`,
+  },
+  {
+    id:'tr18', name:'Testimonial / Review', category:'Business', Preview:TestimonialCard,
+    caption:`⭐⭐⭐⭐⭐ Real results from a real client!\n\n"[Client testimonial quote]"\n— [Client Name], [Title]\n\nThis is WHY we do what we do. Helping [target audience] achieve [result] is our mission.\n\nWant results like this? 👇\n🔗 Link in bio to get started\n\n#testimonial #results #clientlove #[niche] #review`,
+  },
+  {
+    id:'fs19', name:'Flash Sale', category:'Sale', Preview:FlashSale,
+    caption:`⚡ FLASH SALE — TODAY ONLY!\n\nUp to 70% OFF — this deal disappears in [X] hours!\n\n🔥 [Product/Service 1] — [discount]% off\n🔥 [Product/Service 2] — [discount]% off\n🔥 [Product/Service 3] — [discount]% off\n\n⏰ Ends at midnight. No extensions.\n🛍️ Shop now → link in bio\n\n#flashsale #sale #limiteddeal #[niche] #todayonly`,
+  },
+  {
+    id:'pa20', name:'Big Announcement', category:'Announce', Preview:ProductAnnounce,
+    caption:`🎉 BIG ANNOUNCEMENT — Something amazing is coming!\n\nWe've been working on this for months and we're ALMOST ready.\n\nHere's a hint: it's going to help you [key benefit] faster than ever before.\n\n🔔 Turn on notifications so you don't miss the reveal!\n💬 Drop your guesses below 👇\n\n#announcement #comingsoon #[brand] #[niche] #excited`,
+  },
+  {
+    id:'sv21', name:'Summer / Seasonal', category:'Holiday', Preview:SummerVibes,
+    caption:`☀️ Summer is HERE and so are our deals!\n\nShop our summer collection and [key benefit] this season:\n\n🌊 [Product/Offer 1]\n🌺 [Product/Offer 2]\n🏖️ [Product/Offer 3]\n\nUse code SUMMER[XX] for [X]% off at checkout!\n🔗 Link in bio\n\n#summer #summervibes #[niche] #seasonal #sale`,
+  },
+  {
+    id:'ec22', name:'Event Countdown', category:'Event', Preview:EventCountdown,
+    caption:`🌟 [EVENT NAME] is happening and YOU'RE invited!\n\n📅 Date: [Month Day, Year]\n⏰ Time: [X:XX PM Timezone]\n📍 Where: [Location / Online]\n\nWhat to expect:\n✨ [Highlight 1]\n✨ [Highlight 2]\n✨ [Highlight 3]\n\n🎟️ Reserve your spot → link in bio\nSpots are filling up FAST!\n\n#event #[eventname] #[niche] #joinus #RSVP`,
+  },
 ];
+
+/* ══════════════════════════════════════════════════════════
+   EXTRA PREVIEW COMPONENTS
+══════════════════════════════════════════════════════════ */
+
+function MotivationalQuote() {
+  return (
+    <div style={{width:PW,height:PH,background:'#0f172a',fontFamily:'Georgia,serif',display:'flex',alignItems:'center',justifyContent:'center',position:'relative',overflow:'hidden'}}>
+      <div style={{position:'absolute',top:-80,left:-80,width:320,height:320,borderRadius:'50%',background:'rgba(99,102,241,0.12)'}}/>
+      <div style={{position:'absolute',bottom:-60,right:-60,width:260,height:260,borderRadius:'50%',background:'rgba(99,102,241,0.08)'}}/>
+      <div style={{position:'relative',zIndex:1,textAlign:'center',padding:'0 80px',maxWidth:680}}>
+        <div style={{fontSize:80,color:'#6366f1',lineHeight:0.6,marginBottom:16,fontFamily:'serif'}}>"</div>
+        <div style={{fontSize:34,color:'#f1f5f9',lineHeight:1.5,fontStyle:'italic',marginBottom:24}}>The best time to start was yesterday. The next best time is right now.</div>
+        <div style={{fontSize:80,color:'#6366f1',lineHeight:0.6,transform:'rotate(180deg)',display:'inline-block',marginBottom:20,fontFamily:'serif'}}>"</div>
+        <div style={{borderTop:'1px solid rgba(99,102,241,0.4)',paddingTop:16,fontSize:16,color:'#94a3b8',letterSpacing:2}}>— [Your Name / Brand]</div>
+      </div>
+    </div>
+  );
+}
+
+function BoldQuoteCard() {
+  return (
+    <div style={{width:PW,height:PH,display:'flex',fontFamily:'Arial,sans-serif',overflow:'hidden'}}>
+      <div style={{width:16,background:'#f59e0b',flexShrink:0}}/>
+      <div style={{flex:1,background:'#fffbeb',padding:'56px 64px',display:'flex',flexDirection:'column',justifyContent:'center'}}>
+        <div style={{fontSize:100,color:'#f59e0b',lineHeight:0.7,marginBottom:10,fontFamily:'Georgia,serif'}}>❝</div>
+        <div style={{fontSize:36,fontWeight:800,color:'#1e293b',lineHeight:1.4,marginBottom:28}}>Done is better than perfect. Start before you feel ready.</div>
+        <div style={{display:'flex',alignItems:'center',gap:16}}>
+          <div style={{width:52,height:52,borderRadius:'50%',background:'#fde68a',display:'flex',alignItems:'center',justifyContent:'center',fontSize:22}}>✨</div>
+          <div>
+            <div style={{fontSize:16,fontWeight:700,color:'#1e293b'}}>[Your Name]</div>
+            <div style={{fontSize:13,color:'#f59e0b',fontWeight:600}}>@[yourhandle]</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function WebinarPromo() {
+  return (
+    <div style={{width:PW,height:PH,background:'#0f172a',fontFamily:'Arial,sans-serif',overflow:'hidden',position:'relative',display:'flex',alignItems:'center'}}>
+      <div style={{position:'absolute',top:0,right:0,width:'45%',height:'100%',background:'linear-gradient(135deg,#312e81,#4f46e5)',clipPath:'polygon(20% 0,100% 0,100% 100%,0 100%)'}}/>
+      <div style={{position:'absolute',right:60,top:'50%',transform:'translateY(-50%)',zIndex:1,textAlign:'center'}}>
+        <div style={{width:160,height:160,borderRadius:'50%',background:'rgba(255,255,255,0.1)',border:'2px dashed rgba(255,255,255,0.3)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:60}}>📅</div>
+      </div>
+      <div style={{position:'relative',zIndex:1,padding:'0 60px',maxWidth:460,color:'#fff'}}>
+        <div style={{fontSize:13,color:'#a5b4fc',letterSpacing:3,marginBottom:14}}>FREE WEBINAR</div>
+        <div style={{fontSize:44,fontWeight:900,lineHeight:1.1,marginBottom:16}}>Join Us<br/><span style={{color:'#a5b4fc'}}>Live!</span></div>
+        <div style={{fontSize:15,color:'#cbd5e1',marginBottom:24,lineHeight:1.6}}>[Topic] — Everything you need to know about [subject].</div>
+        <div style={{display:'flex',gap:16,marginBottom:24}}>
+          <div style={{background:'rgba(165,180,252,0.15)',border:'1px solid #a5b4fc',borderRadius:8,padding:'10px 18px',fontSize:13,color:'#a5b4fc',fontWeight:600}}>📅 [Date]</div>
+          <div style={{background:'rgba(165,180,252,0.15)',border:'1px solid #a5b4fc',borderRadius:8,padding:'10px 18px',fontSize:13,color:'#a5b4fc',fontWeight:600}}>⏰ [Time]</div>
+        </div>
+        <div style={{background:'#4f46e5',color:'#fff',padding:'13px 28px',borderRadius:8,display:'inline-block',fontWeight:700,fontSize:14,letterSpacing:1}}>REGISTER FREE →</div>
+      </div>
+    </div>
+  );
+}
+
+function GiveawayPost() {
+  return (
+    <div style={{width:PW,height:PH,background:'#fdf2f8',fontFamily:'Arial,sans-serif',overflow:'hidden',position:'relative',display:'flex',alignItems:'center',justifyContent:'center'}}>
+      <div style={{position:'absolute',top:-100,left:'50%',transform:'translateX(-50%)',width:500,height:500,borderRadius:'50%',background:'rgba(236,72,153,0.08)'}}/>
+      <div style={{position:'absolute',top:30,right:40,fontSize:60,opacity:0.15}}>🎁</div>
+      <div style={{position:'absolute',bottom:30,left:40,fontSize:50,opacity:0.12}}>🎉</div>
+      <div style={{position:'relative',zIndex:1,textAlign:'center',padding:'0 60px'}}>
+        <div style={{fontSize:18,color:'#db2777',letterSpacing:4,fontWeight:700,marginBottom:8}}>✨ WE'RE CELEBRATING ✨</div>
+        <div style={{fontSize:90,fontWeight:900,color:'#be185d',lineHeight:0.9,marginBottom:10,background:'linear-gradient(135deg,#db2777,#9333ea)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>GIVE<br/>AWAY</div>
+        <div style={{fontSize:16,color:'#6b21a8',fontWeight:600,marginBottom:20}}>Prize: [What you're giving away]</div>
+        <div style={{display:'flex',justifyContent:'center',gap:20,fontSize:14,color:'#9333ea',fontWeight:600}}>
+          <span>❤️ Like this post</span>
+          <span>👥 Tag a friend</span>
+          <span>🔔 Follow us</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BeforeAfter() {
+  return (
+    <div style={{width:PW,height:PH,fontFamily:'Arial,sans-serif',overflow:'hidden',display:'flex',position:'relative'}}>
+      <div style={{flex:1,background:'#94a3b8',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'flex-end',padding:'0 0 30px',position:'relative',overflow:'hidden'}}>
+        <div style={{position:'absolute',top:0,left:0,right:0,bottom:0,display:'flex',alignItems:'center',justifyContent:'center'}}>
+          <div style={{width:120,height:240,background:'#64748b',borderRadius:'60px 60px 0 0',marginTop:60}}/>
+          <div style={{position:'absolute',top:60,width:60,height:60,background:'#475569',borderRadius:'50%'}}/>
+        </div>
+        <div style={{position:'relative',zIndex:1,background:'rgba(0,0,0,0.55)',color:'#fff',padding:'8px 28px',borderRadius:6,fontSize:18,fontWeight:800,letterSpacing:2}}>BEFORE</div>
+      </div>
+      <div style={{width:6,background:'#fff',zIndex:10,position:'relative'}}>
+        <div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',width:36,height:36,background:'#fff',borderRadius:'50%',boxShadow:'0 2px 8px rgba(0,0,0,0.3)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:14,fontWeight:700,color:'#334155'}}>↔</div>
+      </div>
+      <div style={{flex:1,background:'#4a9bb5',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'flex-end',padding:'0 0 30px',position:'relative',overflow:'hidden'}}>
+        <div style={{position:'absolute',top:0,left:0,right:0,bottom:0,display:'flex',alignItems:'center',justifyContent:'center'}}>
+          <div style={{width:130,height:260,background:'#2e7d9e',borderRadius:'65px 65px 0 0',marginTop:40}}/>
+          <div style={{position:'absolute',top:50,width:65,height:65,background:'#1a5f7a',borderRadius:'50%'}}/>
+        </div>
+        <div style={{position:'relative',zIndex:1,background:'rgba(0,0,0,0.55)',color:'#fff',padding:'8px 28px',borderRadius:6,fontSize:18,fontWeight:800,letterSpacing:2}}>AFTER</div>
+      </div>
+    </div>
+  );
+}
+
+function TestimonialCard() {
+  return (
+    <div style={{width:PW,height:PH,background:'#f8fafc',fontFamily:'Arial,sans-serif',overflow:'hidden',display:'flex',alignItems:'center',padding:'0 64px',gap:56,boxSizing:'border-box'}}>
+      <div style={{flex:1}}>
+        <div style={{fontSize:72,color:'#6366f1',lineHeight:0.7,fontFamily:'Georgia,serif',marginBottom:16}}>"</div>
+        <div style={{fontSize:26,color:'#1e293b',lineHeight:1.6,fontWeight:500,marginBottom:28,fontStyle:'italic'}}>Working with [Brand/Product] completely changed how I [do something]. I went from [before] to [after] in just [timeframe]!</div>
+        <div style={{display:'flex',alignItems:'center',gap:16}}>
+          <div style={{width:60,height:60,borderRadius:'50%',background:'#c7d2fe',display:'flex',alignItems:'center',justifyContent:'center',fontSize:24}}>😊</div>
+          <div>
+            <div style={{fontSize:18,fontWeight:700,color:'#1e293b'}}>[Client Name]</div>
+            <div style={{fontSize:14,color:'#6366f1'}}>[Title / @handle]</div>
+            <div style={{display:'flex',gap:2,marginTop:4}}>{'★★★★★'.split('').map((s,i)=><span key={i} style={{color:'#f59e0b',fontSize:16}}>{s}</span>)}</div>
+          </div>
+        </div>
+      </div>
+      <div style={{width:200,flexShrink:0,display:'flex',flexDirection:'column',gap:16,alignItems:'center'}}>
+        <div style={{width:180,height:180,borderRadius:16,background:'linear-gradient(135deg,#c7d2fe,#a5b4fc)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:70}}>⭐</div>
+        <div style={{fontSize:13,color:'#6366f1',fontWeight:700,textAlign:'center',letterSpacing:1}}>VERIFIED REVIEW</div>
+      </div>
+    </div>
+  );
+}
+
+function FlashSale() {
+  return (
+    <div style={{width:PW,height:PH,background:'#7f1d1d',fontFamily:'Arial,sans-serif',overflow:'hidden',position:'relative',display:'flex',alignItems:'center',justifyContent:'center'}}>
+      <div style={{position:'absolute',inset:0,background:'linear-gradient(135deg,#7f1d1d 0%,#b91c1c 50%,#7f1d1d 100%)'}}/>
+      <div style={{position:'absolute',top:-100,right:-100,width:400,height:400,borderRadius:'50%',background:'rgba(255,255,255,0.04)'}}/>
+      <div style={{position:'relative',zIndex:1,textAlign:'center',color:'#fff'}}>
+        <div style={{fontSize:16,letterSpacing:6,color:'#fca5a5',marginBottom:6}}>⚡ TODAY ONLY ⚡</div>
+        <div style={{fontSize:56,fontWeight:900,lineHeight:1,marginBottom:4}}>FLASH</div>
+        <div style={{fontSize:56,fontWeight:900,lineHeight:1,color:'#fca5a5',marginBottom:20}}>SALE</div>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:4,marginBottom:24}}>
+          <div style={{background:'rgba(255,255,255,0.15)',border:'2px solid rgba(255,255,255,0.3)',borderRadius:8,padding:'8px 16px',textAlign:'center'}}>
+            <div style={{fontSize:36,fontWeight:900,lineHeight:1}}>50</div>
+            <div style={{fontSize:11,color:'#fca5a5',letterSpacing:1}}>HRS</div>
+          </div>
+          <div style={{fontSize:28,fontWeight:900,paddingBottom:12}}>:</div>
+          <div style={{background:'rgba(255,255,255,0.15)',border:'2px solid rgba(255,255,255,0.3)',borderRadius:8,padding:'8px 16px',textAlign:'center'}}>
+            <div style={{fontSize:36,fontWeight:900,lineHeight:1}}>00</div>
+            <div style={{fontSize:11,color:'#fca5a5',letterSpacing:1}}>MIN</div>
+          </div>
+          <div style={{fontSize:28,fontWeight:900,paddingBottom:12}}>:</div>
+          <div style={{background:'rgba(255,255,255,0.15)',border:'2px solid rgba(255,255,255,0.3)',borderRadius:8,padding:'8px 16px',textAlign:'center'}}>
+            <div style={{fontSize:36,fontWeight:900,lineHeight:1}}>00</div>
+            <div style={{fontSize:11,color:'#fca5a5',letterSpacing:1}}>SEC</div>
+          </div>
+        </div>
+        <div style={{fontSize:24,fontWeight:800}}>Up to <span style={{color:'#fca5a5',fontSize:40}}>70%</span> OFF</div>
+      </div>
+    </div>
+  );
+}
+
+function ProductAnnounce() {
+  return (
+    <div style={{width:PW,height:PH,fontFamily:'Arial,sans-serif',overflow:'hidden',background:'#f0fdf4',display:'flex',alignItems:'center',padding:'0 64px',gap:56,boxSizing:'border-box',position:'relative'}}>
+      <div style={{position:'absolute',top:-80,right:-80,width:320,height:320,borderRadius:'50%',background:'rgba(16,185,129,0.08)'}}/>
+      <div style={{flex:1,zIndex:1}}>
+        <div style={{display:'inline-block',background:'#d1fae5',color:'#065f46',fontSize:13,fontWeight:700,padding:'6px 16px',borderRadius:20,marginBottom:16,letterSpacing:1}}>🎉 BIG ANNOUNCEMENT</div>
+        <div style={{fontSize:50,fontWeight:900,color:'#064e3b',lineHeight:1.1,marginBottom:16}}>Something<br/><span style={{color:'#059669'}}>Amazing</span><br/>is Coming!</div>
+        <div style={{fontSize:15,color:'#065f46',lineHeight:1.7,marginBottom:28}}>We've been working on something big and we're almost ready to share it with you. Stay tuned — you won't want to miss this! 🚀</div>
+        <div style={{display:'flex',gap:16}}>
+          <div style={{background:'#059669',color:'#fff',padding:'13px 28px',borderRadius:8,fontWeight:700,fontSize:14}}>Get Notified →</div>
+          <div style={{border:'2px solid #059669',color:'#059669',padding:'13px 24px',borderRadius:8,fontWeight:600,fontSize:14}}>Learn More</div>
+        </div>
+      </div>
+      <div style={{width:220,height:280,flexShrink:0,zIndex:1,display:'flex',flexDirection:'column',gap:12}}>
+        <div style={{flex:1,background:'#a7f3d0',borderRadius:16,display:'flex',alignItems:'center',justifyContent:'center',fontSize:60}}>🚀</div>
+        <div style={{height:80,background:'#6ee7b7',borderRadius:12,display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:700,color:'#064e3b',letterSpacing:1}}>COMING SOON</div>
+      </div>
+    </div>
+  );
+}
+
+function SummerVibes() {
+  return (
+    <div style={{width:PW,height:PH,fontFamily:'Arial,sans-serif',overflow:'hidden',position:'relative',display:'flex'}}>
+      <div style={{position:'absolute',inset:0,background:'linear-gradient(135deg,#fbbf24 0%,#f97316 40%,#ef4444 100%)'}}/>
+      <div style={{position:'absolute',top:-60,right:80,width:280,height:280,borderRadius:'50%',background:'rgba(255,255,255,0.12)'}}/>
+      <div style={{position:'absolute',bottom:-80,left:100,width:240,height:240,borderRadius:'50%',background:'rgba(255,255,255,0.08)'}}/>
+      <div style={{position:'relative',zIndex:1,display:'flex',alignItems:'center',padding:'0 64px',gap:48,width:'100%',boxSizing:'border-box'}}>
+        <div style={{color:'#fff',flex:1}}>
+          <div style={{fontSize:80,marginBottom:0,lineHeight:1}}>☀️</div>
+          <div style={{fontSize:60,fontWeight:900,lineHeight:1,marginBottom:8,textShadow:'0 2px 12px rgba(0,0,0,0.2)'}}>Summer<br/>Vibes</div>
+          <div style={{fontSize:16,color:'rgba(255,255,255,0.85)',lineHeight:1.6,marginBottom:24}}>Bring the heat this season with [your product/service]. Shop our summer collection now!</div>
+          <div style={{background:'rgba(255,255,255,0.25)',backdropFilter:'blur(8px)',border:'2px solid rgba(255,255,255,0.5)',color:'#fff',padding:'12px 28px',borderRadius:8,display:'inline-block',fontWeight:700,fontSize:14,letterSpacing:1}}>SHOP NOW 🌊</div>
+        </div>
+        <div style={{flexShrink:0,display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,width:200,height:200}}>
+          <div style={{background:'rgba(255,255,255,0.2)',borderRadius:12}}/>
+          <div style={{background:'rgba(255,255,255,0.15)',borderRadius:12}}/>
+          <div style={{background:'rgba(255,255,255,0.15)',borderRadius:12}}/>
+          <div style={{background:'rgba(255,255,255,0.2)',borderRadius:12}}/>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EventCountdown() {
+  return (
+    <div style={{width:PW,height:PH,background:'#1e1b4b',fontFamily:'Arial,sans-serif',overflow:'hidden',position:'relative',display:'flex',alignItems:'center'}}>
+      <div style={{position:'absolute',inset:0,background:'radial-gradient(ellipse at top,#312e81 0%,#1e1b4b 70%)'}}/>
+      {[...Array(12)].map((_,i)=>(
+        <div key={i} style={{position:'absolute',width:3,height:3,borderRadius:'50%',background:'rgba(255,255,255,0.4)',top:`${10+Math.random()*80}%`,left:`${Math.random()*100}%`}}/>
+      ))}
+      <div style={{position:'relative',zIndex:1,padding:'0 60px',color:'#fff',width:'100%',boxSizing:'border-box'}}>
+        <div style={{fontSize:14,color:'#a5b4fc',letterSpacing:3,marginBottom:10}}>MARK YOUR CALENDAR</div>
+        <div style={{fontSize:50,fontWeight:900,lineHeight:1.1,marginBottom:8}}>[Event Name]<br/><span style={{color:'#a5b4fc',fontSize:36}}>is happening!</span></div>
+        <div style={{fontSize:15,color:'#c7d2fe',marginBottom:28,lineHeight:1.6}}>Join us for [description of event]. An experience you won't forget.</div>
+        <div style={{display:'flex',gap:16,flexWrap:'wrap'}}>
+          <div style={{background:'rgba(165,180,252,0.15)',border:'1px solid #6366f1',borderRadius:10,padding:'12px 20px'}}>
+            <div style={{fontSize:11,color:'#a5b4fc',letterSpacing:2,marginBottom:4}}>DATE</div>
+            <div style={{fontSize:20,fontWeight:700}}>[Month Day]</div>
+          </div>
+          <div style={{background:'rgba(165,180,252,0.15)',border:'1px solid #6366f1',borderRadius:10,padding:'12px 20px'}}>
+            <div style={{fontSize:11,color:'#a5b4fc',letterSpacing:2,marginBottom:4}}>TIME</div>
+            <div style={{fontSize:20,fontWeight:700}}>[X:XX PM]</div>
+          </div>
+          <div style={{background:'rgba(165,180,252,0.15)',border:'1px solid #6366f1',borderRadius:10,padding:'12px 20px'}}>
+            <div style={{fontSize:11,color:'#a5b4fc',letterSpacing:2,marginBottom:4}}>WHERE</div>
+            <div style={{fontSize:20,fontWeight:700}}>[Location]</div>
+          </div>
+          <div style={{background:'#4f46e5',borderRadius:10,padding:'12px 24px',display:'flex',alignItems:'center',fontSize:15,fontWeight:700,letterSpacing:1}}>RSVP NOW →</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 function getCatColor(cat) {
   const map = {
@@ -309,6 +583,9 @@ function getCatColor(cat) {
     Content:  { bg:'#f0fdf4', text:'#15803d' },
     Holiday:  { bg:'#fff7ed', text:'#c2410c' },
     Product:  { bg:'#faf5ff', text:'#7c3aed' },
+    Quote:    { bg:'#fdf4ff', text:'#7e22ce' },
+    Event:    { bg:'#eef2ff', text:'#4338ca' },
+    Announce: { bg:'#f0fdf4', text:'#065f46' },
   };
   return map[cat] || { bg:'#f1f5f9', text:'#64748b' };
 }

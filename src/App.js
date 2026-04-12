@@ -500,7 +500,9 @@ function App() {
             <div style={s.groupLabel}>{SIDEBAR_GROUPS.socialHq}</div>
             <NavItem icon={<HiPhoto size={17} />}                    label="Content Calendar"   active={activeTab === 'calendar'}          onClick={() => { go('calendar'); if (isMobile || isTablet) setSidebarOpen(false); }} />
             <NavItem icon={<HiRectangleGroup size={17} />}           label="Templates"          active={activeTab === 'caption-templates'} onClick={() => { go('caption-templates'); if (isMobile || isTablet) setSidebarOpen(false); }} />
-            <NavItem icon={<HiLink size={17} />}                     label="Connected Accounts" active={activeTab === 'social-connect'}     onClick={() => { go('social-connect'); if (isMobile || isTablet) setSidebarOpen(false); }} />
+            {(isMobile || isTablet) && (
+              <NavItem icon={<HiLink size={17} />}                   label="Connected Accounts" active={activeTab === 'social-connect'}     onClick={() => { go('social-connect'); setSidebarOpen(false); }} />
+            )}
             <NavItem icon={<HiChatBubbleOvalLeft size={17} />}       label="Inbox"              active={activeTab === 'messages'}         onClick={() => { go('messages'); if (isMobile || isTablet) setSidebarOpen(false); }} />
             <NavItem icon={<HiArrowTrendingUp size={17} />}          label="Growth Planner"     active={activeTab === 'trends'}           onClick={() => { go('trends'); if (isMobile || isTablet) setSidebarOpen(false); }} />
 
@@ -624,21 +626,22 @@ function App() {
                   );
                 })}
 
-                {/* + button */}
+                {/* + Connect button */}
                 <button
                   onClick={() => go('social-connect')}
-                  title="Connect more platforms"
+                  title="Connected Accounts — connect more platforms"
                   style={{
-                    width: 28, height: 28, borderRadius: '50%',
+                    height: 28, borderRadius: 8,
                     background: 'transparent', border: '1.5px dashed #334155',
-                    color: '#64748b', fontSize: 16, fontWeight: 700,
+                    color: '#64748b', fontSize: 12, fontWeight: 700,
                     cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    marginLeft: 2, padding: 0, transition: 'all 0.15s',
+                    gap: 4, marginLeft: 4, padding: '0 10px', transition: 'all 0.15s', whiteSpace: 'nowrap',
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#6366f1'; e.currentTarget.style.color = '#6366f1'; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = '#334155'; e.currentTarget.style.color = '#64748b'; }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#6366f1'; e.currentTarget.style.color = '#6366f1'; e.currentTarget.style.background = 'rgba(99,102,241,0.08)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = '#334155'; e.currentTarget.style.color = '#64748b'; e.currentTarget.style.background = 'transparent'; }}
                 >
-                  +
+                  <span style={{ fontSize: 15, lineHeight: 1 }}>+</span>
+                  <span>Connect</span>
                 </button>
               </div>
             )}

@@ -809,7 +809,6 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
               <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Recipe Generator</span><span className="ls-pf-val">Unlimited</span></div>
               <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>AI Captions &amp; Hashtags</span></div>
               <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>AI Idea Generator</span><span className="ls-pf-val ls-pf-val--dim">Basic</span></div>
-              <div className="ls-plan-feat ls-plan-feat--no"><span className="ls-pf-icon">—</span><span>AI Image Generation</span><span className="ls-pf-val ls-pf-val--lock">Pro+</span></div>
               <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>DocuWizard (PDF / Excel / Word)</span></div>
               <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Resume Warlock</span></div>
               <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Reply Enchanter (Email AI)</span></div>
@@ -823,16 +822,8 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
               <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Scheduled posts</span><span className="ls-pf-val">30 / mo</span></div>
               <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Thumbnail Picker</span></div>
               <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Link-in-bio Page</span></div>
-              <div className="ls-plan-feat ls-plan-feat--no"><span className="ls-pf-icon">—</span><span>Video Trimming</span><span className="ls-pf-val ls-pf-val--lock">Growth</span></div>
             </div>
 
-            <div className="ls-plan-group">
-              <div className="ls-plan-group-label">📊 Analytics &amp; Inbox</div>
-              <div className="ls-plan-feat ls-plan-feat--no"><span className="ls-pf-icon">—</span><span>Deep Analytics Dashboard</span><span className="ls-pf-val ls-pf-val--lock">Pro+</span></div>
-              <div className="ls-plan-feat ls-plan-feat--no"><span className="ls-pf-icon">—</span><span>Growth Planner</span><span className="ls-pf-val ls-pf-val--lock">Pro+</span></div>
-              <div className="ls-plan-feat ls-plan-feat--no"><span className="ls-pf-icon">—</span><span>Social AI Chat (RAG)</span><span className="ls-pf-val ls-pf-val--lock">Pro+</span></div>
-              <div className="ls-plan-feat ls-plan-feat--no"><span className="ls-pf-icon">—</span><span>Messages &amp; Auto Reply</span><span className="ls-pf-val ls-pf-val--lock">Pro+</span></div>
-            </div>
           </div>
 
           {/* ── PRO ── */}
@@ -868,7 +859,6 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
               <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Scheduled posts</span><span className="ls-pf-val">Unlimited</span></div>
               <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Thumbnail Picker</span></div>
               <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Link-in-bio Page</span></div>
-              <div className="ls-plan-feat ls-plan-feat--no"><span className="ls-pf-icon">—</span><span>Video Trimming</span><span className="ls-pf-val ls-pf-val--lock">Growth</span></div>
             </div>
 
             <div className="ls-plan-group">

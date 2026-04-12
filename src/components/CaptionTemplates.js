@@ -8,18 +8,21 @@ const SC = CW / PW; // ≈ 0.3846
 
 /** Gallery / export colour themes (swatches ≈ reference UI). `filter` tints the artwork inside the frame. */
 const PREVIEW_THEMES = [
-  { id: 'default',   label: 'Default',   frameBg: '#e8edf2',                              filter: 'none',                                    swatch: ['#1a3a5c','#94a3b8','#e2e8f0'] },
-  { id: 'earth',     label: 'Earth',     frameBg: 'linear-gradient(160deg,#e4e9e0,#c9d4c2)', filter: 'saturate(0.92) hue-rotate(-12deg)',       swatch: ['#3d4a38','#8b9a7d','#f8faf8'] },
-  { id: 'neutral',   label: 'Neutral',   frameBg: 'linear-gradient(160deg,#f3eee8,#dcd7d0)', filter: 'saturate(0.88) hue-rotate(5deg)',         swatch: ['#d6cfc4','#faf8f5','#2d2a28'] },
-  { id: 'floral',    label: 'Floral',    frameBg: 'linear-gradient(160deg,#ede4f0,#f5e6ea)', filter: 'hue-rotate(18deg) saturate(1.08)',        swatch: ['#9d7a8c','#c9b8c8','#faf5f7'] },
-  { id: 'corporate', label: 'Corporate', frameBg: 'linear-gradient(160deg,#dbeafe,#e0f2fe)', filter: 'hue-rotate(165deg) saturate(1.05)',       swatch: ['#0e7490','#f8fafc','#0f172a'] },
-  { id: 'warm',      label: 'Warm',      frameBg: 'linear-gradient(160deg,#fff4e6,#fde68a)', filter: 'hue-rotate(-22deg) saturate(1.12)',       swatch: ['#c2410c','#fef3c7','#fefce8'] },
-  { id: 'grey',      label: 'Grey',      frameBg: 'linear-gradient(160deg,#e2e8f0,#cbd5e1)', filter: 'saturate(0.75) contrast(1.08)',           swatch: ['#475569','#f1f5f9','#1e293b'] },
-  { id: 'navy',      label: 'Navy',      frameBg: 'linear-gradient(160deg,#dbeafe,#bfdbfe)', filter: 'hue-rotate(195deg) saturate(0.95)',       swatch: ['#1e3a8a','#ffffff','#1e40af'] },
-  { id: 'mono',      label: 'Mono',      frameBg: 'linear-gradient(160deg,#f4f4f5,#d4d4d8)', filter: 'grayscale(0.45) contrast(1.06)',          swatch: ['#18181b','#fafafa','#52525b'] },
-  { id: 'rose',      label: 'Rose',      frameBg: 'linear-gradient(160deg,#ffe4e6,#fecdd3)', filter: 'hue-rotate(320deg) saturate(1.1)',        swatch: ['#be185d','#fda4af','#fff1f2'] },
-  { id: 'forest',    label: 'Forest',    frameBg: 'linear-gradient(160deg,#dcfce7,#bbf7d0)', filter: 'hue-rotate(100deg) saturate(1.05)',       swatch: ['#166534','#86efac','#f0fdf4'] },
-  { id: 'sunset',    label: 'Sunset',    frameBg: 'linear-gradient(160deg,#ffedd5,#fde68a)', filter: 'hue-rotate(-35deg) saturate(1.2) brightness(1.04)', swatch: ['#c2410c','#f97316','#fff7ed'] },
+  // Most templates use navy/blue (~210° hue) as their primary color.
+  // hue-rotate(X) shifts ALL hues by X degrees.
+  // To get target color T from base 210°: rotation = T - 210  (mod 360)
+  { id: 'default',   label: 'Default',   frameBg: '#e8edf2',                              filter: 'none',                                                     swatch: ['#1a3a5c','#94a3b8','#e2e8f0'] },
+  { id: 'earth',     label: 'Earth',     frameBg: 'linear-gradient(160deg,#e4e9e0,#c9d4c2)', filter: 'hue-rotate(-110deg) saturate(0.85) brightness(0.97)',     swatch: ['#3d4a38','#8b9a7d','#f8faf8'] },
+  { id: 'neutral',   label: 'Neutral',   frameBg: 'linear-gradient(160deg,#f3eee8,#dcd7d0)', filter: 'saturate(0.28) sepia(0.14) brightness(1.04)',             swatch: ['#d6cfc4','#faf8f5','#2d2a28'] },
+  { id: 'floral',    label: 'Floral',    frameBg: 'linear-gradient(160deg,#ede4f0,#f5e6ea)', filter: 'hue-rotate(90deg) saturate(1.15)',                        swatch: ['#9d7a8c','#c9b8c8','#faf5f7'] },
+  { id: 'corporate', label: 'Corporate', frameBg: 'linear-gradient(160deg,#dbeafe,#e0f2fe)', filter: 'hue-rotate(-25deg) saturate(1.1) brightness(1.02)',       swatch: ['#0e7490','#f8fafc','#0f172a'] },
+  { id: 'warm',      label: 'Warm',      frameBg: 'linear-gradient(160deg,#fff4e6,#fde68a)', filter: 'hue-rotate(170deg) saturate(1.25) brightness(1.05)',      swatch: ['#c2410c','#fef3c7','#fefce8'] },
+  { id: 'grey',      label: 'Grey',      frameBg: 'linear-gradient(160deg,#e2e8f0,#cbd5e1)', filter: 'saturate(0.15) contrast(1.08)',                           swatch: ['#475569','#f1f5f9','#1e293b'] },
+  { id: 'navy',      label: 'Navy',      frameBg: 'linear-gradient(160deg,#dbeafe,#bfdbfe)', filter: 'hue-rotate(22deg) saturate(1.05) brightness(0.92)',       swatch: ['#1e3a8a','#ffffff','#1e40af'] },
+  { id: 'mono',      label: 'Mono',      frameBg: 'linear-gradient(160deg,#f4f4f5,#d4d4d8)', filter: 'grayscale(0.9) contrast(1.1)',                            swatch: ['#18181b','#fafafa','#52525b'] },
+  { id: 'rose',      label: 'Rose',      frameBg: 'linear-gradient(160deg,#ffe4e6,#fecdd3)', filter: 'hue-rotate(135deg) saturate(1.2)',                        swatch: ['#be185d','#fda4af','#fff1f2'] },
+  { id: 'forest',    label: 'Forest',    frameBg: 'linear-gradient(160deg,#dcfce7,#bbf7d0)', filter: 'hue-rotate(-80deg) saturate(1.2) brightness(1.02)',       swatch: ['#166534','#86efac','#f0fdf4'] },
+  { id: 'sunset',    label: 'Sunset',    frameBg: 'linear-gradient(160deg,#ffedd5,#fde68a)', filter: 'hue-rotate(150deg) saturate(1.5) brightness(1.05)',       swatch: ['#c2410c','#f97316','#fff7ed'] },
 ];
 
 function getPreviewTheme(themeId) {
@@ -457,23 +460,23 @@ const TEMPLATES = [
     caption: `🔔 [Product Name] is BACK IN STOCK!\n\nYou asked — we listened. Limited quantities this drop.\n\nWhy people love it:\n⭐ [Benefit 1]\n⭐ [Benefit 2]\n⭐ [Benefit 3]\n\n🛒 Grab yours → link in bio before it sells out again!\n\n#restock #limited #[niche] #shop #sale`,
   },
   {
-    id: 'nb33', name: 'Founder Friday Intro', category: 'Business', Preview: NavyBizCover,
+    id: 'nb33', name: 'Founder Friday Intro', category: 'Business', Preview: FounderFridayPreview,
     caption: `👋 Hi, I'm [Your Name] — founder of [Brand Name].\n\nEvery Friday I share one lesson from building [what you build] for [target audience].\n\nToday's lesson: [Lesson in one sentence]\n\nFollow for more founder notes + behind-the-scenes 🔖\n\n#founder #startup #[niche] #lessons #business`,
   },
   {
-    id: 'wb34', name: 'Brand Values Post', category: 'Business', Preview: WhiteBrand,
+    id: 'wb34', name: 'Brand Values Post', category: 'Business', Preview: BrandValuesPreview,
     caption: `At [Brand Name], we believe:\n\n💜 [Value 1]\n💜 [Value 2]\n💜 [Value 3]\n\nThese aren't buzzwords — they're how we show up for [target audience] every day.\n\nWhat value matters most to you? Tell me below 👇\n\n#brandvalues #mission #[niche] #community #authenticity`,
   },
   {
-    id: 'dm35', name: 'Service Packages Menu', category: 'Business', Preview: DigitalExpert,
+    id: 'dm35', name: 'Service Packages Menu', category: 'Business', Preview: ServiceMenuPreview,
     caption: `📌 Pick your package — [Brand / Your Name]\n\n🟣 Starter — [what's included] — [price or \"DM for quote\"]\n🟣 Growth — [what's included] — [price or \"DM for quote\"]\n🟣 Pro — [what's included] — [price or \"DM for quote\"]\n\nNot sure which fits? DM me \"HELP\" and I'll point you in the right direction.\n\n#services #packages #[niche] #consulting #booking`,
   },
   {
-    id: 'bn36', name: 'Myth vs Fact Listicle', category: 'Content', Preview: BigNumber,
+    id: 'bn36', name: 'Myth vs Fact Listicle', category: 'Content', Preview: MythFactPreview,
     caption: `🧠 5 myths about [topic] — busted.\n\n❌ Myth 1: [myth]\n✅ Fact: [fact]\n\n❌ Myth 2: [myth]\n✅ Fact: [fact]\n\n(Save this — your future self will thank you 🔖)\n\n#mythbusting #education #[niche] #tips #learn`,
   },
   {
-    id: 'ug37', name: 'Resource Stack Share', category: 'Content', Preview: UltimateGuide,
+    id: 'ug37', name: 'Resource Stack Share', category: 'Content', Preview: ResourceStackPreview,
     caption: `📚 My go-to stack for [topic]:\n\n1) [Tool or book 1] — why I love it\n2) [Tool or book 2] — why I love it\n3) [Tool or book 3] — why I love it\n\nAnything you'd add? Drop your favorite below 👇\n\n#resources #tools #[niche] #productivity #stack`,
   },
   {
@@ -481,11 +484,11 @@ const TEMPLATES = [
     caption: `⚡ New mini-course: [Course Name]\n\nIn [X] short lessons you'll learn:\n• [Outcome 1]\n• [Outcome 2]\n• [Outcome 3]\n\nBuilt for [target audience] who are tired of [pain point].\n\n👉 Preview the first lesson → link in bio\n\n#minicourse #learnonline #[niche] #education #launch`,
   },
   {
-    id: 'np39', name: 'Bundle Deal', category: 'Sale', Preview: NewProduct,
+    id: 'np39', name: 'Bundle Deal', category: 'Sale', Preview: BundleDealPreview,
     caption: `🎁 BUNDLE ALERT — save when you buy together!\n\nGet [Product A] + [Product B] for one special price.\n\n✅ [Bundle benefit 1]\n✅ [Bundle benefit 2]\n\n⏰ Ends [date]\n🛍️ Shop bundle → link in bio\n\n#bundle #deal #save #[niche] #shopping`,
   },
   {
-    id: 'mq40', name: 'Micro‑Affirmation', category: 'Quote', Preview: MotivationalQuote,
+    id: 'mq40', name: 'Micro‑Affirmation', category: 'Quote', Preview: MicroAffirmPreview,
     caption: `🌿 Gentle reminder:\n\nYou don't have to [unrealistic expectation].\n\nYou only need to [small actionable step].\n\nThat's enough for today.\n\nSave if you needed this 🤍\n\n#selfcare #mindset #gentle #[niche] #mentalhealth`,
   },
   {
@@ -529,23 +532,23 @@ const TEMPLATES = [
     caption: `🙏 Thank you\n\n[Milestone or holiday message]\n\nWe’re grateful for every follow, order, and message. You make [Brand Name] possible.\n\n[Optional: small gift code or teaser]\n\n#thankyou #community #[Brand Name] #grateful`,
   },
   {
-    id: 'hx51', name: 'Flash Giveaway', category: 'Sale', Preview: GiveawayPost,
+    id: 'hx51', name: 'Flash Giveaway', category: 'Sale', Preview: FlashGiveawayPreview,
     caption: `⚡ FLASH GIVEAWAY — ends in [timeframe]\n\nPrize: [prize]\n\nTo enter:\n1️⃣ Follow @[handle]\n2️⃣ Like + save this post\n3️⃣ Tag a friend who’d love this\n\nBonus entry: share to your story\n\n#giveaway #contest #[Brand Name] #free`,
   },
   {
-    id: 'hx52', name: 'Lunch & Learn', category: 'Event', Preview: WebinarPromo,
+    id: 'hx52', name: 'Lunch & Learn', category: 'Event', Preview: LunchLearnPreview,
     caption: `🥪 Lunch & Learn: [Topic]\n\n📅 [Date] · ⏰ [Time]\n📍 [Location / Zoom]\n\nBring your questions — we’ll cover [3 bullet points].\n\nRSVP: link in bio\n\n#webinar #learning #[industry] #networking`,
   },
   {
-    id: 'hx53', name: 'Bold One‑Liner', category: 'Quote', Preview: BoldQuoteCard,
+    id: 'hx53', name: 'Bold One‑Liner', category: 'Quote', Preview: BoldOneLinerPreview,
     caption: `📌 Save this.\n\n“[Powerful one-liner quote]”\n\n— [Attribution]\n\n#motivation #mindset #[niche] #quotes #growth`,
   },
   {
-    id: 'hx54', name: 'How‑To Thread Teaser', category: 'Content', Preview: BloggingTips,
+    id: 'hx54', name: 'How‑To Thread Teaser', category: 'Content', Preview: HowToThreadPreview,
     caption: `🧵 New how‑to: [Topic]\n\nIf you’ve struggled with [pain point], this thread breaks it down step by step.\n\nPreview:\n→ Step 1: [teaser]\n→ Step 2: [teaser]\n→ Step 3: [teaser]\n\nFull post: link in bio\n\n#howto #tutorial #[niche] #tips`,
   },
   {
-    id: 'hx55', name: 'Room Refresh', category: 'Product', Preview: HomeDecorPost,
+    id: 'hx55', name: 'Room Refresh', category: 'Product', Preview: RoomRefreshPreview,
     caption: `🏠 Room refresh under [budget]\n\nBefore: [vibe/problem]\nAfter: [vibe/result]\n\nHero pieces:\n• [item 1]\n• [item 2]\n• [item 3]\n\nLinks: in bio\n\n#homedecor #beforeandafter #interiordesign #diy`,
   },
   {
@@ -557,15 +560,15 @@ const TEMPLATES = [
     caption: `🍂 Gathering season\n\nHosting [Friendsgiving / family dinner]? Here’s our checklist:\n• [item]\n• [item]\n• [item]\n\nWhat we’re grateful for: [short note]\n\n#thanksgiving #friendsgiving #hosting #grateful`,
   },
   {
-    id: 'hx58', name: '48‑Hour Price Drop', category: 'Sale', Preview: LimitedOffer,
+    id: 'hx58', name: '48‑Hour Price Drop', category: 'Sale', Preview: HourPriceDropPreview,
     caption: `⏰ 48 hours only\n\n[Product Name] — now [X]% off\n\nWhy now: [reason]\n\nNo code needed · Ends [Date]\n\n🛒 Link in bio\n\n#flashsale #deal #limited #[Brand Name]`,
   },
   {
-    id: 'hx59', name: 'Feature Drop', category: 'Product', Preview: ProductAnnounce,
+    id: 'hx59', name: 'Feature Drop', category: 'Product', Preview: FeatureDropPreview,
     caption: `🚀 New in [Product Name]\n\n✨ [Feature 1]\n✨ [Feature 2]\n✨ [Feature 3]\n\nBuilt because you asked for [pain point solved].\n\nTry it: link in bio\n\n#productupdate #saas #newfeature #[industry]`,
   },
   {
-    id: 'hx60', name: 'Launch Countdown', category: 'Event', Preview: EventCountdown,
+    id: 'hx60', name: 'Launch Countdown', category: 'Event', Preview: LaunchCountdownPreview,
     caption: `⏳ T‑minus [X] until [Event Name]\n\nWhat to expect:\n• [highlight 1]\n• [highlight 2]\n• [highlight 3]\n\nSet a reminder — you won’t want to miss this.\n\n#launch #countdown #event #[Brand Name]`,
   },
   {
@@ -609,27 +612,27 @@ const TEMPLATES = [
     caption: `🎓 Shoutout to [Name]!\n\nThey joined [Course / program] wanting [goal].\n\nIn [timeframe] they went from [starting point] → [result].\n\nProud doesn’t cover it. 💚\n\nDoors open again [Date] — waitlist in bio.\n\n#studentwin #onlinecourse #[niche] #testimonial #education`,
   },
   {
-    id: 'hx71', name: 'BTS Reel / Day in the Life', category: 'Content', Preview: BeforeAfter,
+    id: 'hx71', name: 'BTS Reel / Day in the Life', category: 'Content', Preview: BTSReelPreview,
     caption: `🎬 BTS: a day building [what you do]\n\nMorning: [beat 1]\nAfternoon: [beat 2]\nEvening: [beat 3]\n\nThe messy truth > highlight reel. Save if you’re a [niche] creator too.\n\n#behindthescenes #dayinthelife #[niche] #creator #reels`,
   },
   {
-    id: 'hx72', name: 'FAQ Carousel Teaser', category: 'Content', Preview: BigNumber,
+    id: 'hx72', name: 'FAQ Carousel Teaser', category: 'Content', Preview: FAQCarouselPreview,
     caption: `❓ [Number] FAQs we get about [topic]\n\nSwipe the carousel for full answers — here’s a preview:\n\n1) [Question 1] → [one-line answer]\n2) [Question 2] → [one-line answer]\n\nGot another? Drop it below 👇\n\n#FAQ #carousel #[niche] #education #tips`,
   },
   {
-    id: 'hx73', name: 'Member / VIP Perks', category: 'Sale', Preview: LimitedOffer,
+    id: 'hx73', name: 'Member / VIP Perks', category: 'Sale', Preview: VIPPerksPreview,
     caption: `👑 VIP perk this month: [perk headline]\n\nMembers get:\n• [Benefit 1]\n• [Benefit 2]\n• [Benefit 3]\n\nJoin before [Date] — link in bio.\n\n#VIP #membership #loyalty #[Brand Name] #exclusive`,
   },
   {
-    id: 'hx74', name: 'Influencer Takeover Teaser', category: 'Announce', Preview: ProductAnnounce,
+    id: 'hx74', name: 'Influencer Takeover Teaser', category: 'Announce', Preview: InfluencerTakeoverPreview,
     caption: `📣 Takeover alert: @[handle] runs our account [Date]!\n\nThey’ll share [theme] + a surprise for followers.\n\nSet a reminder — you won’t want to miss [teaser].\n\n#takeover #influencer #[niche] #community #announcement`,
   },
   {
-    id: 'hx75', name: 'Pop‑Up / Local Event', category: 'Event', Preview: EventCountdown,
+    id: 'hx75', name: 'Pop‑Up / Local Event', category: 'Event', Preview: PopUpEventPreview,
     caption: `📍 Pop‑up this weekend!\n\nWhere: [Address or neighborhood]\nWhen: [Date] · [Time]\n\nWhat’s there: [experience / products]\n\nBring a friend — first [X] visitors get [freebie].\n\n#popup #localevent #[city] #smallbusiness #weekend`,
   },
   {
-    id: 'hx76', name: 'Coffee Chat / Office Hours', category: 'Event', Preview: WebinarPromo,
+    id: 'hx76', name: 'Coffee Chat / Office Hours', category: 'Event', Preview: CoffeeChatPreview,
     caption: `☕ Open office hours — [Topic]\n\nNo pitch, just Q&A. Bring your questions about [focus area].\n\n📅 [Date] · ⏰ [Time] · [Zoom / space]\n\nRSVP (free, limited seats): link in bio\n\n#officehours #community #[niche] #networking #free`,
   },
   {
@@ -641,7 +644,7 @@ const TEMPLATES = [
     caption: `🌍 Earth Day pledge from [Brand Name]\n\nThis year we’re committing to:\n• [Pledge 1]\n• [Pledge 2]\n• [Pledge 3]\n\nShop our [eco product line] — [X]% to [cause] through [Date].\n\n#earthday #sustainable #[niche] #giveback #eco`,
   },
   {
-    id: 'hx79', name: 'Founder’s Note', category: 'Business', Preview: WhiteBrand,
+    id: ‘hx79’, name: ‘Founder’s Note’, category: ‘Business’, Preview: FoundersNotePreview,
     caption: `A note from [Your Name], founder of [Brand Name]:\n\nWhen we started, we wanted to [mission in one sentence].\n\nToday [milestone or thank-you].\n\nWhat’s next: [teaser].\n\nThank you for being here. 💜\n\n#founder #letter #[niche] #startup #community`,
   },
   {
@@ -1386,6 +1389,494 @@ function ChristmasShipByPreview() {
   );
 }
 
+/* ── Unique replacements for every duplicate ─────────────── */
+
+function FounderFridayPreview() {
+  return (
+    <div style={{ width:PW, height:PH, background:'#111827', fontFamily:'Arial,sans-serif', display:'flex', overflow:'hidden', position:'relative' }}>
+      <div style={{ position:'absolute', top:0, left:0, width:260, height:'100%', background:'linear-gradient(180deg,#1d4ed8,#1e3a8a)' }} />
+      <div style={{ position:'absolute', top:0, left:0, width:260, height:'100%', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:32, boxSizing:'border-box' }}>
+        <div style={{ width:90, height:90, borderRadius:'50%', background:'#3b82f6', border:'3px solid #93c5fd', marginBottom:16, display:'flex', alignItems:'flex-end', justifyContent:'center', overflow:'hidden' }}>
+          <div style={{ width:50, height:80, background:'#2563eb', borderRadius:'25px 25px 0 0' }} />
+        </div>
+        <div style={{ color:'#93c5fd', fontSize:11, fontWeight:700, letterSpacing:2, textTransform:'uppercase' }}>Founder</div>
+        <div style={{ color:'#fff', fontSize:15, fontWeight:900, marginTop:4 }}>[Your Name]</div>
+      </div>
+      <div style={{ marginLeft:260, flex:1, padding:'44px 44px', display:'flex', flexDirection:'column', justifyContent:'center', boxSizing:'border-box' }}>
+        <div style={{ color:'#3b82f6', fontSize:12, fontWeight:700, letterSpacing:3, textTransform:'uppercase', marginBottom:8 }}>Founder Friday</div>
+        <div style={{ color:'#fff', fontSize:40, fontWeight:900, lineHeight:1.1, marginBottom:16 }}>This week's<br/>lesson</div>
+        <div style={{ color:'#94a3b8', fontSize:14, lineHeight:1.7, marginBottom:24 }}>[Lesson in one sentence — what you learned building your brand]</div>
+        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+          <div style={{ width:32, height:3, background:'#3b82f6' }} />
+          <div style={{ color:'#3b82f6', fontSize:12, fontWeight:700 }}>[Brand Name]</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BrandValuesPreview() {
+  return (
+    <div style={{ width:PW, height:PH, background:'#f0fdf4', fontFamily:'Arial,sans-serif', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'40px 60px', boxSizing:'border-box', position:'relative', overflow:'hidden' }}>
+      <div style={{ position:'absolute', top:-80, right:-80, width:300, height:300, borderRadius:'50%', background:'#bbf7d0', opacity:0.5 }} />
+      <div style={{ fontSize:12, color:'#16a34a', fontWeight:700, letterSpacing:3, textTransform:'uppercase', marginBottom:12 }}>Our Values</div>
+      <div style={{ fontSize:42, fontWeight:900, color:'#14532d', marginBottom:32, textAlign:'center', lineHeight:1.1 }}>What we<br/>stand for</div>
+      <div style={{ display:'flex', gap:20, width:'100%' }}>
+        {['💚 [Value 1]','🌱 [Value 2]','✨ [Value 3]'].map((v,i) => (
+          <div key={i} style={{ flex:1, background:'#fff', borderRadius:14, padding:'18px 20px', border:'1.5px solid #86efac', boxShadow:'0 4px 12px rgba(0,0,0,0.06)' }}>
+            <div style={{ fontSize:14, fontWeight:800, color:'#15803d' }}>{v}</div>
+            <div style={{ fontSize:11, color:'#4ade80', marginTop:6 }}>Core pillar</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ServiceMenuPreview() {
+  return (
+    <div style={{ width:PW, height:PH, background:'#0f172a', fontFamily:'Arial,sans-serif', display:'flex', alignItems:'stretch', overflow:'hidden' }}>
+      <div style={{ flex:1, padding:'44px 40px', boxSizing:'border-box', display:'flex', flexDirection:'column', justifyContent:'center' }}>
+        <div style={{ color:'#f472b6', fontSize:11, fontWeight:700, letterSpacing:3, textTransform:'uppercase', marginBottom:12 }}>Services</div>
+        <div style={{ color:'#fff', fontSize:38, fontWeight:900, lineHeight:1.1, marginBottom:8 }}>Pick your<br/>package</div>
+        <div style={{ color:'#94a3b8', fontSize:13, marginBottom:28 }}>[Brand Name] — [niche] specialist</div>
+        {[['Starter','For beginners'],['Growth','Scale your reach'],['Pro','Full service']].map(([t,d],i)=>(
+          <div key={i} style={{ display:'flex', alignItems:'center', gap:12, marginBottom:12, padding:'10px 14px', background:'#1e293b', borderRadius:10, borderLeft:`3px solid ${['#f472b6','#c084fc','#818cf8'][i]}` }}>
+            <div style={{ width:8, height:8, borderRadius:'50%', background:['#f472b6','#c084fc','#818cf8'][i] }} />
+            <div style={{ flex:1 }}>
+              <div style={{ color:'#fff', fontSize:13, fontWeight:700 }}>{t}</div>
+              <div style={{ color:'#64748b', fontSize:11 }}>{d}</div>
+            </div>
+            <div style={{ color:['#f472b6','#c084fc','#818cf8'][i], fontSize:11, fontWeight:700 }}>DM →</div>
+          </div>
+        ))}
+      </div>
+      <div style={{ width:220, background:'linear-gradient(180deg,#7c3aed,#4f46e5)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:32 }}>
+        <div style={{ width:80, height:80, borderRadius:'50%', background:'rgba(255,255,255,0.15)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:36, marginBottom:16 }}>💼</div>
+        <div style={{ color:'#fff', fontSize:14, fontWeight:800, textAlign:'center' }}>[Your Name]</div>
+        <div style={{ color:'#c4b5fd', fontSize:11, textAlign:'center', marginTop:6 }}>Expert in [niche]</div>
+      </div>
+    </div>
+  );
+}
+
+function FoundersNotePreview() {
+  return (
+    <div style={{ width:PW, height:PH, background:'#fef9f0', fontFamily:'Georgia,serif', display:'flex', alignItems:'center', justifyContent:'center', padding:'48px 72px', boxSizing:'border-box', position:'relative' }}>
+      <div style={{ position:'absolute', top:20, left:20, right:20, bottom:20, border:'2px solid #d97706', borderRadius:4, opacity:0.3 }} />
+      <div style={{ position:'absolute', top:0, left:72, width:2, height:'100%', background:'#fde68a', opacity:0.6 }} />
+      <div style={{ flex:1, paddingLeft:28 }}>
+        <div style={{ color:'#b45309', fontSize:12, fontWeight:700, letterSpacing:2, textTransform:'uppercase', marginBottom:16 }}>A note from the founder</div>
+        <div style={{ color:'#1c1917', fontSize:22, fontStyle:'italic', lineHeight:1.7, marginBottom:20 }}>"[Your heartfelt message to your community — 2-3 sentences about why you started and what drives you forward.]"</div>
+        <div style={{ display:'flex', alignItems:'center', gap:12, marginTop:16 }}>
+          <div style={{ width:40, height:40, borderRadius:'50%', background:'#fde68a', border:'2px solid #d97706' }} />
+          <div>
+            <div style={{ color:'#1c1917', fontSize:14, fontWeight:700 }}>[Your Name]</div>
+            <div style={{ color:'#b45309', fontSize:12 }}>Founder, [Brand Name]</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MythFactPreview() {
+  return (
+    <div style={{ width:PW, height:PH, background:'#fff', fontFamily:'Arial,sans-serif', display:'flex', overflow:'hidden' }}>
+      <div style={{ flex:1, background:'#fef2f2', display:'flex', flexDirection:'column', justifyContent:'center', padding:'40px 40px', boxSizing:'border-box', borderRight:'4px solid #fca5a5' }}>
+        <div style={{ background:'#ef4444', color:'#fff', fontSize:11, fontWeight:900, letterSpacing:2, padding:'6px 14px', borderRadius:4, display:'inline-block', marginBottom:16, width:'fit-content' }}>MYTH</div>
+        <div style={{ fontSize:22, fontWeight:800, color:'#991b1b', lineHeight:1.3, marginBottom:12 }}>"[Common misconception about your topic]"</div>
+        <div style={{ fontSize:13, color:'#b91c1c' }}>❌ What people believe</div>
+      </div>
+      <div style={{ flex:1, background:'#f0fdf4', display:'flex', flexDirection:'column', justifyContent:'center', padding:'40px 40px', boxSizing:'border-box' }}>
+        <div style={{ background:'#16a34a', color:'#fff', fontSize:11, fontWeight:900, letterSpacing:2, padding:'6px 14px', borderRadius:4, display:'inline-block', marginBottom:16, width:'fit-content' }}>FACT</div>
+        <div style={{ fontSize:22, fontWeight:800, color:'#14532d', lineHeight:1.3, marginBottom:12 }}>"[The actual truth, backed by your expertise]"</div>
+        <div style={{ fontSize:13, color:'#15803d' }}>✅ The real story</div>
+      </div>
+    </div>
+  );
+}
+
+function ResourceStackPreview() {
+  return (
+    <div style={{ width:PW, height:PH, background:'#fffbeb', fontFamily:'Arial,sans-serif', display:'flex', alignItems:'stretch', overflow:'hidden' }}>
+      <div style={{ width:200, background:'#f59e0b', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:32, boxSizing:'border-box' }}>
+        <div style={{ fontSize:48, marginBottom:8 }}>📚</div>
+        <div style={{ color:'#fff', fontSize:16, fontWeight:900, textAlign:'center', lineHeight:1.2 }}>Resource Stack</div>
+        <div style={{ color:'#fef3c7', fontSize:11, marginTop:8, textAlign:'center' }}>My top tools for [topic]</div>
+      </div>
+      <div style={{ flex:1, padding:'32px 36px', boxSizing:'border-box', display:'flex', flexDirection:'column', justifyContent:'center' }}>
+        {['[Tool / Book 1]','[Tool / Book 2]','[Tool / Book 3]','[Tool / Book 4]'].map((r,i)=>(
+          <div key={i} style={{ display:'flex', alignItems:'center', gap:14, marginBottom:14, padding:'12px 16px', background:'#fff', borderRadius:10, boxShadow:'0 2px 8px rgba(0,0,0,0.07)', borderLeft:'4px solid #f59e0b' }}>
+            <div style={{ width:28, height:28, borderRadius:'50%', background:'#fef3c7', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:900, color:'#d97706', flexShrink:0 }}>{i+1}</div>
+            <div style={{ color:'#1c1917', fontSize:14, fontWeight:600 }}>{r}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function HowToThreadPreview() {
+  return (
+    <div style={{ width:PW, height:PH, background:'#0ea5e9', fontFamily:'Arial,sans-serif', display:'flex', alignItems:'center', padding:'40px 56px', boxSizing:'border-box', position:'relative', overflow:'hidden' }}>
+      <div style={{ position:'absolute', top:-60, right:-60, width:280, height:280, borderRadius:'50%', background:'rgba(255,255,255,0.1)' }} />
+      <div style={{ flex:1 }}>
+        <div style={{ color:'#bae6fd', fontSize:11, fontWeight:700, letterSpacing:3, textTransform:'uppercase', marginBottom:10 }}>How-To Thread</div>
+        <div style={{ color:'#fff', fontSize:44, fontWeight:900, lineHeight:1.1, marginBottom:20 }}>How to<br/>[Topic]</div>
+        {['Step 1: [teaser]','Step 2: [teaser]','Step 3: [teaser]'].map((s,i)=>(
+          <div key={i} style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10 }}>
+            <div style={{ width:24, height:24, borderRadius:'50%', background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:900, color:'#0ea5e9', flexShrink:0 }}>{i+1}</div>
+            <div style={{ color:'#fff', fontSize:13, fontWeight:600 }}>{s}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{ width:180, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:4 }}>
+        {['🧵','↓','↓','↓'].map((c,i)=><div key={i} style={{ fontSize:i===0?40:24, color:'#fff' }}>{c}</div>)}
+        <div style={{ color:'#bae6fd', fontSize:11, fontWeight:700, textAlign:'center', marginTop:8 }}>Full thread: link in bio</div>
+      </div>
+    </div>
+  );
+}
+
+function BTSReelPreview() {
+  return (
+    <div style={{ width:PW, height:PH, background:'#18181b', fontFamily:'Arial,sans-serif', display:'flex', alignItems:'stretch', overflow:'hidden', position:'relative' }}>
+      <div style={{ position:'absolute', top:0, left:0, right:0, height:6, background:'repeating-linear-gradient(90deg,#fbbf24 0,#fbbf24 40px,#18181b 40px,#18181b 50px)' }} />
+      <div style={{ position:'absolute', bottom:0, left:0, right:0, height:6, background:'repeating-linear-gradient(90deg,#fbbf24 0,#fbbf24 40px,#18181b 40px,#18181b 50px)' }} />
+      <div style={{ flex:1, display:'flex', flexDirection:'column', justifyContent:'center', padding:'40px 48px', boxSizing:'border-box' }}>
+        <div style={{ color:'#fbbf24', fontSize:12, fontWeight:700, letterSpacing:3, marginBottom:10 }}>🎬 BEHIND THE SCENES</div>
+        <div style={{ color:'#fff', fontSize:40, fontWeight:900, lineHeight:1.1, marginBottom:16 }}>A day in<br/>the life</div>
+        <div style={{ display:'flex', gap:12 }}>
+          {['Morning','Afternoon','Evening'].map((t,i)=>(
+            <div key={i} style={{ flex:1, background:'#27272a', borderRadius:10, padding:'12px 14px', borderTop:`3px solid ${['#f472b6','#a78bfa','#34d399'][i]}` }}>
+              <div style={{ color:['#f472b6','#a78bfa','#34d399'][i], fontSize:10, fontWeight:700, marginBottom:4 }}>{t}</div>
+              <div style={{ color:'#a1a1aa', fontSize:11 }}>[beat {i+1}]</div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div style={{ width:160, background:'#fbbf24', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:16, padding:24 }}>
+        <div style={{ fontSize:48 }}>🎥</div>
+        <div style={{ color:'#18181b', fontSize:13, fontWeight:900, textAlign:'center', lineHeight:1.2 }}>Swipe for<br/>the day</div>
+      </div>
+    </div>
+  );
+}
+
+function FAQCarouselPreview() {
+  return (
+    <div style={{ width:PW, height:PH, background:'#6366f1', fontFamily:'Arial,sans-serif', display:'flex', alignItems:'center', padding:'40px 56px', boxSizing:'border-box', position:'relative', overflow:'hidden' }}>
+      <div style={{ position:'absolute', bottom:-40, right:-40, width:220, height:220, borderRadius:'50%', background:'rgba(255,255,255,0.1)' }} />
+      <div style={{ flex:1 }}>
+        <div style={{ color:'#c7d2fe', fontSize:11, fontWeight:700, letterSpacing:3, textTransform:'uppercase', marginBottom:8 }}>FAQ Carousel</div>
+        <div style={{ color:'#fff', fontSize:52, fontWeight:900, lineHeight:1, marginBottom:20 }}>❓<br/>Got Qs?</div>
+        <div style={{ color:'#e0e7ff', fontSize:16, lineHeight:1.6 }}>Swipe through [Number] questions we answer about <strong>[topic]</strong></div>
+      </div>
+      <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+        {['Q1: [Question]?','Q2: [Question]?','Q3: [Question]?'].map((q,i)=>(
+          <div key={i} style={{ background:'rgba(255,255,255,0.15)', borderRadius:10, padding:'12px 18px', width:240, backdropFilter:'blur(4px)' }}>
+            <div style={{ color:'#fff', fontSize:12, fontWeight:600 }}>{q}</div>
+          </div>
+        ))}
+        <div style={{ background:'rgba(255,255,255,0.08)', borderRadius:10, padding:'10px 18px', width:240, textAlign:'center' }}>
+          <div style={{ color:'#c7d2fe', fontSize:11, fontWeight:700 }}>+ [Number-3] more →</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BundleDealPreview() {
+  return (
+    <div style={{ width:PW, height:PH, background:'#7c3aed', fontFamily:'Arial,sans-serif', display:'flex', alignItems:'center', justifyContent:'center', padding:'40px 56px', boxSizing:'border-box', position:'relative', overflow:'hidden' }}>
+      <div style={{ position:'absolute', top:-80, left:-80, width:300, height:300, borderRadius:'50%', background:'rgba(255,255,255,0.07)' }} />
+      <div style={{ display:'flex', flexDirection:'column', alignItems:'center', width:'100%' }}>
+        <div style={{ color:'#ddd6fe', fontSize:12, fontWeight:700, letterSpacing:3, textTransform:'uppercase', marginBottom:16 }}>🎁 Bundle Deal</div>
+        <div style={{ display:'flex', alignItems:'center', gap:20, marginBottom:24 }}>
+          {['[Product A]','[Product B]'].map((p,i)=>(
+            <React.Fragment key={i}>
+              <div style={{ background:'rgba(255,255,255,0.15)', borderRadius:16, padding:'20px 28px', textAlign:'center', backdropFilter:'blur(4px)', border:'2px solid rgba(255,255,255,0.2)' }}>
+                <div style={{ fontSize:32, marginBottom:8 }}>{['📦','✨'][i]}</div>
+                <div style={{ color:'#fff', fontSize:14, fontWeight:700 }}>{p}</div>
+              </div>
+              {i===0 && <div style={{ color:'#fff', fontSize:28, fontWeight:900 }}>+</div>}
+            </React.Fragment>
+          ))}
+        </div>
+        <div style={{ background:'#fbbf24', borderRadius:50, padding:'14px 48px' }}>
+          <div style={{ color:'#18181b', fontSize:22, fontWeight:900 }}>One special price</div>
+        </div>
+        <div style={{ color:'#ddd6fe', fontSize:12, marginTop:16 }}>⏰ Ends [Date] · Link in bio</div>
+      </div>
+    </div>
+  );
+}
+
+function FlashGiveawayPreview() {
+  return (
+    <div style={{ width:PW, height:PH, background:'linear-gradient(135deg,#ec4899,#8b5cf6)', fontFamily:'Arial,sans-serif', display:'flex', alignItems:'center', justifyContent:'center', padding:'40px 56px', boxSizing:'border-box', position:'relative', overflow:'hidden' }}>
+      {['⭐','🎉','✨','🎊','💫','⭐','🎉','✨'].map((e,i)=>(
+        <div key={i} style={{ position:'absolute', fontSize:20, opacity:0.4, top:`${[10,20,70,80,15,55,45,85][i]}%`, left:`${[5,85,8,80,40,2,92,50][i]}%` }}>{e}</div>
+      ))}
+      <div style={{ textAlign:'center', position:'relative' }}>
+        <div style={{ color:'#fdf2f8', fontSize:13, fontWeight:700, letterSpacing:3, marginBottom:12 }}>⚡ FLASH GIVEAWAY</div>
+        <div style={{ color:'#fff', fontSize:60, fontWeight:900, lineHeight:1, marginBottom:8 }}>WIN</div>
+        <div style={{ color:'#fde68a', fontSize:26, fontWeight:800, marginBottom:20 }}>[Prize]</div>
+        <div style={{ display:'flex', gap:12, justifyContent:'center' }}>
+          {['❤️ Like','👥 Tag 2','🔔 Follow'].map((s,i)=>(
+            <div key={i} style={{ background:'rgba(255,255,255,0.2)', borderRadius:50, padding:'8px 18px', color:'#fff', fontSize:13, fontWeight:700, backdropFilter:'blur(4px)' }}>{s}</div>
+          ))}
+        </div>
+        <div style={{ color:'#fde68a', fontSize:12, marginTop:16 }}>Ends in [timeframe]</div>
+      </div>
+    </div>
+  );
+}
+
+function HourPriceDropPreview() {
+  return (
+    <div style={{ width:PW, height:PH, background:'#1e293b', fontFamily:'Arial,sans-serif', display:'flex', alignItems:'center', overflow:'hidden', position:'relative' }}>
+      <div style={{ position:'absolute', top:'50%', left:220, transform:'translateY(-50%)', width:340, height:340, borderRadius:'50%', border:'40px solid #f97316', opacity:0.15 }} />
+      <div style={{ width:260, height:'100%', background:'#f97316', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:32, boxSizing:'border-box' }}>
+        <div style={{ fontSize:56 }}>⏰</div>
+        <div style={{ color:'#fff', fontSize:36, fontWeight:900, textAlign:'center', lineHeight:1.1, marginTop:12 }}>48<br/>Hours</div>
+        <div style={{ color:'#ffedd5', fontSize:13, marginTop:8, textAlign:'center' }}>Only</div>
+      </div>
+      <div style={{ flex:1, padding:'40px 44px', boxSizing:'border-box' }}>
+        <div style={{ color:'#f97316', fontSize:12, fontWeight:700, letterSpacing:3, textTransform:'uppercase', marginBottom:10 }}>Price Drop Alert</div>
+        <div style={{ color:'#fff', fontSize:38, fontWeight:900, lineHeight:1.1, marginBottom:16 }}>[Product Name]<br/>Now [X]% Off</div>
+        <div style={{ color:'#94a3b8', fontSize:13, lineHeight:1.7, marginBottom:20 }}>Limited window — no code needed.</div>
+        <div style={{ display:'flex', gap:10 }}>
+          <div style={{ background:'#f97316', color:'#fff', fontSize:12, fontWeight:700, padding:'10px 20px', borderRadius:8 }}>Shop Now →</div>
+          <div style={{ background:'#1e293b', color:'#64748b', fontSize:12, fontWeight:700, padding:'10px 20px', borderRadius:8, border:'1px solid #334155' }}>Ends [Date]</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function VIPPerksPreview() {
+  return (
+    <div style={{ width:PW, height:PH, background:'linear-gradient(135deg,#1c1917,#292524)', fontFamily:'Arial,sans-serif', display:'flex', alignItems:'center', padding:'40px 56px', boxSizing:'border-box', position:'relative', overflow:'hidden' }}>
+      <div style={{ position:'absolute', top:-40, right:-40, width:260, height:260, borderRadius:'50%', background:'radial-gradient(circle,#fbbf24,transparent)', opacity:0.2 }} />
+      <div style={{ flex:1 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:16 }}>
+          <span style={{ fontSize:28 }}>👑</span>
+          <div style={{ color:'#fbbf24', fontSize:12, fontWeight:700, letterSpacing:3, textTransform:'uppercase' }}>VIP Member Perks</div>
+        </div>
+        <div style={{ color:'#fff', fontSize:40, fontWeight:900, lineHeight:1.1, marginBottom:20 }}>Exclusive<br/>benefits, just<br/>for you</div>
+        {['[Benefit 1]','[Benefit 2]','[Benefit 3]'].map((b,i)=>(
+          <div key={i} style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10 }}>
+            <div style={{ width:6, height:6, borderRadius:'50%', background:'#fbbf24' }} />
+            <div style={{ color:'#e7e5e4', fontSize:13, fontWeight:600 }}>{b}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{ width:220, display:'flex', flexDirection:'column', alignItems:'center', gap:16 }}>
+        <div style={{ width:120, height:120, borderRadius:'50%', background:'linear-gradient(135deg,#fbbf24,#d97706)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:52 }}>👑</div>
+        <div style={{ background:'#fbbf24', borderRadius:50, padding:'10px 28px' }}>
+          <div style={{ color:'#18181b', fontSize:13, fontWeight:900 }}>Join VIP →</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MicroAffirmPreview() {
+  return (
+    <div style={{ width:PW, height:PH, background:'linear-gradient(135deg,#fdf4ff,#fce7f3)', fontFamily:'Georgia,serif', display:'flex', alignItems:'center', justifyContent:'center', padding:'48px 72px', boxSizing:'border-box', position:'relative', overflow:'hidden' }}>
+      <div style={{ position:'absolute', top:20, left:20, right:20, bottom:20, border:'1px solid #f9a8d4', borderRadius:20, opacity:0.5 }} />
+      <div style={{ textAlign:'center', position:'relative' }}>
+        <div style={{ fontSize:36, marginBottom:20 }}>🌿</div>
+        <div style={{ color:'#701a75', fontSize:14, fontWeight:700, letterSpacing:3, textTransform:'uppercase', marginBottom:20 }}>Gentle Reminder</div>
+        <div style={{ color:'#4a044e', fontSize:28, fontStyle:'italic', lineHeight:1.6, marginBottom:24 }}>"You don't have to<br/>[unrealistic expectation].<br/>You only need to [small step]."</div>
+        <div style={{ color:'#c026d3', fontSize:13, fontWeight:600 }}>Save if you needed this 🤍</div>
+      </div>
+    </div>
+  );
+}
+
+function BoldOneLinerPreview() {
+  return (
+    <div style={{ width:PW, height:PH, background:'#0f172a', fontFamily:'Arial,sans-serif', display:'flex', alignItems:'center', justifyContent:'center', padding:'48px 80px', boxSizing:'border-box', position:'relative', overflow:'hidden' }}>
+      <div style={{ position:'absolute', left:0, top:'50%', transform:'translateY(-50%)', width:6, height:'60%', background:'linear-gradient(180deg,#6366f1,#a855f7)' }} />
+      <div style={{ textAlign:'center' }}>
+        <div style={{ color:'#64748b', fontSize:36, marginBottom:16 }}>❝</div>
+        <div style={{ color:'#fff', fontSize:36, fontWeight:900, lineHeight:1.3, marginBottom:16 }}>[Powerful one-liner quote]</div>
+        <div style={{ color:'#64748b', fontSize:36, marginBottom:24 }}>❞</div>
+        <div style={{ display:'inline-flex', alignItems:'center', gap:8, background:'rgba(99,102,241,0.2)', borderRadius:50, padding:'8px 20px' }}>
+          <div style={{ color:'#818cf8', fontSize:13, fontWeight:700 }}>— [Attribution]</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LunchLearnPreview() {
+  return (
+    <div style={{ width:PW, height:PH, background:'#fff7ed', fontFamily:'Arial,sans-serif', display:'flex', alignItems:'stretch', overflow:'hidden' }}>
+      <div style={{ width:240, background:'#ea580c', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:32, boxSizing:'border-box' }}>
+        <div style={{ fontSize:52, marginBottom:12 }}>🥪</div>
+        <div style={{ color:'#fff', fontSize:18, fontWeight:900, textAlign:'center' }}>Lunch &<br/>Learn</div>
+        <div style={{ marginTop:12, width:40, height:3, background:'rgba(255,255,255,0.4)' }} />
+        <div style={{ color:'#fed7aa', fontSize:12, marginTop:10, textAlign:'center' }}>[Topic]</div>
+      </div>
+      <div style={{ flex:1, padding:'40px 44px', boxSizing:'border-box', display:'flex', flexDirection:'column', justifyContent:'center' }}>
+        <div style={{ color:'#9a3412', fontSize:11, fontWeight:700, letterSpacing:3, textTransform:'uppercase', marginBottom:14 }}>You're Invited</div>
+        <div style={{ color:'#1c1917', fontSize:32, fontWeight:900, lineHeight:1.2, marginBottom:20 }}>Join us for a casual<br/>Q&A session</div>
+        <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+          {[['📅','[Date]'],['⏰','[Time] [Timezone]'],['📍','[Location / Zoom]']].map(([ic,t],i)=>(
+            <div key={i} style={{ display:'flex', alignItems:'center', gap:10 }}>
+              <span style={{ fontSize:16 }}>{ic}</span>
+              <span style={{ color:'#44403c', fontSize:14, fontWeight:600 }}>{t}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{ background:'#ea580c', color:'#fff', fontSize:13, fontWeight:700, padding:'10px 24px', borderRadius:8, marginTop:20, display:'inline-block', width:'fit-content' }}>RSVP Free →</div>
+      </div>
+    </div>
+  );
+}
+
+function LaunchCountdownPreview() {
+  return (
+    <div style={{ width:PW, height:PH, background:'#030712', fontFamily:'Arial,sans-serif', display:'flex', alignItems:'center', justifyContent:'center', padding:'40px 60px', boxSizing:'border-box', position:'relative', overflow:'hidden' }}>
+      {[...Array(20)].map((_,i)=>(
+        <div key={i} style={{ position:'absolute', width:2, height:2, borderRadius:'50%', background:'#fff', opacity:Math.random()*0.6+0.1, top:`${Math.random()*100}%`, left:`${Math.random()*100}%` }} />
+      ))}
+      <div style={{ textAlign:'center', position:'relative' }}>
+        <div style={{ color:'#6366f1', fontSize:12, fontWeight:700, letterSpacing:4, textTransform:'uppercase', marginBottom:12 }}>⏳ Launching In</div>
+        <div style={{ color:'#fff', fontSize:56, fontWeight:900, lineHeight:1, marginBottom:16 }}>[X] Days</div>
+        <div style={{ color:'#94a3b8', fontSize:18, marginBottom:28 }}>[Event Name]</div>
+        <div style={{ display:'flex', gap:12, justifyContent:'center', marginBottom:24 }}>
+          {['🚀 [Highlight 1]','✨ [Highlight 2]'].map((h,i)=>(
+            <div key={i} style={{ background:'rgba(99,102,241,0.2)', border:'1px solid #4f46e5', borderRadius:8, padding:'8px 16px', color:'#c7d2fe', fontSize:12 }}>{h}</div>
+          ))}
+        </div>
+        <div style={{ color:'#6366f1', fontSize:13, fontWeight:700 }}>🔔 Set reminder → link in bio</div>
+      </div>
+    </div>
+  );
+}
+
+function PopUpEventPreview() {
+  return (
+    <div style={{ width:PW, height:PH, background:'#ecfdf5', fontFamily:'Arial,sans-serif', display:'flex', alignItems:'stretch', overflow:'hidden' }}>
+      <div style={{ flex:1, padding:'40px 44px', boxSizing:'border-box', display:'flex', flexDirection:'column', justifyContent:'center' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:16 }}>
+          <span style={{ fontSize:28 }}>📍</span>
+          <div style={{ color:'#065f46', fontSize:12, fontWeight:700, letterSpacing:3, textTransform:'uppercase' }}>Pop-Up Event</div>
+        </div>
+        <div style={{ color:'#064e3b', fontSize:38, fontWeight:900, lineHeight:1.1, marginBottom:20 }}>We're coming<br/>to [City]!</div>
+        <div style={{ display:'flex', flexDirection:'column', gap:12, marginBottom:24 }}>
+          {[['📅 Date','[Date]'],['⏰ Time','[Time]'],['📍 Where','[Address]']].map(([l,v],i)=>(
+            <div key={i} style={{ display:'flex', gap:16, alignItems:'center' }}>
+              <div style={{ color:'#6ee7b7', fontSize:12, fontWeight:700, width:80 }}>{l}</div>
+              <div style={{ color:'#064e3b', fontSize:14, fontWeight:600 }}>{v}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ background:'#10b981', color:'#fff', fontSize:13, fontWeight:700, padding:'12px 24px', borderRadius:10, display:'inline-block', width:'fit-content' }}>Get Directions →</div>
+      </div>
+      <div style={{ width:240, background:'#10b981', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:16, padding:32 }}>
+        <div style={{ fontSize:64 }}>🗺️</div>
+        <div style={{ color:'#fff', fontSize:14, fontWeight:800, textAlign:'center' }}>First [X] visitors get a freebie!</div>
+      </div>
+    </div>
+  );
+}
+
+function CoffeeChatPreview() {
+  return (
+    <div style={{ width:PW, height:PH, background:'#fef3c7', fontFamily:'Arial,sans-serif', display:'flex', alignItems:'center', padding:'40px 60px', boxSizing:'border-box', position:'relative', overflow:'hidden' }}>
+      <div style={{ position:'absolute', bottom:-60, right:-60, width:280, height:280, borderRadius:'50%', background:'#fde68a', opacity:0.5 }} />
+      <div style={{ width:220, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:16, flexShrink:0 }}>
+        <div style={{ width:140, height:140, borderRadius:'50%', background:'#92400e', display:'flex', alignItems:'center', justifyContent:'center', fontSize:64 }}>☕</div>
+        <div style={{ color:'#92400e', fontSize:13, fontWeight:800, textAlign:'center' }}>No pitch.<br/>Just Q&A.</div>
+      </div>
+      <div style={{ flex:1, paddingLeft:40 }}>
+        <div style={{ color:'#92400e', fontSize:11, fontWeight:700, letterSpacing:3, textTransform:'uppercase', marginBottom:12 }}>Open Office Hours</div>
+        <div style={{ color:'#1c1917', fontSize:38, fontWeight:900, lineHeight:1.1, marginBottom:16 }}>Coffee Chat:<br/>[Topic]</div>
+        <div style={{ color:'#78350f', fontSize:14, lineHeight:1.7, marginBottom:20 }}>Bring your questions about [focus area]. I'll answer everything live.</div>
+        <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
+          {['📅 [Date]','⏰ [Time]','💻 [Platform]'].map((t,i)=>(
+            <div key={i} style={{ background:'#92400e', color:'#fef3c7', fontSize:12, fontWeight:700, padding:'8px 14px', borderRadius:20 }}>{t}</div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function InfluencerTakeoverPreview() {
+  return (
+    <div style={{ width:PW, height:PH, background:'#2e1065', fontFamily:'Arial,sans-serif', display:'flex', alignItems:'center', padding:'40px 60px', boxSizing:'border-box', position:'relative', overflow:'hidden' }}>
+      <div style={{ position:'absolute', top:-80, right:-80, width:320, height:320, borderRadius:'50%', background:'radial-gradient(circle,#a855f7,transparent)', opacity:0.4 }} />
+      <div style={{ flex:1 }}>
+        <div style={{ color:'#d8b4fe', fontSize:12, fontWeight:700, letterSpacing:3, textTransform:'uppercase', marginBottom:12 }}>📣 Takeover Alert</div>
+        <div style={{ color:'#fff', fontSize:40, fontWeight:900, lineHeight:1.1, marginBottom:20 }}>@[handle]<br/>takes over!</div>
+        <div style={{ color:'#c4b5fd', fontSize:14, lineHeight:1.7, marginBottom:24 }}>They're running our account on [Date] — sharing [theme] + a surprise for followers.</div>
+        <div style={{ display:'flex', gap:12 }}>
+          <div style={{ background:'#a855f7', color:'#fff', fontSize:13, fontWeight:700, padding:'10px 24px', borderRadius:8 }}>Set Reminder 🔔</div>
+          <div style={{ background:'rgba(168,85,247,0.2)', color:'#d8b4fe', fontSize:13, fontWeight:700, padding:'10px 24px', borderRadius:8, border:'1px solid #7c3aed' }}>[Date]</div>
+        </div>
+      </div>
+      <div style={{ width:200, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:12 }}>
+        <div style={{ width:100, height:100, borderRadius:'50%', background:'rgba(168,85,247,0.3)', border:'3px solid #a855f7', display:'flex', alignItems:'center', justifyContent:'center', fontSize:44 }}>📸</div>
+        <div style={{ color:'#d8b4fe', fontSize:12, fontWeight:700, textAlign:'center' }}>Guest Creator</div>
+      </div>
+    </div>
+  );
+}
+
+function FeatureDropPreview() {
+  return (
+    <div style={{ width:PW, height:PH, background:'#0f172a', fontFamily:'Arial,sans-serif', display:'flex', alignItems:'stretch', overflow:'hidden' }}>
+      <div style={{ flex:1, padding:'40px 44px', boxSizing:'border-box', display:'flex', flexDirection:'column', justifyContent:'center' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:14 }}>
+          <div style={{ background:'#10b981', width:8, height:8, borderRadius:'50%' }} />
+          <div style={{ color:'#34d399', fontSize:11, fontWeight:700, letterSpacing:3, textTransform:'uppercase' }}>New Feature Drop</div>
+        </div>
+        <div style={{ color:'#fff', fontSize:36, fontWeight:900, lineHeight:1.1, marginBottom:20 }}>Now live in<br/>[Product Name]</div>
+        {['✨ [Feature 1]','✨ [Feature 2]','✨ [Feature 3]'].map((f,i)=>(
+          <div key={i} style={{ color:'#94a3b8', fontSize:14, marginBottom:8, paddingLeft:4 }}>{f}</div>
+        ))}
+        <div style={{ background:'#10b981', color:'#fff', fontSize:13, fontWeight:700, padding:'10px 24px', borderRadius:8, marginTop:20, width:'fit-content' }}>Try it now →</div>
+      </div>
+      <div style={{ width:240, background:'#1e293b', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:32, gap:12 }}>
+        <div style={{ background:'#0f172a', borderRadius:14, padding:20, width:'100%', border:'1px solid #334155' }}>
+          <div style={{ height:10, background:'#10b981', borderRadius:50, marginBottom:10 }} />
+          <div style={{ height:6, background:'#1e293b', borderRadius:50, marginBottom:8, border:'1px solid #334155', width:'80%' }} />
+          <div style={{ height:6, background:'#1e293b', borderRadius:50, border:'1px solid #334155', width:'60%' }} />
+        </div>
+        <div style={{ color:'#34d399', fontSize:12, fontWeight:700, textAlign:'center' }}>Built for [pain point]</div>
+      </div>
+    </div>
+  );
+}
+
+function RoomRefreshPreview() {
+  return (
+    <div style={{ width:PW, height:PH, background:'#f5f0eb', fontFamily:'Arial,sans-serif', display:'flex', alignItems:'stretch', overflow:'hidden' }}>
+      <div style={{ flex:1, background:'#d6cfc4', display:'flex', flexDirection:'column', justifyContent:'flex-end', padding:32, boxSizing:'border-box', position:'relative' }}>
+        <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <div style={{ width:160, height:120, background:'#b0a090', borderRadius:8, boxShadow:'0 8px 24px rgba(0,0,0,0.15)' }} />
+        </div>
+        <div style={{ background:'rgba(0,0,0,0.5)', color:'#fff', fontSize:12, fontWeight:700, padding:'6px 14px', borderRadius:4, display:'inline-block', position:'relative', width:'fit-content' }}>BEFORE</div>
+      </div>
+      <div style={{ width:4, background:'#fff', flexShrink:0 }} />
+      <div style={{ flex:1, background:'#e8f5e9', display:'flex', flexDirection:'column', justifyContent:'flex-end', padding:32, boxSizing:'border-box', position:'relative' }}>
+        <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <div style={{ width:160, height:120, background:'#a8d5a2', borderRadius:8, boxShadow:'0 8px 24px rgba(0,0,0,0.15)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:36 }}>🌿</div>
+        </div>
+        <div style={{ background:'#16a34a', color:'#fff', fontSize:12, fontWeight:700, padding:'6px 14px', borderRadius:4, display:'inline-block', position:'relative', width:'fit-content' }}>AFTER</div>
+      </div>
+      <div style={{ position:'absolute', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#fff', borderRadius:'50%', width:48, height:48, display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, boxShadow:'0 4px 12px rgba(0,0,0,0.2)', zIndex:10 }}>🏠</div>
+    </div>
+  );
+}
+
 function getCatColor(cat) {
   const map = {
     Business: { bg:'#eff6ff', text:'#1d4ed8' },
@@ -1618,6 +2109,36 @@ function CustomizeModal({ template, onClose, onConfirm, onDownloadDesign, design
               <div style={{ fontSize:11, color:'#94a3b8', marginTop:8 }}>
                 💡 Yellow highlights = unfilled placeholders
               </div>
+
+              {/* ── Download options — shown after user edits ── */}
+              {onDownloadDesign && (
+                <div style={{ marginTop:20, padding:'16px', background:'#f8fafc', borderRadius:12, border:'1px solid #e2e8f0' }}>
+                  <div style={{ fontSize:11, fontWeight:700, color:'#64748b', textTransform:'uppercase', letterSpacing:1, marginBottom:12 }}>
+                    ⬇ Download Design
+                  </div>
+                  <div style={{ display:'flex', gap:8 }}>
+                    {[['png','🖼 PNG'],['jpg','📷 JPG'],['pdf','📄 PDF']].map(([fmt, label]) => (
+                      <button key={fmt} type="button"
+                        onClick={e => onDownloadDesign(fmt, e, filled)}
+                        disabled={!!designDownloading}
+                        style={{
+                          flex:1, padding:'10px 8px', borderRadius:9, border:'1.5px solid #e2e8f0',
+                          background: designDownloading === fmt ? '#6366f1' : '#fff',
+                          color: designDownloading === fmt ? '#fff' : '#334155',
+                          fontSize:12, fontWeight:700, cursor: designDownloading ? 'wait' : 'pointer',
+                          display:'flex', alignItems:'center', justifyContent:'center', gap:5,
+                          transition:'all 0.15s',
+                        }}
+                        onMouseEnter={e => { if (!designDownloading) { e.currentTarget.style.background='#6366f1'; e.currentTarget.style.color='#fff'; e.currentTarget.style.borderColor='#6366f1'; }}}
+                        onMouseLeave={e => { if (!designDownloading) { e.currentTarget.style.background='#fff'; e.currentTarget.style.color='#334155'; e.currentTarget.style.borderColor='#e2e8f0'; }}}
+                      >
+                        {designDownloading === fmt ? '⏳' : label}
+                      </button>
+                    ))}
+                  </div>
+                  <div style={{ fontSize:10, color:'#94a3b8', marginTop:8 }}>Current colour theme is applied to the download.</div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -1628,28 +2149,6 @@ function CustomizeModal({ template, onClose, onConfirm, onDownloadDesign, design
             style={{ padding:'9px 20px', borderRadius:8, border:'1.5px solid #e2e8f0', background:'#fff', color:'#64748b', fontSize:13, fontWeight:600, cursor:'pointer' }}>
             Cancel
           </button>
-          {onDownloadDesign && (
-            <div style={{ position:'relative' }}>
-              <button type="button" onClick={e => { e.stopPropagation(); setFooterDlOpen(o => !o); }}
-                style={{ padding:'9px 14px', borderRadius:8, border:'1.5px solid #e2e8f0', background:'#fff', color:'#334155', fontSize:13, fontWeight:600, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
-                {designDownloading ? '⏳' : '⬇'} Download with your text
-              </button>
-              {footerDlOpen && (
-                <div style={{ position:'absolute', bottom:'100%', right:0, marginBottom:6, background:'#fff', border:'1px solid #e2e8f0', borderRadius:10, boxShadow:'0 4px 16px rgba(0,0,0,0.12)', overflow:'hidden', zIndex:20, minWidth:148 }}
-                  onClick={e => e.stopPropagation()}>
-                  <div style={{ padding:'5px 10px', fontSize:10, fontWeight:700, color:'#64748b', borderBottom:'1px solid #f1f5f9' }}>Current theme applied to download</div>
-                  {[['png','🖼 PNG'],['jpg','📷 JPG'],['pdf','📄 PDF']].map(([fmt, label]) => (
-                    <button key={fmt} type="button" onClick={e => { onDownloadDesign(fmt, e, filled); setFooterDlOpen(false); }}
-                      style={{ width:'100%', padding:'9px 14px', border:'none', background:'none', textAlign:'left', fontSize:13, fontWeight:600, cursor:'pointer', color:'#1e293b', display:'flex', alignItems:'center', gap:8 }}
-                      onMouseEnter={e => { e.currentTarget.style.background = '#f8fafc'; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
           <button type="button" onClick={() => onConfirm(filled)}
             style={{ padding:'9px 24px', borderRadius:8, border:'none', background:'#6366f1', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer' }}>
             Use in Publisher →
@@ -1721,14 +2220,30 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
           useCORS: true,
           logging: false,
           backgroundColor: '#ffffff',
+          // Force full 780px render regardless of viewport/sidebar width
+          width: PW,
+          windowWidth: PW,
+          scrollX: 0,
+          scrollY: 0,
           onclone: (_doc, clone) => {
             clone.style.opacity = '1';
             clone.style.visibility = 'visible';
-            clone.style.position = 'relative';
+            clone.style.position = 'fixed';
+            clone.style.left = '0';
+            clone.style.top = '0';
+            clone.style.width = `${PW}px`;
             clone.style.zIndex = '0';
+            clone.style.overflow = 'visible';
+            // Force art wrap to exact design dimensions so nothing gets clipped
             const art = clone.querySelector('[data-theme-art-wrap]');
-            if (art && theme.filter && theme.filter !== 'none') {
-              art.style.filter = theme.filter;
+            if (art) {
+              art.style.width = `${PW}px`;
+              art.style.height = `${PH}px`;
+              art.style.overflow = 'hidden';
+              art.style.flexShrink = '0';
+              if (theme.filter && theme.filter !== 'none') {
+                art.style.filter = theme.filter;
+              }
             }
           },
         });
@@ -1981,35 +2496,10 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
                     style={{ flex:1, minWidth:0, padding:'8px 8px', borderRadius:8, border:'1.5px solid #e2e8f0', background: copied===t.id ? '#f0fdf4' : '#fff', color: copied===t.id ? '#15803d' : '#64748b', fontSize:11, fontWeight:600, cursor:'pointer' }}>
                     {copied===t.id ? '✓' : '📋'} Copy
                   </button>
-                  <div style={{ display:'flex', gap:6, flexShrink:0 }}>
-                    <button type="button" onClick={() => setCustomize(t)} title="Customize placeholders, then use in Video Publisher"
-                      style={{ padding:'8px 14px', borderRadius:8, border:'none', background:'#6366f1', color:'#fff', fontSize:11, fontWeight:600, cursor:'pointer', whiteSpace:'nowrap' }}>
-                      ✏️ Use
-                    </button>
-                    <div style={{ position:'relative' }}>
-                      <button
-                        type="button"
-                        onClick={e => { e.stopPropagation(); setDlMenu(dlMenu === t.id ? null : t.id); }}
-                        style={{ padding:'8px 10px', borderRadius:8, border:'1.5px solid #e2e8f0', background:'#fff', color:'#334155', fontSize:11, fontWeight:600, cursor:'pointer', height:'100%', minHeight:36, display:'flex', alignItems:'center', justifyContent:'center' }}
-                        title="Download as image">
-                        {dlLoading === t.id ? '⏳' : '⬇'}
-                      </button>
-                    {dlMenu === t.id && (
-                      <div style={{ position:'absolute', bottom:'110%', right:0, background:'#fff', border:'1px solid #e2e8f0', borderRadius:10, boxShadow:'0 4px 16px rgba(0,0,0,0.12)', overflow:'hidden', zIndex:100, minWidth:100 }}
-                        onClick={e => e.stopPropagation()}>
-                        <div style={{ padding:'6px 8px', fontSize:10, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:1, borderBottom:'1px solid #f1f5f9' }}>Download as</div>
-                        {[['png','🖼 PNG'],['jpg','📷 JPG'],['pdf','📄 PDF']].map(([fmt, label]) => (
-                          <button key={fmt} onClick={e => handleDownload(t, fmt, e)}
-                            style={{ width:'100%', padding:'9px 14px', border:'none', background:'none', textAlign:'left', fontSize:13, fontWeight:600, cursor:'pointer', color:'#1e293b', display:'flex', alignItems:'center', gap:8 }}
-                            onMouseEnter={e => e.currentTarget.style.background='#f8fafc'}
-                            onMouseLeave={e => e.currentTarget.style.background='none'}>
-                            {label}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
+                  <button type="button" onClick={() => setCustomize(t)} title="Customize placeholders, then use in Video Publisher"
+                    style={{ padding:'8px 14px', borderRadius:8, border:'none', background:'#6366f1', color:'#fff', fontSize:11, fontWeight:600, cursor:'pointer', whiteSpace:'nowrap', flexShrink:0 }}>
+                    ✏️ Use
+                  </button>
               </div>
               </div>
             </div>

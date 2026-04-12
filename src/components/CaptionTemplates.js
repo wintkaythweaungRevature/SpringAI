@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 
@@ -1418,7 +1418,9 @@ function CustomizeModal({ template, onClose, onConfirm, onDownloadDesign, design
               )}
             </pre>
             <div style={{ fontSize:12, color:'#94a3b8', marginTop:10 }}>
-              💡 Highlighted text = unfilled placeholders
+              💡 Yellow = still a placeholder. Everything else matches what will appear in your file.
+              <br />
+              Use footer <strong>Download with your text</strong> for PNG / JPG / PDF: your design plus this caption exactly as shown above.
             </div>
           </div>
         </div>
@@ -1435,21 +1437,24 @@ function CustomizeModal({ template, onClose, onConfirm, onDownloadDesign, design
                 type="button"
                 onClick={e => { e.stopPropagation(); setFooterDlOpen(o => !o); }}
                 style={{ padding:'10px 16px', borderRadius:8, border:'1.5px solid #e2e8f0', background:'#fff', color:'#334155', fontSize:13, fontWeight:600, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}
-                title="Download design as image or PDF"
+                title="Exports the template image plus the Live Preview caption (uses every value you typed here)"
               >
-                {designDownloading ? '⏳' : '⬇'} Download
+                {designDownloading ? '⏳' : '⬇'} Download with your text
               </button>
               {footerDlOpen && (
                 <div
-                  style={{ position:'absolute', bottom:'100%', right:0, marginBottom:6, background:'#fff', border:'1px solid #e2e8f0', borderRadius:10, boxShadow:'0 4px 16px rgba(0,0,0,0.12)', overflow:'hidden', zIndex:20, minWidth:120 }}
+                  style={{ position:'absolute', bottom:'100%', right:0, marginBottom:6, background:'#fff', border:'1px solid #e2e8f0', borderRadius:10, boxShadow:'0 4px 16px rgba(0,0,0,0.12)', overflow:'hidden', zIndex:20, minWidth:148 }}
                   onClick={e => e.stopPropagation()}
                 >
-                  <div style={{ padding:'6px 10px', fontSize:10, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:1, borderBottom:'1px solid #f1f5f9' }}>Download as</div>
+                  <div style={{ padding:'6px 10px', fontSize:10, fontWeight:700, color:'#64748b', lineHeight:1.35, borderBottom:'1px solid #f1f5f9' }}>
+                    Includes your filled fields (same as Live Preview)
+                  </div>
+                  <div style={{ padding:'4px 10px', fontSize:10, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:1, borderBottom:'1px solid #f1f5f9' }}>Format</div>
                   {[['png','🖼 PNG'],['jpg','📷 JPG'],['pdf','📄 PDF']].map(([fmt, label]) => (
                     <button
                       key={fmt}
                       type="button"
-                      onClick={e => { onDownloadDesign(fmt, e); setFooterDlOpen(false); }}
+                      onClick={e => { onDownloadDesign(fmt, e, filled); setFooterDlOpen(false); }}
                       style={{ width:'100%', padding:'9px 14px', border:'none', background:'none', textAlign:'left', fontSize:13, fontWeight:600, cursor:'pointer', color:'#1e293b', display:'flex', alignItems:'center', gap:8 }}
                       onMouseEnter={e => { e.currentTarget.style.background = '#f8fafc'; }}
                       onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
@@ -1480,7 +1485,7 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
   const [customize, setCustomize] = useState(null);
   const [copied, setCopied]       = useState(null);
   const [dlMenu, setDlMenu]       = useState(null);   // templateId with open dropdown
-  const [dlTarget, setDlTarget]   = useState(null);   // { template, format }
+  const [dlTarget, setDlTarget]   = useState(null);   // { template, format, filledCaption? }
   const [dlLoading, setDlLoading] = useState(null);   // templateId being downloaded
   const captureRef                = useRef(null);
 
@@ -1494,27 +1499,57 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
     return () => window.removeEventListener('click', close);
   }, [dlMenu]);
 
-  // Trigger html2canvas after hidden div renders the template
-  useEffect(() => {
-    if (!dlTarget || !captureRef.current) return;
-    const { template, format } = dlTarget;
-    const timer = setTimeout(async () => {
+  // Rasterize after DOM commit. Capture root stays in-viewport (invisible) so layout includes caption text;
+  // off-screen fixed nodes often paint only the design (780×440), which broke "download right after fill".
+  useLayoutEffect(() => {
+    if (!dlTarget) return;
+    const { template, format, filledCaption } = dlTarget;
+    const withCaption = typeof filledCaption === 'string';
+    let cancelled = false;
+
+    const run = async () => {
+      await new Promise((r) => requestAnimationFrame(r));
+      await new Promise((r) => requestAnimationFrame(r));
       try {
-        const canvas = await html2canvas(captureRef.current, {
-          width: PW, height: PH, scale: 2,
-          useCORS: true, logging: false, backgroundColor: '#ffffff',
+        await document.fonts.ready;
+      } catch (_) {
+        /* ignore */
+      }
+      if (cancelled) return;
+      const el = captureRef.current;
+      if (!el) return;
+      try {
+        const canvas = await html2canvas(el, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff',
+          onclone: (_doc, clone) => {
+            clone.style.opacity = '1';
+            clone.style.visibility = 'visible';
+            clone.style.position = 'relative';
+            clone.style.zIndex = '0';
+          },
         });
+        if (cancelled) return;
         const filename = template.name.replace(/\s+/g, '-').toLowerCase();
+        const suffix = withCaption ? '-caption' : '';
+        const baseName = `${filename}${suffix}`;
+        const cw = canvas.width;
+        const ch = canvas.height;
 
         if (format === 'pdf') {
-          // Landscape PDF sized exactly to the design (px → pt: 1px = 0.75pt)
-          const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [PW, PH] });
-          pdf.addImage(canvas.toDataURL('image/png', 1.0), 'PNG', 0, 0, PW, PH);
-          pdf.save(`${filename}.pdf`);
+          const pdf = new jsPDF({
+            orientation: cw >= ch ? 'landscape' : 'portrait',
+            unit: 'px',
+            format: [cw, ch],
+          });
+          pdf.addImage(canvas.toDataURL('image/png', 1.0), 'PNG', 0, 0, cw, ch);
+          pdf.save(`${baseName}.pdf`);
         } else {
           const mime = format === 'jpg' ? 'image/jpeg' : 'image/png';
           const link = document.createElement('a');
-          link.download = `${filename}.${format}`;
+          link.download = `${baseName}.${format}`;
           link.href = canvas.toDataURL(mime, 0.95);
           link.click();
         }
@@ -1522,17 +1557,33 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
         console.error('Download failed:', err);
       } finally {
         setDlLoading(null);
-        setDlTarget(null);
+        if (!cancelled) setDlTarget(null);
       }
-    }, 150);
-    return () => clearTimeout(timer);
+    };
+
+    const t = withCaption ? window.setTimeout(run, 200) : window.setTimeout(run, 0);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(t);
+    };
   }, [dlTarget]);
 
+  /** Card / preview modal: design image only. */
   const handleDownload = (t, format, e) => {
     e.stopPropagation();
     setDlMenu(null);
     setDlLoading(t.id);
     setDlTarget({ template: t, format });
+  };
+
+  /** Customize modal only: always bundle the graphic + the same text as Live Preview (filled boxes + any [placeholders] left). */
+  const handleModalCaptionExport = (format, e, filledText) => {
+    e.stopPropagation();
+    setDlMenu(null);
+    const t = customize;
+    if (!t) return;
+    setDlLoading(t.id);
+    setDlTarget({ template: t, format, filledCaption: filledText });
   };
 
   const handleCopy = (text, id) => {
@@ -1549,13 +1600,53 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
   };
 
   return (
-    <div style={{ minHeight:'100vh', background:'#f1f5f9', fontFamily:'"Segoe UI",Arial,sans-serif' }}>
+    <div style={{ minHeight:'100vh', background:'#f1f5f9', fontFamily:'"Segoe UI",Arial,sans-serif', position:'relative' }}>
 
-      {/* ── Hidden capture div for html2canvas ── */}
-      <div style={{ position:'fixed', top:-9999, left:-9999, width:PW, height:PH, overflow:'hidden', pointerEvents:'none' }}
-        ref={captureRef}>
-        {dlTarget && (() => { const P = dlTarget.template.Preview; return <P />; })()}
-      </div>
+      {/* ── Capture root: fixed in-viewport, nearly transparent (opacity 0 on parent hid caption from raster). onclone restores full opacity on the clone. */}
+      {dlTarget && (() => {
+        const P = dlTarget.template.Preview;
+        const withCaption = typeof dlTarget.filledCaption === 'string';
+        return (
+          <div
+            ref={captureRef}
+            aria-hidden
+            data-caption-export-root
+            style={{
+              position: 'fixed',
+              left: 0,
+              top: 0,
+              width: PW,
+              zIndex: -20,
+              opacity: 0.012,
+              pointerEvents: 'none',
+              background: '#fff',
+              boxSizing: 'border-box',
+            }}
+          >
+            <div style={{ width: PW, height: PH, overflow: 'hidden' }}>
+              <P />
+            </div>
+            {withCaption && (
+              <div
+                style={{
+                  width: PW,
+                  boxSizing: 'border-box',
+                  padding: '18px 22px 22px',
+                  borderTop: '1px solid #e2e8f0',
+                  fontFamily: '"Segoe UI",Arial,sans-serif',
+                  fontSize: 13,
+                  color: '#334155',
+                  lineHeight: 1.8,
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word',
+                }}
+              >
+                {dlTarget.filledCaption}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* ── Header ── */}
       <div style={{ background:'#fff', borderBottom:'1px solid #e2e8f0', padding:'18px 32px', display:'flex', alignItems:'center', gap:16 }}>
@@ -1712,7 +1803,7 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
           template={customize}
           onClose={() => setCustomize(null)}
           onConfirm={handleCustomizeConfirm}
-          onDownloadDesign={(format, e) => handleDownload(customize, format, e)}
+          onDownloadDesign={handleModalCaptionExport}
           designDownloading={dlLoading === customize.id}
         />
       )}

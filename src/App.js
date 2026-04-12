@@ -363,6 +363,56 @@ function App() {
     finally { setDisconnectingId(null); }
   };
 
+  // Connect a platform directly from the topbar (OAuth popup — no page navigation)
+  const [connectingId, setConnectingId] = useState(null);
+  const refreshTopbarStatus = useCallback(() => {
+    const base = apiBase || 'https://api.wintaibot.com';
+    fetch(`${base}/api/social/status`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.connected) setConnectedPlatforms(d.connected); })
+      .catch(() => {});
+  }, [apiBase, token]);
+
+  const handleTopbarConnect = useCallback(async (platformId) => {
+    if (connectingId) return;
+    setConnectingId(platformId);
+    try {
+      const base = apiBase || 'https://api.wintaibot.com';
+      const res = await fetch(`${base}/api/social/connect/${platformId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) { setConnectingId(null); return; }
+      const popup = window.open(data.url, 'oauth_popup', 'width=600,height=700,scrollbars=yes,resizable=yes');
+      if (!popup || popup.closed) { window.location.href = data.url; return; }
+      // Poll for popup close as fallback
+      const interval = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(interval);
+          setConnectingId(null);
+          refreshTopbarStatus();
+        }
+      }, 1000);
+    } catch (_) { setConnectingId(null); }
+  }, [connectingId, apiBase, token, refreshTopbarStatus]);
+
+  // Listen for OAuth popup postMessage (primary signal — faster than poll)
+  useEffect(() => {
+    const handler = (event) => {
+      const norm = (o) => o.replace(/^https?:\/\/(www\.)?/, '');
+      if (norm(event.origin) !== norm(window.location.origin)) return;
+      if (event.data?.type !== 'wintaibot:social_connect') return;
+      if (event.data.result === 'success') {
+        setConnectingId(null);
+        refreshTopbarStatus();
+      } else {
+        setConnectingId(null);
+      }
+    };
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, [refreshTopbarStatus]);
+
   const handleChoosePlan = async (plan) => {
     if (!user) { setAuthMode('signup'); setShowAuthModal(true); return; }
     const base = apiBase || 'https://api.wintaibot.com';
@@ -577,29 +627,35 @@ function App() {
               }}>
                 {ALL_PLATFORMS.map(p => {
                   const isOn = connectedPlatforms.includes(p.id);
-                  const isBusy = disconnectingId === p.id;
+                  const isBusy = disconnectingId === p.id || connectingId === p.id;
+                  const isConnecting = connectingId === p.id;
                   return (
                     <div key={p.id} style={{ position: 'relative' }}>
                       <button
-                        onClick={() => isOn ? handleTopbarDisconnect(p.id) : go('social-connect')}
+                        onClick={() => {
+                          if (isBusy) return;
+                          if (isOn) handleTopbarDisconnect(p.id);
+                          else handleTopbarConnect(p.id);
+                        }}
                         title={isOn ? `${p.label} — click to disconnect` : `${p.label} — click to connect`}
                         disabled={isBusy}
                         style={{
                           width: 30, height: 30, borderRadius: '50%',
-                          background: isOn ? '#ffffff' : '#1e293b',
-                          border: isOn ? `2px solid ${p.color}55` : '2px solid #334155',
+                          background: isOn ? '#ffffff' : isConnecting ? '#1e3a5c' : '#1e293b',
+                          border: isOn ? `2px solid ${p.color}55` : isConnecting ? `2px solid ${p.color}` : '2px solid #334155',
                           cursor: isBusy ? 'wait' : 'pointer',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           padding: 0, flexShrink: 0,
-                          opacity: isBusy ? 0.5 : isOn ? 1 : 0.4,
+                          opacity: isBusy ? 0.7 : isOn ? 1 : 0.4,
                           transition: 'all 0.2s',
-                          filter: isOn ? 'none' : 'grayscale(1)',
+                          filter: isOn || isConnecting ? 'none' : 'grayscale(1)',
                         }}
                         onMouseEnter={e => {
                           if (!isBusy) {
                             e.currentTarget.style.opacity = '1';
                             e.currentTarget.style.filter = 'none';
                             e.currentTarget.style.borderColor = p.color;
+                            e.currentTarget.style.background = isOn ? '#ffffff' : '#1e3a5c';
                           }
                         }}
                         onMouseLeave={e => {
@@ -607,17 +663,31 @@ function App() {
                             e.currentTarget.style.opacity = isOn ? '1' : '0.4';
                             e.currentTarget.style.filter = isOn ? 'none' : 'grayscale(1)';
                             e.currentTarget.style.borderColor = isOn ? `${p.color}55` : '#334155';
+                            e.currentTarget.style.background = isOn ? '#ffffff' : '#1e293b';
                           }
                         }}
                       >
-                        <PlatformIcon platform={p} size={15} />
+                        {isConnecting
+                          ? <span style={{ fontSize: 10, animation: 'spin 1s linear infinite', display: 'inline-block' }}>⟳</span>
+                          : <PlatformIcon platform={p} size={15} />
+                        }
                       </button>
-                      {/* Green connected dot */}
-                      {isOn && (
+                      {/* Green dot = connected */}
+                      {isOn && !isBusy && (
                         <span style={{
                           position: 'absolute', bottom: 1, right: 1,
                           width: 7, height: 7, borderRadius: '50%',
                           background: '#22c55e',
+                          border: '1.5px solid #0f172a',
+                          pointerEvents: 'none',
+                        }} />
+                      )}
+                      {/* Pulsing dot = connecting in progress */}
+                      {isConnecting && (
+                        <span style={{
+                          position: 'absolute', bottom: 1, right: 1,
+                          width: 7, height: 7, borderRadius: '50%',
+                          background: '#f59e0b',
                           border: '1.5px solid #0f172a',
                           pointerEvents: 'none',
                         }} />
@@ -721,7 +791,7 @@ function App() {
           {activeTab === 'video-publisher'  && <MemberGate featureName="Video Publisher"><VideoPublisher onNavigateToSocialConnect={() => go('social-connect')} templateCaption={templateCaption} onTemplateCaptionUsed={() => setTemplateCaption(null)} /></MemberGate>}
           {activeTab === 'caption-templates' && <CaptionTemplates onBack={() => go('video-publisher')} onUseTemplate={(text) => { setTemplateCaption(text); go('video-publisher'); }} />}
           {activeTab === 'messages'         && <MemberGate featureName="Messages"><ProGate featureName="Messages"><MessagesInbox onOpenConnectedAccounts={() => go('social-connect')} onOpenAutoReply={() => go('auto-reply')} /></ProGate></MemberGate>}
-          {activeTab === 'social-connect'   && <MemberGate featureName="Connected Accounts"><SocialConnect /></MemberGate>}
+          {activeTab === 'social-connect'   && <MemberGate featureName="Connected Accounts"><SocialConnect onConnectionChange={setConnectedPlatforms} /></MemberGate>}
           {activeTab === 'bio'              && <MemberGate featureName="Link in Bio"><LinkInBioBuilder /></MemberGate>}
           {activeTab === 'trends'          && <MemberGate featureName="Growth Planner"><ProGate featureName="Growth Planner"><DeepAnalytics /></ProGate></MemberGate>}
           {activeTab === 'social-ai'       && <MemberGate featureName="Social AI"><ProGate featureName="Social AI"><SocialAIChat /></ProGate></MemberGate>}

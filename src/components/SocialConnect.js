@@ -15,7 +15,7 @@ const PLATFORMS = filterEnabledPlatforms([
   { id: 'pinterest', label: 'Pinterest',  emoji: '📌',  color: '#E60023', desc: 'Video pins', logo: 'pinterest' },
 ]);
 
-export default function SocialConnect() {
+export default function SocialConnect({ onConnectionChange }) {
   const { apiBase, token } = useAuth();
   const base = apiBase || 'https://api.wintaibot.com';
   const [upgradeModal, setUpgradeModal] = useState(null); // { reason, suggestPlan }
@@ -33,14 +33,16 @@ export default function SocialConnect() {
       });
       if (res.ok) {
         const data = await res.json();
-        setConnected(data.connected || []);
+        const list = data.connected || [];
+        setConnected(list);
+        if (onConnectionChange) onConnectionChange(list);
       }
     } catch (e) {
       console.error('Failed to fetch social status', e);
     } finally {
       setLoading(false);
     }
-  }, [base, token]);
+  }, [base, token, onConnectionChange]);
 
   useEffect(() => {
     fetchStatus();
@@ -150,7 +152,11 @@ export default function SocialConnect() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
-        setConnected(prev => prev.filter(p => p !== platformId));
+        setConnected(prev => {
+          const updated = prev.filter(p => p !== platformId);
+          if (onConnectionChange) onConnectionChange(updated);
+          return updated;
+        });
         setMessage({ type: 'success', text: `Disconnected from ${platformId}` });
         setTimeout(() => setMessage(null), 3000);
       }

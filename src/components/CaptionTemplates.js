@@ -359,7 +359,7 @@ const TEMPLATES = [
     caption: `🔔 Something big is coming — [Product Name]\n\nWe're opening a short waitlist so you get:\n✨ Early access\n✨ Launch-only pricing\n✨ Bonus [bonus item]\n\n👉 Join the waitlist → link in bio (spots limited)\n\n#waitlist #comingsoon #[niche] #launch #signup`,
   },
   {
-    id: 'sd27', name: 'Holiday Shipping Cutoff', category: 'Holiday', Preview: ShippingDeadlinePreview,
+    id: 'sd27', name: 'Holiday Shipping Cutoff', category: 'Holiday', Preview: ChristmasShipByPreview,
     caption: `📦 ORDER BY [Date] — get it in time for [Holiday]!\n\nLast day for [shipping tier] delivery is [Date] at [Time] [Timezone].\n\n🎁 Perfect gifts for [who it's for]:\n• [Gift idea 1]\n• [Gift idea 2]\n• [Gift idea 3]\n\n🛍️ Shop now → link in bio\n\n#shipping #holiday #[niche] #deadline #order`,
   },
   {
@@ -475,11 +475,11 @@ const TEMPLATES = [
     caption: `🏠 Room refresh under [budget]\n\nBefore: [vibe/problem]\nAfter: [vibe/result]\n\nHero pieces:\n• [item 1]\n• [item 2]\n• [item 3]\n\nLinks: in bio\n\n#homedecor #beforeandafter #interiordesign #diy`,
   },
   {
-    id: 'hx56', name: 'Spring Promo', category: 'Holiday', Preview: EasterSale,
+    id: 'hx56', name: 'Spring Promo', category: 'Holiday', Preview: SpringSeasonPreview,
     caption: `🌸 Spring is here — so is our sale.\n\n[Offer headline] at [Brand Name]\n\nCode: [CODE] · [Date] only\n\nTreat yourself (or your [gift recipient]).\n\n#spring #sale #[Product Name] #seasonal`,
   },
   {
-    id: 'hx57', name: 'Friendsgiving / Gratitude', category: 'Holiday', Preview: ThanksgivingSale,
+    id: 'hx57', name: 'Friendsgiving / Gratitude', category: 'Holiday', Preview: FriendsgivingGatherPreview,
     caption: `🍂 Gathering season\n\nHosting [Friendsgiving / family dinner]? Here’s our checklist:\n• [item]\n• [item]\n• [item]\n\nWhat we’re grateful for: [short note]\n\n#thanksgiving #friendsgiving #hosting #grateful`,
   },
   {
@@ -563,7 +563,7 @@ const TEMPLATES = [
     caption: `How did we do? ⭐\n\nIf you’ve tried [Product Name], we’d love a quick rating:\n\n⭐️ Experience\n⭐️ Quality\n⭐️ Support\n\nComment your score 1–5 + one thing we should improve.\n\n#feedback #product #[Brand Name] #customerlove #poll`,
   },
   {
-    id: 'hx78', name: 'Earth Day / Eco Pledge', category: 'Holiday', Preview: EasterSale,
+    id: 'hx78', name: 'Earth Day / Eco Pledge', category: 'Holiday', Preview: EarthDayPromoPreview,
     caption: `🌍 Earth Day pledge from [Brand Name]\n\nThis year we’re committing to:\n• [Pledge 1]\n• [Pledge 2]\n• [Pledge 3]\n\nShop our [eco product line] — [X]% to [cause] through [Date].\n\n#earthday #sustainable #[niche] #giveback #eco`,
   },
   {
@@ -573,6 +573,22 @@ const TEMPLATES = [
   {
     id: 'hx80', name: 'Year‑End Inventory Clearance', category: 'Sale', Preview: FlashSale,
     caption: `📦 Year‑end clearance — make room for [new season / line]\n\nEverything in [collection] is up to [X]% off through [Date].\n\nSizes / colors moving fast — final sale on select SKUs.\n\n🛒 Shop clearance → link in bio\n\n#clearance #sale #yearend #[niche] #shop`,
+  },
+  {
+    id: 'hx81', name: 'Halloween Promo', category: 'Holiday', Preview: HalloweenPromoPreview,
+    caption: `🎃 Halloween at [Brand Name]!\n\n[Offer headline] — spooky savings through [Date].\n\nCostume-friendly picks:\n• [item 1]\n• [item 2]\n• [item 3]\n\n🛒 Shop the haunt → link in bio\n\n#halloween #spookyseason #[niche] #sale #october`,
+  },
+  {
+    id: 'hx82', name: 'Christmas / Holiday Sale', category: 'Holiday', Preview: ChristmasPromoPreview,
+    caption: `🎄 Our Christmas sale is live!\n\n[Offer summary] — perfect for [gift recipient].\n\nOrder by [Date] for the best chance to arrive before the holiday.\n\n🎁 Gift guide + shop: link in bio\n\n#christmas #holidaysale #[Brand Name] #gifts #seasonal`,
+  },
+  {
+    id: 'hx83', name: 'New Year Kickoff', category: 'Holiday', Preview: NewYearsPromoPreview,
+    caption: `🎆 New Year, new energy.\n\nWe’re helping [target audience] [goal] in [Year] with:\n• [Initiative 1]\n• [Initiative 2]\n• [Initiative 3]\n\nStart here → link in bio\n\n#newyear #freshstart #[niche] #goals #motivation`,
+  },
+  {
+    id: 'hx84', name: 'President’s Day Sale', category: 'Holiday', Preview: PresidentsDayPromoPreview,
+    caption: `🇺🇸 President’s Day long weekend — extra savings at [Brand Name].\n\n[Offer headline] through [Date].\n\nStock up on [category] while codes last.\n\n🛒 Shop: link in bio\n\n#presidentsday #longweekend #sale #[niche] #deals`,
   },
 ];
 
@@ -856,19 +872,6 @@ function WaitlistPreview() {
       <div style={{ fontSize: 48, fontWeight: 900, lineHeight: 1.1, marginBottom: 12 }}>[Product Name]</div>
       <div style={{ fontSize: 15, color: '#bae6fd', maxWidth: 520, lineHeight: 1.6, marginBottom: 24 }}>Join the waitlist — be first to know when we launch.</div>
       <div style={{ background: '#fff', color: '#0369a1', padding: '12px 28px', borderRadius: 8, fontWeight: 800, fontSize: 14 }}>JOIN WAITLIST</div>
-    </div>
-  );
-}
-
-function ShippingDeadlinePreview() {
-  return (
-    <div style={{ width: PW, height: PH, background: '#fff7ed', fontFamily: 'Arial,sans-serif', display: 'flex', alignItems: 'center', padding: '0 48px', gap: 36, boxSizing: 'border-box', border: '4px solid #ea580c' }}>
-      <div style={{ fontSize: 72 }}>📦</div>
-      <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 13, color: '#c2410c', fontWeight: 800, letterSpacing: 2, marginBottom: 6 }}>ORDER BY [Date]</div>
-        <div style={{ fontSize: 40, fontWeight: 900, color: '#9a3412', lineHeight: 1.1, marginBottom: 10 }}>Get it before<br />the holiday rush</div>
-        <div style={{ fontSize: 14, color: '#7c2d12', lineHeight: 1.6 }}>Guaranteed delivery when you order by [Time] [Timezone].</div>
-      </div>
     </div>
   );
 }
@@ -1199,6 +1202,116 @@ function StudentWinPreview() {
   );
 }
 
+/** Seasonal / holiday — each uses a unique layout & palette (no shared art between these). */
+function HalloweenPromoPreview() {
+  return (
+    <div style={{ width: PW, height: PH, background: 'linear-gradient(160deg,#1e0533,#312e81)', fontFamily: 'Arial,sans-serif', display: 'flex', alignItems: 'center', padding: '0 52px', gap: 32, boxSizing: 'border-box', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ position: 'absolute', top: 24, right: 40, fontSize: 44, opacity: 0.35 }}>🦇</div>
+      <div style={{ position: 'absolute', bottom: 20, left: 50, fontSize: 36, opacity: 0.3 }}>🎃</div>
+      <div style={{ fontSize: 88, lineHeight: 1, zIndex: 1 }}>🕯️</div>
+      <div style={{ flex: 1, zIndex: 1, color: '#fff' }}>
+        <div style={{ fontSize: 13, letterSpacing: 4, color: '#fb923c', fontWeight: 800, marginBottom: 8 }}>HALLOWEEN</div>
+        <div style={{ fontSize: 46, fontWeight: 900, lineHeight: 1.05, marginBottom: 8 }}>Spooky<br /><span style={{ color: '#c4b5fd' }}>Savings</span></div>
+        <div style={{ fontSize: 14, color: '#e9d5ff', opacity: 0.95 }}>Treats, no tricks — limited time.</div>
+      </div>
+    </div>
+  );
+}
+
+function ChristmasPromoPreview() {
+  return (
+    <div style={{ width: PW, height: PH, background: '#7f1d1d', fontFamily: 'Arial,sans-serif', display: 'flex', overflow: 'hidden', boxSizing: 'border-box' }}>
+      <div style={{ width: '42%', background: 'linear-gradient(180deg,#14532d,#166534)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#fff', padding: '0 24px' }}>
+        <div style={{ fontSize: 72, marginBottom: 8 }}>🎄</div>
+        <div style={{ fontSize: 11, letterSpacing: 2, color: '#bbf7d0' }}>MERRY</div>
+      </div>
+      <div style={{ flex: 1, padding: '40px 44px', display: 'flex', flexDirection: 'column', justifyContent: 'center', color: '#fff', position: 'relative' }}>
+        <div style={{ position: 'absolute', top: 16, right: 20, fontSize: 22 }}>✨</div>
+        <div style={{ fontSize: 13, color: '#fecaca', letterSpacing: 3, marginBottom: 8 }}>CHRISTMAS</div>
+        <div style={{ fontSize: 42, fontWeight: 900, lineHeight: 1.1, marginBottom: 10 }}>Holiday<br />Sale</div>
+        <div style={{ height: 4, width: 120, background: 'linear-gradient(90deg,#fbbf24,#f59e0b)', borderRadius: 2, marginBottom: 12 }} />
+        <div style={{ fontSize: 14, color: '#fecaca', lineHeight: 1.5 }}>Gifts they&apos;ll love — order early.</div>
+      </div>
+    </div>
+  );
+}
+
+function NewYearsPromoPreview() {
+  return (
+    <div style={{ width: PW, height: PH, background: 'radial-gradient(ellipse at 30% 20%,#1e293b 0%,#020617 65%)', fontFamily: 'Arial,sans-serif', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0 48px', boxSizing: 'border-box', color: '#fff', position: 'relative', overflow: 'hidden' }}>
+      {[12, 28, 55, 72, 88].map((l, i) => (
+        <div key={i} style={{ position: 'absolute', left: `${l}%`, top: `${15 + (i * 17) % 55}%`, width: 6, height: 6, borderRadius: '50%', background: i % 2 ? '#fbbf24' : '#fde68a', opacity: 0.7 }} />
+      ))}
+      <div style={{ fontSize: 14, color: '#94a3b8', letterSpacing: 4, marginBottom: 10 }}>NEW YEAR</div>
+      <div style={{ fontSize: 56, fontWeight: 900, background: 'linear-gradient(135deg,#fef08a,#fbbf24,#f59e0b)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: 12 }}>Fresh Start</div>
+      <div style={{ fontSize: 15, color: '#cbd5e1', maxWidth: 440, lineHeight: 1.5 }}>Goals, resets &amp; [your offer] — link in bio.</div>
+    </div>
+  );
+}
+
+function PresidentsDayPromoPreview() {
+  return (
+    <div style={{ width: PW, height: PH, background: '#0f172a', fontFamily: 'Arial,sans-serif', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 56px', boxSizing: 'border-box', color: '#fff', position: 'relative' }}>
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 8, background: 'repeating-linear-gradient(90deg,#b91c1c 0,#b91c1c 28px,#f8fafc 28px,#f8fafc 56px,#1e3a8a 56px,#1e3a8a 84px)' }} />
+      <div style={{ fontSize: 12, letterSpacing: 3, color: '#94a3b8', marginBottom: 10 }}>LONG WEEKEND</div>
+      <div style={{ fontSize: 48, fontWeight: 900, lineHeight: 1.05, marginBottom: 12 }}>President&apos;s<br /><span style={{ color: '#60a5fa' }}>Day Sale</span></div>
+      <div style={{ fontSize: 15, color: '#cbd5e1', maxWidth: 480 }}>Extra day to save on [category].</div>
+    </div>
+  );
+}
+
+function SpringSeasonPreview() {
+  return (
+    <div style={{ width: PW, height: PH, background: 'linear-gradient(135deg,#fce7f3 0%,#fef9c3 45%,#d1fae5 100%)', fontFamily: 'Arial,sans-serif', display: 'flex', alignItems: 'center', padding: '0 52px', gap: 36, boxSizing: 'border-box' }}>
+      <div style={{ fontSize: 96, lineHeight: 1 }}>🌸</div>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 13, fontWeight: 800, color: '#be185d', letterSpacing: 2, marginBottom: 8 }}>SPRING HAS SPRUNG</div>
+        <div style={{ fontSize: 44, fontWeight: 900, color: '#831843', lineHeight: 1.1, marginBottom: 8 }}>Bloom &amp;<br />Save</div>
+        <div style={{ fontSize: 15, color: '#9d174d', lineHeight: 1.5 }}>Fresh picks for [category] — limited window.</div>
+      </div>
+    </div>
+  );
+}
+
+function FriendsgivingGatherPreview() {
+  return (
+    <div style={{ width: PW, height: PH, background: 'linear-gradient(180deg,#431407,#78350f)', fontFamily: 'Georgia,serif', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0 48px', boxSizing: 'border-box', color: '#fef3c7' }}>
+      <div style={{ fontSize: 56, marginBottom: 12 }}>🍽️</div>
+      <div style={{ fontSize: 15, letterSpacing: 4, color: '#fcd34d', marginBottom: 8 }}>FRIENDSGIVING</div>
+      <div style={{ fontSize: 40, fontWeight: 700, fontStyle: 'italic', marginBottom: 10 }}>Gather &amp; Give Thanks</div>
+      <div style={{ fontSize: 14, color: '#fde68a', maxWidth: 460, lineHeight: 1.6 }}>Host notes, recipes &amp; gratitude — not a doorbuster sale.</div>
+    </div>
+  );
+}
+
+function EarthDayPromoPreview() {
+  return (
+    <div style={{ width: PW, height: PH, background: 'linear-gradient(135deg,#022c22,#0f766e,#155e75)', fontFamily: 'Arial,sans-serif', display: 'flex', alignItems: 'center', padding: '0 48px', gap: 32, boxSizing: 'border-box', color: '#fff' }}>
+      <div style={{ width: 160, height: 160, borderRadius: '50%', background: 'linear-gradient(145deg,#0369a1 30%,#15803d 70%)', border: '4px solid rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 64, flexShrink: 0 }}>🌍</div>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 12, letterSpacing: 3, color: '#99f6e4', marginBottom: 8 }}>EARTH DAY</div>
+        <div style={{ fontSize: 38, fontWeight: 900, lineHeight: 1.1, marginBottom: 10 }}>Planet‑first<br />pledge</div>
+        <div style={{ fontSize: 14, color: '#ccfbf1', lineHeight: 1.5 }}>Eco steps that fit real life.</div>
+      </div>
+    </div>
+  );
+}
+
+/** Holiday shipping cutoff — kraft “shipping label” look (distinct from Christmas sale card & Easter). */
+function ChristmasShipByPreview() {
+  return (
+    <div style={{ width: PW, height: PH, background: '#d6d3d1', fontFamily: 'Arial,sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '36px 48px', boxSizing: 'border-box' }}>
+      <div style={{ background: '#fafaf9', border: '2px dashed #78716c', borderRadius: 4, padding: '28px 40px', maxWidth: 620, boxShadow: '0 12px 28px rgba(0,0,0,0.12)', position: 'relative' }}>
+        <div style={{ position: 'absolute', top: 12, right: 16, background: '#b91c1c', color: '#fff', fontSize: 11, fontWeight: 900, letterSpacing: 1, padding: '6px 12px', transform: 'rotate(-6deg)' }}>URGENT</div>
+        <div style={{ fontSize: 11, color: '#57534e', letterSpacing: 2, marginBottom: 8 }}>TRACKING · HOLIDAY DEADLINE</div>
+        <div style={{ fontSize: 34, fontWeight: 900, color: '#1c1917', lineHeight: 1.1, marginBottom: 10 }}>Order by [Date]</div>
+        <div style={{ fontSize: 14, color: '#44403c', lineHeight: 1.6 }}>Arrives before [Holiday] — carrier cutoffs vary.</div>
+        <div style={{ marginTop: 16, height: 3, background: 'repeating-linear-gradient(90deg,#1c1917 0,#1c1917 4px,transparent 4px,transparent 8px)', opacity: 0.25 }} />
+      </div>
+    </div>
+  );
+}
+
 function getCatColor(cat) {
   const map = {
     Business: { bg:'#eff6ff', text:'#1d4ed8' },
@@ -1234,13 +1347,21 @@ function getHint(p) {
 /* ══════════════════════════════════════════════════════════
    CUSTOMIZE MODAL
 ══════════════════════════════════════════════════════════ */
-function CustomizeModal({ template, onClose, onConfirm }) {
+function CustomizeModal({ template, onClose, onConfirm, onDownloadDesign, designDownloading }) {
   const placeholders = [...new Set(template.caption.match(/\[[^\]]+\]/g) || [])];
   const [values, setValues] = useState(Object.fromEntries(placeholders.map(p => [p, ''])));
+  const [footerDlOpen, setFooterDlOpen] = useState(false);
 
   const filled = template.caption.replace(/\[[^\]]+\]/g, m => values[m] || m);
 
   const set = (p, v) => setValues(prev => ({ ...prev, [p]: v }));
+
+  useEffect(() => {
+    if (!footerDlOpen) return;
+    const close = () => setFooterDlOpen(false);
+    window.addEventListener('click', close);
+    return () => window.removeEventListener('click', close);
+  }, [footerDlOpen]);
 
   return (
     <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', zIndex:9100, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}
@@ -1303,11 +1424,43 @@ function CustomizeModal({ template, onClose, onConfirm }) {
         </div>
 
         {/* Footer */}
-        <div style={{ padding:'16px 24px', borderTop:'1px solid #f1f5f9', display:'flex', justifyContent:'flex-end', gap:10, flexShrink:0, background:'#fff' }}>
+        <div style={{ padding:'16px 24px', borderTop:'1px solid #f1f5f9', display:'flex', justifyContent:'flex-end', alignItems:'center', gap:10, flexShrink:0, background:'#fff' }}>
           <button onClick={onClose}
             style={{ padding:'10px 22px', borderRadius:8, border:'1.5px solid #e2e8f0', background:'#fff', color:'#64748b', fontSize:13, fontWeight:600, cursor:'pointer' }}>
             Cancel
           </button>
+          {onDownloadDesign && (
+            <div style={{ position:'relative' }}>
+              <button
+                type="button"
+                onClick={e => { e.stopPropagation(); setFooterDlOpen(o => !o); }}
+                style={{ padding:'10px 16px', borderRadius:8, border:'1.5px solid #e2e8f0', background:'#fff', color:'#334155', fontSize:13, fontWeight:600, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}
+                title="Download design as image or PDF"
+              >
+                {designDownloading ? '⏳' : '⬇'} Download
+              </button>
+              {footerDlOpen && (
+                <div
+                  style={{ position:'absolute', bottom:'100%', right:0, marginBottom:6, background:'#fff', border:'1px solid #e2e8f0', borderRadius:10, boxShadow:'0 4px 16px rgba(0,0,0,0.12)', overflow:'hidden', zIndex:20, minWidth:120 }}
+                  onClick={e => e.stopPropagation()}
+                >
+                  <div style={{ padding:'6px 10px', fontSize:10, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:1, borderBottom:'1px solid #f1f5f9' }}>Download as</div>
+                  {[['png','🖼 PNG'],['jpg','📷 JPG'],['pdf','📄 PDF']].map(([fmt, label]) => (
+                    <button
+                      key={fmt}
+                      type="button"
+                      onClick={e => { onDownloadDesign(fmt, e); setFooterDlOpen(false); }}
+                      style={{ width:'100%', padding:'9px 14px', border:'none', background:'none', textAlign:'left', fontSize:13, fontWeight:600, cursor:'pointer', color:'#1e293b', display:'flex', alignItems:'center', gap:8 }}
+                      onMouseEnter={e => { e.currentTarget.style.background = '#f8fafc'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           <button type="button" onClick={() => onConfirm(filled)}
             style={{ padding:'10px 28px', borderRadius:8, border:'none', background:'#6366f1', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer' }}>
             Use in Publisher →
@@ -1559,6 +1712,8 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
           template={customize}
           onClose={() => setCustomize(null)}
           onConfirm={handleCustomizeConfirm}
+          onDownloadDesign={(format, e) => handleDownload(customize, format, e)}
+          designDownloading={dlLoading === customize.id}
         />
       )}
     </div>

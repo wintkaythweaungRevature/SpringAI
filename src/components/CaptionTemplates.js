@@ -6,6 +6,23 @@ const CATS = ['All','Business','Sale','Content','Holiday','Product','Quote','Eve
 const PW = 780, PH = 440, CW = 300, CH = 170;
 const SC = CW / PW; // ≈ 0.3846
 
+/** Gallery / export colour themes (swatches ≈ reference UI). `filter` tints the artwork inside the frame. */
+const PREVIEW_THEMES = [
+  { id: 'default', label: 'Default', frameBg: '#e8edf2', filter: 'none', swatch: ['#64748b', '#94a3b8', '#e2e8f0'] },
+  { id: 'earth', label: 'Earth', frameBg: 'linear-gradient(160deg,#e4e9e0,#c9d4c2)', filter: 'saturate(0.92) hue-rotate(-12deg)', swatch: ['#3d4a38', '#8b9a7d', '#f8faf8'] },
+  { id: 'neutral', label: 'Neutral', frameBg: 'linear-gradient(160deg,#f3eee8,#dcd7d0)', filter: 'saturate(0.88) hue-rotate(5deg)', swatch: ['#d6cfc4', '#faf8f5', '#2d2a28'] },
+  { id: 'floral', label: 'Floral', frameBg: 'linear-gradient(160deg,#ede4f0,#f5e6ea)', filter: 'hue-rotate(18deg) saturate(1.08)', swatch: ['#9d7a8c', '#c9b8c8', '#faf5f7'] },
+  { id: 'corporate', label: 'Corporate', frameBg: 'linear-gradient(160deg,#dbeafe,#e0f2fe)', filter: 'hue-rotate(165deg) saturate(1.05)', swatch: ['#0e7490', '#f8fafc', '#0f172a'] },
+  { id: 'warm', label: 'Warm', frameBg: 'linear-gradient(160deg,#fff4e6,#fde68a)', filter: 'hue-rotate(-22deg) saturate(1.12)', swatch: ['#c2410c', '#fef3c7', '#fefce8'] },
+  { id: 'grey', label: 'Grey', frameBg: 'linear-gradient(160deg,#e2e8f0,#cbd5e1)', filter: 'saturate(0.75) contrast(1.08)', swatch: ['#475569', '#f1f5f9', '#1e293b'] },
+  { id: 'navy', label: 'Navy', frameBg: 'linear-gradient(160deg,#dbeafe,#bfdbfe)', filter: 'hue-rotate(195deg) saturate(0.95)', swatch: ['#1e3a8a', '#ffffff', '#1e40af'] },
+  { id: 'mono', label: 'Mono', frameBg: 'linear-gradient(160deg,#f4f4f5,#d4d4d8)', filter: 'grayscale(0.45) contrast(1.06)', swatch: ['#18181b', '#fafafa', '#52525b'] },
+];
+
+function getPreviewTheme(themeId) {
+  return PREVIEW_THEMES.find((t) => t.id === themeId) || PREVIEW_THEMES[0];
+}
+
 /* ══════════════════════════════════════════════════════════
    PREVIEW COMPONENTS  — each renders at 780×440
 ══════════════════════════════════════════════════════════ */
@@ -229,6 +246,60 @@ function CourseLaunch() {
   );
 }
 
+/** Distinct from CourseLaunch: diagonal split, numbered mini-lesson row, warm accent (not navy + stacked cards). */
+function MiniCourseTeaserPreview() {
+  return (
+    <div
+      style={{
+        width: PW,
+        height: PH,
+        background: 'linear-gradient(118deg,#312e81 0%,#312e81 46%,#fffbeb 46%,#fef3c7 100%)',
+        fontFamily: 'Arial,sans-serif',
+        overflow: 'hidden',
+        display: 'flex',
+        alignItems: 'center',
+        boxSizing: 'border-box',
+      }}
+    >
+      <div style={{ flex: 1, padding: '38px 48px', color: '#fff' }}>
+        <div style={{ fontSize: 11, letterSpacing: 3, color: '#c4b5fd', marginBottom: 8 }}>NEW · MINI PROGRAM</div>
+        <div style={{ fontSize: 46, fontWeight: 900, lineHeight: 1.02, marginBottom: 14 }}>
+          Teaser<br /><span style={{ color: '#fde68a' }}>Track</span>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {[1, 2, 3].map((n) => (
+            <div key={n} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div
+                style={{
+                  width: 30,
+                  height: 30,
+                  borderRadius: 10,
+                  background: '#6366f1',
+                  color: '#fff',
+                  fontSize: 14,
+                  fontWeight: 800,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                {n}
+              </div>
+              <div style={{ height: 10, background: 'rgba(255,255,255,0.22)', borderRadius: 5, width: 160 }} />
+            </div>
+          ))}
+        </div>
+      </div>
+      <div style={{ width: 280, padding: '36px 40px 36px 0', boxSizing: 'border-box' }}>
+        <div style={{ fontSize: 28, fontWeight: 900, color: '#78350f', lineHeight: 1.1, marginBottom: 10 }}>3 bite‑sized<br />lessons</div>
+        <div style={{ fontSize: 13, color: '#92400e', lineHeight: 1.55, marginBottom: 16 }}>Hook → teach → soft CTA. Built for busy learners.</div>
+        <div style={{ background: '#d97706', color: '#fff', padding: '11px 22px', borderRadius: 8, fontWeight: 700, fontSize: 13, display: 'inline-block' }}>Watch preview →</div>
+      </div>
+    </div>
+  );
+}
+
 function NewProduct() {
   return (
     <div style={{width:PW,height:PH,fontFamily:'Arial,sans-serif',overflow:'hidden',position:'relative',background:'#0f2a45'}}>
@@ -403,7 +474,7 @@ const TEMPLATES = [
     caption: `📚 My go-to stack for [topic]:\n\n1) [Tool or book 1] — why I love it\n2) [Tool or book 2] — why I love it\n3) [Tool or book 3] — why I love it\n\nAnything you'd add? Drop your favorite below 👇\n\n#resources #tools #[niche] #productivity #stack`,
   },
   {
-    id: 'cl38', name: 'Mini Course Teaser', category: 'Product', Preview: CourseLaunch,
+    id: 'cl38', name: 'Mini Course Teaser', category: 'Product', Preview: MiniCourseTeaserPreview,
     caption: `⚡ New mini-course: [Course Name]\n\nIn [X] short lessons you'll learn:\n• [Outcome 1]\n• [Outcome 2]\n• [Outcome 3]\n\nBuilt for [target audience] who are tired of [pain point].\n\n👉 Preview the first lesson → link in bio\n\n#minicourse #learnonline #[niche] #education #launch`,
   },
   {
@@ -1485,8 +1556,9 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
   const [customize, setCustomize] = useState(null);
   const [copied, setCopied]       = useState(null);
   const [dlMenu, setDlMenu]       = useState(null);   // templateId with open dropdown
-  const [dlTarget, setDlTarget]   = useState(null);   // { template, format, filledCaption? }
+  const [dlTarget, setDlTarget]   = useState(null);   // { template, format, filledCaption?, exportThemeId? }
   const [dlLoading, setDlLoading] = useState(null);   // templateId being downloaded
+  const [previewTheme, setPreviewTheme] = useState('default');
   const captureRef                = useRef(null);
 
   const filtered = TEMPLATES.filter(t => cat === 'All' || t.category === cat);
@@ -1503,8 +1575,9 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
   // off-screen fixed nodes often paint only the design (780×440), which broke "download right after fill".
   useLayoutEffect(() => {
     if (!dlTarget) return;
-    const { template, format, filledCaption } = dlTarget;
+    const { template, format, filledCaption, exportThemeId } = dlTarget;
     const withCaption = typeof filledCaption === 'string';
+    const theme = getPreviewTheme(exportThemeId || 'default');
     let cancelled = false;
 
     const run = async () => {
@@ -1529,6 +1602,10 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
             clone.style.visibility = 'visible';
             clone.style.position = 'relative';
             clone.style.zIndex = '0';
+            const art = clone.querySelector('[data-theme-art-wrap]');
+            if (art && theme.filter && theme.filter !== 'none') {
+              art.style.filter = theme.filter;
+            }
           },
         });
         if (cancelled) return;
@@ -1573,7 +1650,7 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
     e.stopPropagation();
     setDlMenu(null);
     setDlLoading(t.id);
-    setDlTarget({ template: t, format });
+    setDlTarget({ template: t, format, exportThemeId: previewTheme });
   };
 
   /** Customize modal only: always bundle the graphic + the same text as Live Preview (filled boxes + any [placeholders] left). */
@@ -1583,7 +1660,7 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
     const t = customize;
     if (!t) return;
     setDlLoading(t.id);
-    setDlTarget({ template: t, format, filledCaption: filledText });
+    setDlTarget({ template: t, format, filledCaption: filledText, exportThemeId: previewTheme });
   };
 
   const handleCopy = (text, id) => {
@@ -1606,6 +1683,7 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
       {dlTarget && (() => {
         const P = dlTarget.template.Preview;
         const withCaption = typeof dlTarget.filledCaption === 'string';
+        const capTheme = getPreviewTheme(dlTarget.exportThemeId || 'default');
         return (
           <div
             ref={captureRef}
@@ -1623,7 +1701,15 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
               boxSizing: 'border-box',
             }}
           >
-            <div style={{ width: PW, height: PH, overflow: 'hidden' }}>
+            <div
+              data-theme-art-wrap
+              style={{
+                width: PW,
+                height: PH,
+                overflow: 'hidden',
+                filter: capTheme.filter === 'none' ? undefined : capTheme.filter,
+              }}
+            >
               <P />
             </div>
             {withCaption && (
@@ -1660,37 +1746,97 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
         </div>
       </div>
 
-      {/* ── Category Pills ── */}
-      <div style={{ padding:'20px 32px 4px', display:'flex', gap:10, flexWrap:'wrap' }}>
-        {CATS.map(c => (
-          <button key={c} onClick={() => setCat(c)}
-            style={{
-              padding:'7px 20px', borderRadius:24, fontSize:13, fontWeight:600,
-              cursor:'pointer', border:'none', transition:'all 0.15s',
-              background: cat === c ? '#6366f1' : '#fff',
-              color: cat === c ? '#fff' : '#64748b',
-              boxShadow:'0 1px 4px rgba(0,0,0,0.08)',
-            }}>{c}
-          </button>
-        ))}
+      {/* ── Category + theme (same chrome as pills: white chips, indigo active, soft shadow) ── */}
+      <div style={{ padding:'20px 32px 16px' }}>
+        <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
+          {CATS.map(c => (
+            <button key={c} onClick={() => setCat(c)}
+              style={{
+                padding:'7px 20px', borderRadius:24, fontSize:13, fontWeight:600,
+                cursor:'pointer', border:'none', transition:'all 0.15s',
+                background: cat === c ? '#6366f1' : '#fff',
+                color: cat === c ? '#fff' : '#64748b',
+                boxShadow:'0 1px 4px rgba(0,0,0,0.08)',
+              }}>{c}
+            </button>
+          ))}
+        </div>
+        <div style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:10, marginTop:14 }}>
+          <span style={{ fontSize:11, fontWeight:800, color:'#94a3b8', letterSpacing:1.2 }}>THEME</span>
+          {PREVIEW_THEMES.map((th) => {
+            const active = previewTheme === th.id;
+            return (
+              <button
+                key={th.id}
+                type="button"
+                onClick={() => setPreviewTheme(th.id)}
+                title={th.label}
+                style={{
+                  width: 52,
+                  height: 44,
+                  borderRadius: 24,
+                  border: 'none',
+                  background: '#fff',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 3,
+                  padding: '0 9px',
+                  boxShadow: active
+                    ? '0 1px 4px rgba(0,0,0,0.08), 0 0 0 2px #6366f1'
+                    : '0 1px 4px rgba(0,0,0,0.08)',
+                  position: 'relative',
+                }}
+              >
+                {th.swatch.map((c, i) => (
+                  <span key={i} style={{ width: 8, height: 24, borderRadius: 3, background: c, flexShrink: 0 }} />
+                ))}
+                {active && (
+                  <span style={{ position: 'absolute', top: -4, right: -4, width: 16, height: 16, borderRadius: '50%', background: '#6366f1', color: '#fff', fontSize: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>✓</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+        <div style={{ fontSize:11, color:'#94a3b8', marginTop:8 }}>Theme tints thumbnails and downloads — same layout as your template cards.</div>
       </div>
 
       {/* ── Template Grid ── */}
       <div style={{ padding:'20px 32px 40px', display:'flex', flexWrap:'wrap', gap:24 }}>
         {filtered.map(t => {
           const PreviewComp = t.Preview;
+          const th = getPreviewTheme(previewTheme);
           return (
             <div key={t.id}
-              style={{ width:CW, background:'#fff', borderRadius:16, overflow:'hidden', boxShadow:'0 2px 10px rgba(0,0,0,0.07)', flexShrink:0 }}
+              style={{ width:CW, background:'#fff', borderRadius:16, overflow:'hidden', boxShadow:'0 2px 10px rgba(0,0,0,0.07)', flexShrink:0, border:'1px solid #f1f5f9' }}
             >
               {/* Scaled visual preview */}
               <div
                 onClick={() => setPreview(t)}
-                style={{ width:CW, height:CH, overflow:'hidden', position:'relative', cursor:'pointer', background:'#e8edf2' }}
+                style={{
+                  width:CW, height:CH, overflow:'hidden', position:'relative', cursor:'pointer',
+                  borderRadius:'14px 14px 0 0',
+                  ...(th.frameBg.includes('gradient')
+                    ? { backgroundColor: '#f8fafc', backgroundImage: th.frameBg }
+                    : { background: th.frameBg }),
+                }}
                 onMouseEnter={e => { e.currentTarget.querySelector('.hov').style.background='rgba(99,102,241,0.14)'; e.currentTarget.querySelector('.hovlabel').style.opacity='1'; }}
                 onMouseLeave={e => { e.currentTarget.querySelector('.hov').style.background='transparent'; e.currentTarget.querySelector('.hovlabel').style.opacity='0'; }}
               >
-                <div style={{ position:'absolute', top:0, left:0, width:PW, height:PH, transformOrigin:'top left', transform:`scale(${SC})` }}>
+                <div
+                  data-theme-art-wrap
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: PW,
+                    height: PH,
+                    transformOrigin: 'top left',
+                    transform: `scale(${SC})`,
+                    filter: th.filter === 'none' ? undefined : th.filter,
+                  }}
+                >
                   <PreviewComp />
                 </div>
                 <div className="hov" style={{ position:'absolute', inset:0, background:'transparent', transition:'background 0.2s', display:'flex', alignItems:'center', justifyContent:'center' }}>
@@ -1706,23 +1852,24 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
                 <span style={{ fontSize:11, background:getCatColor(t.category).bg, color:getCatColor(t.category).text, padding:'3px 10px', borderRadius:12, fontWeight:600 }}>
                   {t.category}
                 </span>
-                <div style={{ display:'flex', gap:6, marginTop:12 }}>
+                <div style={{ display:'flex', gap:6, marginTop:12, alignItems:'stretch' }}>
                   <button onClick={() => handleCopy(t.caption, t.id)}
-                    style={{ flex:1, padding:'8px 4px', borderRadius:8, border:'1.5px solid #e2e8f0', background: copied===t.id ? '#f0fdf4' : '#fff', color: copied===t.id ? '#15803d' : '#64748b', fontSize:11, fontWeight:600, cursor:'pointer' }}>
+                    style={{ flex:1, minWidth:0, padding:'8px 8px', borderRadius:8, border:'1.5px solid #e2e8f0', background: copied===t.id ? '#f0fdf4' : '#fff', color: copied===t.id ? '#15803d' : '#64748b', fontSize:11, fontWeight:600, cursor:'pointer' }}>
                     {copied===t.id ? '✓' : '📋'} Copy
                   </button>
-                  <button type="button" onClick={() => setCustomize(t)} title="Customize placeholders, then use in Video Publisher"
-                    style={{ flex:1, padding:'8px 4px', borderRadius:8, border:'none', background:'#6366f1', color:'#fff', fontSize:11, fontWeight:600, cursor:'pointer' }}>
-                    ✏️ Use
-                  </button>
-                  {/* Download dropdown */}
-                  <div style={{ position:'relative' }}>
-                    <button
-                      onClick={e => { e.stopPropagation(); setDlMenu(dlMenu === t.id ? null : t.id); }}
-                      style={{ padding:'8px 10px', borderRadius:8, border:'1.5px solid #e2e8f0', background:'#fff', color:'#334155', fontSize:11, fontWeight:600, cursor:'pointer', display:'flex', alignItems:'center', gap:3 }}
-                      title="Download as image">
-                      {dlLoading === t.id ? '⏳' : '⬇'}
+                  <div style={{ display:'flex', gap:6, flexShrink:0 }}>
+                    <button type="button" onClick={() => setCustomize(t)} title="Customize placeholders, then use in Video Publisher"
+                      style={{ padding:'8px 14px', borderRadius:8, border:'none', background:'#6366f1', color:'#fff', fontSize:11, fontWeight:600, cursor:'pointer', whiteSpace:'nowrap' }}>
+                      ✏️ Use
                     </button>
+                    <div style={{ position:'relative' }}>
+                      <button
+                        type="button"
+                        onClick={e => { e.stopPropagation(); setDlMenu(dlMenu === t.id ? null : t.id); }}
+                        style={{ padding:'8px 10px', borderRadius:8, border:'1.5px solid #e2e8f0', background:'#fff', color:'#334155', fontSize:11, fontWeight:600, cursor:'pointer', height:'100%', minHeight:36, display:'flex', alignItems:'center', justifyContent:'center' }}
+                        title="Download as image">
+                        {dlLoading === t.id ? '⏳' : '⬇'}
+                      </button>
                     {dlMenu === t.id && (
                       <div style={{ position:'absolute', bottom:'110%', right:0, background:'#fff', border:'1px solid #e2e8f0', borderRadius:10, boxShadow:'0 4px 16px rgba(0,0,0,0.12)', overflow:'hidden', zIndex:100, minWidth:100 }}
                         onClick={e => e.stopPropagation()}>
@@ -1740,6 +1887,7 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
                   </div>
                 </div>
               </div>
+              </div>
             </div>
           );
         })}
@@ -1748,6 +1896,7 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
       {/* ── Preview Modal ── */}
       {preview && (() => {
         const PreviewComp = preview.Preview;
+        const pmTheme = getPreviewTheme(previewTheme);
         return (
           <div
             style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.65)', zIndex:9000, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}
@@ -1766,8 +1915,29 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
                   style={{ background:'#f1f5f9', border:'none', fontSize:16, cursor:'pointer', color:'#64748b', width:34, height:34, borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center' }}>✕</button>
               </div>
               <div style={{ background:'#f1f5f9', padding:24, display:'flex', justifyContent:'center' }}>
-                <div style={{ width:'100%', maxWidth:PW, aspectRatio:`${PW}/${PH}`, overflow:'hidden', borderRadius:14, boxShadow:'0 4px 20px rgba(0,0,0,0.12)' }}>
-                  <PreviewComp />
+                <div
+                  style={{
+                    width:'100%',
+                    maxWidth:PW,
+                    aspectRatio:`${PW}/${PH}`,
+                    overflow:'hidden',
+                    borderRadius:14,
+                    boxShadow:'0 4px 20px rgba(0,0,0,0.12)',
+                    ...(pmTheme.frameBg.includes('gradient')
+                      ? { backgroundColor: '#f8fafc', backgroundImage: pmTheme.frameBg }
+                      : { background: pmTheme.frameBg }),
+                  }}
+                >
+                  <div
+                    data-theme-art-wrap
+                    style={{
+                      width: PW,
+                      height: PH,
+                      filter: pmTheme.filter === 'none' ? undefined : pmTheme.filter,
+                    }}
+                  >
+                    <PreviewComp />
+                  </div>
                 </div>
               </div>
               <div style={{ padding:'20px 24px 28px' }}>

@@ -601,7 +601,7 @@ function App() {
 
         {/* Top Bar — only shown when logged in (MarketingNav handles logged-out state) */}
         {user && (
-          <header style={s.topBar}>
+          <header style={{ ...s.topBar, position: 'relative' }}>
             <button style={s.menuBtn} onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>
             {activeTab != null && (
               <button
@@ -615,15 +615,17 @@ function App() {
               </button>
             )}
 
-            {/* Platform bar — all platforms, toggle on/off */}
+            {/* Platform bar — centered absolutely */}
             {!isMobile && (
               <div style={{
+                position: 'absolute', left: '50%', top: '50%',
+                transform: 'translate(-50%, -50%)',
                 display: 'flex', alignItems: 'center', gap: 4,
-                marginLeft: 12,
                 background: '#0f172a',
                 border: '1px solid #1e293b',
                 borderRadius: 12,
                 padding: '5px 8px',
+                zIndex: 1,
               }}>
                 {ALL_PLATFORMS.map(p => {
                   const isOn = connectedPlatforms.includes(p.id);
@@ -640,15 +642,16 @@ function App() {
                         title={isOn ? `${p.label} — click to disconnect` : `${p.label} — click to connect`}
                         disabled={isBusy}
                         style={{
-                          width: 30, height: 30, borderRadius: '50%',
-                          background: isOn ? '#ffffff' : isConnecting ? '#1e3a5c' : '#1e293b',
-                          border: isOn ? `2px solid ${p.color}55` : isConnecting ? `2px solid ${p.color}` : '2px solid #334155',
+                          width: 32, height: 32, borderRadius: '50%',
+                          background: isOn ? '#ffffff' : isConnecting ? '#1e3a5c' : '#181f2e',
+                          border: isOn ? `2.5px solid ${p.color}` : isConnecting ? `2px solid ${p.color}` : '2px solid #2a3349',
+                          boxShadow: isOn ? `0 0 0 3px ${p.color}30, 0 2px 8px ${p.color}40` : 'none',
                           cursor: isBusy ? 'wait' : 'pointer',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           padding: 0, flexShrink: 0,
-                          opacity: isBusy ? 0.7 : isOn ? 1 : 0.4,
-                          transition: 'all 0.2s',
-                          filter: isOn || isConnecting ? 'none' : 'grayscale(1)',
+                          opacity: isBusy ? 0.6 : isOn ? 1 : 0.35,
+                          transition: 'all 0.25s',
+                          filter: isOn || isConnecting ? 'none' : 'grayscale(1) brightness(0.6)',
                         }}
                         onMouseEnter={e => {
                           if (!isBusy) {
@@ -656,14 +659,16 @@ function App() {
                             e.currentTarget.style.filter = 'none';
                             e.currentTarget.style.borderColor = p.color;
                             e.currentTarget.style.background = isOn ? '#ffffff' : '#1e3a5c';
+                            e.currentTarget.style.boxShadow = `0 0 0 3px ${p.color}40, 0 2px 10px ${p.color}50`;
                           }
                         }}
                         onMouseLeave={e => {
                           if (!isBusy) {
-                            e.currentTarget.style.opacity = isOn ? '1' : '0.4';
-                            e.currentTarget.style.filter = isOn ? 'none' : 'grayscale(1)';
-                            e.currentTarget.style.borderColor = isOn ? `${p.color}55` : '#334155';
-                            e.currentTarget.style.background = isOn ? '#ffffff' : '#1e293b';
+                            e.currentTarget.style.opacity = isOn ? '1' : '0.35';
+                            e.currentTarget.style.filter = isOn ? 'none' : 'grayscale(1) brightness(0.6)';
+                            e.currentTarget.style.borderColor = isOn ? p.color : '#2a3349';
+                            e.currentTarget.style.background = isOn ? '#ffffff' : '#181f2e';
+                            e.currentTarget.style.boxShadow = isOn ? `0 0 0 3px ${p.color}30, 0 2px 8px ${p.color}40` : 'none';
                           }
                         }}
                       >
@@ -717,7 +722,6 @@ function App() {
             )}
 
             <div style={{ flex: 1 }} />
-
             <div style={s.topRight}>
               {loading ? (
                 <span style={{ color: '#94a3b8', fontSize: '13px' }}>...</span>

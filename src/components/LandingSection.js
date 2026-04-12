@@ -763,228 +763,158 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
       {/* ── PRICING ─────────────────────────────────────────── */}
       <section className="ls-section ls-pricing" id="pricing" aria-labelledby="pricing-heading">
         <h2 id="pricing-heading">Simple, Transparent Pricing</h2>
-        <p className="ls-section-sub">Try free trial, then upgrade when you need more — annual billing saves up to ~21%.</p>
+        <p className="ls-section-sub">Start free — upgrade when you're ready. Annual billing saves up to 21%.</p>
+
+        {/* Free tier callout */}
+        <div className="ls-pricing-free-bar">
+          <span className="ls-pricing-free-badge">Free Forever</span>
+          <span>Ask AI Chatbot &amp; Recipe Generator — no credit card, no account required</span>
+        </div>
 
         <div className="ls-plans">
 
+          {/* ── STARTER ── */}
           <div className="ls-plan">
-            <div className="ls-plan-name">Starter</div>
-            <div className="ls-plan-price">$19 <span>/ month</span></div>
-            <p className="ls-plan-annual"><strong>$15/mo</strong> billed annually (<strong>$180/yr</strong>)</p>
-            <ul className="ls-plan-features">
-              <li>Ask AI &amp; Recipe Generator (unlimited)</li>
-              <li><strong>AI captions</strong> for video &amp; social</li>
-              <li><strong>AI ideas</strong> (basic — Ask AI)</li>
-              <li><strong>DocuWizard</strong> — analyze PDFs &amp; statements</li>
-              <li><strong>Resume Warlock</strong> — resume analyzer</li>
-              <li><strong>Reply Enchanter</strong> — email responses</li>
-              <li><strong>EchoScribe</strong> — voice transcription</li>
-              <li><strong>AI-generated images</strong> — not included (upgrade to Pro)</li>
-              <li>Video Publisher: <strong>3</strong> connected platforms</li>
-              <li><strong>10</strong> videos / month · <strong>30</strong> scheduled posts / month</li>
-              <li>Thumbnail picker, link-in-bio</li>
-            </ul>
-            <button type="button" className="ls-btn-outline" onClick={() => onChoosePlan ? onChoosePlan('STARTER') : onGetStarted()}>Choose Starter</button>
+            <div className="ls-plan-tier ls-plan-tier--starter">Starter</div>
+            <div className="ls-plan-price-row">
+              <div className="ls-plan-price">$19 <span>/ mo</span></div>
+              <div className="ls-plan-save">Save 21%<br /><small>annually</small></div>
+            </div>
+            <p className="ls-plan-annual">$15/mo billed annually · $180/yr</p>
+            <button type="button" className="ls-btn-outline ls-plan-cta" onClick={() => onChoosePlan ? onChoosePlan('STARTER') : onGetStarted()}>
+              Start with Starter
+            </button>
+
+            <div className="ls-plan-group">
+              <div className="ls-plan-group-label">🤖 AI Assistant Tools</div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Ask AI Chatbot</span><span className="ls-pf-val">Unlimited</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Recipe Generator</span><span className="ls-pf-val">Unlimited</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>AI Captions &amp; Hashtags</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>AI Idea Generator</span><span className="ls-pf-val ls-pf-val--dim">Basic</span></div>
+              <div className="ls-plan-feat ls-plan-feat--no"><span className="ls-pf-icon">—</span><span>AI Image Generation</span><span className="ls-pf-val ls-pf-val--lock">Pro+</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>DocuWizard (PDF / Excel / Word)</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Resume Warlock</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Reply Enchanter (Email AI)</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>EchoScribe (Voice → Text)</span></div>
+            </div>
+
+            <div className="ls-plan-group">
+              <div className="ls-plan-group-label">📹 Video Publishing</div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Connected Platforms</span><span className="ls-pf-val">3 platforms</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Videos per month</span><span className="ls-pf-val">10</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Scheduled posts</span><span className="ls-pf-val">30 / mo</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Thumbnail Picker</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Link-in-bio Page</span></div>
+              <div className="ls-plan-feat ls-plan-feat--no"><span className="ls-pf-icon">—</span><span>Video Trimming</span><span className="ls-pf-val ls-pf-val--lock">Growth</span></div>
+            </div>
+
+            <div className="ls-plan-group">
+              <div className="ls-plan-group-label">📊 Analytics &amp; Inbox</div>
+              <div className="ls-plan-feat ls-plan-feat--no"><span className="ls-pf-icon">—</span><span>Deep Analytics Dashboard</span><span className="ls-pf-val ls-pf-val--lock">Pro+</span></div>
+              <div className="ls-plan-feat ls-plan-feat--no"><span className="ls-pf-icon">—</span><span>Growth Planner</span><span className="ls-pf-val ls-pf-val--lock">Pro+</span></div>
+              <div className="ls-plan-feat ls-plan-feat--no"><span className="ls-pf-icon">—</span><span>Social AI Chat (RAG)</span><span className="ls-pf-val ls-pf-val--lock">Pro+</span></div>
+              <div className="ls-plan-feat ls-plan-feat--no"><span className="ls-pf-icon">—</span><span>Messages &amp; Auto Reply</span><span className="ls-pf-val ls-pf-val--lock">Pro+</span></div>
+            </div>
           </div>
 
+          {/* ── PRO ── */}
           <div className="ls-plan ls-plan--featured">
             <div className="ls-plan-popular">Most Popular</div>
-            <div className="ls-plan-name">Pro</div>
-            <div className="ls-plan-price">$39 <span>/ month</span></div>
-            <p className="ls-plan-annual"><strong>$32/mo</strong> billed annually (<strong>$384/yr</strong>)</p>
-            <ul className="ls-plan-features">
-              <li>Everything in Starter</li>
-              <li><strong>AI ideas</strong> (full — video &amp; social workflows)</li>
-              <li><strong>100</strong> AI-generated images / month</li>
-              <li><strong>All 8</strong> platforms · <strong>Unlimited</strong> videos to post</li>
-              <li><strong>Unlimited</strong> scheduled posts</li>
-              <li>Deep analytics &amp; Social AI Chat (RAG)</li>
-              <li>Messages &amp; Auto Reply</li>
-            </ul>
-            <button type="button" className="ls-btn-primary" onClick={() => onChoosePlan ? onChoosePlan('PRO') : onGetStarted()}>Choose Pro</button>
+            <div className="ls-plan-tier ls-plan-tier--pro">Pro</div>
+            <div className="ls-plan-price-row">
+              <div className="ls-plan-price">$39 <span>/ mo</span></div>
+              <div className="ls-plan-save ls-plan-save--featured">Save 18%<br /><small>annually</small></div>
+            </div>
+            <p className="ls-plan-annual">$32/mo billed annually · $384/yr</p>
+            <button type="button" className="ls-btn-primary ls-plan-cta" onClick={() => onChoosePlan ? onChoosePlan('PRO') : onGetStarted()}>
+              Start with Pro
+            </button>
+
+            <div className="ls-plan-group">
+              <div className="ls-plan-group-label">🤖 AI Assistant Tools</div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Ask AI Chatbot</span><span className="ls-pf-val">Unlimited</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Recipe Generator</span><span className="ls-pf-val">Unlimited</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>AI Captions &amp; Hashtags</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>AI Idea Generator</span><span className="ls-pf-val">Full</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>AI Image Generation</span><span className="ls-pf-val">100 / mo</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>DocuWizard (PDF / Excel / Word)</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Resume Warlock</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Reply Enchanter (Email AI)</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>EchoScribe (Voice → Text)</span></div>
+            </div>
+
+            <div className="ls-plan-group">
+              <div className="ls-plan-group-label">📹 Video Publishing</div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Connected Platforms</span><span className="ls-pf-val">5 platforms</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Videos per month</span><span className="ls-pf-val">Unlimited</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Scheduled posts</span><span className="ls-pf-val">Unlimited</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Thumbnail Picker</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Link-in-bio Page</span></div>
+              <div className="ls-plan-feat ls-plan-feat--no"><span className="ls-pf-icon">—</span><span>Video Trimming</span><span className="ls-pf-val ls-pf-val--lock">Growth</span></div>
+            </div>
+
+            <div className="ls-plan-group">
+              <div className="ls-plan-group-label">📊 Analytics &amp; Inbox</div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Deep Analytics Dashboard</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Growth Planner</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Social AI Chat (RAG)</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Messages &amp; Auto Reply</span></div>
+            </div>
           </div>
 
-          <div className="ls-plan">
-            <div className="ls-plan-name">Growth</div>
-            <div className="ls-plan-price">$79 <span>/ month</span></div>
-            <p className="ls-plan-annual"><strong>$64/mo</strong> billed annually (<strong>$768/yr</strong>)</p>
-            <ul className="ls-plan-features">
-              <li>Everything in Pro</li>
-              <li><strong>Unlimited</strong> AI-generated images</li>
-              <li><strong>Unlimited</strong> videos</li>
-              <li><strong>Priority</strong> processing queue</li>
-              <li>✂️ <strong>Video trimming</strong> tool</li>
-              <li>Deep analytics · AI Social Chat (RAG)</li>
-            </ul>
-            <button type="button" className="ls-btn-outline" onClick={() => onChoosePlan ? onChoosePlan('GROWTH') : onGetStarted()}>Choose Growth</button>
+          {/* ── GROWTH ── */}
+          <div className="ls-plan ls-plan--growth">
+            <div className="ls-plan-tier ls-plan-tier--growth">Growth</div>
+            <div className="ls-plan-price-row">
+              <div className="ls-plan-price">$79 <span>/ mo</span></div>
+              <div className="ls-plan-save">Save 19%<br /><small>annually</small></div>
+            </div>
+            <p className="ls-plan-annual">$64/mo billed annually · $768/yr</p>
+            <button type="button" className="ls-btn-outline ls-btn-outline--growth ls-plan-cta" onClick={() => onChoosePlan ? onChoosePlan('GROWTH') : onGetStarted()}>
+              Start with Growth
+            </button>
+
+            <div className="ls-plan-group">
+              <div className="ls-plan-group-label">🤖 AI Assistant Tools</div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Ask AI Chatbot</span><span className="ls-pf-val">Unlimited</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Recipe Generator</span><span className="ls-pf-val">Unlimited</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>AI Captions &amp; Hashtags</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>AI Idea Generator</span><span className="ls-pf-val">Full</span></div>
+              <div className="ls-plan-feat ls-plan-feat--star"><span className="ls-pf-icon ls-pf-icon--star">★</span><span>AI Image Generation</span><span className="ls-pf-val ls-pf-val--star">Unlimited</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>DocuWizard (PDF / Excel / Word)</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Resume Warlock</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Reply Enchanter (Email AI)</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>EchoScribe (Voice → Text)</span></div>
+            </div>
+
+            <div className="ls-plan-group">
+              <div className="ls-plan-group-label">📹 Video Publishing</div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Connected Platforms</span><span className="ls-pf-val">All 8</span></div>
+              <div className="ls-plan-feat ls-plan-feat--star"><span className="ls-pf-icon ls-pf-icon--star">★</span><span>Videos per month</span><span className="ls-pf-val ls-pf-val--star">Unlimited</span></div>
+              <div className="ls-plan-feat ls-plan-feat--star"><span className="ls-pf-icon ls-pf-icon--star">★</span><span>Scheduled posts</span><span className="ls-pf-val ls-pf-val--star">Unlimited</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Thumbnail Picker</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Link-in-bio Page</span></div>
+              <div className="ls-plan-feat ls-plan-feat--star"><span className="ls-pf-icon ls-pf-icon--star">★</span><span>Video Trimming Tool</span></div>
+            </div>
+
+            <div className="ls-plan-group">
+              <div className="ls-plan-group-label">📊 Analytics &amp; Inbox</div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Deep Analytics Dashboard</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Growth Planner</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Social AI Chat (RAG)</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Messages &amp; Auto Reply</span></div>
+            </div>
+
+            <div className="ls-plan-group">
+              <div className="ls-plan-group-label">⚡ Power Features</div>
+              <div className="ls-plan-feat ls-plan-feat--star"><span className="ls-pf-icon ls-pf-icon--star">★</span><span>Priority Processing Queue</span></div>
+              <div className="ls-plan-feat ls-plan-feat--star"><span className="ls-pf-icon ls-pf-icon--star">★</span><span>Fastest upload &amp; AI speeds</span></div>
+            </div>
           </div>
-        </div>
 
-        <div className="ls-comparison-wrap">
-          <p className="ls-comparison-title">Video &amp; social — per-plan limits</p>
-          <table className="ls-comparison-table">
-            <thead>
-              <tr>
-                <th scope="col">Feature</th>
-                <th scope="col">Starter $19</th>
-                <th scope="col">Pro $39</th>
-                <th scope="col">Growth $79</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td>Platforms</td><td>3</td><td>All 8</td><td>All 8</td></tr>
-              <tr><td>Videos to post / month</td><td>100</td><td>Unlimited</td><td>Unlimited</td></tr>
-              <tr><td>Images to post / month</td><td>1,000</td><td>Unlimited</td><td>Unlimited</td></tr>
-              <tr><td>AI-generated images / mo</td><td className="ls-no">—</td><td>100</td><td>Unlimited</td></tr>
-              <tr><td>Scheduled posts</td><td>30/mo</td><td>Unlimited</td><td>Unlimited</td></tr>
-              <tr><td>AI captions &amp; hashtags</td><td className="ls-ok">✓</td><td className="ls-ok">✓</td><td className="ls-ok">✓</td></tr>
-              <tr><td>Deep analytics</td><td className="ls-no">—</td><td className="ls-ok">✓</td><td className="ls-ok">✓</td></tr>
-              <tr><td>AI Social Chat (RAG)</td><td className="ls-no">—</td><td className="ls-ok">✓</td><td className="ls-ok">✓</td></tr>
-              <tr><td>Messages &amp; Auto Reply</td><td className="ls-no">—</td><td className="ls-ok">✓</td><td className="ls-ok">✓</td></tr>
-              <tr><td>Video trimming</td><td className="ls-no">—</td><td className="ls-no">—</td><td className="ls-ok">✓</td></tr>
-              <tr><td>Priority processing</td><td className="ls-no">—</td><td className="ls-no">—</td><td className="ls-ok">✓</td></tr>
-              <tr><td>Annual (effective / mo)</td><td>$15 ($180/yr)</td><td>$32 ($384/yr)</td><td>$64 ($768/yr)</td></tr>
-            </tbody>
-          </table>
-
-          <p className="ls-comparison-title" style={{ marginTop: 28 }}>AI &amp; productivity — by plan</p>
-          <table className="ls-comparison-table">
-            <thead>
-              <tr>
-                <th scope="col">Feature</th>
-                <th scope="col">Starter $19</th>
-                <th scope="col">Pro $39</th>
-                <th scope="col">Growth $79</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>AI captions (video &amp; social)</td>
-                <td className="ls-ok">✓</td>
-                <td className="ls-ok">✓</td>
-                <td className="ls-ok">✓</td>
-              </tr>
-              <tr>
-                <td>AI ideas</td>
-                <td>Basic (Ask AI)</td>
-                <td>Full</td>
-                <td>Full</td>
-              </tr>
-              <tr>
-                <td>AI-generated images</td>
-                <td className="ls-no">—</td>
-                <td>100 / mo</td>
-                <td>Unlimited</td>
-              </tr>
-              <tr>
-                <td>Analyze PDFs &amp; statements (DocuWizard)</td>
-                <td className="ls-ok">✓</td>
-                <td className="ls-ok">✓</td>
-                <td className="ls-ok">✓</td>
-              </tr>
-              <tr>
-                <td>Resume analyzer (Resume Warlock)</td>
-                <td className="ls-ok">✓</td>
-                <td className="ls-ok">✓</td>
-                <td className="ls-ok">✓</td>
-              </tr>
-              <tr>
-                <td>Email responses (Reply Enchanter)</td>
-                <td className="ls-ok">✓</td>
-                <td className="ls-ok">✓</td>
-                <td className="ls-ok">✓</td>
-              </tr>
-              <tr>
-                <td>Voice transcription (EchoScribe)</td>
-                <td className="ls-ok">✓</td>
-                <td className="ls-ok">✓</td>
-                <td className="ls-ok">✓</td>
-              </tr>
-            </tbody>
-          </table>
         </div>
       </section>
 
-      {/* ── RESOURCES: TUTORIALS & BLOGS ───────────────────── */}
-      <section className="ls-section ls-resources" id="resources" aria-labelledby="resources-heading">
-        <h2 id="resources-heading">Resources</h2>
-        <p className="ls-section-sub">
-          Articles and walkthroughs to help you publish smarter and get more from W!ntAi.
-        </p>
-        <div className="ls-resources-grid">
-          <article className="ls-resource-card" id="tutorial" aria-labelledby="tutorial-heading">
-            <h3 id="tutorial-heading">Tutorials</h3>
-            <p>
-              Step-by-step guides for Video Publisher, scheduling, analytics, messages, and more.
-            </p>
-            <a className="ls-resource-link" href="/tutorial">View Tutorials →</a>
-          </article>
-          <article className="ls-resource-card" id="blog" aria-labelledby="blog-heading">
-            <h3 id="blog-heading">Blogs</h3>
-            <p>
-              Product updates, creator tips, and how we think about AI, video, and social workflows.
-            </p>
-            <a className="ls-resource-link" href="/blog">View Blogs →</a>
-          </article>
-        </div>
-      </section>
-
-      {/* ── AUTHORITY / TECH STACK ──────────────────────────── */}
-      <section className="ls-section ls-authority" id="about" aria-labelledby="authority-heading">
-        <h2 id="authority-heading">Built with Trusted Technology</h2>
-        <p className="ls-section-sub">
-          W!ntAi is built on enterprise-grade open-source tools: Java &amp; Spring on AWS, PostgreSQL
-          for durable data, Stripe for billing, and Cloudflare-class delivery in front of the API where configured — the same stack summarized with logos at the bottom of this page.
-        </p>
-        <div className="ls-tech-row">
-          {techStack.map((t) => (
-            <a
-              key={t.label}
-              href={t.url}
-              className="ls-tech-badge"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {t.label}
-            </a>
-          ))}
-        </div>
-        <div className="ls-authority-links">
-          <a
-            href="https://github.com/wintkaythweaungRevature"
-            className="ls-authority-link"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            GitHub — View Source Code
-          </a>
-          <a
-            href="https://api.wintaibot.com/swagger-ui.html"
-            className="ls-authority-link"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            API Documentation (Swagger)
-          </a>
-          <a href="/changelog" className="ls-authority-link">
-            Changelog — ship log
-          </a>
-        </div>
-        <div className="ls-authority-social" aria-label="W!ntAi on social">
-          <a href={WINTAI_SOCIAL.x} target="_blank" rel="noopener noreferrer" className="ls-authority-social-link" title="X (Twitter)">
-            <img src={`${SI}/x/000000`} alt="" width={20} height={20} />
-            <span>X</span>
-          </a>
-          <a href={WINTAI_SOCIAL.facebook} target="_blank" rel="noopener noreferrer" className="ls-authority-social-link" title="Facebook">
-            <img src={`${SI}/facebook/1877F2`} alt="" width={20} height={20} />
-            <span>Facebook</span>
-          </a>
-          <a href={WINTAI_SOCIAL.linkedin} target="_blank" rel="noopener noreferrer" className="ls-authority-social-link" title="LinkedIn">
-            <LinkedInLogo size={20} color="#0A66C2" />
-            <span>LinkedIn</span>
-          </a>
-        </div>
-      </section>
 
       {/* ── FAQ ─────────────────────────────────────────────── */}
       <section className="ls-section ls-faq" id="faq" aria-labelledby="faq-heading">
@@ -1045,67 +975,6 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
 
       {/* ── FOOTER ──────────────────────────────────────────── */}
       <footer className="ls-footer">
-        <div className="ls-footer-trust" aria-label="Production stack and social platforms">
-          <p className="ls-footer-trust-lead">
-            Built and hosted like a real SaaS product — not a blank page: Java &amp; Spring API, PostgreSQL,
-            AWS infrastructure, Cloudflare-style edge where used, and direct integrations to eight social networks
-            (same surfaces you see in the app screenshots above).
-          </p>
-          <div className="ls-footer-trust-rows">
-            <div className="ls-footer-trust-group">
-              <span className="ls-footer-trust-label">Infrastructure &amp; data</span>
-              <div className="ls-footer-trust-logos">
-                {infraStackLogos.map((item) => (
-                  <a
-                    key={item.slug}
-                    className="ls-footer-infra-logo"
-                    href={item.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title={item.fullLabel}
-                  >
-                    <img
-                      src={`${SI}/${item.slug}/${item.color}`}
-                      alt=""
-                      width={40}
-                      height={40}
-                      loading="lazy"
-                      decoding="async"
-                    />
-                    <span>{item.label}</span>
-                  </a>
-                ))}
-              </div>
-            </div>
-            <div className="ls-footer-trust-group">
-              <span className="ls-footer-trust-label">Publish destinations (8 platforms)</span>
-              <div className="ls-footer-trust-logos ls-footer-trust-platforms">
-                {landingPublishPlatforms.map((p) => (
-                  <div key={p.id} className="ls-footer-platform-slot" title={p.label}>
-                    <PlatformIcon platform={p} size={28} />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="ls-footer-social-row" aria-label="Follow W!ntAi">
-          <a href={WINTAI_SOCIAL.x} target="_blank" rel="noopener noreferrer" className="ls-footer-social-link">
-            <img src={`${SI}/x/000000`} alt="" width={18} height={18} />
-            X
-          </a>
-          <a href={WINTAI_SOCIAL.facebook} target="_blank" rel="noopener noreferrer" className="ls-footer-social-link">
-            <img src={`${SI}/facebook/1877F2`} alt="" width={18} height={18} />
-            Facebook
-          </a>
-          <a href={WINTAI_SOCIAL.linkedin} target="_blank" rel="noopener noreferrer" className="ls-footer-social-link">
-            <LinkedInLogo size={18} color="#0A66C2" />
-            LinkedIn
-          </a>
-          <a href="/changelog" className="ls-footer-social-link ls-footer-social-link--changelog">
-            Changelog
-          </a>
-        </div>
         <p>
           © {new Date().getFullYear()} W!ntAi · Built by{" "}
           <a href="https://github.com/wintkaythweaungRevature" target="_blank" rel="noopener noreferrer">

@@ -89,6 +89,21 @@ function MarketingNav({ go, onLogin, onSignup }) {
   const isMobile = useMediaQuery('(max-width: 900px)');
   const [resourcesOpen, setResourcesOpen] = useState(false);
 
+  const scrollToSection = (id) => {
+    // If not on the landing page, go home first then scroll
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      // Navigate to landing then scroll after render
+      go(null);
+      setTimeout(() => {
+        const target = document.getElementById(id);
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 300);
+    }
+  };
+
   const linkStyle = {
     background: 'none',
     border: 'none',
@@ -142,10 +157,10 @@ function MarketingNav({ go, onLogin, onSignup }) {
       {!isMobile && (
         <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
           {[
-            { label: 'Features',     action: () => go(null) },
-            { label: 'How it works', action: () => go(null) },
-            { label: 'Use cases',    action: () => go(null) },
-            { label: 'Pricing',      action: () => go('pricing') },
+            { label: 'Features',     action: () => scrollToSection('features') },
+            { label: 'How it works', action: () => scrollToSection('how-it-works') },
+            { label: 'Use cases',    action: () => scrollToSection('use-cases') },
+            { label: 'Pricing',      action: () => scrollToSection('pricing') },
           ].map(({ label, action }) => (
             <button
               key={label}

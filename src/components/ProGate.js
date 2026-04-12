@@ -46,7 +46,7 @@ export function UpgradeWall({ featureName, currentPlan }) {
       badgeColor: '#6366f1',
       gradient: 'linear-gradient(135deg,#4f46e5,#7c3aed)',
       features: [
-        'All 8 social platforms',
+        '5 social platforms',
         'Unlimited videos & images',
         'Deep Analytics & Trends',
         'Social AI Chat',

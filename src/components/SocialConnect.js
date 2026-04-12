@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { filterEnabledPlatforms } from '../config/disabledPlatforms';
 import PlatformIcon from './PlatformIcon';
+import UpgradeModal from './UpgradeModal';
 
 const PLATFORMS = filterEnabledPlatforms([
   { id: 'youtube',   label: 'YouTube',    emoji: '▶️',  color: '#FF0000', desc: 'Upload videos & Shorts', logo: 'youtube' },
@@ -17,6 +18,7 @@ const PLATFORMS = filterEnabledPlatforms([
 export default function SocialConnect() {
   const { apiBase, token } = useAuth();
   const base = apiBase || 'https://api.wintaibot.com';
+  const [upgradeModal, setUpgradeModal] = useState(null); // { reason, suggestPlan }
 
   const [connected, setConnected]       = useState([]);
   const [loading, setLoading]           = useState(true);
@@ -87,8 +89,12 @@ export default function SocialConnect() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setMessage({ type: 'error', text: `❌ ${data.error || `Failed to start ${platformId} connection`}` });
-        setTimeout(() => setMessage(null), 6000);
+        if (res.status === 403) {
+          setUpgradeModal({ reason: data.error, suggestPlan: 'PRO' });
+        } else {
+          setMessage({ type: 'error', text: `❌ ${data.error || `Failed to start ${platformId} connection`}` });
+          setTimeout(() => setMessage(null), 6000);
+        }
         return;
       }
 
@@ -159,6 +165,14 @@ export default function SocialConnect() {
 
   return (
     <div style={s.page}>
+      {upgradeModal && (
+        <UpgradeModal
+          reason={upgradeModal.reason}
+          feature="more platforms"
+          suggestPlan={upgradeModal.suggestPlan}
+          onClose={() => setUpgradeModal(null)}
+        />
+      )}
       {/* Header card */}
       <div style={s.headerCard}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>

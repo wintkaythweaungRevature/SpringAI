@@ -40,7 +40,7 @@ export default function UpgradeModal({ reason, feature, onClose, suggestPlan }) 
     {
       id: 'PRO', name: 'Pro', monthlyPrice: 39, yearlyPrice: 32, color: '#8b5cf6',
       badge: 'Popular',
-      highlight: ['8 platforms', 'Unlimited videos', '100 AI images/mo', 'Deep Analytics', 'Social AI Chat'],
+      highlight: ['5 platforms', 'Unlimited videos', '100 AI images/mo', 'Deep Analytics', 'Social AI Chat'],
     },
     {
       id: 'GROWTH', name: 'Growth', monthlyPrice: 79, yearlyPrice: 64, color: '#0ea5e9',

@@ -371,7 +371,7 @@ function validateImage(file) {
 }
 
 /* ─── Component ─────────────────────────────────────────────── */
-export default function VideoPublisher({ onNavigateToSocialConnect }) {
+export default function VideoPublisher({ onNavigateToSocialConnect, onOpenTemplates }) {
   const { apiBase, token, logout, user } = useAuth();
   const isGrowth = user?.membershipType === 'GROWTH';
   const base = apiBase || 'https://api.wintaibot.com';
@@ -1222,7 +1222,8 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
               successPlatforms.push(pid);
               setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'done', error: null } }));
             } else {
-              const err = publishErrorsRef.current[variant.variantId] || (result === 'TIMEOUT' ? 'Timed out waiting for Meta' : 'Publish failed');
+              const platformLabel = pid.charAt(0).toUpperCase() + pid.slice(1);
+              const err = publishErrorsRef.current[variant.variantId] || (result === 'TIMEOUT' ? `Timed out waiting for ${platformLabel}` : 'Publish failed');
               setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'failed', error: err } }));
             }
           } else if (res.status === 409 && data.status === 'PUBLISHED') {
@@ -1476,8 +1477,25 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
               ))}
             </div>
 
-            <div style={s.sectionTitle}>
-              {postType === 'video' ? '🎬 Upload Video' : postType === 'image' ? '🖼️ Upload Image' : '✍️ Write Your Post'}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <div style={s.sectionTitle} >
+                {postType === 'video' ? '🎬 Upload Video' : postType === 'image' ? '🖼️ Upload Image' : '✍️ Write Your Post'}
+              </div>
+              <button
+                type="button"
+                onClick={() => onOpenTemplates && onOpenTemplates()}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                  padding: '8px 14px', borderRadius: '8px', cursor: 'pointer',
+                  border: '1.5px solid #6366f1', background: '#f5f3ff',
+                  color: '#4f46e5', fontSize: '13px', fontWeight: 600,
+                  whiteSpace: 'nowrap', transition: 'all 0.15s',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#ede9fe'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = '#f5f3ff'; }}
+              >
+                📋 Templates
+              </button>
             </div>
 
             {/* Publish type selector — story supported for video/image on Instagram/Facebook */}
@@ -2607,7 +2625,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect }) {
             <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '24px' }}>
               {allDone
                 ? `${published.length} of ${Object.keys(publishingStatus).length} platforms succeeded`
-                : 'Do not close this tab. Instagram can take up to 3 minutes.'}
+                : 'Do not close this tab. Some platforms can take up to 3 minutes.'}
             </div>
 
             {/* Per-platform rows */}

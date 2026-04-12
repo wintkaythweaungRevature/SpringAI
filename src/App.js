@@ -27,6 +27,7 @@ import MemberGate from './components/MemberGate';
 import AskAIGate from './components/AskAIGate';
 import LandingSection from './components/LandingSection';
 import VideoPublisher from './components/VideoPublisher';
+import CaptionTemplates from './components/CaptionTemplates';
 import SocialConnect from './components/SocialConnect';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
 import MessagesInbox from './components/MessagesInbox';
@@ -591,7 +592,8 @@ function App() {
           {activeTab === 'Content'          && <MemberGate featureName="Reply Enchanter"><Content /></MemberGate>}
           {activeTab === 'Resume'           && <MemberGate featureName="Career Alchemist"><Resume /></MemberGate>}
           {activeTab === 'account'          && <AskAIGate  featureName="Account"><AccountSettings /></AskAIGate>}
-          {activeTab === 'video-publisher'  && <MemberGate featureName="Video Publisher"><VideoPublisher onNavigateToSocialConnect={() => go('social-connect')} /></MemberGate>}
+          {activeTab === 'video-publisher'  && <MemberGate featureName="Video Publisher"><VideoPublisher onNavigateToSocialConnect={() => go('social-connect')} onOpenTemplates={() => go('caption-templates')} /></MemberGate>}
+          {activeTab === 'caption-templates' && <CaptionTemplates onBack={() => go('video-publisher')} onUseTemplate={(text) => { go('video-publisher'); }} />}
           {activeTab === 'messages'         && <MemberGate featureName="Messages"><ProGate featureName="Messages"><MessagesInbox onOpenConnectedAccounts={() => go('social-connect')} onOpenAutoReply={() => go('auto-reply')} /></ProGate></MemberGate>}
           {activeTab === 'social-connect'   && <MemberGate featureName="Connected Accounts"><SocialConnect /></MemberGate>}
           {activeTab === 'bio'              && <MemberGate featureName="Link in Bio"><LinkInBioBuilder /></MemberGate>}

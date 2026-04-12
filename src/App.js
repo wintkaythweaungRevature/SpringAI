@@ -347,6 +347,22 @@ function App() {
       .catch(() => {});
   }, [user, token, apiBase]);
 
+  // Disconnect a platform directly from the topbar
+  const [disconnectingId, setDisconnectingId] = useState(null);
+  const handleTopbarDisconnect = async (platformId) => {
+    if (disconnectingId) return;
+    setDisconnectingId(platformId);
+    try {
+      const base = apiBase || 'https://api.wintaibot.com';
+      const res = await fetch(`${base}/api/social/disconnect/${platformId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) setConnectedPlatforms(prev => prev.filter(id => id !== platformId));
+    } catch (_) {}
+    finally { setDisconnectingId(null); }
+  };
+
   const handleChoosePlan = async (plan) => {
     if (!user) { setAuthMode('signup'); setShowAuthModal(true); return; }
     const base = apiBase || 'https://api.wintaibot.com';
@@ -547,40 +563,83 @@ function App() {
               </button>
             )}
 
-            {/* Connected platform icons — click to go to Connected Accounts */}
-            {connectedPlatforms.length > 0 && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginLeft: 8 }}>
-                {connectedPlatforms.map(pid => {
-                  const p = ALL_PLATFORMS.find(x => x.id === pid);
-                  if (!p) return null;
-                  // Use white bg so ALL brand-color logos (incl. black TikTok/X/Threads) are visible
+            {/* Platform bar — all platforms, toggle on/off */}
+            {!isMobile && (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 4,
+                marginLeft: 12,
+                background: '#0f172a',
+                border: '1px solid #1e293b',
+                borderRadius: 12,
+                padding: '5px 8px',
+              }}>
+                {ALL_PLATFORMS.map(p => {
+                  const isOn = connectedPlatforms.includes(p.id);
+                  const isBusy = disconnectingId === p.id;
                   return (
-                    <button
-                      key={pid}
-                      onClick={() => go('social-connect')}
-                      title={`${p.label} — connected`}
-                      style={{
-                        width: 30, height: 30, borderRadius: '50%',
-                        background: '#ffffff',
-                        border: `2px solid #e2e8f0`,
-                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        padding: 0, flexShrink: 0,
-                        transition: 'border-color 0.15s, box-shadow 0.15s',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
-                      }}
-                      onMouseEnter={e => {
-                        e.currentTarget.style.borderColor = p.color;
-                        e.currentTarget.style.boxShadow = `0 0 0 3px ${p.color}33`;
-                      }}
-                      onMouseLeave={e => {
-                        e.currentTarget.style.borderColor = '#e2e8f0';
-                        e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.15)';
-                      }}
-                    >
-                      <PlatformIcon platform={p} size={16} />
-                    </button>
+                    <div key={p.id} style={{ position: 'relative' }}>
+                      <button
+                        onClick={() => isOn ? handleTopbarDisconnect(p.id) : go('social-connect')}
+                        title={isOn ? `${p.label} — click to disconnect` : `${p.label} — click to connect`}
+                        disabled={isBusy}
+                        style={{
+                          width: 30, height: 30, borderRadius: '50%',
+                          background: isOn ? '#ffffff' : '#1e293b',
+                          border: isOn ? `2px solid ${p.color}55` : '2px solid #334155',
+                          cursor: isBusy ? 'wait' : 'pointer',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          padding: 0, flexShrink: 0,
+                          opacity: isBusy ? 0.5 : isOn ? 1 : 0.4,
+                          transition: 'all 0.2s',
+                          filter: isOn ? 'none' : 'grayscale(1)',
+                        }}
+                        onMouseEnter={e => {
+                          if (!isBusy) {
+                            e.currentTarget.style.opacity = '1';
+                            e.currentTarget.style.filter = 'none';
+                            e.currentTarget.style.borderColor = p.color;
+                          }
+                        }}
+                        onMouseLeave={e => {
+                          if (!isBusy) {
+                            e.currentTarget.style.opacity = isOn ? '1' : '0.4';
+                            e.currentTarget.style.filter = isOn ? 'none' : 'grayscale(1)';
+                            e.currentTarget.style.borderColor = isOn ? `${p.color}55` : '#334155';
+                          }
+                        }}
+                      >
+                        <PlatformIcon platform={p} size={15} />
+                      </button>
+                      {/* Green connected dot */}
+                      {isOn && (
+                        <span style={{
+                          position: 'absolute', bottom: 1, right: 1,
+                          width: 7, height: 7, borderRadius: '50%',
+                          background: '#22c55e',
+                          border: '1.5px solid #0f172a',
+                          pointerEvents: 'none',
+                        }} />
+                      )}
+                    </div>
                   );
                 })}
+
+                {/* + button */}
+                <button
+                  onClick={() => go('social-connect')}
+                  title="Connect more platforms"
+                  style={{
+                    width: 28, height: 28, borderRadius: '50%',
+                    background: 'transparent', border: '1.5px dashed #334155',
+                    color: '#64748b', fontSize: 16, fontWeight: 700,
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    marginLeft: 2, padding: 0, transition: 'all 0.15s',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#6366f1'; e.currentTarget.style.color = '#6366f1'; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = '#334155'; e.currentTarget.style.color = '#64748b'; }}
+                >
+                  +
+                </button>
               </div>
             )}
 

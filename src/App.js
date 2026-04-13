@@ -39,6 +39,7 @@ import PricingPage from './components/PricingPage';
 import AutoReplySettings from './components/AutoReplySettings';
 import ProGate from './components/ProGate';
 import ContentCalendar from './components/ContentCalendar';
+import TeamSettings from './components/TeamSettings';
 import SEO from './components/SEO';
 
 const BRAND_LOGO_SRC = '/android-chrome-192x192.png';
@@ -52,6 +53,7 @@ const PUBLISHING_TAB_SEO = {
   trends: { title: 'Growth', description: 'Follower trends and posting insights.' },
   'social-ai': { title: 'Social AI', description: 'AI chat for social content.' },
   Content: { title: 'Replies', description: 'AI-assisted replies.' },
+  team: { title: 'Team', description: 'Manage your team seats and members.' },
   'auto-reply': { title: 'Auto Reply', description: 'Automated comment and message replies.' },
   bio: { title: 'Link in Bio', description: 'Your public link page.' },
 };
@@ -561,6 +563,7 @@ function App() {
             <div style={s.navFooterBlock}>
               <div style={s.navDividerStrong} role="separator" aria-hidden="true" />
               <div style={s.groupLabelFooter}>{SIDEBAR_GROUPS.settings}</div>
+              {user && <NavItem icon={<span style={{ fontSize: 15 }}>👥</span>} label="Team" active={activeTab === 'team'} onClick={() => { go('team'); if (isMobile || isTablet) setSidebarOpen(false); }} />}
               {user && <NavItem icon={<HiCog6Tooth size={17} />} label="Account" active={activeTab === 'account'} onClick={() => { go('account'); if (isMobile || isTablet) setSidebarOpen(false); }} hasArrow />}
               {user && <NavItem icon={<HiCreditCard size={17} />} label="Pricing" active={activeTab === 'pricing'} onClick={() => { go('pricing'); if (isMobile || isTablet) setSidebarOpen(false); }} />}
               <NavItem icon={<HiQuestionMarkCircle size={17} />} label="Help & Support" active={activeTab === 'help'} onClick={() => { go('help'); if (isMobile || isTablet) setSidebarOpen(false); }} />
@@ -799,6 +802,7 @@ function App() {
           {activeTab === 'trends'          && <MemberGate featureName="Growth Planner"><ProGate featureName="Growth Planner"><DeepAnalytics /></ProGate></MemberGate>}
           {activeTab === 'social-ai'       && <MemberGate featureName="Social AI"><ProGate featureName="Social AI"><SocialAIChat /></ProGate></MemberGate>}
           {activeTab === 'pricing'         && <PricingPage onClose={() => go(null)} />}
+          {activeTab === 'team'            && <TeamSettings />}
           {activeTab === 'help'            && <HelpPanel />}
           {activeTab === 'auto-reply'      && <MemberGate featureName="Auto Reply"><ProGate featureName="Auto Reply"><AutoReplySettings /></ProGate></MemberGate>}
           {activeTab === 'calendar'        && <MemberGate featureName="Content Calendar"><ContentCalendar onOpenVideoPublisher={() => go('video-publisher')} /></MemberGate>}

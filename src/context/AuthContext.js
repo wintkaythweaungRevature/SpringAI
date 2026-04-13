@@ -41,6 +41,7 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem("authToken"));
   const [loading, setLoading] = useState(true);
   const [authAvailable, setAuthAvailable] = useState(true);
+  const [team, setTeam] = useState(null);
 
   const refetchUser = () => {
     if (!token) return;
@@ -120,6 +121,71 @@ export function AuthProvider({ children }) {
     const t2 = setTimeout(refetchUser, 5000);
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* ── Team API methods ───────────────────────────────────── */
+  const fetchTeam = async () => {
+    if (!token || isOwnerToken(token)) return null;
+    try {
+      const res = await fetch(`${API_BASE}/api/team`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.status === 404 || res.status === 204) { setTeam(null); return null; }
+      if (!res.ok) return null;
+      const data = await res.json().catch(() => ({}));
+      const t = data?.team ?? data ?? null;
+      setTeam(t);
+      return t;
+    } catch {
+      return null;
+    }
+  };
+
+  const createTeam = async (name) => {
+    const res = await fetch(`${API_BASE}/api/team`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || data.message || "Failed to create team");
+    const t = data?.team ?? data;
+    setTeam(t);
+    return t;
+  };
+
+  const inviteMember = async (email) => {
+    const res = await fetch(`${API_BASE}/api/team/invite`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || data.message || "Invite failed");
+    return data;
+  };
+
+  const removeMember = async (userId) => {
+    const res = await fetch(`${API_BASE}/api/team/members/${encodeURIComponent(userId)}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || data.message || "Remove failed");
+    }
+  };
+
+  const leaveTeam = async () => {
+    const res = await fetch(`${API_BASE}/api/team/leave`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || data.message || "Failed to leave team");
+    }
+    setTeam(null);
+  };
 
   const login = async (identifier, password) => {
     const trimmedIdentifier = (identifier || "").trim();
@@ -379,6 +445,13 @@ export function AuthProvider({ children }) {
     reactivateSubscription,
     deactivateAccount,
     reactivateAccount,
+    // Team
+    team,
+    fetchTeam,
+    createTeam,
+    inviteMember,
+    removeMember,
+    leaveTeam,
     isSubscribed: isPaidMembershipType(user?.membershipType),
     isLoggedIn: !!user,
     emailVerified: user?.emailVerified ?? true,

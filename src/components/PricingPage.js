@@ -13,6 +13,7 @@ const PLANS = [
     badge: null,
     icon: '🚀',
     tagline: 'Perfect to get started',
+    seats: 1,
     features: [
       { text: '3 connected platforms', included: true },
       { text: '100 videos / month', included: true },
@@ -20,6 +21,7 @@ const PLANS = [
       { text: '30 scheduled posts / month', included: true },
       { text: 'Basic AI Idea Generator', included: true },
       { text: 'DocuWizard & Resume tools', included: true },
+      { text: '1 seat (solo)', included: true },
     ],
   },
   {
@@ -32,6 +34,7 @@ const PLANS = [
     badge: 'Most Popular',
     icon: '⚡',
     tagline: 'For serious creators',
+    seats: 3,
     features: [
       { text: '5 connected platforms', included: true },
       { text: 'Unlimited videos', included: true },
@@ -43,6 +46,7 @@ const PLANS = [
       { text: 'Messages & Auto Reply', included: true },
       { text: 'Growth Planner & Deep Analytics', included: true },
       { text: 'Social AI Chat (RAG)', included: true },
+      { text: '👥 Up to 3 team seats', included: true },
     ],
   },
   {
@@ -55,6 +59,7 @@ const PLANS = [
     badge: 'Best Value',
     icon: '🔥',
     tagline: 'Maximum power & speed',
+    seats: 5,
     features: [
       { text: 'All 8 social platforms', included: true },
       { text: 'Unlimited videos', included: true },
@@ -68,6 +73,7 @@ const PLANS = [
       { text: 'Social AI Chat (RAG)', included: true },
       { text: 'Priority processing queue', included: true },
       { text: 'Fastest upload & AI speeds', included: true },
+      { text: '👥 Up to 5 team seats', included: true },
     ],
   },
 ];
@@ -91,6 +97,7 @@ const COMPARE_ROWS = [
   { label: 'Social AI Chat',            starter: false,        pro: true,         growth: true },
   { label: 'Priority processing',       starter: false,        pro: false,        growth: true },
   { label: 'Video trimming tool',       starter: false,        pro: false,        growth: true },
+  { label: '👥 Team seats',            starter: '1 (solo)',   pro: '3 seats',    growth: '5 seats' },
   { label: 'Annual (billed yearly)',    starter: '$15/mo ($180/yr)', pro: '$32/mo ($384/yr)', growth: '$64/mo ($768/yr)' },
 ];
 

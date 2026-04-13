@@ -149,6 +149,7 @@ export default function PostDetailModal({ post, onClose, platform, onSaved }) {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [errMsg, setErrMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
 
   const p = platform || {
     id: String(post.platform || 'unknown').toLowerCase(),
@@ -299,9 +300,29 @@ export default function PostDetailModal({ post, onClose, platform, onSaved }) {
   });
 
   const handleSave = async () => {
-    if (!token || !canMutate || !target) return;
-    setSaving(true);
     setErrMsg('');
+    setSuccessMsg('');
+    if (!token) {
+      setErrMsg('You are not logged in. Please refresh and try again.');
+      return;
+    }
+    if (!target) {
+      setErrMsg('Cannot save: this post is missing an ID. Please try deleting and re-scheduling it.');
+      return;
+    }
+    if (readOnly) {
+      setErrMsg('This post has already been published and cannot be edited.');
+      return;
+    }
+    if (!scheduledDateOnly) {
+      setErrMsg('Please select a scheduled date before saving.');
+      return;
+    }
+    if (!scheduledTimeOnly) {
+      setErrMsg('Please enter a valid time before saving.');
+      return;
+    }
+    setSaving(true);
     try {
       const url = buildPatchUrl(base, target);
       const scheduledAt = combineDateAndTimeToIso(scheduledDateOnly, scheduledTimeOnly);
@@ -320,13 +341,14 @@ export default function PostDetailModal({ post, onClose, platform, onSaved }) {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setErrMsg(data.error || data.message || `Update failed (${res.status})`);
+        setErrMsg(data.error || data.message || `Update failed (${res.status}). Please try again.`);
         return;
       }
+      setSuccessMsg('✅ Changes saved successfully!');
       if (typeof onSaved === 'function') onSaved();
-      onClose();
+      setTimeout(() => onClose(), 1200);
     } catch (e) {
-      setErrMsg((e && e.message) || 'Network error');
+      setErrMsg((e && e.message) || 'Network error — check your connection and try again.');
     } finally {
       setSaving(false);
     }
@@ -456,8 +478,13 @@ export default function PostDetailModal({ post, onClose, platform, onSaved }) {
         )}
 
         {errMsg && (
-          <div style={{ marginBottom: 12, fontSize: 13, color: '#b91c1c', background: '#fef2f2', padding: '10px 12px', borderRadius: 10, border: '1px solid #fecaca' }}>
-            {errMsg}
+          <div style={{ marginBottom: 12, fontSize: 13, color: '#b91c1c', background: '#fef2f2', padding: '12px 14px', borderRadius: 10, border: '1px solid #fecaca', fontWeight: 600, display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+            <span>⚠️</span><span>{errMsg}</span>
+          </div>
+        )}
+        {successMsg && (
+          <div style={{ marginBottom: 12, fontSize: 13, color: '#15803d', background: '#f0fdf4', padding: '12px 14px', borderRadius: 10, border: '1px solid #bbf7d0', fontWeight: 700 }}>
+            {successMsg}
           </div>
         )}
 
@@ -551,49 +578,46 @@ export default function PostDetailModal({ post, onClose, platform, onSaved }) {
               <option value="video">Video</option>
             </select>
 
-            <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
-              Scheduled date
+            <div style={{ display: 'flex', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
+              <div style={{ flex: '1 1 160px', minWidth: 140 }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+                  Scheduled date
+                </div>
+                <input
+                  type="date"
+                  value={scheduledDateOnly}
+                  onChange={(e) => setScheduledDateOnly(e.target.value)}
+                  style={{
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    padding: '10px 12px',
+                    borderRadius: 10,
+                    border: '1px solid #cbd5e1',
+                    fontSize: 13,
+                    background: '#fff',
+                    color: '#1e293b',
+                  }}
+                />
+              </div>
+              <div style={{ flex: '0 0 auto', minWidth: 120 }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+                  Time
+                </div>
+                <input
+                  type="time"
+                  value={scheduledTimeOnly}
+                  onChange={(e) => setScheduledTimeOnly(e.target.value)}
+                  style={{
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    padding: '10px 12px',
+                    borderRadius: 10,
+                    border: '1px solid #cbd5e1',
+                    fontSize: 13,
+                  }}
+                />
+              </div>
             </div>
-            <div
-              style={{
-                width: '100%',
-                boxSizing: 'border-box',
-                padding: '10px 12px',
-                borderRadius: 10,
-                border: '1px solid #e2e8f0',
-                fontSize: 13,
-                marginBottom: 10,
-                background: '#f8fafc',
-                color: '#475569',
-              }}
-            >
-              {scheduledDateOnly
-                ? new Date(`${scheduledDateOnly}T12:00:00`).toLocaleDateString(undefined, {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  })
-                : '—'}
-            </div>
-            <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
-              Time (editable)
-            </div>
-            <input
-              type="time"
-              value={scheduledTimeOnly}
-              onChange={(e) => setScheduledTimeOnly(e.target.value)}
-              style={{
-                width: '100%',
-                maxWidth: 200,
-                boxSizing: 'border-box',
-                padding: '10px 12px',
-                borderRadius: 10,
-                border: '1px solid #cbd5e1',
-                fontSize: 13,
-                marginBottom: 14,
-              }}
-            />
 
             <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
               Media URL (optional)

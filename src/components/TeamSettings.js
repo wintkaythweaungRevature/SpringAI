@@ -447,8 +447,8 @@ export default function TeamSettings() {
           </div>
         ) : (
           activeMembers.map((m, i) => {
-            const isMe = String(m.id) === String(uid);
-            const isMemberOwner = String(m.id) === String(team.ownerId);
+            const isMe = String(m.userId) === String(uid) || String(m.id) === String(uid);
+            const isMemberOwner = m.role === 'OWNER' || String(m.userId) === String(team.ownerId);
             return (
               <div
                 key={m.id || m.email}
@@ -467,7 +467,7 @@ export default function TeamSettings() {
                   </div>
                   <div style={{ fontSize: 12, color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {m.email}
-                    {m.status === 'PENDING' && (
+                    {m.status === 'PENDING' && m.role !== 'OWNER' && (
                       <span style={{ marginLeft: 8, fontSize: 10, fontWeight: 700, color: '#d97706', background: '#fffbeb', padding: '1px 6px', borderRadius: 6, border: '1px solid #fde68a' }}>
                         Invite pending
                       </span>

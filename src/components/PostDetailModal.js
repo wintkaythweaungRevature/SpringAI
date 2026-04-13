@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import PlatformIcon from './PlatformIcon';
 
@@ -130,7 +130,7 @@ function rawPreviewRef(post, mediaUrlEdit) {
 }
 
 /**
- * Post detail + edit modal: caption, hashtags, schedule, media URL; DELETE / PATCH to API.
+ * Post detail + edit modal: caption, hashtags, schedule, media; DELETE / PATCH to API.
  */
 export default function PostDetailModal({ post, onClose, platform, onSaved }) {
   const { token, apiBase } = useAuth();
@@ -144,12 +144,19 @@ export default function PostDetailModal({ post, onClose, platform, onSaved }) {
   const [scheduledDateOnly, setScheduledDateOnly] = useState('');
   const [scheduledTimeOnly, setScheduledTimeOnly] = useState('12:00');
   const [mediaUrlEdit, setMediaUrlEdit] = useState('');
+  // --- new state ---
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [filePreview, setFilePreview] = useState('');
+  const [publishNow, setPublishNow] = useState(false);
+  // -----------------
   const [displayPreviewUrl, setDisplayPreviewUrl] = useState('');
   const [previewHint, setPreviewHint] = useState('');
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [errMsg, setErrMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+
+  const fileInputRef = useRef(null);
 
   const p = platform || {
     id: String(post.platform || 'unknown').toLowerCase(),
@@ -171,8 +178,13 @@ export default function PostDetailModal({ post, onClose, platform, onSaved }) {
     if (Array.isArray(ht)) ht = ht.join(' ');
     else if (ht == null) ht = '';
     setHashtags(String(ht));
-    const mt = String(post.mediaType || 'text').toLowerCase();
-    setPublishType(mt === 'video' ? 'video' : mt === 'image' ? 'image' : 'text');
+    const mt = String(post.mediaType || post.publishType || 'text').toLowerCase();
+    setPublishType(
+      mt === 'video' ? 'video'
+      : mt === 'image' ? 'image'
+      : mt === 'story' ? 'story'
+      : 'text'
+    );
     const sched = scheduledIsoFromPost(post);
     const dlv = toDatetimeLocalValue(sched) || toDatetimeLocalValue(post?.createdAt);
     const { date, time } = splitDatetimeLocal(dlv);
@@ -181,6 +193,9 @@ export default function PostDetailModal({ post, onClose, platform, onSaved }) {
     setMediaUrlEdit(
       firstNonEmptyStr(post?.mediaUrl, post?.videoUrl, post?.imageUrl, post?.thumbnailUrl, post?.url) || ''
     );
+    setSelectedFile(null);
+    setFilePreview('');
+    setPublishNow(false);
     setDisplayPreviewUrl('');
     setPreviewHint('');
     setErrMsg('');
@@ -190,40 +205,57 @@ export default function PostDetailModal({ post, onClose, platform, onSaved }) {
     syncFromPost();
   }, [syncFromPost]);
 
-  const rawPreview = rawPreviewRef(post, mediaUrlEdit);
+  // Revoke object URL when filePreview changes or component unmounts
+  useEffect(() => {
+    return () => {
+      if (filePreview) URL.revokeObjectURL(filePreview);
+    };
+  }, [filePreview]);
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (filePreview) URL.revokeObjectURL(filePreview);
+    setSelectedFile(file);
+    setFilePreview(URL.createObjectURL(file));
+    setMediaUrlEdit(''); // file takes priority
+  };
+
+  const handleRemoveFile = () => {
+    if (filePreview) URL.revokeObjectURL(filePreview);
+    setSelectedFile(null);
+    setFilePreview('');
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const rawPreview = selectedFile ? filePreview : rawPreviewRef(post, mediaUrlEdit);
 
   useEffect(() => {
     let cancelled = false;
+    // If a local file is selected, skip the presign flow
+    if (selectedFile) return;
     const yt = youtubeEmbedUrl(post);
     if (yt) {
       setDisplayPreviewUrl('');
       setPreviewHint('');
-      return () => {
-        cancelled = true;
-      };
+      return () => { cancelled = true; };
     }
     if (!rawPreview) {
       setDisplayPreviewUrl('');
       setPreviewHint('');
-      return () => {
-        cancelled = true;
-      };
+      return () => { cancelled = true; };
     }
     if (looksLikePresignedAwsUrl(rawPreview)) {
       setDisplayPreviewUrl(rawPreview);
       setPreviewHint('');
-      return () => {
-        cancelled = true;
-      };
+      return () => { cancelled = true; };
     }
     const needsPresign =
       !/^https?:\/\//i.test(rawPreview) || looksLikeS3HttpUrl(rawPreview);
     if (!needsPresign || !token) {
       setDisplayPreviewUrl(rawPreview);
       setPreviewHint('');
-      return () => {
-        cancelled = true;
-      };
+      return () => { cancelled = true; };
     }
     (async () => {
       try {
@@ -250,10 +282,8 @@ export default function PostDetailModal({ post, onClose, platform, onSaved }) {
         }
       }
     })();
-    return () => {
-      cancelled = true;
-    };
-  }, [rawPreview, token, base, post]);
+    return () => { cancelled = true; };
+  }, [rawPreview, token, base, post, selectedFile]);
 
   useEffect(() => {
     const onKey = (e) => {
@@ -292,12 +322,9 @@ export default function PostDetailModal({ post, onClose, platform, onSaved }) {
   }
 
   const ytEmbed = youtubeEmbedUrl(post);
-  const previewUrl = displayPreviewUrl || rawPreview;
-
-  const authHeaders = () => ({
-    Authorization: `Bearer ${token}`,
-    'Content-Type': 'application/json',
-  });
+  const previewUrl = selectedFile ? filePreview : (displayPreviewUrl || rawPreview);
+  const isVideo = publishType === 'video' || String(post?.mediaType || '').toLowerCase() === 'video'
+    || (selectedFile && selectedFile.type.startsWith('video/'));
 
   const handleSave = async () => {
     setErrMsg('');
@@ -314,37 +341,64 @@ export default function PostDetailModal({ post, onClose, platform, onSaved }) {
       setErrMsg('This post has already been published and cannot be edited.');
       return;
     }
-    if (!scheduledDateOnly) {
-      setErrMsg('Please select a scheduled date before saving.');
-      return;
-    }
-    if (!scheduledTimeOnly) {
-      setErrMsg('Please enter a valid time before saving.');
-      return;
+    if (!publishNow) {
+      if (!scheduledDateOnly) {
+        setErrMsg('Please select a scheduled date before saving.');
+        return;
+      }
+      if (!scheduledTimeOnly) {
+        setErrMsg('Please enter a valid time before saving.');
+        return;
+      }
     }
     setSaving(true);
     try {
       const url = buildPatchUrl(base, target);
-      const scheduledAt = combineDateAndTimeToIso(scheduledDateOnly, scheduledTimeOnly);
-      const body = {
-        caption: caption.trim(),
-        hashtags: hashtags.trim(),
-        publishType: publishType || 'text',
-      };
-      if (scheduledAt) body.scheduledAt = scheduledAt;
-      if (mediaUrlEdit.trim()) body.mediaUrl = mediaUrlEdit.trim();
+      const scheduledAt = publishNow ? null : combineDateAndTimeToIso(scheduledDateOnly, scheduledTimeOnly);
 
-      const res = await fetch(url, {
-        method: 'PATCH',
-        headers: authHeaders(),
-        body: JSON.stringify(body),
-      });
+      let res;
+      if (selectedFile) {
+        // multipart/form-data — let browser set Content-Type with boundary
+        const fd = new FormData();
+        fd.append('caption', caption.trim());
+        fd.append('hashtags', hashtags.trim());
+        fd.append('publishType', publishType || 'text');
+        if (publishNow) {
+          fd.append('publishNow', 'true');
+        } else if (scheduledAt) {
+          fd.append('scheduledAt', scheduledAt);
+        }
+        fd.append('file', selectedFile);
+        res = await fetch(url, {
+          method: 'PATCH',
+          headers: { Authorization: `Bearer ${token}` },
+          body: fd,
+        });
+      } else {
+        const body = {
+          caption: caption.trim(),
+          hashtags: hashtags.trim(),
+          publishType: publishType || 'text',
+        };
+        if (publishNow) {
+          body.publishNow = true;
+        } else if (scheduledAt) {
+          body.scheduledAt = scheduledAt;
+        }
+        if (mediaUrlEdit.trim()) body.mediaUrl = mediaUrlEdit.trim();
+        res = await fetch(url, {
+          method: 'PATCH',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+      }
+
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setErrMsg(data.error || data.message || `Update failed (${res.status}). Please try again.`);
         return;
       }
-      setSuccessMsg('✅ Changes saved successfully!');
+      setSuccessMsg(publishNow ? '🚀 Post sent for immediate publishing!' : '✅ Changes saved successfully!');
       if (typeof onSaved === 'function') onSaved();
       setTimeout(() => onClose(), 1200);
     } catch (e) {
@@ -411,6 +465,7 @@ export default function PostDetailModal({ post, onClose, platform, onSaved }) {
         }}
         onClick={(e) => e.stopPropagation()}
       >
+        {/* ── Header ── */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
             <div
@@ -471,12 +526,12 @@ export default function PostDetailModal({ post, onClose, platform, onSaved }) {
           </div>
         </div>
 
+        {/* ── Banners ── */}
         {!canMutate && !readOnly && (
           <div style={{ marginBottom: 12, fontSize: 13, color: '#b45309', background: '#fffbeb', padding: '10px 12px', borderRadius: 10, border: '1px solid #fcd34d' }}>
             This item has no post or job id — editing may not be available.
           </div>
         )}
-
         {errMsg && (
           <div style={{ marginBottom: 12, fontSize: 13, color: '#b91c1c', background: '#fef2f2', padding: '12px 14px', borderRadius: 10, border: '1px solid #fecaca', fontWeight: 600, display: 'flex', gap: 8, alignItems: 'flex-start' }}>
             <span>⚠️</span><span>{errMsg}</span>
@@ -488,6 +543,7 @@ export default function PostDetailModal({ post, onClose, platform, onSaved }) {
           </div>
         )}
 
+        {/* ── Caption ── */}
         <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
           Caption
         </div>
@@ -532,6 +588,7 @@ export default function PostDetailModal({ post, onClose, platform, onSaved }) {
           />
         )}
 
+        {/* ── Hashtags ── */}
         <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
           Hashtags
         </div>
@@ -555,8 +612,10 @@ export default function PostDetailModal({ post, onClose, platform, onSaved }) {
           />
         )}
 
+        {/* ── Edit-only fields ── */}
         {!readOnly && (
           <>
+            {/* Post type */}
             <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
               Post type
             </div>
@@ -576,104 +635,230 @@ export default function PostDetailModal({ post, onClose, platform, onSaved }) {
               <option value="text">Text</option>
               <option value="image">Image</option>
               <option value="video">Video</option>
+              <option value="story">Story</option>
             </select>
 
-            <div style={{ display: 'flex', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
-              <div style={{ flex: '1 1 160px', minWidth: 140 }}>
-                <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
-                  Scheduled date
-                </div>
-                <input
-                  type="date"
-                  value={scheduledDateOnly}
-                  onChange={(e) => setScheduledDateOnly(e.target.value)}
-                  style={{
-                    width: '100%',
-                    boxSizing: 'border-box',
-                    padding: '10px 12px',
-                    borderRadius: 10,
-                    border: '1px solid #cbd5e1',
-                    fontSize: 13,
-                    background: '#fff',
-                    color: '#1e293b',
-                  }}
-                />
-              </div>
-              <div style={{ flex: '0 0 auto', minWidth: 120 }}>
-                <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
-                  Time
-                </div>
-                <input
-                  type="time"
-                  value={scheduledTimeOnly}
-                  onChange={(e) => setScheduledTimeOnly(e.target.value)}
-                  style={{
-                    width: '100%',
-                    boxSizing: 'border-box',
-                    padding: '10px 12px',
-                    borderRadius: 10,
-                    border: '1px solid #cbd5e1',
-                    fontSize: 13,
-                  }}
-                />
-              </div>
-            </div>
-
+            {/* Media file upload */}
             <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
-              Media URL (optional)
+              Replace media (optional)
             </div>
             <input
-              type="url"
-              value={mediaUrlEdit}
-              onChange={(e) => setMediaUrlEdit(e.target.value)}
+              ref={fileInputRef}
+              type="file"
+              accept="image/*,video/*"
+              style={{ display: 'none' }}
+              onChange={handleFileChange}
+            />
+            {selectedFile ? (
+              <div style={{ marginBottom: 10 }}>
+                {/* preview thumbnail */}
+                <div style={{ borderRadius: 10, overflow: 'hidden', border: '1px solid #e2e8f0', background: '#0f172a', marginBottom: 8 }}>
+                  {selectedFile.type.startsWith('video/') ? (
+                    <video
+                      src={filePreview}
+                      controls
+                      playsInline
+                      preload="metadata"
+                      style={{ width: '100%', maxHeight: 180, display: 'block' }}
+                    />
+                  ) : (
+                    <img
+                      src={filePreview}
+                      alt="preview"
+                      style={{ width: '100%', maxHeight: 180, objectFit: 'contain', display: 'block' }}
+                    />
+                  )}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#475569' }}>
+                  <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    📎 {selectedFile.name}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleRemoveFile}
+                    style={{
+                      padding: '4px 10px',
+                      borderRadius: 8,
+                      border: '1px solid #fecaca',
+                      background: '#fef2f2',
+                      color: '#b91c1c',
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      flexShrink: 0,
+                    }}
+                  >
+                    × Remove
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                style={{
+                  width: '100%',
+                  padding: '14px 12px',
+                  borderRadius: 10,
+                  border: '2px dashed #cbd5e1',
+                  background: '#f8fafc',
+                  color: '#64748b',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  marginBottom: 10,
+                  textAlign: 'center',
+                  transition: 'border-color 0.15s, background 0.15s',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#6366f1'; e.currentTarget.style.background = '#eef2ff'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#cbd5e1'; e.currentTarget.style.background = '#f8fafc'; }}
+              >
+                📁 Click to upload image or video
+              </button>
+            )}
+
+            {/* Media URL — hidden while a file is selected */}
+            {!selectedFile && (
+              <>
+                <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+                  Media URL (optional)
+                </div>
+                <input
+                  type="url"
+                  value={mediaUrlEdit}
+                  onChange={(e) => setMediaUrlEdit(e.target.value)}
+                  style={{
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    padding: '10px 12px',
+                    borderRadius: 10,
+                    border: '1px solid #cbd5e1',
+                    fontSize: 12,
+                    marginBottom: 10,
+                  }}
+                  placeholder="https://… (or upload a file above)"
+                />
+              </>
+            )}
+
+            {/* Publish Now toggle */}
+            <label
               style={{
-                width: '100%',
-                boxSizing: 'border-box',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
                 padding: '10px 12px',
                 borderRadius: 10,
-                border: '1px solid #cbd5e1',
-                fontSize: 12,
-                marginBottom: 10,
+                border: `1.5px solid ${publishNow ? '#6366f1' : '#e2e8f0'}`,
+                background: publishNow ? '#eef2ff' : '#f8fafc',
+                cursor: 'pointer',
+                marginBottom: 14,
+                transition: 'all 0.15s',
+                userSelect: 'none',
               }}
-              placeholder="https://… (replace image or video URL if your API supports it)"
-            />
+            >
+              <input
+                type="checkbox"
+                checked={publishNow}
+                onChange={(e) => setPublishNow(e.target.checked)}
+                style={{ width: 16, height: 16, accentColor: '#6366f1', cursor: 'pointer' }}
+              />
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: publishNow ? '#4338ca' : '#1e293b' }}>
+                  ⚡ Publish immediately
+                </div>
+                <div style={{ fontSize: 11, color: '#64748b', marginTop: 1 }}>
+                  Skip the schedule — send this post right now
+                </div>
+              </div>
+            </label>
+
+            {/* Date + Time — hidden when publishNow */}
+            {!publishNow && (
+              <div style={{ display: 'flex', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
+                <div style={{ flex: '1 1 160px', minWidth: 140 }}>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+                    Scheduled date
+                  </div>
+                  <input
+                    type="date"
+                    value={scheduledDateOnly}
+                    onChange={(e) => setScheduledDateOnly(e.target.value)}
+                    style={{
+                      width: '100%',
+                      boxSizing: 'border-box',
+                      padding: '10px 12px',
+                      borderRadius: 10,
+                      border: '1px solid #cbd5e1',
+                      fontSize: 13,
+                      background: '#fff',
+                      color: '#1e293b',
+                    }}
+                  />
+                </div>
+                <div style={{ flex: '0 0 auto', minWidth: 120 }}>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+                    Time
+                  </div>
+                  <input
+                    type="time"
+                    value={scheduledTimeOnly}
+                    onChange={(e) => setScheduledTimeOnly(e.target.value)}
+                    style={{
+                      width: '100%',
+                      boxSizing: 'border-box',
+                      padding: '10px 12px',
+                      borderRadius: 10,
+                      border: '1px solid #cbd5e1',
+                      fontSize: 13,
+                    }}
+                  />
+                </div>
+              </div>
+            )}
           </>
         )}
 
-        {previewHint && (
-          <div style={{ marginBottom: 10, fontSize: 12, color: '#b45309', background: '#fffbeb', padding: '8px 10px', borderRadius: 8 }}>
-            {previewHint}
-          </div>
-        )}
-        {(ytEmbed || previewUrl) && (
-          <div style={{ marginBottom: 14, borderRadius: 10, overflow: 'hidden', border: '1px solid #e2e8f0', background: '#0f172a' }}>
-            {ytEmbed ? (
-              <iframe
-                title="YouTube preview"
-                src={ytEmbed}
-                style={{ width: '100%', height: 220, border: 'none', display: 'block' }}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
-            ) : publishType === 'video' || String(post?.mediaType || '').toLowerCase() === 'video' ? (
-              <video
-                key={previewUrl}
-                src={previewUrl}
-                controls
-                playsInline
-                preload="metadata"
-                style={{ width: '100%', maxHeight: 220, display: 'block' }}
-              />
-            ) : (
-              <img
-                src={previewUrl}
-                alt=""
-                style={{ width: '100%', maxHeight: 220, objectFit: 'contain', display: 'block' }}
-              />
+        {/* ── Remote media preview (only when no local file) ── */}
+        {!selectedFile && (
+          <>
+            {previewHint && (
+              <div style={{ marginBottom: 10, fontSize: 12, color: '#b45309', background: '#fffbeb', padding: '8px 10px', borderRadius: 8 }}>
+                {previewHint}
+              </div>
             )}
-          </div>
+            {(ytEmbed || previewUrl) && (
+              <div style={{ marginBottom: 14, borderRadius: 10, overflow: 'hidden', border: '1px solid #e2e8f0', background: '#0f172a' }}>
+                {ytEmbed ? (
+                  <iframe
+                    title="YouTube preview"
+                    src={ytEmbed}
+                    style={{ width: '100%', height: 220, border: 'none', display: 'block' }}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                ) : isVideo ? (
+                  <video
+                    key={previewUrl}
+                    src={previewUrl}
+                    controls
+                    playsInline
+                    preload="metadata"
+                    style={{ width: '100%', maxHeight: 220, display: 'block' }}
+                  />
+                ) : (
+                  <img
+                    src={previewUrl}
+                    alt=""
+                    style={{ width: '100%', maxHeight: 220, objectFit: 'contain', display: 'block' }}
+                  />
+                )}
+              </div>
+            )}
+          </>
         )}
 
+        {/* ── Engagement (published posts only) ── */}
         {readOnly && (
           <>
             <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
@@ -701,6 +886,7 @@ export default function PostDetailModal({ post, onClose, platform, onSaved }) {
           </>
         )}
 
+        {/* ── Meta row ── */}
         <div style={{ display: 'grid', gap: 6, fontSize: 13, color: '#475569', marginBottom: 16, paddingTop: 8, borderTop: '1px solid #f1f5f9' }}>
           <div>
             <strong style={{ color: '#64748b' }}>Created</strong> · {createdStr || '—'}
@@ -710,6 +896,7 @@ export default function PostDetailModal({ post, onClose, platform, onSaved }) {
           </div>
         </div>
 
+        {/* ── Error message from backend ── */}
         {post.errorMessage && (
           <div
             style={{
@@ -729,6 +916,7 @@ export default function PostDetailModal({ post, onClose, platform, onSaved }) {
           </div>
         )}
 
+        {/* ── Action buttons ── */}
         {canMutate && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'flex-end', marginTop: 8 }}>
             <button
@@ -772,14 +960,14 @@ export default function PostDetailModal({ post, onClose, platform, onSaved }) {
                 padding: '10px 20px',
                 borderRadius: 10,
                 border: 'none',
-                background: saving ? '#93c5fd' : '#2563eb',
+                background: saving ? '#93c5fd' : publishNow ? '#7c3aed' : '#2563eb',
                 fontWeight: 700,
                 fontSize: 14,
                 cursor: saving ? 'wait' : 'pointer',
                 color: '#fff',
               }}
             >
-              {saving ? 'Saving…' : 'Save changes'}
+              {saving ? 'Saving…' : publishNow ? '⚡ Publish Now' : 'Save changes'}
             </button>
           </div>
         )}

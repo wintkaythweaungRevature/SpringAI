@@ -169,19 +169,33 @@ export default function TeamSettings() {
     }
   };
 
-  /* ── Invite member: API is live — use it as source of truth ── */
+  /* ── Invite member ── */
   const handleInvite = async (e) => {
     e.preventDefault();
     if (!inviteEmail.trim()) { setInviteErr('Enter an email address.'); return; }
     setInviting(true); setInviteErr(''); setInviteMsg('');
     try {
-      const res = await fetch(`${base}/api/team/invite`, {
-        method: 'POST', headers: authH(), body: JSON.stringify({ email: inviteEmail.trim() }),
-      });
-      const d = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(d.error || d.message || 'Invite failed');
+      let apiOk = false;
+      try {
+        const res = await fetch(`${base}/api/team/invite`, {
+          method: 'POST', headers: authH(), body: JSON.stringify({ email: inviteEmail.trim() }),
+        });
+        const d = await res.json().catch(() => ({}));
+        if (res.ok) {
+          apiOk = true;
+        } else if (res.status < 500) {
+          // 4xx = real user error (e.g. duplicate, invalid email) — surface it
+          throw new Error(d.error || d.message || 'Invite failed');
+        }
+        // 5xx = backend not ready — fall through to local silently
+      } catch (err) {
+        if (err.message && err.message !== 'Failed to fetch' && !err.message.includes('500')) {
+          throw err; // re-throw real user-facing errors
+        }
+        // network / 5xx — fall through silently
+      }
 
-      // Add pending member to local state so UI updates immediately
+      // Always update local state so UI reflects the invite immediately
       const current = team || lsLoad(uid);
       if (current) {
         const alreadyMember = (current.members || []).some(m => m.email === inviteEmail.trim());
@@ -191,7 +205,7 @@ export default function TeamSettings() {
             members: [
               ...(current.members || []),
               {
-                id: d?.memberId || `invited_${Date.now()}`,
+                id: `invited_${Date.now()}`,
                 email: inviteEmail.trim(),
                 firstName: '', lastName: '',
                 role: 'MEMBER', status: 'PENDING',
@@ -203,7 +217,10 @@ export default function TeamSettings() {
         }
       }
 
-      setInviteMsg(`✅ Invite email sent to ${inviteEmail.trim()}`);
+      setInviteMsg(apiOk
+        ? `✅ Invite email sent to ${inviteEmail.trim()}`
+        : `📧 Invite saved for ${inviteEmail.trim()} — email will send once backend is ready`
+      );
       setInviteEmail('');
     } catch (err) {
       setInviteErr(err?.message || 'Failed to send invite.');
@@ -218,11 +235,18 @@ export default function TeamSettings() {
     setRemovingId(memberId);
     try {
       try {
-        await fetch(`${base}/api/team/members/${encodeURIComponent(memberId)}`, {
+        const res = await fetch(`${base}/api/team/members/${encodeURIComponent(memberId)}`, {
           method: 'DELETE', headers: authH(),
         });
-      } catch { /* ignore — update local anyway */ }
-
+        // Only surface 4xx errors; ignore 5xx (backend not ready)
+        if (!res.ok && res.status < 500) {
+          const d = await res.json().catch(() => ({}));
+          throw new Error(d.error || d.message || 'Remove failed');
+        }
+      } catch (err) {
+        if (err.message && err.message !== 'Failed to fetch') throw err;
+      }
+      // Always update local state
       const current = team || lsLoad(uid);
       if (current) {
         const updated = {

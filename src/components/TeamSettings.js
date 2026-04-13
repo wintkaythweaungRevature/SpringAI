@@ -13,6 +13,21 @@ function isTeamPlan(membershipType) {
   return m === 'PRO' || m === 'GROWTH' || m === 'MEMBER';
 }
 
+/* ─── localStorage helpers (fallback while backend is not ready) ─ */
+function lsKey(userId) { return `wintai_team_${userId}`; }
+
+function lsLoad(userId) {
+  try { return JSON.parse(localStorage.getItem(lsKey(userId)) || 'null'); } catch { return null; }
+}
+
+function lsSave(userId, data) {
+  try { localStorage.setItem(lsKey(userId), JSON.stringify(data)); } catch {}
+}
+
+function lsClear(userId) {
+  try { localStorage.removeItem(lsKey(userId)); } catch {}
+}
+
 /* ─── Avatar initials ──────────────────────────────────────── */
 function Avatar({ firstName, lastName, email, size = 36 }) {
   const initials = firstName
@@ -49,7 +64,7 @@ function SeatBadge({ used, total }) {
 
 /* ─── Main component ───────────────────────────────────────── */
 export default function TeamSettings() {
-  const { user, token, apiBase, fetchTeam, createTeam, inviteMember, removeMember, leaveTeam } = useAuth();
+  const { user, token, apiBase } = useAuth();
 
   const [team, setTeam] = useState(null);
   const [loadingTeam, setLoadingTeam] = useState(true);
@@ -69,44 +84,69 @@ export default function TeamSettings() {
 
   const base = (apiBase || 'https://api.wintaibot.com').replace(/\/$/, '');
   const authH = useCallback(() => ({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }), [token]);
+  const uid = user?.id || user?.email || 'local';
 
-  /* ── Load team ── */
+  /* ── Load team: try API first, fall back to localStorage ── */
   const loadTeam = useCallback(async () => {
     setLoadingTeam(true);
     setTeamErr('');
     try {
       const res = await fetch(`${base}/api/team`, { headers: authH() });
-      // Treat any non-2xx (including 404, 500 — endpoint not yet live) as "no team"
-      if (!res.ok) { setTeam(null); return; }
-      const data = await res.json().catch(() => ({}));
-      // If the response body is empty or falsy, also treat as no team
-      const t = data?.team ?? data ?? null;
-      setTeam(t && (t.id || t.name) ? t : null);
-    } catch {
-      // Network error — silently treat as no team so the UI isn't broken
-      setTeam(null);
-    } finally {
-      setLoadingTeam(false);
-    }
-  }, [base, authH]);
+      if (res.ok) {
+        const data = await res.json().catch(() => ({}));
+        const t = data?.team ?? data ?? null;
+        const loaded = t && (t.id || t.name) ? t : null;
+        setTeam(loaded);
+        // Keep localStorage in sync with server state
+        if (loaded) lsSave(uid, loaded); else lsClear(uid);
+        return;
+      }
+    } catch { /* network error — fall through to localStorage */ }
+    // Backend not ready or failed — use localStorage
+    const saved = lsLoad(uid);
+    setTeam(saved);
+    setLoadingTeam(false);
+  }, [base, authH, uid]);
 
-  useEffect(() => { if (token) loadTeam(); }, [token, loadTeam]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { if (token) loadTeam().finally(() => setLoadingTeam(false)); }, [token]);
 
-  /* ── Create team ── */
+  /* ── Create team: try API, fall back to local ── */
   const handleCreate = async (e) => {
     e.preventDefault();
     if (!teamName.trim()) { setCreateErr('Please enter a team name.'); return; }
     setCreating(true); setCreateErr('');
     try {
-      const fn = createTeam || (async (name) => {
+      let newTeam = null;
+      try {
         const res = await fetch(`${base}/api/team`, {
-          method: 'POST', headers: authH(), body: JSON.stringify({ name }),
+          method: 'POST', headers: authH(), body: JSON.stringify({ name: teamName.trim() }),
         });
-        const d = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(d.error || d.message || 'Failed to create team');
-        return d?.team ?? d;
-      });
-      const newTeam = await fn(teamName.trim());
+        if (res.ok) {
+          const d = await res.json().catch(() => ({}));
+          newTeam = d?.team ?? d ?? null;
+        }
+      } catch { /* fall through to local */ }
+
+      // If API failed or returned nothing, build a local team object
+      if (!newTeam || (!newTeam.id && !newTeam.name)) {
+        newTeam = {
+          id: `local_${Date.now()}`,
+          name: teamName.trim(),
+          ownerId: uid,
+          members: [{
+            id: uid,
+            email: user?.email || '',
+            firstName: user?.firstName || '',
+            lastName: user?.lastName || '',
+            role: 'OWNER',
+            status: 'ACTIVE',
+          }],
+          _local: true,
+        };
+      }
+
+      lsSave(uid, newTeam);
       setTeam(newTeam);
       setTeamName('');
     } catch (err) {
@@ -116,24 +156,52 @@ export default function TeamSettings() {
     }
   };
 
-  /* ── Invite member ── */
+  /* ── Invite member: try API, fall back to local pending entry ── */
   const handleInvite = async (e) => {
     e.preventDefault();
     if (!inviteEmail.trim()) { setInviteErr('Enter an email address.'); return; }
     setInviting(true); setInviteErr(''); setInviteMsg('');
     try {
-      const fn = inviteMember || (async (email) => {
+      let apiOk = false;
+      try {
         const res = await fetch(`${base}/api/team/invite`, {
-          method: 'POST', headers: authH(), body: JSON.stringify({ email }),
+          method: 'POST', headers: authH(), body: JSON.stringify({ email: inviteEmail.trim() }),
         });
-        const d = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(d.error || d.message || 'Invite failed');
-        return d;
-      });
-      await fn(inviteEmail.trim());
-      setInviteMsg(`✅ Invite sent to ${inviteEmail.trim()}`);
+        apiOk = res.ok;
+      } catch { /* fall through */ }
+
+      // Update local team regardless
+      const current = team || lsLoad(uid);
+      if (current) {
+        const alreadyMember = (current.members || []).some(
+          m => m.email === inviteEmail.trim()
+        );
+        if (!alreadyMember) {
+          const updated = {
+            ...current,
+            members: [
+              ...(current.members || []),
+              {
+                id: `invited_${Date.now()}`,
+                email: inviteEmail.trim(),
+                firstName: '',
+                lastName: '',
+                role: 'MEMBER',
+                status: 'PENDING',
+              },
+            ],
+          };
+          lsSave(uid, updated);
+          setTeam(updated);
+        }
+      }
+
+      setInviteMsg(
+        apiOk
+          ? `✅ Invite sent to ${inviteEmail.trim()}`
+          : `📧 Invite saved — will send to ${inviteEmail.trim()} once backend is connected`
+      );
       setInviteEmail('');
-      await loadTeam();
     } catch (err) {
       setInviteErr(err?.message || 'Failed to send invite.');
     } finally {
@@ -146,17 +214,21 @@ export default function TeamSettings() {
     if (!window.confirm(`Remove ${memberEmail} from the team?`)) return;
     setRemovingId(memberId);
     try {
-      const fn = removeMember || (async (id) => {
-        const res = await fetch(`${base}/api/team/members/${encodeURIComponent(id)}`, {
+      try {
+        await fetch(`${base}/api/team/members/${encodeURIComponent(memberId)}`, {
           method: 'DELETE', headers: authH(),
         });
-        if (!res.ok) {
-          const d = await res.json().catch(() => ({}));
-          throw new Error(d.error || d.message || 'Remove failed');
-        }
-      });
-      await fn(memberId);
-      await loadTeam();
+      } catch { /* ignore — update local anyway */ }
+
+      const current = team || lsLoad(uid);
+      if (current) {
+        const updated = {
+          ...current,
+          members: (current.members || []).filter(m => String(m.id) !== String(memberId)),
+        };
+        lsSave(uid, updated);
+        setTeam(updated);
+      }
     } catch (err) {
       setTeamErr(err?.message || 'Failed to remove member.');
     } finally {
@@ -169,16 +241,10 @@ export default function TeamSettings() {
     if (!window.confirm('Leave this team? You will lose access to shared features.')) return;
     setLeaving(true);
     try {
-      const fn = leaveTeam || (async () => {
-        const res = await fetch(`${base}/api/team/leave`, {
-          method: 'DELETE', headers: authH(),
-        });
-        if (!res.ok) {
-          const d = await res.json().catch(() => ({}));
-          throw new Error(d.error || d.message || 'Failed to leave team');
-        }
-      });
-      await fn();
+      try {
+        await fetch(`${base}/api/team/leave`, { method: 'DELETE', headers: authH() });
+      } catch { /* ignore */ }
+      lsClear(uid);
       setTeam(null);
     } catch (err) {
       setTeamErr(err?.message || 'Failed to leave team.');
@@ -193,7 +259,9 @@ export default function TeamSettings() {
   const members = team?.members || [];
   const activeMembers = members.filter(m => m.status !== 'REMOVED');
   const seatsUsed = activeMembers.length;
-  const isOwner = team ? (String(team.ownerId) === String(user?.id)) : true;
+  const isOwner = team
+    ? (String(team.ownerId) === String(uid))
+    : true;
   const canInvite = isOwner && seatsUsed < limit;
 
   /* ─── Loading state ─── */
@@ -247,23 +315,22 @@ export default function TeamSettings() {
           </ul>
         </div>
 
-        <a
-          href="/?tab=pricing"
-          onClick={(e) => { e.preventDefault(); window.dispatchEvent(new CustomEvent('navigate-tab', { detail: 'pricing' })); }}
+        <button
+          onClick={() => window.dispatchEvent(new CustomEvent('navigate-tab', { detail: 'pricing' }))}
           style={{
             display: 'block', width: '100%', boxSizing: 'border-box',
             padding: '14px 20px', borderRadius: 12, textAlign: 'center',
             background: '#8b5cf6', color: '#fff', fontWeight: 800, fontSize: 15,
-            textDecoration: 'none', cursor: 'pointer',
+            border: 'none', cursor: 'pointer',
           }}
         >
           Upgrade to Pro →
-        </a>
+        </button>
       </div>
     );
   }
 
-  /* ─── No team yet — create flow (owner only, Pro/Growth) ─── */
+  /* ─── No team yet — create flow ─── */
   if (!team) {
     return (
       <div style={{ padding: '40px 24px', maxWidth: 480, margin: '0 auto' }}>
@@ -277,12 +344,6 @@ export default function TeamSettings() {
             <strong>{limit} seats</strong>. Give your team a name to get started.
           </p>
         </div>
-
-        {teamErr && (
-          <div style={{ marginBottom: 16, padding: '10px 14px', borderRadius: 10, background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', fontSize: 13, fontWeight: 600 }}>
-            ⚠️ {teamErr}
-          </div>
-        )}
 
         <form onSubmit={handleCreate}>
           <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
@@ -329,6 +390,11 @@ export default function TeamSettings() {
           {isOwner && (
             <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 4 }}>
               You are the <strong style={{ color: '#6366f1' }}>Owner</strong>
+              {team._local && (
+                <span style={{ marginLeft: 8, fontSize: 10, color: '#d97706', background: '#fffbeb', padding: '1px 8px', borderRadius: 8, border: '1px solid #fde68a' }}>
+                  Saved locally — syncs when backend is ready
+                </span>
+              )}
             </div>
           )}
         </div>
@@ -354,7 +420,7 @@ export default function TeamSettings() {
           </div>
         ) : (
           activeMembers.map((m, i) => {
-            const isMe = String(m.id) === String(user?.id);
+            const isMe = String(m.id) === String(uid);
             const isMemberOwner = String(m.id) === String(team.ownerId);
             return (
               <div
@@ -418,12 +484,10 @@ export default function TeamSettings() {
             <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
               Invite a member
             </div>
-            {!canInvite && seatsUsed >= limit && (
-              <span style={{ fontSize: 11, fontWeight: 700, color: '#b91c1c' }}>Seats full</span>
-            )}
-            {canInvite && (
-              <span style={{ fontSize: 11, color: '#64748b' }}>{limit - seatsUsed} seat{limit - seatsUsed !== 1 ? 's' : ''} remaining</span>
-            )}
+            {!canInvite && seatsUsed >= limit
+              ? <span style={{ fontSize: 11, fontWeight: 700, color: '#b91c1c' }}>Seats full</span>
+              : <span style={{ fontSize: 11, color: '#64748b' }}>{limit - seatsUsed} seat{limit - seatsUsed !== 1 ? 's' : ''} remaining</span>
+            }
           </div>
 
           {inviteMsg && (

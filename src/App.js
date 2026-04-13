@@ -41,6 +41,9 @@ import ProGate from './components/ProGate';
 import ContentCalendar from './components/ContentCalendar';
 import TeamSettings from './components/TeamSettings';
 import BrandKitSettings from './components/BrandKitSettings';
+import OrganizationSettings from './components/OrganizationSettings';
+import WorkspaceSwitcher from './components/WorkspaceSwitcher';
+import WorkspaceGate from './components/WorkspaceGate';
 import SEO from './components/SEO';
 
 const BRAND_LOGO_SRC = '/android-chrome-192x192.png';
@@ -56,6 +59,7 @@ const PUBLISHING_TAB_SEO = {
   Content: { title: 'Replies', description: 'AI-assisted replies.' },
   brand: { title: 'Brand Kit', description: 'Your brand colors and logo for templates.' },
   team: { title: 'Team', description: 'Manage your team seats and members.' },
+  organization: { title: 'Organization', description: 'Manage your organization, workspaces and member permissions.' },
   'auto-reply': { title: 'Auto Reply', description: 'Automated comment and message replies.' },
   bio: { title: 'Link in Bio', description: 'Your public link page.' },
 };
@@ -301,7 +305,9 @@ function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [aiDockOpen, setAiDockOpen] = useState(false);
   const [connectedPlatforms, setConnectedPlatforms] = useState([]);
-  const { user, logout, loading, token, apiBase, refetchUser } = useAuth();
+  const [pendingInviteToken, setPendingInviteToken] = useState(null);
+  const [pendingOrgInviteToken, setPendingOrgInviteToken] = useState(null);
+  const { user, logout, loading, token, apiBase, refetchUser, fetchOrg, fetchWorkspaces } = useAuth();
 
   // Platform metadata used for topbar icons
   const ALL_PLATFORMS = [
@@ -468,6 +474,18 @@ function App() {
       setVerifiedBanner('error');
       window.history.replaceState({}, '', '/');
     }
+    // Team invite link: ?team_invite=<token> or ?team_invite=accepted
+    const inviteParam = params.get('team_invite');
+    if (inviteParam) {
+      window.history.replaceState({}, '', '/');
+      setPendingInviteToken(inviteParam);
+    }
+    // Org invite link: ?org_invite=<token> or ?org_invite=accepted
+    const orgInviteParam = params.get('org_invite');
+    if (orgInviteParam) {
+      window.history.replaceState({}, '', '/');
+      setPendingOrgInviteToken(orgInviteParam);
+    }
   }, [go]);
 
   useEffect(() => {
@@ -479,6 +497,68 @@ function App() {
       setShowAuthModal(true);
     }
   }, [loading, user]);
+
+  // Handle pending team invite after auth state resolves
+  useEffect(() => {
+    if (loading || !pendingInviteToken) return;
+    // Backend redirect variant — just navigate to Team tab
+    if (pendingInviteToken === 'accepted' || pendingInviteToken === 'already_accepted') {
+      setPendingInviteToken(null);
+      go('team');
+      return;
+    }
+    if (user && token) {
+      // Logged in — call accept endpoint now
+      const base = apiBase || 'https://api.wintaibot.com';
+      setPendingInviteToken(null);
+      fetch(`${base}/api/team/accept?token=${pendingInviteToken}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        redirect: 'manual',
+      })
+        .then(() => {
+          go('team');
+          if (typeof refetchUser === 'function') refetchUser();
+        })
+        .catch(() => {});
+    } else {
+      // Not logged in — open login modal; token stays in state until login completes
+      setAuthMode('login');
+      setShowAuthModal(true);
+    }
+  }, [loading, user, token, pendingInviteToken, go, apiBase, refetchUser]);
+
+  // Handle pending org invite after auth state resolves
+  useEffect(() => {
+    if (loading || !pendingOrgInviteToken) return;
+    if (pendingOrgInviteToken === 'accepted' || pendingOrgInviteToken === 'already_accepted') {
+      setPendingOrgInviteToken(null);
+      go('organization');
+      if (typeof fetchOrg === 'function') { fetchOrg(); fetchWorkspaces(); }
+      return;
+    }
+    if (pendingOrgInviteToken === 'error') {
+      setPendingOrgInviteToken(null);
+      return;
+    }
+    if (user && token) {
+      const base = apiBase || 'https://api.wintaibot.com';
+      const t = pendingOrgInviteToken;
+      setPendingOrgInviteToken(null);
+      fetch(`${base}/api/org/accept?token=${t}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        redirect: 'manual',
+      })
+        .then(() => {
+          go('organization');
+          if (typeof refetchUser === 'function') refetchUser();
+          if (typeof fetchOrg === 'function') { fetchOrg(); fetchWorkspaces(); }
+        })
+        .catch(() => {});
+    } else {
+      setAuthMode('login');
+      setShowAuthModal(true);
+    }
+  }, [loading, user, token, pendingOrgInviteToken, go, apiBase, refetchUser, fetchOrg, fetchWorkspaces]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const handler = (e) => go(e.detail);
@@ -535,6 +615,9 @@ function App() {
 
           {/* Nav */}
           <nav style={s.nav}>
+            {/* Workspace switcher — shows only when user is in an org */}
+            <WorkspaceSwitcher />
+
             <NavItem icon={<HiHome size={17} />} label="Dashboard" active={activeTab === null || activeTab === 'analytics'} onClick={() => { go(null); if (isMobile || isTablet) setSidebarOpen(false); }} />
 
             <div style={s.navDivider} role="separator" aria-hidden="true" />
@@ -567,6 +650,7 @@ function App() {
               <div style={s.groupLabelFooter}>{SIDEBAR_GROUPS.settings}</div>
               {user && <NavItem icon={<span style={{ fontSize: 15 }}>🎨</span>} label="Brand Kit" active={activeTab === 'brand'} onClick={() => { go('brand'); if (isMobile || isTablet) setSidebarOpen(false); }} />}
               {user && <NavItem icon={<span style={{ fontSize: 15 }}>👥</span>} label="Team" active={activeTab === 'team'} onClick={() => { go('team'); if (isMobile || isTablet) setSidebarOpen(false); }} />}
+              {user && <NavItem icon={<span style={{ fontSize: 15 }}>🏢</span>} label="Organization" active={activeTab === 'organization'} onClick={() => { go('organization'); if (isMobile || isTablet) setSidebarOpen(false); }} />}
               {user && <NavItem icon={<HiCog6Tooth size={17} />} label="Account" active={activeTab === 'account'} onClick={() => { go('account'); if (isMobile || isTablet) setSidebarOpen(false); }} hasArrow />}
               {user && <NavItem icon={<HiCreditCard size={17} />} label="Pricing" active={activeTab === 'pricing'} onClick={() => { go('pricing'); if (isMobile || isTablet) setSidebarOpen(false); }} />}
               <NavItem icon={<HiQuestionMarkCircle size={17} />} label="Help & Support" active={activeTab === 'help'} onClick={() => { go('help'); if (isMobile || isTablet) setSidebarOpen(false); }} />
@@ -789,7 +873,7 @@ function App() {
               <AnalyticsDashboard />
             </MemberGate>
           )}
-          {activeTab === 'image-generator'  && <MemberGate featureName="Image Generator"><ImageGenerator /></MemberGate>}
+          {activeTab === 'image-generator'  && <MemberGate featureName="Image Generator"><WorkspaceGate permKey="imageGenerator"><ImageGenerator /></WorkspaceGate></MemberGate>}
           {activeTab === 'chat'             && <AskAIGate  featureName="Ask AI"><ChatComponent /></AskAIGate>}
           {activeTab === 'analyzer'         && <MemberGate featureName="DocuWizard"><SpendingAnalyzer /></MemberGate>}
           {activeTab === 'recipe-generator' && <AskAIGate  featureName="Recipe Generator"><ReceipeGenerator /></AskAIGate>}
@@ -797,19 +881,20 @@ function App() {
           {activeTab === 'Content'          && <MemberGate featureName="Reply Enchanter"><Content /></MemberGate>}
           {activeTab === 'Resume'           && <MemberGate featureName="Career Alchemist"><Resume /></MemberGate>}
           {activeTab === 'account'          && <AskAIGate  featureName="Account"><AccountSettings /></AskAIGate>}
-          {activeTab === 'video-publisher'  && <MemberGate featureName="Video Publisher"><VideoPublisher onNavigateToSocialConnect={() => go('social-connect')} templateCaption={templateCaption} onTemplateCaptionUsed={() => setTemplateCaption(null)} /></MemberGate>}
-          {activeTab === 'caption-templates' && <CaptionTemplates onBack={() => go('video-publisher')} onUseTemplate={(text) => { setTemplateCaption(text); go('video-publisher'); }} />}
+          {activeTab === 'video-publisher'  && <MemberGate featureName="Video Publisher"><WorkspaceGate permKey="videoPublisher"><VideoPublisher onNavigateToSocialConnect={() => go('social-connect')} templateCaption={templateCaption} onTemplateCaptionUsed={() => setTemplateCaption(null)} /></WorkspaceGate></MemberGate>}
+          {activeTab === 'caption-templates' && <WorkspaceGate permKey="templates"><CaptionTemplates onBack={() => go('video-publisher')} onUseTemplate={(text) => { setTemplateCaption(text); go('video-publisher'); }} /></WorkspaceGate>}
           {activeTab === 'messages'         && <MemberGate featureName="Messages"><ProGate featureName="Messages"><MessagesInbox onOpenConnectedAccounts={() => go('social-connect')} onOpenAutoReply={() => go('auto-reply')} /></ProGate></MemberGate>}
-          {activeTab === 'social-connect'   && <MemberGate featureName="Connected Accounts"><SocialConnect onConnectionChange={setConnectedPlatforms} /></MemberGate>}
-          {activeTab === 'bio'              && <MemberGate featureName="Link in Bio"><LinkInBioBuilder /></MemberGate>}
-          {activeTab === 'trends'          && <MemberGate featureName="Growth Planner"><ProGate featureName="Growth Planner"><DeepAnalytics /></ProGate></MemberGate>}
+          {activeTab === 'social-connect'   && <MemberGate featureName="Connected Accounts"><WorkspaceGate permKey="connectAccounts"><SocialConnect onConnectionChange={setConnectedPlatforms} /></WorkspaceGate></MemberGate>}
+          {activeTab === 'bio'              && <MemberGate featureName="Link in Bio"><WorkspaceGate permKey="linkInBio"><LinkInBioBuilder /></WorkspaceGate></MemberGate>}
+          {activeTab === 'trends'          && <MemberGate featureName="Growth Planner"><WorkspaceGate permKey="analytics"><ProGate featureName="Growth Planner"><DeepAnalytics /></ProGate></WorkspaceGate></MemberGate>}
           {activeTab === 'social-ai'       && <MemberGate featureName="Social AI"><ProGate featureName="Social AI"><SocialAIChat /></ProGate></MemberGate>}
           {activeTab === 'pricing'         && <PricingPage onClose={() => go(null)} />}
           {activeTab === 'brand'           && <BrandKitSettings />}
           {activeTab === 'team'            && <TeamSettings />}
+          {activeTab === 'organization'    && <OrganizationSettings />}
           {activeTab === 'help'            && <HelpPanel />}
           {activeTab === 'auto-reply'      && <MemberGate featureName="Auto Reply"><ProGate featureName="Auto Reply"><AutoReplySettings /></ProGate></MemberGate>}
-          {activeTab === 'calendar'        && <MemberGate featureName="Content Calendar"><ContentCalendar onOpenVideoPublisher={() => go('video-publisher')} /></MemberGate>}
+          {activeTab === 'calendar'        && <MemberGate featureName="Content Calendar"><WorkspaceGate permKey="contentCalendar"><ContentCalendar onOpenVideoPublisher={() => go('video-publisher')} /></WorkspaceGate></MemberGate>}
         </Box>
       </Box>
 

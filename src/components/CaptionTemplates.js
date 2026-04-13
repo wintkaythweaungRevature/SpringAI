@@ -2674,6 +2674,8 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
   const [dlLoading, setDlLoading] = useState(null);   // templateId being downloaded
   const [previewTheme, setPreviewTheme] = useState('default');
   const captureRef                = useRef(null);
+  const selectedTheme             = allThemes.find((th) => th.id === previewTheme) || PREVIEW_THEMES[0];
+  const selectedThemeIsBrand      = selectedTheme?._isBrand || previewTheme === 'brand';
 
   const filtered = TEMPLATES.filter(t => cat === 'All' || t.category === cat);
 
@@ -2913,6 +2915,8 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
           <span style={{ fontSize:11, fontWeight:800, color:'#94a3b8', letterSpacing:1.2 }}>THEME</span>
           {allThemes.map((th) => {
             const active = previewTheme === th.id;
+            const isBrandTheme = !!th._isBrand || th.id === 'brand';
+            const brandPrimary = th.swatch?.[0] || '#6366f1';
             return (
               <button
                 key={th.id}
@@ -2940,6 +2944,29 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
                 {th.swatch.map((c, i) => (
                   <span key={i} style={{ width: 8, height: 24, borderRadius: 3, background: c, flexShrink: 0 }} />
                 ))}
+                {isBrandTheme && (
+                  <span
+                    aria-hidden
+                    style={{
+                      position: 'absolute',
+                      left: -4,
+                      bottom: -4,
+                      width: 16,
+                      height: 16,
+                      borderRadius: '50%',
+                      background: brandPrimary,
+                      color: '#fff',
+                      fontSize: 9,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 800,
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.18)',
+                    }}
+                  >
+                    💬
+                  </span>
+                )}
                 {active && (
                   <span style={{ position: 'absolute', top: -4, right: -4, width: 16, height: 16, borderRadius: '50%', background: '#6366f1', color: '#fff', fontSize: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>✓</span>
                 )}
@@ -2947,6 +2974,39 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
             );
           })}
         </div>
+        {selectedThemeIsBrand && (
+          <div
+            style={{
+              marginTop: 8,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '6px 10px',
+              borderRadius: 999,
+              background: `${selectedTheme.swatch?.[0] || '#6366f1'}1f`,
+              color: selectedTheme.swatch?.[0] || '#6366f1',
+              fontSize: 11,
+              fontWeight: 700,
+            }}
+          >
+            <span
+              style={{
+                width: 18,
+                height: 18,
+                borderRadius: '50%',
+                background: selectedTheme.swatch?.[0] || '#6366f1',
+                color: '#fff',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 10,
+              }}
+            >
+              💬
+            </span>
+            This is your Brand Colour
+          </div>
+        )}
         <div style={{ fontSize:11, color:'#94a3b8', marginTop:8 }}>Theme tints thumbnails and downloads — same layout as your template cards.</div>
       </div>
 

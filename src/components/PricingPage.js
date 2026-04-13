@@ -12,7 +12,7 @@ const PLANS = [
     color: '#6366f1',
     badge: null,
     icon: '🚀',
-    tagline: 'Perfect to get started',
+    tagline: 'Perfect for solo creators',
     seats: 1,
     features: [
       { text: '3 connected platforms', included: true },
@@ -20,8 +20,12 @@ const PLANS = [
       { text: '1,000 images / month', included: true },
       { text: '30 scheduled posts / month', included: true },
       { text: 'Basic AI Idea Generator', included: true },
+      { text: 'Brand Kit (colors + logo)', included: true },
+      { text: 'Viral Hook Generator', included: true },
       { text: 'DocuWizard & Resume tools', included: true },
       { text: '1 seat (solo)', included: true },
+      { text: 'Organization & Workspaces', included: false },
+      { text: 'Team member seats', included: false },
     ],
   },
   {
@@ -33,7 +37,7 @@ const PLANS = [
     color: '#8b5cf6',
     badge: 'Most Popular',
     icon: '⚡',
-    tagline: 'For serious creators',
+    tagline: 'For agencies & serious creators',
     seats: 3,
     features: [
       { text: '5 connected platforms', included: true },
@@ -42,11 +46,16 @@ const PLANS = [
       { text: 'Unlimited scheduled posts', included: true },
       { text: '100 AI-generated images / mo', included: true },
       { text: 'Full AI Idea Generator', included: true },
+      { text: 'Brand Kit (colors + logo)', included: true },
+      { text: 'Viral Hook Generator', included: true },
       { text: 'EchoScribe transcription', included: true },
       { text: 'Messages & Auto Reply', included: true },
       { text: 'Growth Planner & Deep Analytics', included: true },
       { text: 'Social AI Chat (RAG)', included: true },
-      { text: '👥 Up to 3 team seats', included: true },
+      { text: '🏢 Organization management', included: true },
+      { text: '📁 Multiple workspaces', included: true },
+      { text: '🔐 Per-member feature permissions', included: true },
+      { text: '👥 Up to 3 org members', included: true },
     ],
   },
   {
@@ -56,9 +65,9 @@ const PLANS = [
     yearlyPrice: 64,
     yearlyTotal: 768,
     color: '#f59e0b',
-    badge: 'Best Value',
+    badge: 'Best for Agencies',
     icon: '🔥',
-    tagline: 'Maximum power & speed',
+    tagline: 'Maximum power for teams',
     seats: 5,
     features: [
       { text: 'All 8 social platforms', included: true },
@@ -66,6 +75,8 @@ const PLANS = [
       { text: 'Unlimited AI-generated images', included: true },
       { text: 'Unlimited scheduled posts', included: true },
       { text: 'Full AI Idea Generator', included: true },
+      { text: 'Brand Kit (colors + logo)', included: true },
+      { text: 'Viral Hook Generator', included: true },
       { text: 'Video trimming tool', included: true },
       { text: 'EchoScribe transcription', included: true },
       { text: 'Messages & Auto Reply', included: true },
@@ -73,32 +84,40 @@ const PLANS = [
       { text: 'Social AI Chat (RAG)', included: true },
       { text: 'Priority processing queue', included: true },
       { text: 'Fastest upload & AI speeds', included: true },
-      { text: '👥 Up to 5 team seats', included: true },
+      { text: '🏢 Organization management', included: true },
+      { text: '📁 Unlimited workspaces', included: true },
+      { text: '🔐 Granular permissions per workspace', included: true },
+      { text: '👥 Up to 5 org members', included: true },
     ],
   },
 ];
 
 /* ─── Comparison table rows ─────────────────────────────────────────── */
 const COMPARE_ROWS = [
-  { label: 'Social platforms',          starter: '3',          pro: 'All 8',      growth: 'All 8' },
-  { label: 'Videos to post / month',    starter: '100',        pro: 'Unlimited',  growth: 'Unlimited' },
-  { label: 'Images to post / month',    starter: '1,000',      pro: 'Unlimited',  growth: 'Unlimited' },
-  { label: 'AI-generated images / mo',  starter: '—',          pro: '100',        growth: 'Unlimited' },
-  { label: 'Scheduled posts / month',   starter: '30',         pro: 'Unlimited',  growth: 'Unlimited' },
-  { label: 'Content Calendar',          starter: true,         pro: true,         growth: true },
-  { label: 'Video Publisher',           starter: true,         pro: true,         growth: true },
-  { label: 'AI Captions & Hashtags',    starter: true,         pro: true,         growth: true },
-  { label: 'Image Generator',           starter: true,         pro: true,         growth: true },
-  { label: 'Link-in-Bio page',          starter: true,         pro: true,         growth: true },
-  { label: 'DocuWizard & Resume tools', starter: true,         pro: true,         growth: true },
-  { label: 'EchoScribe transcription',  starter: false,        pro: true,         growth: true },
-  { label: 'Messages & Auto Reply',     starter: false,        pro: true,         growth: true },
-  { label: 'Growth Planner',            starter: false,        pro: true,         growth: true },
-  { label: 'Social AI Chat',            starter: false,        pro: true,         growth: true },
-  { label: 'Priority processing',       starter: false,        pro: false,        growth: true },
-  { label: 'Video trimming tool',       starter: false,        pro: false,        growth: true },
-  { label: '👥 Team seats',            starter: '1 (solo)',   pro: '3 seats',    growth: '5 seats' },
-  { label: 'Annual (billed yearly)',    starter: '$15/mo ($180/yr)', pro: '$32/mo ($384/yr)', growth: '$64/mo ($768/yr)' },
+  { label: 'Social platforms',                  starter: '3',          pro: '5',          growth: 'All 8' },
+  { label: 'Videos to post / month',            starter: '100',        pro: 'Unlimited',  growth: 'Unlimited' },
+  { label: 'Images to post / month',            starter: '1,000',      pro: 'Unlimited',  growth: 'Unlimited' },
+  { label: 'AI-generated images / mo',          starter: '—',          pro: '100',        growth: 'Unlimited' },
+  { label: 'Scheduled posts / month',           starter: '30',         pro: 'Unlimited',  growth: 'Unlimited' },
+  { label: 'Content Calendar',                  starter: true,         pro: true,         growth: true },
+  { label: 'Video Publisher',                   starter: true,         pro: true,         growth: true },
+  { label: 'AI Captions & Hashtags',            starter: true,         pro: true,         growth: true },
+  { label: 'Image Generator',                   starter: true,         pro: true,         growth: true },
+  { label: 'Link-in-Bio page',                  starter: true,         pro: true,         growth: true },
+  { label: 'Brand Kit (colors + logo)',          starter: true,         pro: true,         growth: true },
+  { label: 'Viral Hook Generator',              starter: true,         pro: true,         growth: true },
+  { label: 'DocuWizard & Resume tools',         starter: true,         pro: true,         growth: true },
+  { label: 'EchoScribe transcription',          starter: false,        pro: true,         growth: true },
+  { label: 'Messages & Auto Reply',             starter: false,        pro: true,         growth: true },
+  { label: 'Growth Planner',                    starter: false,        pro: true,         growth: true },
+  { label: 'Social AI Chat',                    starter: false,        pro: true,         growth: true },
+  { label: 'Video trimming tool',               starter: false,        pro: false,        growth: true },
+  { label: 'Priority processing',               starter: false,        pro: false,        growth: true },
+  { label: '🏢 Organization management',        starter: false,        pro: true,         growth: true },
+  { label: '📁 Workspaces',                     starter: false,        pro: 'Multiple',   growth: 'Unlimited' },
+  { label: '🔐 Per-member permissions',         starter: false,        pro: true,         growth: true },
+  { label: '👥 Org members',                    starter: '1 (solo)',   pro: '3 members',  growth: '5 members' },
+  { label: 'Annual (billed yearly)',            starter: '$15/mo ($180/yr)', pro: '$32/mo ($384/yr)', growth: '$64/mo ($768/yr)' },
 ];
 
 function CellValue({ val, planColor }) {
@@ -285,9 +304,9 @@ export default function PricingPage({ onClose }) {
               <thead>
                 <tr>
                   <th style={{ ...s.th, textAlign: 'left', width: '40%' }}>Feature</th>
-                  <th style={{ ...s.th, color: '#6366f1' }}>Starter<br /><span style={s.thPrice}>$19/mo</span></th>
-                  <th style={{ ...s.th, color: '#8b5cf6', background: 'rgba(139,92,246,0.06)' }}>Pro<br /><span style={s.thPrice}>$39/mo</span></th>
-                  <th style={{ ...s.th, color: '#f59e0b' }}>Growth<br /><span style={s.thPrice}>$79/mo</span></th>
+                  <th style={{ ...s.th, color: '#6366f1' }}>🚀 Starter<br /><span style={s.thPrice}>$19/mo</span></th>
+                  <th style={{ ...s.th, color: '#8b5cf6', background: 'rgba(139,92,246,0.06)' }}>⚡ Pro<br /><span style={s.thPrice}>$39/mo</span></th>
+                  <th style={{ ...s.th, color: '#f59e0b' }}>🔥 Growth<br /><span style={s.thPrice}>$79/mo</span></th>
                 </tr>
               </thead>
               <tbody>

@@ -490,8 +490,8 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
                   <a className="ls-btn-ghost" href="/features">See all tools →</a>
                 </div>
                 <p className="ls-hero-note">
-                  <strong>Try free trial:</strong> Ask AI &amp; Recipe Generator.{" "}
-                  <strong>Paid:</strong> Starter <strong>$19/mo</strong> · Pro <strong>$39/mo</strong> · Growth <strong>$79/mo</strong> — no per-channel fees, no install.
+                  <strong>Try free:</strong> Ask AI &amp; Recipe Generator.{" "}
+                  <strong>Starter</strong> $19/mo · <strong>Pro</strong> $39/mo (agency + workspaces) · <strong>Growth</strong> $79/mo (full team) — no per-channel fees, no install.
                 </p>
                 <HeroPlatformsUnderNote />
               </div>
@@ -775,82 +775,128 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
 
           {/* ── STARTER ── */}
           <div className="ls-plan">
-            <div className="ls-plan-tier ls-plan-tier--starter">Starter</div>
+            <div className="ls-plan-tier ls-plan-tier--starter">🚀 Starter</div>
             <div className="ls-plan-price-row">
               <div className="ls-plan-price">$19 <span>/ mo</span></div>
               <div className="ls-plan-save">Save 21%<br /><small>annually</small></div>
             </div>
             <p className="ls-plan-annual">$15/mo billed annually · $180/yr</p>
+            <p className="ls-plan-tagline">Perfect for solo creators</p>
             <button type="button" className="ls-btn-outline ls-plan-cta" onClick={() => onChoosePlan ? onChoosePlan('STARTER') : onGetStarted()}>
               Start with Starter
             </button>
 
             <div className="ls-plan-group">
-              <div className="ls-plan-group-label">What you get</div>
-              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Connected Platforms</span><span className="ls-pf-val">3 platforms</span></div>
-              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Videos per month</span><span className="ls-pf-val">100</span></div>
-              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Images per month</span><span className="ls-pf-val">1,000</span></div>
+              <div className="ls-plan-group-label">Publishing</div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Connected Platforms</span><span className="ls-pf-val">3</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Videos / month</span><span className="ls-pf-val">100</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Images / month</span><span className="ls-pf-val">1,000</span></div>
               <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Scheduled posts</span><span className="ls-pf-val">30 / mo</span></div>
-              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>AI Idea Generator</span><span className="ls-pf-val ls-pf-val--dim">Basic</span></div>
-              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>DocuWizard &amp; Resume tools</span></div>
             </div>
 
+            <div className="ls-plan-group">
+              <div className="ls-plan-group-label">AI Tools</div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>AI Idea Generator</span><span className="ls-pf-val ls-pf-val--dim">Basic</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>🎨 Brand Kit</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>🎣 Viral Hook Generator</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>DocuWizard &amp; Resume</span></div>
+              <div className="ls-plan-feat ls-plan-feat--no"><span className="ls-pf-icon ls-pf-icon--no">✗</span><span>EchoScribe transcription</span></div>
+              <div className="ls-plan-feat ls-plan-feat--no"><span className="ls-pf-icon ls-pf-icon--no">✗</span><span>Growth Planner</span></div>
+            </div>
+
+            <div className="ls-plan-group">
+              <div className="ls-plan-group-label">Team</div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Seats</span><span className="ls-pf-val">1 (solo)</span></div>
+              <div className="ls-plan-feat ls-plan-feat--no"><span className="ls-pf-icon ls-pf-icon--no">✗</span><span>Organization &amp; Workspaces</span></div>
+            </div>
           </div>
 
           {/* ── PRO ── */}
           <div className="ls-plan ls-plan--featured">
             <div className="ls-plan-popular">Most Popular</div>
-            <div className="ls-plan-tier ls-plan-tier--pro">Pro</div>
+            <div className="ls-plan-tier ls-plan-tier--pro">⚡ Pro</div>
             <div className="ls-plan-price-row">
               <div className="ls-plan-price">$39 <span>/ mo</span></div>
               <div className="ls-plan-save ls-plan-save--featured">Save 18%<br /><small>annually</small></div>
             </div>
             <p className="ls-plan-annual">$32/mo billed annually · $384/yr</p>
+            <p className="ls-plan-tagline">For agencies &amp; serious creators</p>
             <button type="button" className="ls-btn-primary ls-plan-cta" onClick={() => onChoosePlan ? onChoosePlan('PRO') : onGetStarted()}>
               Start with Pro
             </button>
 
             <div className="ls-plan-group">
-              <div className="ls-plan-group-label">What you get</div>
-              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Connected Platforms</span><span className="ls-pf-val">5 platforms</span></div>
-              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Videos per month</span><span className="ls-pf-val">Unlimited</span></div>
+              <div className="ls-plan-group-label">Publishing</div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Connected Platforms</span><span className="ls-pf-val">5</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Videos / month</span><span className="ls-pf-val">Unlimited</span></div>
               <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Images to post</span><span className="ls-pf-val">Unlimited</span></div>
               <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Scheduled posts</span><span className="ls-pf-val">Unlimited</span></div>
-              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>AI Image Generation</span><span className="ls-pf-val">100 / mo</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>AI-generated images</span><span className="ls-pf-val">100 / mo</span></div>
+            </div>
+
+            <div className="ls-plan-group">
+              <div className="ls-plan-group-label">AI Tools</div>
               <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>AI Idea Generator</span><span className="ls-pf-val">Full</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>🎨 Brand Kit</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>🎣 Viral Hook Generator</span></div>
               <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>EchoScribe transcription</span></div>
               <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Messages &amp; Auto Reply</span></div>
               <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Deep Analytics &amp; Growth Planner</span></div>
               <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Social AI Chat (RAG)</span></div>
+            </div>
+
+            <div className="ls-plan-group">
+              <div className="ls-plan-group-label">Team &amp; Agency</div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>🏢 Organization management</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>📁 Multiple workspaces</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>🔐 Per-member permissions</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Org members</span><span className="ls-pf-val">Up to 3</span></div>
             </div>
           </div>
 
           {/* ── GROWTH ── */}
           <div className="ls-plan ls-plan--growth">
-            <div className="ls-plan-tier ls-plan-tier--growth">Growth</div>
+            <div className="ls-plan-popular ls-plan-popular--growth">Best for Agencies</div>
+            <div className="ls-plan-tier ls-plan-tier--growth">🔥 Growth</div>
             <div className="ls-plan-price-row">
               <div className="ls-plan-price">$79 <span>/ mo</span></div>
               <div className="ls-plan-save">Save 19%<br /><small>annually</small></div>
             </div>
             <p className="ls-plan-annual">$64/mo billed annually · $768/yr</p>
+            <p className="ls-plan-tagline">Maximum power for teams</p>
             <button type="button" className="ls-btn-outline ls-btn-outline--growth ls-plan-cta" onClick={() => onChoosePlan ? onChoosePlan('GROWTH') : onGetStarted()}>
               Start with Growth
             </button>
 
             <div className="ls-plan-group">
-              <div className="ls-plan-group-label">What you get</div>
+              <div className="ls-plan-group-label">Publishing</div>
               <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Connected Platforms</span><span className="ls-pf-val">All 8</span></div>
-              <div className="ls-plan-feat ls-plan-feat--star"><span className="ls-pf-icon ls-pf-icon--star">★</span><span>Videos per month</span><span className="ls-pf-val ls-pf-val--star">Unlimited</span></div>
+              <div className="ls-plan-feat ls-plan-feat--star"><span className="ls-pf-icon ls-pf-icon--star">★</span><span>Videos / month</span><span className="ls-pf-val ls-pf-val--star">Unlimited</span></div>
               <div className="ls-plan-feat ls-plan-feat--star"><span className="ls-pf-icon ls-pf-icon--star">★</span><span>AI-generated images</span><span className="ls-pf-val ls-pf-val--star">Unlimited</span></div>
               <div className="ls-plan-feat ls-plan-feat--star"><span className="ls-pf-icon ls-pf-icon--star">★</span><span>Scheduled posts</span><span className="ls-pf-val ls-pf-val--star">Unlimited</span></div>
+              <div className="ls-plan-feat ls-plan-feat--star"><span className="ls-pf-icon ls-pf-icon--star">★</span><span>Priority processing queue</span></div>
+              <div className="ls-plan-feat ls-plan-feat--star"><span className="ls-pf-icon ls-pf-icon--star">★</span><span>Fastest upload &amp; AI speeds</span></div>
+            </div>
+
+            <div className="ls-plan-group">
+              <div className="ls-plan-group-label">AI Tools</div>
               <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>AI Idea Generator</span><span className="ls-pf-val">Full</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>🎨 Brand Kit</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>🎣 Viral Hook Generator</span></div>
               <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Video Trimming Tool</span></div>
               <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>EchoScribe transcription</span></div>
               <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Messages &amp; Auto Reply</span></div>
               <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Deep Analytics &amp; Growth Planner</span></div>
               <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Social AI Chat (RAG)</span></div>
-              <div className="ls-plan-feat ls-plan-feat--star"><span className="ls-pf-icon ls-pf-icon--star">★</span><span>Priority Processing Queue</span></div>
-              <div className="ls-plan-feat ls-plan-feat--star"><span className="ls-pf-icon ls-pf-icon--star">★</span><span>Fastest upload &amp; AI speeds</span></div>
+            </div>
+
+            <div className="ls-plan-group">
+              <div className="ls-plan-group-label">Team &amp; Agency</div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>🏢 Organization management</span></div>
+              <div className="ls-plan-feat ls-plan-feat--star"><span className="ls-pf-icon ls-pf-icon--star">★</span><span>📁 Unlimited workspaces</span></div>
+              <div className="ls-plan-feat ls-plan-feat--star"><span className="ls-pf-icon ls-pf-icon--star">★</span><span>🔐 Granular permissions</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Org members</span><span className="ls-pf-val">Up to 5</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Members inherit your plan</span></div>
             </div>
           </div>
 
@@ -864,7 +910,7 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
         {[
           {
             q: "Is W!ntAi really free to use?",
-            a: "Yes. The Ask AI chatbot and Recipe Generator are completely free with no credit card required. Premium tools unlock on paid plans: Starter ($19/mo), Pro ($39/mo), or Growth ($79/mo), with annual discounts. See pricing for Video Publisher and analytics limits.",
+            a: "Yes. The Ask AI chatbot and Recipe Generator are completely free with no credit card required. Premium tools unlock on paid plans: Starter ($19/mo, solo), Pro ($39/mo, agency + workspaces), or Growth ($79/mo, full team + unlimited workspaces), with annual discounts.",
           },
           {
             q: "What file types does DocuWizard support?",
@@ -907,7 +953,7 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
       <section className="ls-section ls-final-cta" aria-label="Get started with W!ntAi">
         <h2>Ready to post video everywhere — without format headaches?</h2>
         <p>
-          Start with a <strong>free trial</strong>, then scale to <strong>Starter, Pro, or Growth</strong> for full <strong>video publishing</strong>, scheduling, and AI workflows.
+          Start with a <strong>free trial</strong>, then scale to <strong>Starter</strong> (solo), <strong>Pro</strong> (agency + workspaces), or <strong>Growth</strong> (unlimited team) for full <strong>video publishing</strong>, scheduling, and AI workflows.
           No credit card required to try.
         </p>
         <button className="ls-btn-primary ls-btn-lg" onClick={onGetStarted}>

@@ -4,6 +4,7 @@ import { Helmet } from 'react-helmet';
 import LandingSection from '../components/LandingSection';
 import VideoPublisherTutorial from '../components/VideoPublisherTutorial';
 import { TemplatesTutorial, DashboardTutorial, GrowthPlannerTutorial } from '../components/FeatureTutorials';
+import BlogPage from '../components/BlogPage';
 import './SEOPublicLayout.css';
 
 const ROUTE_META = {
@@ -142,7 +143,11 @@ export default function SEOPublicLayout({ onGetStarted, onOpenVideoPublisher }) 
         </nav>
       </header>
 
-      {pathname === '/tutorial' ? (
+      {pathname === '/blog' ? (
+        <main style={{ paddingTop: 80 }}>
+          <BlogPage />
+        </main>
+      ) : pathname === '/tutorial' ? (
         <main id="tutorial" style={{ paddingTop: 80, background: '#0f172a' }}>
           {/* ── Tutorial tab selector ── */}
           <TutorialTabs />
@@ -153,6 +158,7 @@ export default function SEOPublicLayout({ onGetStarted, onOpenVideoPublisher }) 
       ) : (
         <LandingSection onGetStarted={handleGetStarted} onOpenVideoPublisher={onOpenVideoPublisher} />
       )}
+
     </>
   );
 }

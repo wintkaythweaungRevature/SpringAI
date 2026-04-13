@@ -307,6 +307,7 @@ function App() {
   const [connectedPlatforms, setConnectedPlatforms] = useState([]);
   const [pendingInviteToken, setPendingInviteToken] = useState(null);
   const [pendingOrgInviteToken, setPendingOrgInviteToken] = useState(null);
+  const [orgInviteHint, setOrgInviteHint] = useState(null); // { email, orgName } or null
   const { user, logout, loading, token, apiBase, refetchUser, fetchOrg, fetchWorkspaces } = useAuth();
 
   // Platform metadata used for topbar icons
@@ -555,7 +556,16 @@ function App() {
         })
         .catch(() => {});
     } else {
-      setAuthMode('login');
+      // Fetch invite info so we can show org name + pre-fill email
+      const base = apiBase || 'https://api.wintaibot.com';
+      const t = pendingOrgInviteToken;
+      fetch(`${base}/api/org/invite-info?token=${t}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(info => {
+          setOrgInviteHint(info || { email: '', orgName: 'an organisation' });
+        })
+        .catch(() => setOrgInviteHint({ email: '', orgName: 'an organisation' }));
+      setAuthMode('signup');   // likely a new user — show signup first
       setShowAuthModal(true);
     }
   }, [loading, user, token, pendingOrgInviteToken, go, apiBase, refetchUser, fetchOrg, fetchWorkspaces]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -923,18 +933,46 @@ function App() {
 
       {/* ═══════════════ AUTH MODAL ═══════════════ */}
       {showAuthModal && !user && (
-        <div className="auth-modal-overlay" onClick={() => setShowAuthModal(false)}>
+        <div className="auth-modal-overlay" onClick={() => { setShowAuthModal(false); setOrgInviteHint(null); }}>
           <div className="auth-modal" onClick={(e) => e.stopPropagation()} style={{ position: 'relative' }}>
-            <button onClick={() => setShowAuthModal(false)} className="auth-modal-close" aria-label="Close">✕</button>
+            <button onClick={() => { setShowAuthModal(false); setOrgInviteHint(null); }} className="auth-modal-close" aria-label="Close">✕</button>
+            {orgInviteHint && (
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(99,102,241,0.18), rgba(139,92,246,0.12))',
+                border: '1px solid rgba(99,102,241,0.35)',
+                borderRadius: 10,
+                padding: '12px 16px',
+                marginBottom: 20,
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 10,
+              }}>
+                <span style={{ fontSize: 22, lineHeight: 1 }}>🏢</span>
+                <div>
+                  <div style={{ color: '#c4b5fd', fontWeight: 700, fontSize: 14, marginBottom: 3 }}>
+                    You've been invited to join <em>{orgInviteHint.orgName}</em>
+                  </div>
+                  <div style={{ color: '#a0a0b8', fontSize: 13 }}>
+                    {orgInviteHint.email
+                      ? <>Create a free account for <strong style={{ color: '#e0e0e0' }}>{orgInviteHint.email}</strong> or sign in to accept.</>
+                      : 'Create a free account or sign in to accept your invitation.'}
+                  </div>
+                </div>
+              </div>
+            )}
             {authMode === 'login' && (
               <Login
-                onSuccess={() => setShowAuthModal(false)}
+                onSuccess={() => { setShowAuthModal(false); setOrgInviteHint(null); }}
                 onSwitchToSignup={() => setAuthMode('signup')}
                 onForgotPassword={() => setAuthMode('forgot-password')}
               />
             )}
             {authMode === 'signup' && (
-              <Signup onSuccess={() => setShowAuthModal(false)} onSwitchToLogin={() => setAuthMode('login')} />
+              <Signup
+                onSuccess={() => { setShowAuthModal(false); setOrgInviteHint(null); }}
+                onSwitchToLogin={() => setAuthMode('login')}
+                prefillEmail={orgInviteHint?.email || ''}
+              />
             )}
             {authMode === 'forgot-password' && (
               <ForgotPassword onBack={() => setAuthMode('login')} />

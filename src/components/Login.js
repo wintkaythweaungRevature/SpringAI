@@ -4,7 +4,7 @@ import "./Auth.css";
 
 export default function Login({ onSuccess, onSwitchToSignup, onForgotPassword }) {
   const { login, reactivateAccount } = useAuth();
-  const [identifier, setIdentifier] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -16,7 +16,7 @@ export default function Login({ onSuccess, onSwitchToSignup, onForgotPassword })
     setShowReactivate(false);
     setLoading(true);
     try {
-      await login(identifier, password);
+      await login(email, password);
       onSuccess?.();
     } catch (err) {
       const msg = err.message || "Login failed";
@@ -31,7 +31,7 @@ export default function Login({ onSuccess, onSwitchToSignup, onForgotPassword })
     setError("");
     setLoading(true);
     try {
-      await reactivateAccount(identifier, password);
+      await reactivateAccount(email, password);
       onSuccess?.();
     } catch (err) {
       setError(err.message || "Reactivation failed");
@@ -54,15 +54,15 @@ export default function Login({ onSuccess, onSwitchToSignup, onForgotPassword })
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="auth-field">
-            <label className="auth-label">Email or Username</label>
+            <label className="auth-label">Email</label>
             <input
-              type="text"
-              placeholder="Email or username"
-              value={identifier}
-              onChange={(e) => setIdentifier(e.target.value)}
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className="auth-input"
               required
-              autoComplete="username"
+              autoComplete="email"
             />
           </div>
           <div className="auth-field">

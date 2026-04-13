@@ -786,24 +786,13 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
             </button>
 
             <div className="ls-plan-group">
-              <div className="ls-plan-group-label">🤖 AI Assistant Tools</div>
-              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Ask AI Chatbot</span><span className="ls-pf-val">Unlimited</span></div>
-              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Recipe Generator</span><span className="ls-pf-val">Unlimited</span></div>
-              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>AI Captions &amp; Hashtags</span></div>
-              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>AI Idea Generator</span><span className="ls-pf-val ls-pf-val--dim">Basic</span></div>
-              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>DocuWizard (PDF / Excel / Word)</span></div>
-              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Resume Warlock</span></div>
-              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Reply Enchanter (Email AI)</span></div>
-              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>EchoScribe (Voice → Text)</span></div>
-            </div>
-
-            <div className="ls-plan-group">
-              <div className="ls-plan-group-label">📹 Video Publishing</div>
+              <div className="ls-plan-group-label">What you get</div>
               <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Connected Platforms</span><span className="ls-pf-val">3 platforms</span></div>
-              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Videos per month</span><span className="ls-pf-val">10</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Videos per month</span><span className="ls-pf-val">100</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Images per month</span><span className="ls-pf-val">1,000</span></div>
               <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Scheduled posts</span><span className="ls-pf-val">30 / mo</span></div>
-              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Thumbnail Picker</span></div>
-              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Link-in-bio Page</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>AI Idea Generator</span><span className="ls-pf-val ls-pf-val--dim">Basic</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>DocuWizard &amp; Resume tools</span></div>
             </div>
 
           </div>
@@ -822,33 +811,17 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
             </button>
 
             <div className="ls-plan-group">
-              <div className="ls-plan-group-label">🤖 AI Assistant Tools</div>
-              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Ask AI Chatbot</span><span className="ls-pf-val">Unlimited</span></div>
-              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Recipe Generator</span><span className="ls-pf-val">Unlimited</span></div>
-              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>AI Captions &amp; Hashtags</span></div>
-              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>AI Idea Generator</span><span className="ls-pf-val">Full</span></div>
-              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>AI Image Generation</span><span className="ls-pf-val">100 / mo</span></div>
-              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>DocuWizard (PDF / Excel / Word)</span></div>
-              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Resume Warlock</span></div>
-              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Reply Enchanter (Email AI)</span></div>
-              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>EchoScribe (Voice → Text)</span></div>
-            </div>
-
-            <div className="ls-plan-group">
-              <div className="ls-plan-group-label">📹 Video Publishing</div>
+              <div className="ls-plan-group-label">What you get</div>
               <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Connected Platforms</span><span className="ls-pf-val">5 platforms</span></div>
               <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Videos per month</span><span className="ls-pf-val">Unlimited</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Images to post</span><span className="ls-pf-val">Unlimited</span></div>
               <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Scheduled posts</span><span className="ls-pf-val">Unlimited</span></div>
-              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Thumbnail Picker</span></div>
-              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Link-in-bio Page</span></div>
-            </div>
-
-            <div className="ls-plan-group">
-              <div className="ls-plan-group-label">📊 Analytics &amp; Inbox</div>
-              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Deep Analytics Dashboard</span></div>
-              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Growth Planner</span></div>
-              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Social AI Chat (RAG)</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>AI Image Generation</span><span className="ls-pf-val">100 / mo</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>AI Idea Generator</span><span className="ls-pf-val">Full</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>EchoScribe transcription</span></div>
               <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Messages &amp; Auto Reply</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Deep Analytics &amp; Growth Planner</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Social AI Chat (RAG)</span></div>
             </div>
           </div>
 
@@ -865,38 +838,17 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
             </button>
 
             <div className="ls-plan-group">
-              <div className="ls-plan-group-label">🤖 AI Assistant Tools</div>
-              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Ask AI Chatbot</span><span className="ls-pf-val">Unlimited</span></div>
-              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Recipe Generator</span><span className="ls-pf-val">Unlimited</span></div>
-              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>AI Captions &amp; Hashtags</span></div>
-              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>AI Idea Generator</span><span className="ls-pf-val">Full</span></div>
-              <div className="ls-plan-feat ls-plan-feat--star"><span className="ls-pf-icon ls-pf-icon--star">★</span><span>AI Image Generation</span><span className="ls-pf-val ls-pf-val--star">Unlimited</span></div>
-              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>DocuWizard (PDF / Excel / Word)</span></div>
-              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Resume Warlock</span></div>
-              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Reply Enchanter (Email AI)</span></div>
-              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>EchoScribe (Voice → Text)</span></div>
-            </div>
-
-            <div className="ls-plan-group">
-              <div className="ls-plan-group-label">📹 Video Publishing</div>
+              <div className="ls-plan-group-label">What you get</div>
               <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Connected Platforms</span><span className="ls-pf-val">All 8</span></div>
               <div className="ls-plan-feat ls-plan-feat--star"><span className="ls-pf-icon ls-pf-icon--star">★</span><span>Videos per month</span><span className="ls-pf-val ls-pf-val--star">Unlimited</span></div>
+              <div className="ls-plan-feat ls-plan-feat--star"><span className="ls-pf-icon ls-pf-icon--star">★</span><span>AI-generated images</span><span className="ls-pf-val ls-pf-val--star">Unlimited</span></div>
               <div className="ls-plan-feat ls-plan-feat--star"><span className="ls-pf-icon ls-pf-icon--star">★</span><span>Scheduled posts</span><span className="ls-pf-val ls-pf-val--star">Unlimited</span></div>
-              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Thumbnail Picker</span></div>
-              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Link-in-bio Page</span></div>
-              <div className="ls-plan-feat ls-plan-feat--star"><span className="ls-pf-icon ls-pf-icon--star">★</span><span>Video Trimming Tool</span></div>
-            </div>
-
-            <div className="ls-plan-group">
-              <div className="ls-plan-group-label">📊 Analytics &amp; Inbox</div>
-              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Deep Analytics Dashboard</span></div>
-              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Growth Planner</span></div>
-              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Social AI Chat (RAG)</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>AI Idea Generator</span><span className="ls-pf-val">Full</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Video Trimming Tool</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>EchoScribe transcription</span></div>
               <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Messages &amp; Auto Reply</span></div>
-            </div>
-
-            <div className="ls-plan-group">
-              <div className="ls-plan-group-label">⚡ Power Features</div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Deep Analytics &amp; Growth Planner</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Social AI Chat (RAG)</span></div>
               <div className="ls-plan-feat ls-plan-feat--star"><span className="ls-pf-icon ls-pf-icon--star">★</span><span>Priority Processing Queue</span></div>
               <div className="ls-plan-feat ls-plan-feat--star"><span className="ls-pf-icon ls-pf-icon--star">★</span><span>Fastest upload &amp; AI speeds</span></div>
             </div>

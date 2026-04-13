@@ -884,6 +884,7 @@ function GiveawayPost() {
 }
 
 function BeforeAfter() {
+  const t = useText({ before:'BEFORE', after:'AFTER' });
   return (
     <div style={{width:PW,height:PH,fontFamily:'Arial,sans-serif',overflow:'hidden',display:'flex',position:'relative'}}>
       <div style={{flex:1,background:'#94a3b8',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'flex-end',padding:'0 0 30px',position:'relative',overflow:'hidden'}}>
@@ -891,7 +892,7 @@ function BeforeAfter() {
           <div style={{width:120,height:240,background:'#64748b',borderRadius:'60px 60px 0 0',marginTop:60}}/>
           <div style={{position:'absolute',top:60,width:60,height:60,background:'#475569',borderRadius:'50%'}}/>
         </div>
-        <div style={{position:'relative',zIndex:1,background:'rgba(0,0,0,0.55)',color:'#fff',padding:'8px 28px',borderRadius:6,fontSize:18,fontWeight:800,letterSpacing:2}}>BEFORE</div>
+        <div style={{position:'relative',zIndex:1,background:'rgba(0,0,0,0.55)',color:'#fff',padding:'8px 28px',borderRadius:6,fontSize:18,fontWeight:800,letterSpacing:2}}>{t.before}</div>
       </div>
       <div style={{width:6,background:'#fff',zIndex:10,position:'relative'}}>
         <div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',width:36,height:36,background:'#fff',borderRadius:'50%',boxShadow:'0 2px 8px rgba(0,0,0,0.3)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:14,fontWeight:700,color:'#334155'}}>↔</div>
@@ -901,7 +902,7 @@ function BeforeAfter() {
           <div style={{width:130,height:260,background:'#2e7d9e',borderRadius:'65px 65px 0 0',marginTop:40}}/>
           <div style={{position:'absolute',top:50,width:65,height:65,background:'#1a5f7a',borderRadius:'50%'}}/>
         </div>
-        <div style={{position:'relative',zIndex:1,background:'rgba(0,0,0,0.55)',color:'#fff',padding:'8px 28px',borderRadius:6,fontSize:18,fontWeight:800,letterSpacing:2}}>AFTER</div>
+        <div style={{position:'relative',zIndex:1,background:'rgba(0,0,0,0.55)',color:'#fff',padding:'8px 28px',borderRadius:6,fontSize:18,fontWeight:800,letterSpacing:2}}>{t.after}</div>
       </div>
     </div>
   );
@@ -1620,36 +1621,39 @@ function NewYearsPromoPreview() {
 }
 
 function PresidentsDayPromoPreview() {
+  const t = useText({ badge:'LONG WEEKEND', headline:"President's", headlineAccent:'Day Sale', body:'Extra day to save on [category].' });
   return (
     <div style={{ width: PW, height: PH, background: '#0f172a', fontFamily: 'Arial,sans-serif', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 56px', boxSizing: 'border-box', color: '#fff', position: 'relative' }}>
       <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 8, background: 'repeating-linear-gradient(90deg,#b91c1c 0,#b91c1c 28px,#f8fafc 28px,#f8fafc 56px,#1e3a8a 56px,#1e3a8a 84px)' }} />
-      <div style={{ fontSize: 12, letterSpacing: 3, color: '#94a3b8', marginBottom: 10 }}>LONG WEEKEND</div>
-      <div style={{ fontSize: 48, fontWeight: 900, lineHeight: 1.05, marginBottom: 12 }}>President&apos;s<br /><span style={{ color: '#60a5fa' }}>Day Sale</span></div>
-      <div style={{ fontSize: 15, color: '#cbd5e1', maxWidth: 480 }}>Extra day to save on [category].</div>
+      <div style={{ fontSize: 12, letterSpacing: 3, color: '#94a3b8', marginBottom: 10 }}>{t.badge}</div>
+      <div style={{ fontSize: 48, fontWeight: 900, lineHeight: 1.05, marginBottom: 12 }}>{t.headline}<br /><span style={{ color: '#60a5fa' }}>{t.headlineAccent}</span></div>
+      <div style={{ fontSize: 15, color: '#cbd5e1', maxWidth: 480 }}>{t.body}</div>
     </div>
   );
 }
 
 function SpringSeasonPreview() {
+  const t = useText({ badge:'SPRING HAS SPRUNG', headline:'Bloom &', headlineAccent:'Save', body:'Fresh picks for [category] — limited window.' });
   return (
     <div style={{ width: PW, height: PH, background: 'linear-gradient(135deg,#fce7f3 0%,#fef9c3 45%,#d1fae5 100%)', fontFamily: 'Arial,sans-serif', display: 'flex', alignItems: 'center', padding: '0 52px', gap: 36, boxSizing: 'border-box' }}>
       <div style={{ fontSize: 96, lineHeight: 1 }}>🌸</div>
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 13, fontWeight: 800, color: '#be185d', letterSpacing: 2, marginBottom: 8 }}>SPRING HAS SPRUNG</div>
-        <div style={{ fontSize: 44, fontWeight: 900, color: '#831843', lineHeight: 1.1, marginBottom: 8 }}>Bloom &amp;<br />Save</div>
-        <div style={{ fontSize: 15, color: '#9d174d', lineHeight: 1.5 }}>Fresh picks for [category] — limited window.</div>
+        <div style={{ fontSize: 13, fontWeight: 800, color: '#be185d', letterSpacing: 2, marginBottom: 8 }}>{t.badge}</div>
+        <div style={{ fontSize: 44, fontWeight: 900, color: '#831843', lineHeight: 1.1, marginBottom: 8 }}>{t.headline}<br />{t.headlineAccent}</div>
+        <div style={{ fontSize: 15, color: '#9d174d', lineHeight: 1.5 }}>{t.body}</div>
       </div>
     </div>
   );
 }
 
 function FriendsgivingGatherPreview() {
+  const t = useText({ badge:'FRIENDSGIVING', headline:'Gather & Give Thanks', body:'Host notes, recipes & gratitude — not a doorbuster sale.' });
   return (
     <div style={{ width: PW, height: PH, background: 'linear-gradient(180deg,#431407,#78350f)', fontFamily: 'Georgia,serif', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0 48px', boxSizing: 'border-box', color: '#fef3c7' }}>
       <div style={{ fontSize: 56, marginBottom: 12 }}>🍽️</div>
-      <div style={{ fontSize: 15, letterSpacing: 4, color: '#fcd34d', marginBottom: 8 }}>FRIENDSGIVING</div>
-      <div style={{ fontSize: 40, fontWeight: 700, fontStyle: 'italic', marginBottom: 10 }}>Gather &amp; Give Thanks</div>
-      <div style={{ fontSize: 14, color: '#fde68a', maxWidth: 460, lineHeight: 1.6 }}>Host notes, recipes &amp; gratitude — not a doorbuster sale.</div>
+      <div style={{ fontSize: 15, letterSpacing: 4, color: '#fcd34d', marginBottom: 8 }}>{t.badge}</div>
+      <div style={{ fontSize: 40, fontWeight: 700, fontStyle: 'italic', marginBottom: 10 }}>{t.headline}</div>
+      <div style={{ fontSize: 14, color: '#fde68a', maxWidth: 460, lineHeight: 1.6 }}>{t.body}</div>
     </div>
   );
 }
@@ -1797,32 +1801,34 @@ function FoundersNotePreview({ fields = {} }) {
 }
 
 function MythFactPreview() {
+  const t = useText({ mythLabel:'MYTH', mythText:'"[Common misconception about your topic]"', mythSub:'❌ What people believe', factLabel:'FACT', factText:'"[The actual truth, backed by your expertise]"', factSub:'✅ The real story' });
   return (
     <div style={{ width:PW, height:PH, background:'#fff', fontFamily:'Arial,sans-serif', display:'flex', overflow:'hidden' }}>
       <div style={{ flex:1, background:'#fef2f2', display:'flex', flexDirection:'column', justifyContent:'center', padding:'40px 40px', boxSizing:'border-box', borderRight:'4px solid #fca5a5' }}>
-        <div style={{ background:'#ef4444', color:'#fff', fontSize:11, fontWeight:900, letterSpacing:2, padding:'6px 14px', borderRadius:4, display:'inline-block', marginBottom:16, width:'fit-content' }}>MYTH</div>
-        <div style={{ fontSize:22, fontWeight:800, color:'#991b1b', lineHeight:1.3, marginBottom:12 }}>"[Common misconception about your topic]"</div>
-        <div style={{ fontSize:13, color:'#b91c1c' }}>❌ What people believe</div>
+        <div style={{ background:'#ef4444', color:'#fff', fontSize:11, fontWeight:900, letterSpacing:2, padding:'6px 14px', borderRadius:4, display:'inline-block', marginBottom:16, width:'fit-content' }}>{t.mythLabel}</div>
+        <div style={{ fontSize:22, fontWeight:800, color:'#991b1b', lineHeight:1.3, marginBottom:12 }}>{t.mythText}</div>
+        <div style={{ fontSize:13, color:'#b91c1c' }}>{t.mythSub}</div>
       </div>
       <div style={{ flex:1, background:'#f0fdf4', display:'flex', flexDirection:'column', justifyContent:'center', padding:'40px 40px', boxSizing:'border-box' }}>
-        <div style={{ background:'#16a34a', color:'#fff', fontSize:11, fontWeight:900, letterSpacing:2, padding:'6px 14px', borderRadius:4, display:'inline-block', marginBottom:16, width:'fit-content' }}>FACT</div>
-        <div style={{ fontSize:22, fontWeight:800, color:'#14532d', lineHeight:1.3, marginBottom:12 }}>"[The actual truth, backed by your expertise]"</div>
-        <div style={{ fontSize:13, color:'#15803d' }}>✅ The real story</div>
+        <div style={{ background:'#16a34a', color:'#fff', fontSize:11, fontWeight:900, letterSpacing:2, padding:'6px 14px', borderRadius:4, display:'inline-block', marginBottom:16, width:'fit-content' }}>{t.factLabel}</div>
+        <div style={{ fontSize:22, fontWeight:800, color:'#14532d', lineHeight:1.3, marginBottom:12 }}>{t.factText}</div>
+        <div style={{ fontSize:13, color:'#15803d' }}>{t.factSub}</div>
       </div>
     </div>
   );
 }
 
 function ResourceStackPreview() {
+  const t = useText({ headline:'Resource Stack', subtitle:'My top tools for [topic]', tool1:'[Tool / Book 1]', tool2:'[Tool / Book 2]', tool3:'[Tool / Book 3]', tool4:'[Tool / Book 4]' });
   return (
     <div style={{ width:PW, height:PH, background:'#fffbeb', fontFamily:'Arial,sans-serif', display:'flex', alignItems:'stretch', overflow:'hidden' }}>
       <div style={{ width:200, background:'#f59e0b', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:32, boxSizing:'border-box' }}>
         <div style={{ fontSize:48, marginBottom:8 }}>📚</div>
-        <div style={{ color:'#fff', fontSize:16, fontWeight:900, textAlign:'center', lineHeight:1.2 }}>Resource Stack</div>
-        <div style={{ color:'#fef3c7', fontSize:11, marginTop:8, textAlign:'center' }}>My top tools for [topic]</div>
+        <div style={{ color:'#fff', fontSize:16, fontWeight:900, textAlign:'center', lineHeight:1.2 }}>{t.headline}</div>
+        <div style={{ color:'#fef3c7', fontSize:11, marginTop:8, textAlign:'center' }}>{t.subtitle}</div>
       </div>
       <div style={{ flex:1, padding:'32px 36px', boxSizing:'border-box', display:'flex', flexDirection:'column', justifyContent:'center' }}>
-        {['[Tool / Book 1]','[Tool / Book 2]','[Tool / Book 3]','[Tool / Book 4]'].map((r,i)=>(
+        {[t.tool1, t.tool2, t.tool3, t.tool4].map((r,i)=>(
           <div key={i} style={{ display:'flex', alignItems:'center', gap:14, marginBottom:14, padding:'12px 16px', background:'#fff', borderRadius:10, boxShadow:'0 2px 8px rgba(0,0,0,0.07)', borderLeft:'4px solid #f59e0b' }}>
             <div style={{ width:28, height:28, borderRadius:'50%', background:'#fef3c7', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:900, color:'#d97706', flexShrink:0 }}>{i+1}</div>
             <div style={{ color:'#1c1917', fontSize:14, fontWeight:600 }}>{r}</div>
@@ -1834,13 +1840,14 @@ function ResourceStackPreview() {
 }
 
 function HowToThreadPreview() {
+  const t = useText({ badge:'How-To Thread', headline:'How to', headlineAccent:'[Topic]', step1:'Step 1: [teaser]', step2:'Step 2: [teaser]', step3:'Step 3: [teaser]', footer:'Full thread: link in bio' });
   return (
     <div style={{ width:PW, height:PH, background:'#0ea5e9', fontFamily:'Arial,sans-serif', display:'flex', alignItems:'center', padding:'40px 56px', boxSizing:'border-box', position:'relative', overflow:'hidden' }}>
       <div style={{ position:'absolute', top:-60, right:-60, width:280, height:280, borderRadius:'50%', background:'rgba(255,255,255,0.1)' }} />
       <div style={{ flex:1 }}>
-        <div style={{ color:'#bae6fd', fontSize:11, fontWeight:700, letterSpacing:3, textTransform:'uppercase', marginBottom:10 }}>How-To Thread</div>
-        <div style={{ color:'#fff', fontSize:44, fontWeight:900, lineHeight:1.1, marginBottom:20 }}>How to<br/>[Topic]</div>
-        {['Step 1: [teaser]','Step 2: [teaser]','Step 3: [teaser]'].map((s,i)=>(
+        <div style={{ color:'#bae6fd', fontSize:11, fontWeight:700, letterSpacing:3, textTransform:'uppercase', marginBottom:10 }}>{t.badge}</div>
+        <div style={{ color:'#fff', fontSize:44, fontWeight:900, lineHeight:1.1, marginBottom:20 }}>{t.headline}<br/>{t.headlineAccent}</div>
+        {[t.step1, t.step2, t.step3].map((s,i)=>(
           <div key={i} style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10 }}>
             <div style={{ width:24, height:24, borderRadius:'50%', background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:900, color:'#0ea5e9', flexShrink:0 }}>{i+1}</div>
             <div style={{ color:'#fff', fontSize:13, fontWeight:600 }}>{s}</div>
@@ -1849,54 +1856,58 @@ function HowToThreadPreview() {
       </div>
       <div style={{ width:180, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:4 }}>
         {['🧵','↓','↓','↓'].map((c,i)=><div key={i} style={{ fontSize:i===0?40:24, color:'#fff' }}>{c}</div>)}
-        <div style={{ color:'#bae6fd', fontSize:11, fontWeight:700, textAlign:'center', marginTop:8 }}>Full thread: link in bio</div>
+        <div style={{ color:'#bae6fd', fontSize:11, fontWeight:700, textAlign:'center', marginTop:8 }}>{t.footer}</div>
       </div>
     </div>
   );
 }
 
 function BTSReelPreview() {
+  const t = useText({ badge:'🎬 BEHIND THE SCENES', headline:'A day in', headlineAccent:'the life', time1:'Morning', time2:'Afternoon', time3:'Evening', beat1:'[beat 1]', beat2:'[beat 2]', beat3:'[beat 3]', footer:'Swipe for the day' });
+  const times = [t.time1, t.time2, t.time3];
+  const beats = [t.beat1, t.beat2, t.beat3];
   return (
     <div style={{ width:PW, height:PH, background:'#18181b', fontFamily:'Arial,sans-serif', display:'flex', alignItems:'stretch', overflow:'hidden', position:'relative' }}>
       <div style={{ position:'absolute', top:0, left:0, right:0, height:6, background:'repeating-linear-gradient(90deg,#fbbf24 0,#fbbf24 40px,#18181b 40px,#18181b 50px)' }} />
       <div style={{ position:'absolute', bottom:0, left:0, right:0, height:6, background:'repeating-linear-gradient(90deg,#fbbf24 0,#fbbf24 40px,#18181b 40px,#18181b 50px)' }} />
       <div style={{ flex:1, display:'flex', flexDirection:'column', justifyContent:'center', padding:'40px 48px', boxSizing:'border-box' }}>
-        <div style={{ color:'#fbbf24', fontSize:12, fontWeight:700, letterSpacing:3, marginBottom:10 }}>🎬 BEHIND THE SCENES</div>
-        <div style={{ color:'#fff', fontSize:40, fontWeight:900, lineHeight:1.1, marginBottom:16 }}>A day in<br/>the life</div>
+        <div style={{ color:'#fbbf24', fontSize:12, fontWeight:700, letterSpacing:3, marginBottom:10 }}>{t.badge}</div>
+        <div style={{ color:'#fff', fontSize:40, fontWeight:900, lineHeight:1.1, marginBottom:16 }}>{t.headline}<br/>{t.headlineAccent}</div>
         <div style={{ display:'flex', gap:12 }}>
-          {['Morning','Afternoon','Evening'].map((t,i)=>(
+          {times.map((tm,i)=>(
             <div key={i} style={{ flex:1, background:'#27272a', borderRadius:10, padding:'12px 14px', borderTop:`3px solid ${['#f472b6','#a78bfa','#34d399'][i]}` }}>
-              <div style={{ color:['#f472b6','#a78bfa','#34d399'][i], fontSize:10, fontWeight:700, marginBottom:4 }}>{t}</div>
-              <div style={{ color:'#a1a1aa', fontSize:11 }}>[beat {i+1}]</div>
+              <div style={{ color:['#f472b6','#a78bfa','#34d399'][i], fontSize:10, fontWeight:700, marginBottom:4 }}>{tm}</div>
+              <div style={{ color:'#a1a1aa', fontSize:11 }}>{beats[i]}</div>
             </div>
           ))}
         </div>
       </div>
       <div style={{ width:160, background:'#fbbf24', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:16, padding:24 }}>
         <div style={{ fontSize:48 }}>🎥</div>
-        <div style={{ color:'#18181b', fontSize:13, fontWeight:900, textAlign:'center', lineHeight:1.2 }}>Swipe for<br/>the day</div>
+        <div style={{ color:'#18181b', fontSize:13, fontWeight:900, textAlign:'center', lineHeight:1.2 }}>{t.footer}</div>
       </div>
     </div>
   );
 }
 
 function FAQCarouselPreview() {
+  const t = useText({ badge:'FAQ Carousel', headline:'Got Qs?', subtitle:'Swipe through [Number] questions we answer about [topic]', q1:'Q1: [Question]?', q2:'Q2: [Question]?', q3:'Q3: [Question]?', more:'+ [Number-3] more →' });
   return (
     <div style={{ width:PW, height:PH, background:'#6366f1', fontFamily:'Arial,sans-serif', display:'flex', alignItems:'center', padding:'40px 56px', boxSizing:'border-box', position:'relative', overflow:'hidden' }}>
       <div style={{ position:'absolute', bottom:-40, right:-40, width:220, height:220, borderRadius:'50%', background:'rgba(255,255,255,0.1)' }} />
       <div style={{ flex:1 }}>
-        <div style={{ color:'#c7d2fe', fontSize:11, fontWeight:700, letterSpacing:3, textTransform:'uppercase', marginBottom:8 }}>FAQ Carousel</div>
-        <div style={{ color:'#fff', fontSize:52, fontWeight:900, lineHeight:1, marginBottom:20 }}>❓<br/>Got Qs?</div>
-        <div style={{ color:'#e0e7ff', fontSize:16, lineHeight:1.6 }}>Swipe through [Number] questions we answer about <strong>[topic]</strong></div>
+        <div style={{ color:'#c7d2fe', fontSize:11, fontWeight:700, letterSpacing:3, textTransform:'uppercase', marginBottom:8 }}>{t.badge}</div>
+        <div style={{ color:'#fff', fontSize:52, fontWeight:900, lineHeight:1, marginBottom:20 }}>❓<br/>{t.headline}</div>
+        <div style={{ color:'#e0e7ff', fontSize:16, lineHeight:1.6 }}>{t.subtitle}</div>
       </div>
       <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
-        {['Q1: [Question]?','Q2: [Question]?','Q3: [Question]?'].map((q,i)=>(
+        {[t.q1, t.q2, t.q3].map((q,i)=>(
           <div key={i} style={{ background:'rgba(255,255,255,0.15)', borderRadius:10, padding:'12px 18px', width:240, backdropFilter:'blur(4px)' }}>
             <div style={{ color:'#fff', fontSize:12, fontWeight:600 }}>{q}</div>
           </div>
         ))}
         <div style={{ background:'rgba(255,255,255,0.08)', borderRadius:10, padding:'10px 18px', width:240, textAlign:'center' }}>
-          <div style={{ color:'#c7d2fe', fontSize:11, fontWeight:700 }}>+ [Number-3] more →</div>
+          <div style={{ color:'#c7d2fe', fontSize:11, fontWeight:700 }}>{t.more}</div>
         </div>
       </div>
     </div>
@@ -2124,27 +2135,28 @@ function LaunchCountdownPreview() {
 }
 
 function PopUpEventPreview() {
+  const t = useText({ badge:'Pop-Up Event', headline:"We're coming", headlineAccent:'to [City]!', date:'[Date]', time:'[Time]', where:'[Address]', cta:'Get Directions →', footer:'First [X] visitors get a freebie!' });
   return (
     <div style={{ width:PW, height:PH, background:'#ecfdf5', fontFamily:'Arial,sans-serif', display:'flex', alignItems:'stretch', overflow:'hidden' }}>
       <div style={{ flex:1, padding:'40px 44px', boxSizing:'border-box', display:'flex', flexDirection:'column', justifyContent:'center' }}>
         <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:16 }}>
           <span style={{ fontSize:28 }}>📍</span>
-          <div style={{ color:'#065f46', fontSize:12, fontWeight:700, letterSpacing:3, textTransform:'uppercase' }}>Pop-Up Event</div>
+          <div style={{ color:'#065f46', fontSize:12, fontWeight:700, letterSpacing:3, textTransform:'uppercase' }}>{t.badge}</div>
         </div>
-        <div style={{ color:'#064e3b', fontSize:38, fontWeight:900, lineHeight:1.1, marginBottom:20 }}>We're coming<br/>to [City]!</div>
+        <div style={{ color:'#064e3b', fontSize:38, fontWeight:900, lineHeight:1.1, marginBottom:20 }}>{t.headline}<br/>{t.headlineAccent}</div>
         <div style={{ display:'flex', flexDirection:'column', gap:12, marginBottom:24 }}>
-          {[['📅 Date','[Date]'],['⏰ Time','[Time]'],['📍 Where','[Address]']].map(([l,v],i)=>(
+          {[['📅 Date',t.date],['⏰ Time',t.time],['📍 Where',t.where]].map(([l,v],i)=>(
             <div key={i} style={{ display:'flex', gap:16, alignItems:'center' }}>
               <div style={{ color:'#6ee7b7', fontSize:12, fontWeight:700, width:80 }}>{l}</div>
               <div style={{ color:'#064e3b', fontSize:14, fontWeight:600 }}>{v}</div>
             </div>
           ))}
         </div>
-        <div style={{ background:'#10b981', color:'#fff', fontSize:13, fontWeight:700, padding:'12px 24px', borderRadius:10, display:'inline-block', width:'fit-content' }}>Get Directions →</div>
+        <div style={{ background:'#10b981', color:'#fff', fontSize:13, fontWeight:700, padding:'12px 24px', borderRadius:10, display:'inline-block', width:'fit-content' }}>{t.cta}</div>
       </div>
       <div style={{ width:240, background:'#10b981', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:16, padding:32 }}>
         <div style={{ fontSize:64 }}>🗺️</div>
-        <div style={{ color:'#fff', fontSize:14, fontWeight:800, textAlign:'center' }}>First [X] visitors get a freebie!</div>
+        <div style={{ color:'#fff', fontSize:14, fontWeight:800, textAlign:'center' }}>{t.footer}</div>
       </div>
     </div>
   );
@@ -2236,20 +2248,21 @@ function FeatureDropPreview() {
 }
 
 function RoomRefreshPreview() {
+  const t = useText({ before:'BEFORE', after:'AFTER' });
   return (
     <div style={{ width:PW, height:PH, background:'#f5f0eb', fontFamily:'Arial,sans-serif', display:'flex', alignItems:'stretch', overflow:'hidden' }}>
       <div style={{ flex:1, background:'#d6cfc4', display:'flex', flexDirection:'column', justifyContent:'flex-end', padding:32, boxSizing:'border-box', position:'relative' }}>
         <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center' }}>
           <div style={{ width:160, height:120, background:'#b0a090', borderRadius:8, boxShadow:'0 8px 24px rgba(0,0,0,0.15)' }} />
         </div>
-        <div style={{ background:'rgba(0,0,0,0.5)', color:'#fff', fontSize:12, fontWeight:700, padding:'6px 14px', borderRadius:4, display:'inline-block', position:'relative', width:'fit-content' }}>BEFORE</div>
+        <div style={{ background:'rgba(0,0,0,0.5)', color:'#fff', fontSize:12, fontWeight:700, padding:'6px 14px', borderRadius:4, display:'inline-block', position:'relative', width:'fit-content' }}>{t.before}</div>
       </div>
       <div style={{ width:4, background:'#fff', flexShrink:0 }} />
       <div style={{ flex:1, background:'#e8f5e9', display:'flex', flexDirection:'column', justifyContent:'flex-end', padding:32, boxSizing:'border-box', position:'relative' }}>
         <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center' }}>
           <div style={{ width:160, height:120, background:'#a8d5a2', borderRadius:8, boxShadow:'0 8px 24px rgba(0,0,0,0.15)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:36 }}>🌿</div>
         </div>
-        <div style={{ background:'#16a34a', color:'#fff', fontSize:12, fontWeight:700, padding:'6px 14px', borderRadius:4, display:'inline-block', position:'relative', width:'fit-content' }}>AFTER</div>
+        <div style={{ background:'#16a34a', color:'#fff', fontSize:12, fontWeight:700, padding:'6px 14px', borderRadius:4, display:'inline-block', position:'relative', width:'fit-content' }}>{t.after}</div>
       </div>
       <div style={{ position:'absolute', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#fff', borderRadius:'50%', width:48, height:48, display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, boxShadow:'0 4px 12px rgba(0,0,0,0.2)', zIndex:10 }}>🏠</div>
     </div>

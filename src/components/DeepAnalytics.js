@@ -37,6 +37,7 @@ const SECTION_TABS = [
   { id: 'breakdown',  serial: '3', label: '📊 Breakdown' },
   { id: 'competitor', serial: '4', label: '🔍 Competitor' },
   { id: 'calendar',   serial: '5', label: '📅 Calendar' },
+  { id: 'viral',      serial: '6', label: '🔮 Viral Score' },
 ];
 
 const ALL_PLATFORM_SCOPE = { id: 'all', label: 'All platforms', color: '#6366f1', emoji: '🌐' };
@@ -2721,6 +2722,39 @@ export default function DeepAnalytics() {
   const [snapMsg,      setSnapMsg]      = useState('');
   const platformForApi = platform === 'all' ? 'instagram' : platform;
 
+  /* ── Viral Score state ── */
+  const [viralCaption, setViralCaption]     = useState('');
+  const [viralHashtags, setViralHashtags]   = useState('');
+  const [viralPlatform, setViralPlatform]   = useState('instagram');
+  const [viralScore, setViralScore]         = useState(null);
+  const [viralLoading, setViralLoading]     = useState(false);
+  const [viralError, setViralError]         = useState('');
+
+  const checkViralScore = async () => {
+    if (!viralCaption.trim()) return;
+    setViralLoading(true);
+    setViralError('');
+    setViralScore(null);
+    try {
+      const res = await fetch(`${API}/api/ai/viral-score`, {
+        method: 'POST',
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ caption: viralCaption, hashtags: viralHashtags, platform: viralPlatform }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        setViralError(err.error || 'Failed to get viral score. Please try again.');
+        return;
+      }
+      const data = await res.json();
+      setViralScore(data);
+    } catch {
+      setViralError('Network error — please check your connection.');
+    } finally {
+      setViralLoading(false);
+    }
+  };
+
   const fetchHistory = useCallback(() => {
     setLoadHistory(true);
     fetch(`${API}/api/analytics/history?platform=${platformForApi}&days=${days}`, { headers: authHeaders() })
@@ -2959,6 +2993,170 @@ export default function DeepAnalytics() {
             View all your published and scheduled posts by month. The <strong>Best Time</strong> section above shows which days and hours you post most often.
           </p>
           <TrendsCalendar authHeaders={authHeaders} />
+        </div>
+      </section>
+
+      {/* ── VIRAL SCORE ── */}
+      <section id="trends-viral" style={{ scrollMarginTop: 12 }}>
+        <div style={s.card}>
+          <h3 style={s.cardTitle}>🔮 Viral Score Predictor</h3>
+          <p style={{ fontSize: 12, color: '#94a3b8', marginBottom: 20 }}>
+            Paste your caption and hashtags below — AI will predict how viral your post could be and give you tips to boost it.
+          </p>
+
+          <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
+            {/* ── Left: inputs ── */}
+            <div style={{ flex: '1 1 340px', minWidth: 280 }}>
+              <label style={{ fontSize: 12, fontWeight: 700, color: '#334155', display: 'block', marginBottom: 6 }}>Caption</label>
+              <textarea
+                value={viralCaption}
+                onChange={e => setViralCaption(e.target.value)}
+                placeholder="Paste or type your post caption here..."
+                style={{
+                  width: '100%', minHeight: 120, padding: '12px 14px', fontSize: 13,
+                  border: '1.5px solid #e2e8f0', borderRadius: 12, resize: 'vertical',
+                  fontFamily: "'Inter', sans-serif", lineHeight: 1.6, boxSizing: 'border-box',
+                  outline: 'none', transition: 'border 0.15s',
+                }}
+                onFocus={e => e.target.style.borderColor = '#818cf8'}
+                onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+              />
+
+              <label style={{ fontSize: 12, fontWeight: 700, color: '#334155', display: 'block', marginTop: 14, marginBottom: 6 }}>Hashtags</label>
+              <input
+                value={viralHashtags}
+                onChange={e => setViralHashtags(e.target.value)}
+                placeholder="#trending #viral #content"
+                style={{
+                  width: '100%', padding: '10px 14px', fontSize: 13,
+                  border: '1.5px solid #e2e8f0', borderRadius: 10, boxSizing: 'border-box',
+                  fontFamily: "'Inter', sans-serif", outline: 'none', transition: 'border 0.15s',
+                }}
+                onFocus={e => e.target.style.borderColor = '#818cf8'}
+                onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+              />
+
+              <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 14 }}>
+                <label style={{ fontSize: 12, fontWeight: 700, color: '#334155' }}>Platform</label>
+                <select
+                  value={viralPlatform}
+                  onChange={e => setViralPlatform(e.target.value)}
+                  style={s.select}
+                >
+                  <option value="instagram">Instagram</option>
+                  <option value="tiktok">TikTok</option>
+                  <option value="youtube">YouTube</option>
+                  <option value="facebook">Facebook</option>
+                  <option value="linkedin">LinkedIn</option>
+                  <option value="twitter">X / Twitter</option>
+                  <option value="pinterest">Pinterest</option>
+                  <option value="threads">Threads</option>
+                </select>
+              </div>
+
+              <button
+                onClick={checkViralScore}
+                disabled={viralLoading || !viralCaption.trim()}
+                style={{
+                  marginTop: 18, padding: '12px 28px', fontSize: 14, fontWeight: 700,
+                  color: '#fff', border: 'none', borderRadius: 12, cursor: 'pointer',
+                  background: viralLoading || !viralCaption.trim() ? '#cbd5e1' : 'linear-gradient(135deg, #8b5cf6, #6366f1)',
+                  boxShadow: viralLoading || !viralCaption.trim() ? 'none' : '0 4px 14px rgba(99,102,241,0.35)',
+                  transition: 'all 0.2s',
+                  display: 'flex', alignItems: 'center', gap: 8,
+                }}
+              >
+                {viralLoading ? (
+                  <>
+                    <span style={{ ...s.spinner, width: 16, height: 16, borderWidth: 2 }} />
+                    Analyzing...
+                  </>
+                ) : '🔮 Check Viral Score'}
+              </button>
+
+              {viralError && (
+                <div style={{ marginTop: 12, padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, fontSize: 12, color: '#dc2626' }}>
+                  {viralError}
+                </div>
+              )}
+            </div>
+
+            {/* ── Right: score display ── */}
+            <div style={{ flex: '1 1 300px', minWidth: 260, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+              {viralScore && typeof viralScore.score === 'number' ? (() => {
+                const sc = viralScore.score;
+                const color = sc >= 70 ? '#22c55e' : sc >= 40 ? '#f59e0b' : '#ef4444';
+                const label = sc >= 70 ? 'High Viral Potential' : sc >= 40 ? 'Moderate Potential' : 'Low Viral Potential';
+                const bg = sc >= 70 ? '#f0fdf4' : sc >= 40 ? '#fffbeb' : '#fef2f2';
+                const circumference = 2 * Math.PI * 58;
+                const offset = circumference - (sc / 100) * circumference;
+                return (
+                  <div style={{ textAlign: 'center', width: '100%' }}>
+                    {/* Gauge ring */}
+                    <div style={{ position: 'relative', width: 160, height: 160, margin: '0 auto 20px' }}>
+                      <svg width="160" height="160" viewBox="0 0 160 160">
+                        <circle cx="80" cy="80" r="58" fill="none" stroke="#f1f5f9" strokeWidth="12" />
+                        <circle
+                          cx="80" cy="80" r="58" fill="none"
+                          stroke={color} strokeWidth="12" strokeLinecap="round"
+                          strokeDasharray={circumference}
+                          strokeDashoffset={offset}
+                          transform="rotate(-90 80 80)"
+                          style={{ transition: 'stroke-dashoffset 0.8s ease' }}
+                        />
+                      </svg>
+                      <div style={{
+                        position: 'absolute', top: '50%', left: '50%',
+                        transform: 'translate(-50%, -50%)', textAlign: 'center',
+                      }}>
+                        <div style={{ fontSize: 36, fontWeight: 800, color }}>{sc}</div>
+                        <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>/100</div>
+                      </div>
+                    </div>
+
+                    <div style={{
+                      display: 'inline-block', padding: '6px 16px', borderRadius: 20,
+                      background: bg, color, fontSize: 13, fontWeight: 700, marginBottom: 20,
+                    }}>
+                      {label}
+                    </div>
+
+                    {/* Reasons */}
+                    {viralScore.reasons && viralScore.reasons.length > 0 && (
+                      <div style={{ textAlign: 'left', marginBottom: 16 }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: '#334155', marginBottom: 8 }}>Why this score</div>
+                        {viralScore.reasons.map((r, i) => (
+                          <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 6, fontSize: 12, color: '#475569', lineHeight: 1.5 }}>
+                            <span style={{ flexShrink: 0 }}>📌</span>
+                            <span>{r}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Tips */}
+                    {viralScore.tips && viralScore.tips.length > 0 && (
+                      <div style={{ textAlign: 'left' }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: '#334155', marginBottom: 8 }}>Tips to boost virality</div>
+                        {viralScore.tips.map((t, i) => (
+                          <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 6, fontSize: 12, color: '#475569', lineHeight: 1.5 }}>
+                            <span style={{ flexShrink: 0 }}>💡</span>
+                            <span>{t}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })() : !viralLoading && (
+                <div style={{ textAlign: 'center', color: '#94a3b8', fontSize: 13, padding: '40px 20px' }}>
+                  <div style={{ fontSize: 48, marginBottom: 12 }}>🔮</div>
+                  <div style={{ fontWeight: 600, marginBottom: 4 }}>No score yet</div>
+                  <div style={{ fontSize: 12 }}>Enter your caption and click "Check Viral Score" to see the prediction.</div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </section>
 

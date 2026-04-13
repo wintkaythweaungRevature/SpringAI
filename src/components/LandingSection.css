@@ -1966,7 +1966,7 @@
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 24px;
   margin-top: 12px;
-  align-items: stretch;
+  align-items: start;
 }
 
 .ls-plan {

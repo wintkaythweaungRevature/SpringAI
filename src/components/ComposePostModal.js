@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { filterEnabledPlatforms } from '../config/disabledPlatforms';
 import PlatformIcon from './PlatformIcon';
 import CaptionIdeasPanel from './CaptionIdeasPanel';
+import HookGeneratorPanel from './HookGeneratorPanel';
 
 const PLATFORMS = filterEnabledPlatforms([
   { id: 'instagram', label: 'Instagram', color: '#E1306C' },
@@ -255,6 +256,12 @@ export default function ComposePostModal({ open, onClose, defaultDate, onPosted 
                 apiBase={base}
                 token={token}
                 onApply={({ caption: c, hashtags: h }) => { setCaption(c); if (h) setHashtags(h); }}
+              />
+              <HookGeneratorPanel
+                platform={selectedPlatforms[0] || 'instagram'}
+                apiBase={base}
+                token={token}
+                onApply={(hookText) => setCaption(prev => hookText + (prev ? '\n\n' + prev : ''))}
               />
             </div>
 

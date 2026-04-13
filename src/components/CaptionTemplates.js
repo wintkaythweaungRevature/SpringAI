@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useLayoutEffect, useContext, createContext, useMemo, useCallback } from 'react';
+import { useAuth } from '../context/AuthContext';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 
@@ -2304,7 +2305,8 @@ function getHint(p) {
 /* ══════════════════════════════════════════════════════════
    CUSTOMIZE MODAL
 ══════════════════════════════════════════════════════════ */
-function CustomizeModal({ template, onClose, onConfirm, onDownloadDesign, designDownloading, initialThemeId, onThemeChange }) {
+function CustomizeModal({ template, onClose, onConfirm, onDownloadDesign, designDownloading, initialThemeId, onThemeChange, extraThemes = [] }) {
+  const modalThemes = [...extraThemes, ...PREVIEW_THEMES];
   const placeholders = [...new Set(template.caption.match(/\[[^\]]+\]/g) || [])];
   const [values, setValues]         = useState(Object.fromEntries(placeholders.map(p => [p, ''])));
   const [themeId, setThemeId]       = useState(initialThemeId || 'default');
@@ -2474,7 +2476,7 @@ function CustomizeModal({ template, onClose, onConfirm, onDownloadDesign, design
                 {/* Themes grid */}
                 <div style={{ fontSize:11, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:1, marginBottom:10 }}>Themes</div>
                 <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:8, marginBottom:18 }}>
-                  {PREVIEW_THEMES.map(th => (
+                  {modalThemes.map(th => (
                     <button key={th.id} onClick={() => pickTheme(th.id)} title={th.label} style={{
                       border: themeId === th.id ? '2px solid #6366f1' : '2px solid transparent',
                       borderRadius:10, padding:0, cursor:'pointer', background:'none', position:'relative',
@@ -2636,6 +2638,33 @@ function hexToHue(hex) {
    MAIN COMPONENT
 ══════════════════════════════════════════════════════════ */
 export default function CaptionTemplates({ onBack, onUseTemplate }) {
+  const { user } = useAuth();
+
+  // Build brand theme from user's saved brand kit (if any)
+  const brandTheme = useMemo(() => {
+    if (!user?.brandColors) return null;
+    try {
+      const colors = JSON.parse(user.brandColors);
+      if (!colors?.length) return null;
+      const primary   = colors[0] || '#6366f1';
+      const secondary = colors[1] || '#a5b4fc';
+      const accent    = colors[2] || '#ffffff';
+      return {
+        id: 'brand',
+        label: '🎨 My Brand',
+        frameBg: `linear-gradient(160deg, ${primary}22, ${secondary}44)`,
+        filter: 'none',
+        swatch: [primary, secondary, accent],
+        _isBrand: true,
+      };
+    } catch { return null; }
+  }, [user?.brandColors]);
+
+  // All themes: brand first (if exists), then defaults
+  const allThemes = useMemo(() =>
+    brandTheme ? [brandTheme, ...PREVIEW_THEMES] : PREVIEW_THEMES,
+  [brandTheme]);
+
   const [cat, setCat]             = useState('All');
   const [preview, setPreview]     = useState(null);
   const [customize, setCustomize] = useState(null);
@@ -2882,7 +2911,7 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
         </div>
         <div style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:10, marginTop:14 }}>
           <span style={{ fontSize:11, fontWeight:800, color:'#94a3b8', letterSpacing:1.2 }}>THEME</span>
-          {PREVIEW_THEMES.map((th) => {
+          {allThemes.map((th) => {
             const active = previewTheme === th.id;
             return (
               <button
@@ -3071,6 +3100,7 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
           designDownloading={dlLoading === customize.id}
           initialThemeId={previewTheme}
           onThemeChange={(id) => setPreviewTheme(id)}
+          extraThemes={brandTheme ? [brandTheme] : []}
         />
       )}
     </div>

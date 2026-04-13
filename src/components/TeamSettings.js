@@ -76,12 +76,15 @@ export default function TeamSettings() {
     setTeamErr('');
     try {
       const res = await fetch(`${base}/api/team`, { headers: authH() });
-      if (res.status === 404 || res.status === 204) { setTeam(null); return; }
+      // Treat any non-2xx (including 404, 500 — endpoint not yet live) as "no team"
+      if (!res.ok) { setTeam(null); return; }
       const data = await res.json().catch(() => ({}));
-      if (res.ok) setTeam(data?.team ?? data ?? null);
-      else setTeamErr(data?.error || data?.message || 'Failed to load team.');
+      // If the response body is empty or falsy, also treat as no team
+      const t = data?.team ?? data ?? null;
+      setTeam(t && (t.id || t.name) ? t : null);
     } catch {
-      setTeamErr('Network error loading team.');
+      // Network error — silently treat as no team so the UI isn't broken
+      setTeam(null);
     } finally {
       setLoadingTeam(false);
     }

@@ -528,7 +528,7 @@ function App() {
             <div style={s.logoIconBg}>
               <img src={BRAND_LOGO_SRC} alt="W!ntAi logo" width={34} height={34} style={{ display: 'block', borderRadius: '7px' }} />
             </div>
-            {(sidebarOpen || (isMobile || isTablet)) && <span style={s.logoText}>W!ntAi</span>}
+            {(sidebarOpen || (isMobile || isTablet)) && <span style={s.logoText}><span style={{ color: '#ffffff' }}>W</span>!ntAi</span>}
           </div>
 
           {/* Nav */}

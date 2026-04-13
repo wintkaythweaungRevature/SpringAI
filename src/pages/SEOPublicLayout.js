@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import LandingSection from '../components/LandingSection';
+import VideoPublisherTutorial from '../components/VideoPublisherTutorial';
+import { TemplatesTutorial, DashboardTutorial, GrowthPlannerTutorial } from '../components/FeatureTutorials';
 import './SEOPublicLayout.css';
 
 const ROUTE_META = {
@@ -35,6 +37,47 @@ const ROUTE_META = {
   },
 };
 
+/* ─── Tutorial tab picker ──────────────────────────────────────── */
+const TUTORIAL_TABS = [
+  { id: 'video',     label: '📲 Video Publisher', Component: VideoPublisherTutorial },
+  { id: 'templates', label: '🎨 Templates',        Component: TemplatesTutorial },
+  { id: 'dashboard', label: '📊 Dashboard',         Component: DashboardTutorial },
+  { id: 'growth',    label: '🗓️ Growth Planner',    Component: GrowthPlannerTutorial },
+];
+
+function TutorialTabs() {
+  const [active, setActive] = useState('video');
+  const { Component } = TUTORIAL_TABS.find(t => t.id === active);
+  return (
+    <div>
+      {/* Tab bar */}
+      <div style={{
+        display: 'flex', justifyContent: 'center', gap: 8, padding: '24px 20px 0',
+        flexWrap: 'wrap', background: '#0f172a',
+      }}>
+        {TUTORIAL_TABS.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActive(tab.id)}
+            style={{
+              padding: '10px 20px', borderRadius: 30, fontSize: 13, fontWeight: 700,
+              cursor: 'pointer', transition: 'all 0.18s',
+              background: active === tab.id ? '#6366f1' : '#1e293b',
+              color:      active === tab.id ? '#fff'     : '#94a3b8',
+              border:     active === tab.id ? 'none'     : '1.5px solid #334155',
+              boxShadow:  active === tab.id ? '0 4px 14px rgba(99,102,241,0.35)' : 'none',
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+      {/* Active tutorial */}
+      <Component />
+    </div>
+  );
+}
+
 export default function SEOPublicLayout({ onGetStarted, onOpenVideoPublisher }) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
@@ -42,7 +85,8 @@ export default function SEOPublicLayout({ onGetStarted, onOpenVideoPublisher }) 
   const handleGetStarted = () => (onGetStarted ? onGetStarted() : navigate('/?auth=signup'));
   const handleLogin = () => navigate('/?auth=login');
   const meta = ROUTE_META[pathname] || ROUTE_META['/'];
-  const scrollTarget = pathname === '/' ? null : (pathname === '/docs' ? 'about' : pathname.slice(1));
+  // /tutorial has its own in-page tabs — don't auto-scroll into the content section
+  const scrollTarget = (pathname === '/' || pathname === '/tutorial') ? null : (pathname === '/docs' ? 'about' : pathname.slice(1));
 
   useEffect(() => {
     if (scrollTarget) {
@@ -98,7 +142,17 @@ export default function SEOPublicLayout({ onGetStarted, onOpenVideoPublisher }) 
         </nav>
       </header>
 
-      <LandingSection onGetStarted={handleGetStarted} onOpenVideoPublisher={onOpenVideoPublisher} />
+      {pathname === '/tutorial' ? (
+        <main id="tutorial" style={{ paddingTop: 80, background: '#0f172a' }}>
+          {/* ── Tutorial tab selector ── */}
+          <TutorialTabs />
+          <footer style={{ textAlign: 'center', padding: '40px 20px', color: '#94a3b8', fontSize: 13, borderTop: '1px solid #1e293b', background: '#0f172a' }}>
+            <p style={{ margin: 0 }}>© {new Date().getFullYear()} W!ntAi · Built by <a href="https://github.com/wintkaythweaungRevature" target="_blank" rel="noopener noreferrer" style={{ color: '#818cf8' }}>Wint Kay Thwe Aung</a></p>
+          </footer>
+        </main>
+      ) : (
+        <LandingSection onGetStarted={handleGetStarted} onOpenVideoPublisher={onOpenVideoPublisher} />
+      )}
     </>
   );
 }

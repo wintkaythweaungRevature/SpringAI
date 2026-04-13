@@ -86,7 +86,7 @@ export default function TeamSettings() {
   const authH = useCallback(() => ({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }), [token]);
   const uid = user?.id || user?.email || 'local';
 
-  /* ── Load team: try API first, fall back to localStorage ── */
+  /* ── Load team: API first, localStorage only on true network error ── */
   const loadTeam = useCallback(async () => {
     setLoadingTeam(true);
     setTeamErr('');
@@ -97,39 +97,52 @@ export default function TeamSettings() {
         const t = data?.team ?? data ?? null;
         const loaded = t && (t.id || t.name) ? t : null;
         setTeam(loaded);
-        // Keep localStorage in sync with server state
         if (loaded) lsSave(uid, loaded); else lsClear(uid);
         return;
       }
-    } catch { /* network error — fall through to localStorage */ }
-    // Backend not ready or failed — use localStorage
+      if (res.status === 404 || res.status === 204) {
+        // User genuinely has no team yet
+        lsClear(uid);
+        setTeam(null);
+        return;
+      }
+      // Any other non-2xx — fall through to localStorage silently
+    } catch { /* true network error — fall through */ }
     const saved = lsLoad(uid);
     setTeam(saved);
-    setLoadingTeam(false);
   }, [base, authH, uid]);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { if (token) loadTeam().finally(() => setLoadingTeam(false)); }, [token]);
 
-  /* ── Create team: try API, fall back to local ── */
+  /* ── Create team: API first, local fallback only on network error ── */
   const handleCreate = async (e) => {
     e.preventDefault();
     if (!teamName.trim()) { setCreateErr('Please enter a team name.'); return; }
     setCreating(true); setCreateErr('');
     try {
       let newTeam = null;
+      let networkError = false;
       try {
         const res = await fetch(`${base}/api/team`, {
           method: 'POST', headers: authH(), body: JSON.stringify({ name: teamName.trim() }),
         });
+        const d = await res.json().catch(() => ({}));
         if (res.ok) {
-          const d = await res.json().catch(() => ({}));
           newTeam = d?.team ?? d ?? null;
+        } else {
+          throw new Error(d.error || d.message || 'Failed to create team');
         }
-      } catch { /* fall through to local */ }
+      } catch (err) {
+        if (err.message === 'Failed to fetch') {
+          networkError = true;
+        } else {
+          throw err; // real API error — surface it to user
+        }
+      }
 
-      // If API failed or returned nothing, build a local team object
-      if (!newTeam || (!newTeam.id && !newTeam.name)) {
+      // Only fall back to local if we couldn't reach the server
+      if (networkError || !newTeam || (!newTeam.id && !newTeam.name)) {
         newTeam = {
           id: `local_${Date.now()}`,
           name: teamName.trim(),
@@ -156,38 +169,32 @@ export default function TeamSettings() {
     }
   };
 
-  /* ── Invite member: try API, fall back to local pending entry ── */
+  /* ── Invite member: API is live — use it as source of truth ── */
   const handleInvite = async (e) => {
     e.preventDefault();
     if (!inviteEmail.trim()) { setInviteErr('Enter an email address.'); return; }
     setInviting(true); setInviteErr(''); setInviteMsg('');
     try {
-      let apiOk = false;
-      try {
-        const res = await fetch(`${base}/api/team/invite`, {
-          method: 'POST', headers: authH(), body: JSON.stringify({ email: inviteEmail.trim() }),
-        });
-        apiOk = res.ok;
-      } catch { /* fall through */ }
+      const res = await fetch(`${base}/api/team/invite`, {
+        method: 'POST', headers: authH(), body: JSON.stringify({ email: inviteEmail.trim() }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.error || d.message || 'Invite failed');
 
-      // Update local team regardless
+      // Add pending member to local state so UI updates immediately
       const current = team || lsLoad(uid);
       if (current) {
-        const alreadyMember = (current.members || []).some(
-          m => m.email === inviteEmail.trim()
-        );
+        const alreadyMember = (current.members || []).some(m => m.email === inviteEmail.trim());
         if (!alreadyMember) {
           const updated = {
             ...current,
             members: [
               ...(current.members || []),
               {
-                id: `invited_${Date.now()}`,
+                id: d?.memberId || `invited_${Date.now()}`,
                 email: inviteEmail.trim(),
-                firstName: '',
-                lastName: '',
-                role: 'MEMBER',
-                status: 'PENDING',
+                firstName: '', lastName: '',
+                role: 'MEMBER', status: 'PENDING',
               },
             ],
           };
@@ -196,11 +203,7 @@ export default function TeamSettings() {
         }
       }
 
-      setInviteMsg(
-        apiOk
-          ? `✅ Invite sent to ${inviteEmail.trim()}`
-          : `📧 Invite saved — will send to ${inviteEmail.trim()} once backend is connected`
-      );
+      setInviteMsg(`✅ Invite email sent to ${inviteEmail.trim()}`);
       setInviteEmail('');
     } catch (err) {
       setInviteErr(err?.message || 'Failed to send invite.');

@@ -205,7 +205,7 @@ export default function OrganizationSettings() {
     try {
       const res = await fetch(`${apiBase}/api/workspace`, {
         method: "POST", headers: authH(),
-        body: JSON.stringify({ name: wsName.trim(), color: wsColor }),
+        body: JSON.stringify({ name: wsName.trim(), color: wsColor, orgId: activeOrg?.id }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || data.message || "Failed to create workspace");

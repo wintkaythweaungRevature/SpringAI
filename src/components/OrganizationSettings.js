@@ -43,7 +43,6 @@ export default function OrganizationSettings() {
 
   // Derived role flags
   const canManageMembers = isOrgOwner || myOrgRole === "OWNER" || myOrgRole === "ADMIN";
-  const canManageWorkspaces = isOrgOwner;
   const isReadOnly = !canManageMembers; // MEMBER / CLIENT
   const [activeTab, setActiveTab] = useState("members");
 
@@ -499,11 +498,11 @@ export default function OrganizationSettings() {
               const isMe = user && m.userId && String(m.userId) === String(user.id);
               return (
                 <div key={m.id} style={{
-                  display: "flex", alignItems: "center", gap: 10, padding: "10px 0",
+                  display: "flex", alignItems: "center", gap: 10,
+                  padding: isMe ? "10px 8px" : "10px 0",
                   borderBottom: "1px solid rgba(255,255,255,0.05)",
                   background: isMe ? "rgba(99,102,241,0.05)" : "transparent",
                   borderRadius: isMe ? 8 : 0,
-                  padding: isMe ? "10px 8px" : "10px 0",
                 }}>
                   <div style={{
                     width: 34, height: 34, borderRadius: "50%",
@@ -734,74 +733,92 @@ export default function OrganizationSettings() {
 
                           {isAddingHere && (
                             <div>
-                              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginBottom: 8 }}>
-                                <select
-                                  value={addMemberUserId}
-                                  onChange={(e) => {
-                                    const uid = e.target.value;
-                                    setAddMemberUserId(uid);
-                                    const sel = available.find((m) => String(m.userId || m.id) === uid);
-                                    const preset = sel?.role === "CLIENT" ? "CLIENT" : "STAFF";
-                                    setAddMemberPreset(preset);
-                                    setAddMemberPerms(preset === "CLIENT" ? { ...CLIENT_DEFAULTS } : { ...ALL_TRUE });
-                                  }}
-                                  style={{ ...inputStyle, flex: "1 1 180px", fontSize: 13 }}
-                                >
-                                  <option value="">-- Select org member --</option>
-                                  {available.map((m) => (
-                                    <option key={m.userId || m.id} value={m.userId || m.id}>
-                                      {m.firstName || m.email} {m.lastName || ""}
-                                      {m.status === "PENDING" ? " (pending)" : ""} — {m.role}
-                                    </option>
-                                  ))}
-                                </select>
-                                <button
-                                  onClick={() => handleAddMemberToWs(ws.id)}
-                                  disabled={!addMemberUserId || addMemberLoading}
-                                  style={{ ...btnPrimary, padding: "8px 14px", fontSize: 13, opacity: (!addMemberUserId || addMemberLoading) ? 0.6 : 1 }}
-                                >
-                                  {addMemberLoading ? "Adding…" : "Add"}
-                                </button>
-                                <button
-                                  onClick={() => { setAddMemberWsId(null); setAddMemberPreset("STAFF"); setAddMemberPerms({ ...ALL_TRUE }); }}
-                                  style={{ ...btnDanger, background: "rgba(255,255,255,0.06)", color: "#888" }}
-                                >
-                                  Cancel
-                                </button>
-                              </div>
-
-                              {/* Preset pills + permission summary */}
-                              {addMemberUserId && (
-                                <div style={{ marginBottom: 8 }}>
-                                  <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
-                                    {[{ id: "STAFF", label: "Staff (Full)" }, { id: "CLIENT", label: "Client (View)" }, { id: "CUSTOM", label: "Custom" }].map(({ id, label }) => (
-                                      <button key={id} onClick={() => {
-                                        setAddMemberPreset(id);
-                                        if (id === "STAFF") setAddMemberPerms({ ...ALL_TRUE });
-                                        else if (id === "CLIENT") setAddMemberPerms({ ...CLIENT_DEFAULTS });
-                                      }} style={{
-                                        padding: "4px 12px", borderRadius: 20, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600,
-                                        background: addMemberPreset === id ? (id === "CLIENT" ? "rgba(251,146,60,0.25)" : "rgba(99,102,241,0.3)") : "rgba(255,255,255,0.06)",
-                                        color: addMemberPreset === id ? (id === "CLIENT" ? "#fb923c" : "#a5b4fc") : "#888",
-                                      }}>{label}</button>
-                                    ))}
-                                  </div>
-                                  {addMemberPreset === "STAFF" && (
-                                    <p style={{ color: "#4ade80", fontSize: 12, margin: "0 0 4px" }}>✓ All 10 features enabled</p>
-                                  )}
-                                  {addMemberPreset === "CLIENT" && (
-                                    <p style={{ color: "#f59e0b", fontSize: 12, margin: "0 0 4px" }}>⚠ 2 features restricted: Video Publisher, Publish Directly</p>
-                                  )}
-                                  {addMemberPreset === "CUSTOM" && (
-                                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4, marginBottom: 6 }}>
-                                      {PERMISSION_KEYS.map(({ key, label }) => (
-                                        <label key={key} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 12 }}>
-                                          <input type="checkbox" checked={!!addMemberPerms[key]}
-                                            onChange={(e) => setAddMemberPerms((p) => ({ ...p, [key]: e.target.checked }))}
-                                            style={{ accentColor: "#6366f1" }} />
-                                          <span style={{ color: "#ccc" }}>{label}</span>
-                                        </label>
+                              {available.length === 0 ? (
+                                /* All org members already added — clear message instead of empty dropdown */
+                                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                  <p style={{ color: "#4ade80", fontSize: 13, margin: 0 }}>
+                                    ✓ All org members are already in this workspace.
+                                  </p>
+                                  <button
+                                    onClick={() => { setAddMemberWsId(null); }}
+                                    style={{ ...btnSmall, background: "rgba(255,255,255,0.06)", color: "#888" }}
+                                  >
+                                    Close
+                                  </button>
+                                </div>
+                              ) : (
+                                /* Dropdown + preset pills */
+                                <div>
+                                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginBottom: 8 }}>
+                                    <select
+                                      value={addMemberUserId}
+                                      onChange={(e) => {
+                                        const uid = e.target.value;
+                                        setAddMemberUserId(uid);
+                                        const sel = available.find((m) => String(m.userId || m.id) === uid);
+                                        const preset = sel?.role === "CLIENT" ? "CLIENT" : "STAFF";
+                                        setAddMemberPreset(preset);
+                                        setAddMemberPerms(preset === "CLIENT" ? { ...CLIENT_DEFAULTS } : { ...ALL_TRUE });
+                                      }}
+                                      style={{ ...inputStyle, flex: "1 1 180px", fontSize: 13 }}
+                                    >
+                                      <option value="">-- Select org member --</option>
+                                      {available.map((m) => (
+                                        <option key={m.userId || m.id} value={m.userId || m.id}>
+                                          {m.firstName || m.email} {m.lastName || ""}
+                                          {m.status === "PENDING" ? " (pending)" : ""} — {m.role}
+                                        </option>
                                       ))}
+                                    </select>
+                                    <button
+                                      onClick={() => handleAddMemberToWs(ws.id)}
+                                      disabled={!addMemberUserId || addMemberLoading}
+                                      style={{ ...btnPrimary, padding: "8px 14px", fontSize: 13, opacity: (!addMemberUserId || addMemberLoading) ? 0.6 : 1 }}
+                                    >
+                                      {addMemberLoading ? "Adding…" : "Add"}
+                                    </button>
+                                    <button
+                                      onClick={() => { setAddMemberWsId(null); setAddMemberPreset("STAFF"); setAddMemberPerms({ ...ALL_TRUE }); }}
+                                      style={{ ...btnDanger, background: "rgba(255,255,255,0.06)", color: "#888" }}
+                                    >
+                                      Cancel
+                                    </button>
+                                  </div>
+
+                                  {/* Preset pills + permission summary */}
+                                  {addMemberUserId && (
+                                    <div style={{ marginBottom: 8 }}>
+                                      <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
+                                        {[{ id: "STAFF", label: "Staff (Full)" }, { id: "CLIENT", label: "Client (View)" }, { id: "CUSTOM", label: "Custom" }].map(({ id, label }) => (
+                                          <button key={id} onClick={() => {
+                                            setAddMemberPreset(id);
+                                            if (id === "STAFF") setAddMemberPerms({ ...ALL_TRUE });
+                                            else if (id === "CLIENT") setAddMemberPerms({ ...CLIENT_DEFAULTS });
+                                          }} style={{
+                                            padding: "4px 12px", borderRadius: 20, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600,
+                                            background: addMemberPreset === id ? (id === "CLIENT" ? "rgba(251,146,60,0.25)" : "rgba(99,102,241,0.3)") : "rgba(255,255,255,0.06)",
+                                            color: addMemberPreset === id ? (id === "CLIENT" ? "#fb923c" : "#a5b4fc") : "#888",
+                                          }}>{label}</button>
+                                        ))}
+                                      </div>
+                                      {addMemberPreset === "STAFF" && (
+                                        <p style={{ color: "#4ade80", fontSize: 12, margin: "0 0 4px" }}>✓ All 10 features enabled</p>
+                                      )}
+                                      {addMemberPreset === "CLIENT" && (
+                                        <p style={{ color: "#f59e0b", fontSize: 12, margin: "0 0 4px" }}>⚠ 2 features restricted: Video Publisher, Publish Directly</p>
+                                      )}
+                                      {addMemberPreset === "CUSTOM" && (
+                                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4, marginBottom: 6 }}>
+                                          {PERMISSION_KEYS.map(({ key, label }) => (
+                                            <label key={key} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 12 }}>
+                                              <input type="checkbox" checked={!!addMemberPerms[key]}
+                                                onChange={(e) => setAddMemberPerms((p) => ({ ...p, [key]: e.target.checked }))}
+                                                style={{ accentColor: "#6366f1" }} />
+                                              <span style={{ color: "#ccc" }}>{label}</span>
+                                            </label>
+                                          ))}
+                                        </div>
+                                      )}
                                     </div>
                                   )}
                                 </div>
@@ -809,11 +826,6 @@ export default function OrganizationSettings() {
                             </div>
                           )}
 
-                          {available.length === 0 && isAddingHere && (
-                            <p style={{ color: "#4ade80", fontSize: 12, marginTop: 6 }}>
-                              ✓ All org members are already in this workspace.
-                            </p>
-                          )}
                           {msgBox(addMemberMsg[ws.id])}
                         </div>
                       )}

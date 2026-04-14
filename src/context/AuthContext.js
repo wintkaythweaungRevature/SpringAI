@@ -43,6 +43,9 @@ export function AuthProvider({ children }) {
   const [authAvailable, setAuthAvailable] = useState(true);
   const [team, setTeam] = useState(null);
 
+  // ── Subscription state (derived from backend to support org plan inheritance) ──
+  const [isSubscribed, setIsSubscribed] = useState(false);
+
   // ── Organization / Workspace state ──────────────────────────────────────
   const [activeOrg, setActiveOrg] = useState(null);
   const [userWorkspaces, setUserWorkspaces] = useState([]);
@@ -69,13 +72,43 @@ export function AuthProvider({ children }) {
         }
         return res.ok ? res.json() : null;
       })
-      .then((data) => data && setUser({ ...data, emailVerified: data.emailVerified ?? true }));
+      .then((data) => {
+        if (data) {
+          setUser({ ...data, emailVerified: data.emailVerified ?? true });
+          fetchSubscriptionStatus(token);
+        }
+      });
+  };
+
+  /**
+   * Fetch subscription active status from the backend.
+   * The backend's hasActivePaidAccess() resolves org-member plan inheritance:
+   * a FREE user who is an ADMIN/MEMBER/CLIENT in a paid org returns active=true.
+   */
+  const fetchSubscriptionStatus = async (tok) => {
+    const t = tok || token;
+    if (!t) { setIsSubscribed(false); return; }
+    if (isOwnerToken(t)) { setIsSubscribed(true); return; }
+    try {
+      const res = await fetch(`${API_BASE}/api/subscription/status`, {
+        headers: { Authorization: `Bearer ${t}` },
+      });
+      if (res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setIsSubscribed(!!data.active);
+      }
+    } catch {
+      // If the backend is unreachable, fall back to local membershipType check
+      // so directly-subscribed users are not locked out during transient outages.
+      setIsSubscribed(isPaidMembershipType(user?.membershipType));
+    }
   };
 
   useEffect(() => {
     if (token) {
       if (isOwnerToken(token)) {
         setUser(OWNER_USER);
+        setIsSubscribed(true);
         setLoading(false);
         return;
       }
@@ -92,11 +125,14 @@ export function AuthProvider({ children }) {
           }
           return res.ok ? res.json() : null;
         })
-        .then((data) => {
+        .then(async (data) => {
           if (data) {
             setUser({ ...data, emailVerified: data.emailVerified ?? true });
             fetchOrg(token);
             fetchWorkspaces(token);
+            // Fetch subscription status — backend resolves org plan inheritance so
+            // ADMIN/MEMBER/CLIENT added to a paid org get isSubscribed=true here.
+            await fetchSubscriptionStatus(token);
           }
         })
         .catch(() => {
@@ -337,9 +373,10 @@ export function AuthProvider({ children }) {
         setUser({ ...me, emailVerified: me.emailVerified ?? true });
       }
     } catch (_) {}
-    // Load org + workspaces after login
+    // Load org + workspaces + subscription status after login
     fetchOrg(newToken);
     fetchWorkspaces(newToken);
+    fetchSubscriptionStatus(newToken);
     return data;
   };
 
@@ -397,6 +434,7 @@ export function AuthProvider({ children }) {
     localStorage.removeItem("wint_active_workspace");
     setToken(null);
     setUser(null);
+    setIsSubscribed(false);
     setActiveOrg(null);
     setUserWorkspaces([]);
     setActiveWorkspaceId(null);
@@ -571,7 +609,7 @@ export function AuthProvider({ children }) {
     isOrgOwner,
     myOrgRole,
     switchWorkspace,
-    isSubscribed: isPaidMembershipType(user?.membershipType),
+    isSubscribed, // backend-derived (resolves org plan inheritance); see fetchSubscriptionStatus
     isLoggedIn: !!user,
     emailVerified: user?.emailVerified ?? true,
     authAvailable,

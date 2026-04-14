@@ -5,6 +5,7 @@ import { filterEnabledPlatforms } from '../config/disabledPlatforms';
 import PlatformIcon from './PlatformIcon';
 import PostDetailModal from './PostDetailModal';
 import ComposePostModal from './ComposePostModal';
+import { getHolidaysForDate, HOLIDAY_COLORS } from '../data/holidays';
 import {
   fetchPreviewDisplayUrl,
   rawMediaRefForCalendarPost,
@@ -773,6 +774,8 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
     setLoading(true);
     try {
       const headers = { Authorization: `Bearer ${token}` };
+      // Pass workspace filter so calendar only shows posts for the active workspace
+      if (activeWorkspaceId) headers['X-Workspace-Id'] = String(activeWorkspaceId);
       const [overviewRes, historyRes] = await Promise.all([
         fetch(`${base}/api/analytics/overview`, { headers }),
         fetch(`${base}/api/social/post/history?limit=200`, { headers }),
@@ -790,7 +793,7 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
     } finally {
       setLoading(false);
     }
-  }, [base, token]);
+  }, [base, token, activeWorkspaceId]);
 
   useEffect(() => { loadPosts(); }, [loadPosts]);
 
@@ -1171,6 +1174,7 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
                   const isSelected = selectedDay && sameDay(day, selectedDay);
                   const hasScheduledPost = dayPosts.some(isPostScheduled);
                   const platformColors = [...new Set(dayPosts.map(p => platformColor(p.platform)))].slice(0, 4);
+                  const dayHolidays = getHolidaysForDate(day);
 
                   return (
                     <div
@@ -1225,6 +1229,32 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
                       >
                         {day.getDate()}
                       </button>
+
+                      {/* Holiday / awareness indicators */}
+                      {dayHolidays.length > 0 && (
+                        <div style={{ display: 'flex', gap: 2, flexWrap: 'wrap', marginBottom: 2 }}>
+                          {dayHolidays.map((h, hi) => (
+                            <span
+                              key={hi}
+                              title={h.name}
+                              style={{
+                                fontSize: 10,
+                                background: HOLIDAY_COLORS[h.type] + '22',
+                                border: `1px solid ${HOLIDAY_COLORS[h.type]}55`,
+                                borderRadius: 6,
+                                padding: '1px 4px',
+                                color: HOLIDAY_COLORS[h.type],
+                                fontWeight: 700,
+                                cursor: 'default',
+                                whiteSpace: 'nowrap',
+                                lineHeight: 1.4,
+                              }}
+                            >
+                              {h.emoji} {h.name.length > 12 ? h.name.slice(0, 12) + '…' : h.name}
+                            </span>
+                          ))}
+                        </div>
+                      )}
 
                       {dayPosts.length > 0 ? (
                         <div style={s.dayPostList}>
@@ -1305,6 +1335,23 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
                   </div>
                 ))}
               </div>
+              {/* Holiday legend */}
+              <div style={{ marginTop: 8, paddingTop: 10, borderTop: '1px dashed #e2e8f0' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 6 }}>Calendar markers</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 12px' }}>
+                  {[
+                    { color: HOLIDAY_COLORS.holiday,   label: 'Public Holiday' },
+                    { color: HOLIDAY_COLORS.awareness, label: 'Awareness Day' },
+                    { color: HOLIDAY_COLORS.shopping,  label: 'Shopping Event' },
+                  ].map(item => (
+                    <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <div style={{ width: 10, height: 10, borderRadius: 3, background: item.color }} />
+                      <span style={{ fontSize: 11, color: '#64748b' }}>{item.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               <div style={{ marginTop: 6, paddingTop: 12, borderTop: '1px dashed #e2e8f0' }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 8 }}>Post status</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px 14px' }}>

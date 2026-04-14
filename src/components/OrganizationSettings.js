@@ -722,13 +722,28 @@ export default function OrganizationSettings() {
                           )}
 
                           {/* Has addable members */}
-                          {activeMembers.length > 0 && !isAddingHere && (
+                          {activeMembers.length > 0 && !isAddingHere && available.length > 0 && (
                             <button
                               onClick={() => { setAddMemberWsId(ws.id); setAddMemberUserId(""); setAddMemberPreset("STAFF"); setAddMemberPerms({ ...ALL_TRUE }); }}
                               style={btnSmall}
                             >
                               + Add Member
                             </button>
+                          )}
+
+                          {/* All org members already in workspace */}
+                          {activeMembers.length > 0 && !isAddingHere && available.length === 0 && (
+                            <div style={{
+                              padding: "9px 13px", borderRadius: 8, fontSize: 13,
+                              background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.2)",
+                              color: "#4ade80",
+                            }}>
+                              ✓ All organization members are already in this workspace. To add someone new, invite them from the{" "}
+                              <button onClick={() => setActiveTab("members")}
+                                style={{ background: "none", border: "none", color: "#a5b4fc", cursor: "pointer", fontWeight: 700, fontSize: 13, padding: 0 }}>
+                                Members tab
+                              </button>{" "}first.
+                            </div>
                           )}
 
                           {isAddingHere && (

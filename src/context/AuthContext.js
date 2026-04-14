@@ -54,6 +54,10 @@ export function AuthProvider({ children }) {
   const [isOrgOwner, setIsOrgOwner] = useState(false);
   const [myOrgRole, setMyOrgRole] = useState(null); // "OWNER" | "ADMIN" | "MEMBER" | "CLIENT" | null
 
+  // ── Active brand (per workspace) ─────────────────────────────────────────
+  const getBrandKey = (wsId) => wsId ? `wint_active_brand_${wsId}` : 'wint_active_brand_solo';
+  const [activeBrandId, setActiveBrandId] = useState(null);
+
   const refetchUser = () => {
     if (!token) return;
     if (isOwnerToken(token)) {
@@ -292,6 +296,10 @@ export function AuthProvider({ children }) {
       if (defaultWs) {
         setActiveWorkspaceId(defaultWs.id);
         localStorage.setItem("wint_active_workspace", String(defaultWs.id));
+        // Restore active brand for this workspace
+        const savedBrand = localStorage.getItem(getBrandKey(defaultWs.id));
+        if (savedBrand) setActiveBrandId(Number(savedBrand));
+        else setActiveBrandId(null);
         // Immediately fetch permissions so CLIENTs see restricted UI right after login
         fetch(`${API_BASE}/api/workspace/${defaultWs.id}/my-permissions`, {
           headers: { Authorization: `Bearer ${t}` },
@@ -307,6 +315,10 @@ export function AuthProvider({ children }) {
   const switchWorkspace = async (wsId) => {
     setActiveWorkspaceId(wsId);
     localStorage.setItem("wint_active_workspace", String(wsId));
+    // Restore active brand for the newly selected workspace
+    const savedBrand = localStorage.getItem(getBrandKey(wsId));
+    if (savedBrand) setActiveBrandId(Number(savedBrand));
+    else setActiveBrandId(null);
     // Fetch own permissions in this workspace
     if (!token || isOwnerToken(token)) { setWorkspacePermissions(null); return; }
     try {
@@ -318,6 +330,21 @@ export function AuthProvider({ children }) {
         setWorkspacePermissions(perms);
       }
     } catch { setWorkspacePermissions(null); }
+  };
+
+  /**
+   * Persists the active brand selection for the current (or given) workspace.
+   * Pass null brandId to clear the active brand selection for that workspace.
+   */
+  const switchBrand = (brandId, workspaceId) => {
+    const key = getBrandKey(workspaceId != null ? workspaceId : activeWorkspaceId);
+    if (brandId) {
+      localStorage.setItem(key, String(brandId));
+      setActiveBrandId(brandId);
+    } else {
+      localStorage.removeItem(key);
+      setActiveBrandId(null);
+    }
   };
 
   const login = async (identifier, password) => {
@@ -432,6 +459,10 @@ export function AuthProvider({ children }) {
   const logout = () => {
     localStorage.removeItem("authToken");
     localStorage.removeItem("wint_active_workspace");
+    // Clean up all saved brand selections
+    Object.keys(localStorage)
+      .filter((k) => k.startsWith("wint_active_brand"))
+      .forEach((k) => localStorage.removeItem(k));
     setToken(null);
     setUser(null);
     setIsSubscribed(false);
@@ -440,6 +471,7 @@ export function AuthProvider({ children }) {
     setActiveWorkspaceId(null);
     setWorkspacePermissions(null);
     setIsOrgOwner(false);
+    setActiveBrandId(null);
   };
 
   const checkoutSubscription = async () => {
@@ -617,8 +649,11 @@ export function AuthProvider({ children }) {
     authHeaders: () => {
       const headers = { Authorization: `Bearer ${token}` };
       if (activeWorkspaceId) headers["X-Workspace-Id"] = String(activeWorkspaceId);
+      if (activeBrandId)     headers["X-Brand-Id"]     = String(activeBrandId);
       return headers;
     },
+    activeBrandId,
+    switchBrand,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

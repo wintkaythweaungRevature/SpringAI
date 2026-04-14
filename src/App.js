@@ -8,7 +8,7 @@ import Box from '@mui/material/Box';
 import { HiHome, HiChatBubbleLeftRight, HiPhoto, HiSparkles } from 'react-icons/hi2';
 import { HiDocumentText, HiMicrophone } from 'react-icons/hi2';
 import { HiChatBubbleOvalLeft, HiArrowTrendingUp, HiLink } from 'react-icons/hi2';
-import { HiDocumentMagnifyingGlass, HiRectangleGroup } from 'react-icons/hi2';
+import { HiDocumentMagnifyingGlass, HiRectangleGroup, HiFilm } from 'react-icons/hi2';
 import { HiCog6Tooth, HiCreditCard, HiQuestionMarkCircle } from 'react-icons/hi2';
 import PlatformIcon from './components/PlatformIcon';
 import HelpPanel from './components/HelpPanel';
@@ -45,6 +45,14 @@ import OrganizationSettings from './components/OrganizationSettings';
 import WorkspaceSwitcher from './components/WorkspaceSwitcher';
 import WorkspaceGate from './components/WorkspaceGate';
 import SEO from './components/SEO';
+import UrlRepurposer from './components/UrlRepurposer';
+import VideoRecycler from './components/VideoRecycler';
+import TrendAlerts from './components/TrendAlerts';
+import ClientApprovalPage from './components/ClientApprovalPage';
+import SelfHealDashboard from './components/SelfHealDashboard';
+import BrandGuardian from './components/BrandGuardian';
+import MediaLibrary from './components/MediaLibrary';
+import AiWorkspace from './components/AiWorkspace';
 
 const BRAND_LOGO_SRC = '/android-chrome-192x192.png';
 
@@ -589,6 +597,12 @@ function App() {
   const openLogin = () => { setAuthMode('login'); setShowAuthModal(true); };
   const openSignup = () => { setAuthMode('signup'); setShowAuthModal(true); };
 
+  // ── Public approval page route (no auth needed) ─────────────────────────
+  const approvalMatch = window.location.pathname.match(/^\/approve\/([a-zA-Z0-9]+)$/);
+  if (approvalMatch) {
+    return <ClientApprovalPage token={approvalMatch[1]} />;
+  }
+
   return (
     <div style={s.shell}>
 
@@ -649,16 +663,23 @@ function App() {
             )}
             <NavItem icon={<HiChatBubbleOvalLeft size={17} />}       label="Inbox"              active={activeTab === 'messages'}         onClick={() => { go('messages'); if (isMobile || isTablet) setSidebarOpen(false); }} />
             <NavItem icon={<HiArrowTrendingUp size={17} />}          label="Growth Planner"     active={activeTab === 'trends'}           onClick={() => { go('trends'); if (isMobile || isTablet) setSidebarOpen(false); }} />
+            <NavItem icon={<span style={{ fontSize: 15 }}>🩺</span>} label="Self-Healing"       active={activeTab === 'self-heal'}        onClick={() => { go('self-heal'); if (isMobile || isTablet) setSidebarOpen(false); }} />
 
             <div style={s.navDivider} role="separator" aria-hidden="true" />
             <div style={s.groupLabel}>{SIDEBAR_GROUPS.theForge}</div>
-            <NavItem icon={<HiChatBubbleLeftRight size={17} />} label="Reply Enchanter" active={activeTab === 'Content'} onClick={() => { go('Content'); if (isMobile || isTablet) setSidebarOpen(false); }} />
-            <NavItem icon={<HiDocumentText size={17} />}        label="Career Alchemist"  active={activeTab === 'Resume'}  onClick={() => { go('Resume'); if (isMobile || isTablet) setSidebarOpen(false); }} />
+            <NavItem icon={<HiChatBubbleLeftRight size={17} />} label="Reply Enchanter"  active={activeTab === 'Content'}       onClick={() => { go('Content');       if (isMobile || isTablet) setSidebarOpen(false); }} />
+            <NavItem icon={<HiDocumentText size={17} />}        label="Career Alchemist" active={activeTab === 'Resume'}        onClick={() => { go('Resume');        if (isMobile || isTablet) setSidebarOpen(false); }} />
+            <NavItem icon={<HiLink size={17} />}                label="URL Repurposer"   active={activeTab === 'url-repurpose'} onClick={() => { go('url-repurpose'); if (isMobile || isTablet) setSidebarOpen(false); }} />
+            <NavItem icon={<HiFilm size={17} />}               label="Video Recycler"   active={activeTab === 'video-recycler'} onClick={() => { go('video-recycler'); if (isMobile || isTablet) setSidebarOpen(false); }} />
+            <NavItem icon={<HiArrowTrendingUp size={17} />}     label="Trend Hijacker"   active={activeTab === 'trends-live'}  onClick={() => { go('trends-live');   if (isMobile || isTablet) setSidebarOpen(false); }} />
 
             <div style={s.navFooterBlock}>
               <div style={s.navDividerStrong} role="separator" aria-hidden="true" />
               <div style={s.groupLabelFooter}>{SIDEBAR_GROUPS.settings}</div>
               {user && <NavItem icon={<span style={{ fontSize: 15 }}>🎨</span>} label="Brand Kit" active={activeTab === 'brand'} onClick={() => { go('brand'); if (isMobile || isTablet) setSidebarOpen(false); }} />}
+              {user && <NavItem icon={<span style={{ fontSize: 15 }}>🛡</span>} label="Brand Guardian" active={activeTab === 'brand-guardian'} onClick={() => { go('brand-guardian'); if (isMobile || isTablet) setSidebarOpen(false); }} />}
+              {user && <NavItem icon={<span style={{ fontSize: 15 }}>🗂</span>} label="Asset Library" active={activeTab === 'asset-library'} onClick={() => { go('asset-library'); if (isMobile || isTablet) setSidebarOpen(false); }} />}
+              {user && <NavItem icon={<span style={{ fontSize: 15 }}>🤖</span>} label="AI Workspace" active={activeTab === 'ai-workspace'} onClick={() => { go('ai-workspace'); if (isMobile || isTablet) setSidebarOpen(false); }} />}
               {user && <NavItem icon={<span style={{ fontSize: 15 }}>👥</span>} label="Team" active={activeTab === 'team'} onClick={() => { go('team'); if (isMobile || isTablet) setSidebarOpen(false); }} />}
               {user && <NavItem icon={<span style={{ fontSize: 15 }}>🏢</span>} label="Organization" active={activeTab === 'organization'} onClick={() => { go('organization'); if (isMobile || isTablet) setSidebarOpen(false); }} />}
               {user && <NavItem icon={<HiCog6Tooth size={17} />} label="Account" active={activeTab === 'account'} onClick={() => { go('account'); if (isMobile || isTablet) setSidebarOpen(false); }} hasArrow />}
@@ -892,18 +913,25 @@ function App() {
           {activeTab === 'transcription'    && <MemberGate featureName="EchoScribe"><ProGate featureName="EchoScribe"><Transcription /></ProGate></MemberGate>}
           {activeTab === 'Content'          && <MemberGate featureName="Reply Enchanter"><Content /></MemberGate>}
           {activeTab === 'Resume'           && <MemberGate featureName="Career Alchemist"><Resume /></MemberGate>}
+          {activeTab === 'url-repurpose'    && <MemberGate featureName="URL Repurposer"><ProGate featureName="URL Repurposer"><UrlRepurposer /></ProGate></MemberGate>}
+          {activeTab === 'video-recycler'   && <MemberGate featureName="Video Recycler"><ProGate featureName="Video Recycler"><VideoRecycler /></ProGate></MemberGate>}
+          {activeTab === 'trends-live'      && <MemberGate featureName="Trend Hijacker"><ProGate featureName="Trend Hijacker"><TrendAlerts /></ProGate></MemberGate>}
+          {activeTab === 'self-heal'        && <MemberGate featureName="Self-Healing Content"><ProGate featureName="Self-Healing Content"><SelfHealDashboard /></ProGate></MemberGate>}
+          {activeTab === 'brand-guardian'   && <MemberGate featureName="Brand Guardian"><ProGate featureName="Brand Guardian"><BrandGuardian /></ProGate></MemberGate>}
+          {activeTab === 'asset-library'    && <MemberGate featureName="Asset Library"><ProGate featureName="Asset Library"><MediaLibrary /></ProGate></MemberGate>}
+          {activeTab === 'ai-workspace'     && <MemberGate featureName="AI Workspace"><ProGate featureName="AI Workspace"><AiWorkspace /></ProGate></MemberGate>}
           {activeTab === 'account'          && <AskAIGate  featureName="Account"><AccountSettings /></AskAIGate>}
           {activeTab === 'video-publisher'  && <MemberGate featureName="Video Publisher"><WorkspaceGate permKey="videoPublisher"><VideoPublisher onNavigateToSocialConnect={() => go('social-connect')} templateCaption={templateCaption} onTemplateCaptionUsed={() => setTemplateCaption(null)} /></WorkspaceGate></MemberGate>}
-          {activeTab === 'caption-templates' && <WorkspaceGate permKey="templates"><CaptionTemplates onBack={() => go('video-publisher')} onUseTemplate={(text) => { setTemplateCaption(text); go('video-publisher'); }} /></WorkspaceGate>}
+          {activeTab === 'caption-templates' && <MemberGate featureName="Templates"><WorkspaceGate permKey="templates"><CaptionTemplates onBack={() => go('video-publisher')} onUseTemplate={(text) => { setTemplateCaption(text); go('video-publisher'); }} /></WorkspaceGate></MemberGate>}
           {activeTab === 'messages'         && <MemberGate featureName="Messages"><ProGate featureName="Messages"><MessagesInbox onOpenConnectedAccounts={() => go('social-connect')} onOpenAutoReply={() => go('auto-reply')} /></ProGate></MemberGate>}
           {activeTab === 'social-connect'   && <MemberGate featureName="Connected Accounts"><WorkspaceGate permKey="connectAccounts"><SocialConnect onConnectionChange={setConnectedPlatforms} /></WorkspaceGate></MemberGate>}
           {activeTab === 'bio'              && <MemberGate featureName="Link in Bio"><WorkspaceGate permKey="linkInBio"><LinkInBioBuilder /></WorkspaceGate></MemberGate>}
           {activeTab === 'trends'          && <MemberGate featureName="Growth Planner"><WorkspaceGate permKey="analytics"><ProGate featureName="Growth Planner"><DeepAnalytics /></ProGate></WorkspaceGate></MemberGate>}
           {activeTab === 'social-ai'       && <MemberGate featureName="Social AI"><ProGate featureName="Social AI"><WorkspaceGate permKey="aiCaptions"><SocialAIChat /></WorkspaceGate></ProGate></MemberGate>}
           {activeTab === 'pricing'         && <PricingPage onClose={() => go(null)} />}
-          {activeTab === 'brand'           && <BrandKitSettings />}
-          {activeTab === 'team'            && <TeamSettings />}
-          {activeTab === 'organization'    && <OrganizationSettings />}
+          {activeTab === 'brand'           && <MemberGate featureName="Brand Kit"><BrandKitSettings /></MemberGate>}
+          {activeTab === 'team'            && <MemberGate featureName="Team"><ProGate featureName="Team"><TeamSettings /></ProGate></MemberGate>}
+          {activeTab === 'organization'    && <MemberGate featureName="Organization"><ProGate featureName="Organization"><OrganizationSettings /></ProGate></MemberGate>}
           {activeTab === 'help'            && <HelpPanel />}
           {activeTab === 'auto-reply'      && <MemberGate featureName="Auto Reply"><ProGate featureName="Auto Reply"><AutoReplySettings /></ProGate></MemberGate>}
           {activeTab === 'calendar'        && <MemberGate featureName="Content Calendar"><WorkspaceGate permKey="contentCalendar"><ContentCalendar onOpenVideoPublisher={() => go('video-publisher')} /></WorkspaceGate></MemberGate>}
@@ -1003,6 +1031,15 @@ function App() {
               >
                 <span style={s.aiDockEmoji}>🧠</span>
                 <span style={{ flex: 1, textAlign: 'left' }}>Social AI</span>
+                <span style={s.aiDockItemArrow}>›</span>
+              </button>
+              <button
+                type="button"
+                style={s.aiDockItem}
+                onClick={() => { setAiDockOpen(false); go('ai-workspace'); }}
+              >
+                <span style={s.aiDockEmoji}>🤖</span>
+                <span style={{ flex: 1, textAlign: 'left' }}>AI Workspace</span>
                 <span style={s.aiDockItemArrow}>›</span>
               </button>
             </div>

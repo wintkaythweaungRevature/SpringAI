@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
+import AppHelpChat from './AppHelpChat';
 
 const ADMIN_EMAIL = 'breezegirl6@gmail.com';
 
@@ -578,8 +579,49 @@ function HelpPanelGuest() {
   );
 }
 
+function HelpPanelTabs({ user, apiBase, authHeaders }) {
+  const [tab, setTab] = useState('ai');
+
+  const tabBtn = (id, label) => (
+    <button
+      onClick={() => setTab(id)}
+      style={{
+        flex: 1, padding: '10px 0',
+        background: tab === id ? 'linear-gradient(135deg,#6366f1,#7c3aed)' : 'transparent',
+        border: tab === id ? 'none' : '1px solid #1e293b',
+        borderRadius: 10, color: tab === id ? '#fff' : '#64748b',
+        fontSize: 13, fontWeight: 700, cursor: 'pointer',
+        transition: 'all 0.15s',
+      }}
+    >
+      {label}
+    </button>
+  );
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#0b1120' }}>
+      {/* Tab switcher */}
+      <div style={{
+        padding: '10px 12px',
+        borderBottom: '1px solid #1e293b',
+        flexShrink: 0,
+        display: 'flex', gap: 8,
+      }}>
+        {tabBtn('ai', '🤖 AI Assistant')}
+        {tabBtn('tickets', '💬 Support Tickets')}
+      </div>
+
+      {/* Content */}
+      <div style={{ flex: 1, overflow: 'hidden' }}>
+        {tab === 'ai'      && <AppHelpChat />}
+        {tab === 'tickets' && <HelpPanelMain user={user} apiBase={apiBase} authHeaders={authHeaders} />}
+      </div>
+    </div>
+  );
+}
+
 export default function HelpPanel() {
   const { user, apiBase, authHeaders } = useAuth();
   if (!user) return <HelpPanelGuest />;
-  return <HelpPanelMain user={user} apiBase={apiBase} authHeaders={authHeaders} />;
+  return <HelpPanelTabs user={user} apiBase={apiBase} authHeaders={authHeaders} />;
 }

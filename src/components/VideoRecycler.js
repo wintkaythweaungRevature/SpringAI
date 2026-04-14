@@ -142,7 +142,7 @@ export default function VideoRecycler() {
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
         <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1e293b', margin: '0 0 4px' }}>
-          🎬 Video Recycler
+          🎬 Video Repurposer
         </h2>
         <p style={{ fontSize: 13, color: '#64748b', margin: 0 }}>
           Paste a YouTube, TikTok or Instagram video URL → AI extracts the content and generates platform-optimized posts in your brand voice.

@@ -47,6 +47,7 @@ import WorkspaceGate from './components/WorkspaceGate';
 import SEO from './components/SEO';
 import UrlRepurposer from './components/UrlRepurposer';
 import VideoRecycler from './components/VideoRecycler';
+import Repurposer from './components/Repurposer';
 import TrendAlerts from './components/TrendAlerts';
 import ClientApprovalPage from './components/ClientApprovalPage';
 import SelfHealDashboard from './components/SelfHealDashboard';
@@ -74,10 +75,7 @@ const PUBLISHING_TAB_SEO = {
 
 /** Sidebar section titles — single source of truth for the logged-in nav. */
 const SIDEBAR_GROUPS = {
-  smartHub: 'Smart Hub',
-  digitalVault: 'Digital Vault',
   socialHq: 'Social HQ',
-  theForge: 'The Forge',
   settings: 'Settings',
 };
 
@@ -311,6 +309,8 @@ function App() {
   const [verifiedBanner, setVerifiedBanner] = useState(false);
   const [templateCaption, setTemplateCaption] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [showTopNav, setShowTopNav] = useState(false);
+  const topNavRef = useRef(null);
   const [aiDockOpen, setAiDockOpen] = useState(false);
   const [connectedPlatforms, setConnectedPlatforms] = useState([]);
   const [pendingInviteToken, setPendingInviteToken] = useState(null);
@@ -584,6 +584,16 @@ function App() {
     return () => window.removeEventListener('wintaibot:go', handler);
   }, [go]);
 
+  // Close top-nav dropdown when clicking outside
+  useEffect(() => {
+    if (!showTopNav) return;
+    const handler = (e) => {
+      if (topNavRef.current && !topNavRef.current.contains(e.target)) setShowTopNav(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showTopNav]);
+
   useEffect(() => {
     const handler = () => { setAuthMode('login'); setShowAuthModal(true); };
     window.addEventListener('wintaibot:openLogin', handler);
@@ -645,43 +655,18 @@ function App() {
             <NavItem icon={<HiHome size={17} />} label="Dashboard" active={activeTab === null || activeTab === 'analytics'} onClick={() => { go(null); if (isMobile || isTablet) setSidebarOpen(false); }} />
 
             <div style={s.navDivider} role="separator" aria-hidden="true" />
-            <div style={s.groupLabel}>{SIDEBAR_GROUPS.smartHub}</div>
-            <NavItem icon={<HiPhoto size={17} />}               label="Image Generator"  active={activeTab === 'image-generator'}  onClick={() => { go('image-generator'); if (isMobile || isTablet) setSidebarOpen(false); }} />
-            <NavItem icon={<HiSparkles size={17} />}            label="Recipe Generator" active={activeTab === 'recipe-generator'} onClick={() => { go('recipe-generator'); if (isMobile || isTablet) setSidebarOpen(false); }} />
-
-            <div style={s.navDivider} role="separator" aria-hidden="true" />
-            <div style={s.groupLabel}>{SIDEBAR_GROUPS.digitalVault}</div>
-            <NavItem icon={<HiDocumentMagnifyingGlass size={17} />} label="DocuWizard" active={activeTab === 'analyzer'}     onClick={() => { go('analyzer'); if (isMobile || isTablet) setSidebarOpen(false); }} />
-            <NavItem icon={<HiMicrophone size={17} />}              label="EchoScribe"  active={activeTab === 'transcription'} onClick={() => { go('transcription'); if (isMobile || isTablet) setSidebarOpen(false); }} />
 
             <div style={s.navDivider} role="separator" aria-hidden="true" />
             <div style={s.groupLabel}>{SIDEBAR_GROUPS.socialHq}</div>
             <NavItem icon={<HiPhoto size={17} />}                    label="Content Calendar"   active={activeTab === 'calendar'}          onClick={() => { go('calendar'); if (isMobile || isTablet) setSidebarOpen(false); }} />
+            <NavItem icon={<HiArrowTrendingUp size={17} />}          label="Growth Planner"     active={activeTab === 'trends'}            onClick={() => { go('trends'); if (isMobile || isTablet) setSidebarOpen(false); }} />
             <NavItem icon={<HiRectangleGroup size={17} />}           label="Templates"          active={activeTab === 'caption-templates'} onClick={() => { go('caption-templates'); if (isMobile || isTablet) setSidebarOpen(false); }} />
-            {(isMobile || isTablet) && (
-              <NavItem icon={<HiLink size={17} />}                   label="Connected Accounts" active={activeTab === 'social-connect'}     onClick={() => { go('social-connect'); setSidebarOpen(false); }} />
-            )}
+            <NavItem icon={<HiLink size={17} />}                     label="Connected Accounts" active={activeTab === 'social-connect'}     onClick={() => { go('social-connect'); if (isMobile || isTablet) setSidebarOpen(false); }} />
             <NavItem icon={<HiChatBubbleOvalLeft size={17} />}       label="Inbox"              active={activeTab === 'messages'}         onClick={() => { go('messages'); if (isMobile || isTablet) setSidebarOpen(false); }} />
-            <NavItem icon={<HiArrowTrendingUp size={17} />}          label="Growth Planner"     active={activeTab === 'trends'}           onClick={() => { go('trends'); if (isMobile || isTablet) setSidebarOpen(false); }} />
-            <NavItem icon={<span style={{ fontSize: 15 }}>🩺</span>} label="Self-Healing"       active={activeTab === 'self-heal'}        onClick={() => { go('self-heal'); if (isMobile || isTablet) setSidebarOpen(false); }} />
-
-            <div style={s.navDivider} role="separator" aria-hidden="true" />
-            <div style={s.groupLabel}>{SIDEBAR_GROUPS.theForge}</div>
-            <NavItem icon={<HiChatBubbleLeftRight size={17} />} label="Reply Enchanter"  active={activeTab === 'Content'}       onClick={() => { go('Content');       if (isMobile || isTablet) setSidebarOpen(false); }} />
-            <NavItem icon={<HiDocumentText size={17} />}        label="Career Alchemist" active={activeTab === 'Resume'}        onClick={() => { go('Resume');        if (isMobile || isTablet) setSidebarOpen(false); }} />
-            <NavItem icon={<HiLink size={17} />}                label="URL Repurposer"   active={activeTab === 'url-repurpose'} onClick={() => { go('url-repurpose'); if (isMobile || isTablet) setSidebarOpen(false); }} />
-            <NavItem icon={<HiFilm size={17} />}               label="Video Recycler"   active={activeTab === 'video-recycler'} onClick={() => { go('video-recycler'); if (isMobile || isTablet) setSidebarOpen(false); }} />
-            <NavItem icon={<HiArrowTrendingUp size={17} />}     label="Trend Hijacker"   active={activeTab === 'trends-live'}  onClick={() => { go('trends-live');   if (isMobile || isTablet) setSidebarOpen(false); }} />
 
             <div style={s.navFooterBlock}>
               <div style={s.navDividerStrong} role="separator" aria-hidden="true" />
               <div style={s.groupLabelFooter}>{SIDEBAR_GROUPS.settings}</div>
-              {user && <NavItem icon={<span style={{ fontSize: 15 }}>🎨</span>} label="Brand Kit" active={activeTab === 'brand'} onClick={() => { go('brand'); if (isMobile || isTablet) setSidebarOpen(false); }} />}
-              {user && <NavItem icon={<span style={{ fontSize: 15 }}>🛡</span>} label="Brand Guardian" active={activeTab === 'brand-guardian'} onClick={() => { go('brand-guardian'); if (isMobile || isTablet) setSidebarOpen(false); }} />}
-              {user && <NavItem icon={<span style={{ fontSize: 15 }}>🗂</span>} label="Asset Library" active={activeTab === 'asset-library'} onClick={() => { go('asset-library'); if (isMobile || isTablet) setSidebarOpen(false); }} />}
-              {user && <NavItem icon={<span style={{ fontSize: 15 }}>🤖</span>} label="AI Workspace" active={activeTab === 'ai-workspace'} onClick={() => { go('ai-workspace'); if (isMobile || isTablet) setSidebarOpen(false); }} />}
-              {user && <NavItem icon={<span style={{ fontSize: 15 }}>👥</span>} label="Team" active={activeTab === 'team'} onClick={() => { go('team'); if (isMobile || isTablet) setSidebarOpen(false); }} />}
-              {user && <NavItem icon={<span style={{ fontSize: 15 }}>🏢</span>} label="Organization" active={activeTab === 'organization'} onClick={() => { go('organization'); if (isMobile || isTablet) setSidebarOpen(false); }} />}
               {user && <NavItem icon={<HiCog6Tooth size={17} />} label="Account" active={activeTab === 'account'} onClick={() => { go('account'); if (isMobile || isTablet) setSidebarOpen(false); }} hasArrow />}
               {user && <NavItem icon={<HiCreditCard size={17} />} label="Pricing" active={activeTab === 'pricing'} onClick={() => { go('pricing'); if (isMobile || isTablet) setSidebarOpen(false); }} />}
               <NavItem icon={<HiQuestionMarkCircle size={17} />} label="Help & Support" active={activeTab === 'help'} onClick={() => { go('help'); if (isMobile || isTablet) setSidebarOpen(false); }} />
@@ -829,17 +814,160 @@ function App() {
               </div>
             )}
 
-            {activeTab != null && (
+            {/* ── App Launcher ── */}
+            <div ref={topNavRef} style={{ position: 'absolute', bottom: -18, left: 'calc(50% - 28px)', zIndex: 1250 }}>
               <button
                 type="button"
-                style={s.backBtn}
-                onClick={goBack}
-                aria-label="Go back to previous page"
-                title="Back"
+                onClick={() => setShowTopNav(v => !v)}
+                title="App Launcher"
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  width: 56, height: 20, borderRadius: '0 0 20px 20px',
+                  background: showTopNav
+                    ? 'linear-gradient(180deg, #4f46e5 0%, #6366f1 100%)'
+                    : 'linear-gradient(180deg, #1e293b 0%, #0f172a 100%)',
+                  border: showTopNav
+                    ? '1px solid rgba(129,140,248,0.6)'
+                    : '1px solid rgba(148,163,184,0.2)',
+                  borderTop: 'none',
+                  cursor: 'pointer', padding: 0,
+                  transition: 'all 0.2s ease',
+                  boxShadow: showTopNav
+                    ? '0 6px 20px rgba(99,102,241,0.45), 0 2px 6px rgba(0,0,0,0.4)'
+                    : '0 4px 12px rgba(0,0,0,0.35)',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = 'linear-gradient(180deg, #4f46e5 0%, #6366f1 100%)';
+                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(99,102,241,0.4), 0 2px 6px rgba(0,0,0,0.4)';
+                  e.currentTarget.style.borderColor = 'rgba(129,140,248,0.5)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = showTopNav
+                    ? 'linear-gradient(180deg, #4f46e5 0%, #6366f1 100%)'
+                    : 'linear-gradient(180deg, #1e293b 0%, #0f172a 100%)';
+                  e.currentTarget.style.boxShadow = showTopNav
+                    ? '0 6px 20px rgba(99,102,241,0.45), 0 2px 6px rgba(0,0,0,0.4)'
+                    : '0 4px 12px rgba(0,0,0,0.35)';
+                  e.currentTarget.style.borderColor = showTopNav
+                    ? 'rgba(129,140,248,0.6)'
+                    : 'rgba(148,163,184,0.2)';
+                }}
               >
-                ←
+                {/* 3×3 waffle / app-launcher dots */}
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"
+                  style={{ transition: 'opacity 0.2s' }}>
+                  {[0,4,8].map(cy => [0,4,8].map(cx => (
+                    <circle key={`${cx}-${cy}`} cx={cx + 2} cy={cy + 2} r="1.4"
+                      fill={showTopNav ? '#fff' : '#94a3b8'} />
+                  )))}
+                </svg>
               </button>
-            )}
+
+              {/* Mega-menu dropdown */}
+              {showTopNav && (
+                <div style={{
+                  position: 'fixed',
+                  top: 58, left: 0, right: 0,
+                  zIndex: 1200,
+                  background: 'linear-gradient(180deg, rgba(13,19,38,0.99) 0%, rgba(9,13,28,0.99) 100%)',
+                  backdropFilter: 'blur(28px)',
+                  WebkitBackdropFilter: 'blur(28px)',
+                  borderBottom: '1px solid rgba(255,255,255,0.07)',
+                  boxShadow: '0 32px 80px rgba(0,0,0,0.7)',
+                  animation: 'topNavSlideDown 0.2s cubic-bezier(0.16,1,0.3,1)',
+                }}>
+                  {/* Top accent line */}
+                  <div style={{ height: 2, background: 'linear-gradient(90deg, transparent 0%, #6366f1 30%, #818cf8 50%, #6366f1 70%, transparent 100%)' }} />
+
+                  <div style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 40px 32px', display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)' }}>
+                    {[
+                      { label: 'Smart Hub',    icon: '🧠', color: '#f472b6', items: [
+                        { icon: '🖼', label: 'Image Generator',  tab: 'image-generator'  },
+                        { icon: '✨', label: 'Recipe Generator', tab: 'recipe-generator' },
+                      ]},
+                      { label: 'Digital Vault', icon: '🗄', color: '#22d3ee', items: [
+                        { icon: '🔍', label: 'DocuWizard',  tab: 'analyzer'     },
+                        { icon: '🎙', label: 'EchoScribe',  tab: 'transcription' },
+                      ]},
+                      { label: 'The Forge',    icon: '⚒', color: '#fb923c', items: [
+                        { icon: '💬', label: 'Reply Enchanter',  tab: 'Content'        },
+                        { icon: '📄', label: 'Career Alchemist', tab: 'Resume'         },
+                        { icon: '🗂', label: 'Asset Library',    tab: 'asset-library'  },
+                      ]},
+                      { label: 'Social Herbs', icon: '🌿', color: '#34d399', items: [
+                        { icon: '♻️', label: 'Repurposer',   tab: 'repurposer' },
+                        { icon: '🩺', label: 'Self-Healing', tab: 'self-heal'  },
+                      ]},
+                      { label: 'Social HQ',   icon: '📡', color: '#a78bfa', items: [
+                        { icon: '🛡', label: 'Brand Guardian', tab: 'brand-guardian' },
+                        { icon: '👥', label: 'Team',           tab: 'team'           },
+                        { icon: '🏢', label: 'Organization',   tab: 'organization'   },
+                      ]},
+                    ].map((section, idx) => (
+                      <div key={section.label} style={{
+                        padding: idx === 0 ? '0 22px 0 0' : idx === 4 ? '0 0 0 22px' : '0 22px',
+                        borderRight: idx < 4 ? '1px solid rgba(255,255,255,0.05)' : 'none',
+                      }}>
+                        {/* Section header */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 16 }}>
+                          <div style={{
+                            width: 30, height: 30, borderRadius: 9, flexShrink: 0,
+                            background: `${section.color}18`,
+                            border: `1px solid ${section.color}35`,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15,
+                          }}>{section.icon}</div>
+                          <span style={{ fontSize: 11, fontWeight: 800, color: section.color, letterSpacing: '0.07em', textTransform: 'uppercase' }}>
+                            {section.label}
+                          </span>
+                        </div>
+
+                        {/* Items */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                          {section.items.map(item => {
+                            const isActive = activeTab === item.tab;
+                            return (
+                              <button
+                                key={item.tab}
+                                onClick={() => { go(item.tab); setShowTopNav(false); if (isMobile || isTablet) setSidebarOpen(false); }}
+                                style={{
+                                  display: 'flex', alignItems: 'center', gap: 10,
+                                  padding: '8px 10px', borderRadius: 10, width: '100%',
+                                  background: isActive ? `${section.color}15` : 'transparent',
+                                  border: `1px solid ${isActive ? section.color + '40' : 'transparent'}`,
+                                  color: isActive ? section.color : '#94a3b8',
+                                  fontSize: 13, fontWeight: isActive ? 600 : 400,
+                                  cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit',
+                                  transition: 'all 0.13s',
+                                }}
+                                onMouseEnter={e => {
+                                  e.currentTarget.style.background = `${section.color}12`;
+                                  e.currentTarget.style.color = '#f1f5f9';
+                                  e.currentTarget.style.borderColor = `${section.color}30`;
+                                }}
+                                onMouseLeave={e => {
+                                  e.currentTarget.style.background = isActive ? `${section.color}15` : 'transparent';
+                                  e.currentTarget.style.color = isActive ? section.color : '#94a3b8';
+                                  e.currentTarget.style.borderColor = isActive ? `${section.color}40` : 'transparent';
+                                }}
+                              >
+                                <span style={{
+                                  width: 26, height: 26, borderRadius: 7, flexShrink: 0,
+                                  background: isActive ? `${section.color}20` : 'rgba(255,255,255,0.04)',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13,
+                                  border: `1px solid ${isActive ? section.color + '30' : 'rgba(255,255,255,0.06)'}`,
+                                }}>{item.icon}</span>
+                                <span>{item.label}</span>
+                                {isActive && <span style={{ marginLeft: 'auto', width: 6, height: 6, borderRadius: '50%', background: section.color, flexShrink: 0 }} />}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
 
             <div style={{ flex: 1 }} />
             <div style={s.topRight}>
@@ -847,7 +975,25 @@ function App() {
                 <span style={{ color: '#94a3b8', fontSize: '13px' }}>...</span>
               ) : (
                 <>
-                  {!isMobile && <span style={s.topEmail} title={user.email}>{user.email}</span>}
+                  {!isMobile && (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <button
+                        onClick={() => go('trends-live')}
+                        title="Trend Hijacker — live trending topics"
+                        style={{
+                          background: activeTab === 'trends-live' ? 'rgba(251,146,60,0.18)' : 'none',
+                          border: activeTab === 'trends-live' ? '1px solid rgba(251,146,60,0.4)' : 'none',
+                          cursor: 'pointer', padding: '3px 6px', borderRadius: 8,
+                          fontSize: 16, lineHeight: 1, transition: 'all 0.15s',
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(251,146,60,0.18)'; e.currentTarget.style.transform = 'scale(1.15)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = activeTab === 'trends-live' ? 'rgba(251,146,60,0.18)' : 'none'; e.currentTarget.style.transform = 'scale(1)'; }}
+                      >
+                        🔥
+                      </button>
+                      <span style={s.topEmail} title={user.email}>{user.email}</span>
+                    </span>
+                  )}
                   {(() => {
                     const mt = user?.membershipType;
                     /** Same brand colors as PricingPage / UpgradeModal — white label on solid tier color. */
@@ -913,8 +1059,9 @@ function App() {
           {activeTab === 'transcription'    && <MemberGate featureName="EchoScribe"><ProGate featureName="EchoScribe"><Transcription /></ProGate></MemberGate>}
           {activeTab === 'Content'          && <MemberGate featureName="Reply Enchanter"><Content /></MemberGate>}
           {activeTab === 'Resume'           && <MemberGate featureName="Career Alchemist"><Resume /></MemberGate>}
+          {activeTab === 'repurposer'        && <MemberGate featureName="Repurposer"><ProGate featureName="Repurposer"><Repurposer /></ProGate></MemberGate>}
           {activeTab === 'url-repurpose'    && <MemberGate featureName="URL Repurposer"><ProGate featureName="URL Repurposer"><UrlRepurposer /></ProGate></MemberGate>}
-          {activeTab === 'video-recycler'   && <MemberGate featureName="Video Recycler"><ProGate featureName="Video Recycler"><VideoRecycler /></ProGate></MemberGate>}
+          {activeTab === 'video-recycler'   && <MemberGate featureName="Video Repurposer"><ProGate featureName="Video Repurposer"><VideoRecycler /></ProGate></MemberGate>}
           {activeTab === 'trends-live'      && <MemberGate featureName="Trend Hijacker"><ProGate featureName="Trend Hijacker"><TrendAlerts /></ProGate></MemberGate>}
           {activeTab === 'self-heal'        && <MemberGate featureName="Self-Healing Content"><ProGate featureName="Self-Healing Content"><SelfHealDashboard /></ProGate></MemberGate>}
           {activeTab === 'brand-guardian'   && <MemberGate featureName="Brand Guardian"><ProGate featureName="Brand Guardian"><BrandGuardian /></ProGate></MemberGate>}

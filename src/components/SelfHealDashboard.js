@@ -1,15 +1,25 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
+import PlatformIcon from './PlatformIcon';
 
-const platformEmoji = {
-  instagram: '📸',
-  facebook: '📘',
-  x: '🐦',
-  twitter: '🐦',
-  tiktok: '🎵',
-  youtube: '▶️',
-  linkedin: '💼',
+const PLATFORM_META = {
+  instagram: { id: 'instagram', color: '#E1306C' },
+  facebook:  { id: 'facebook',  color: '#1877F2' },
+  x:         { id: 'x',         color: '#e2e8f0' },
+  twitter:   { id: 'twitter',   color: '#e2e8f0' },
+  tiktok:    { id: 'tiktok',   color: '#010101'  },
+  youtube:   { id: 'youtube',  color: '#FF0000'  },
+  linkedin:  { id: 'linkedin', color: '#0A66C2'  },
 };
+
+function getMediaBadge(post) {
+  const mt = (post.mediaType || post.type || '').toUpperCase();
+  if (mt.includes('VIDEO'))                        return { label: 'VIDEO', color: '#818cf8' };
+  if (mt.includes('IMAGE') || mt.includes('PHOTO') || mt.includes('CAROUSEL')) return { label: 'IMAGE', color: '#f472b6' };
+  if (mt.includes('TEXT') || mt.includes('LINK'))  return { label: 'TEXT',  color: '#94a3b8' };
+  if (post.mediaUrl)                               return { label: 'MEDIA', color: '#818cf8' };
+  return null;
+}
 
 // ─── Shared style tokens ────────────────────────────────────────────────────
 const BG_PAGE   = '#0f172a';
@@ -144,9 +154,16 @@ export default function SelfHealDashboard() {
 
   // Manual trigger state
   const [triggerExpanded, setTriggerExpanded] = useState(false);
-  const [triggerPostId, setTriggerPostId] = useState('');
   const [triggerLoading, setTriggerLoading] = useState(false);
   const [triggerMsg, setTriggerMsg] = useState(null); // { type: 'success'|'error', text }
+  const [triggerFromDate, setTriggerFromDate] = useState(() => {
+    const d = new Date(); d.setDate(d.getDate() - 7);
+    return d.toISOString().slice(0, 10);
+  });
+  const [triggerToDate, setTriggerToDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [triggerPosts, setTriggerPosts] = useState([]);
+  const [triggerPostsLoading, setTriggerPostsLoading] = useState(false);
+  const [selectedPost, setSelectedPost] = useState(null);
 
   // ─── Fetch settings ────────────────────────────────────────────────────────
   const fetchSettings = useCallback(async () => {
@@ -227,15 +244,15 @@ export default function SelfHealDashboard() {
 
   // ─── Manual trigger ────────────────────────────────────────────────────────
   const handleTrigger = async () => {
-    if (!triggerPostId.trim()) {
-      setTriggerMsg({ type: 'error', text: 'Please enter a Post ID.' });
+    if (!selectedPost) {
+      setTriggerMsg({ type: 'error', text: 'Please select a post first.' });
       return;
     }
     setTriggerLoading(true);
     setTriggerMsg(null);
     try {
       const res = await fetch(
-        `${apiBase}/api/social/self-heal/trigger/${encodeURIComponent(triggerPostId.trim())}`,
+        `${apiBase}/api/social/self-heal/trigger/${selectedPost.id}`,
         { method: 'POST', headers: authHeaders() }
       );
       if (!res.ok) {
@@ -247,8 +264,8 @@ export default function SelfHealDashboard() {
         type: 'success',
         text: data.message || 'Self-heal triggered successfully. Check the history below.',
       });
-      setTriggerPostId('');
-      // Refresh logs after trigger
+      setSelectedPost(null);
+      setTriggerPosts([]);
       setTimeout(fetchLogs, 1500);
     } catch (err) {
       setTriggerMsg({ type: 'error', text: err.message || 'Trigger failed. Please try again.' });
@@ -256,6 +273,27 @@ export default function SelfHealDashboard() {
       setTriggerLoading(false);
     }
   };
+
+  const fetchPostsInRange = useCallback(async () => {
+    setTriggerPostsLoading(true);
+    setTriggerPosts([]);
+    setSelectedPost(null);
+    setTriggerMsg(null);
+    try {
+      const res = await fetch(`${apiBase}/api/social/post/history?limit=200`, { headers: authHeaders() });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const list = Array.isArray(data) ? data : (data.posts || []);
+      const from = new Date(triggerFromDate);
+      const to   = new Date(triggerToDate); to.setHours(23, 59, 59, 999);
+      const filtered = list.filter(p => {
+        const ts = new Date(p.publishedAt || p.scheduledAt || p.createdAt);
+        return ts >= from && ts <= to;
+      });
+      setTriggerPosts(filtered);
+    } catch { setTriggerPosts([]); }
+    finally { setTriggerPostsLoading(false); }
+  }, [apiBase, authHeaders, triggerFromDate, triggerToDate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Helpers ───────────────────────────────────────────────────────────────
   const formatDate = (isoString) => {
@@ -510,8 +548,8 @@ export default function SelfHealDashboard() {
               </thead>
               <tbody>
                 {logs.map((log, idx) => {
-                  const platform = (log.platform || '').toLowerCase();
-                  const emoji = platformEmoji[platform] || '🌐';
+                  const platformKey = (log.platform || '').toLowerCase();
+                  const pmeta = PLATFORM_META[platformKey] || { id: platformKey, color: '#64748b' };
                   const isCaption = log.actionType === 'CAPTION_EDIT';
                   return (
                     <tr
@@ -534,9 +572,11 @@ export default function SelfHealDashboard() {
 
                       {/* Platform */}
                       <td style={{ padding: '10px 12px', whiteSpace: 'nowrap' }}>
-                        <span style={{ fontSize: 16, marginRight: 6 }}>{emoji}</span>
-                        <span style={{ textTransform: 'capitalize' }}>
-                          {log.platform || '—'}
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
+                          <PlatformIcon platform={pmeta} size={16} />
+                          <span style={{ textTransform: 'capitalize', fontSize: 13 }}>
+                            {log.platform || '—'}
+                          </span>
                         </span>
                       </td>
 
@@ -658,77 +698,119 @@ export default function SelfHealDashboard() {
         {triggerExpanded && (
           <div style={{ marginTop: 20 }}>
             <p style={{ fontSize: 13, color: TEXT_SEC, marginTop: 0, marginBottom: 16 }}>
-              Manually trigger a self-heal action for a specific social post by its ID.
+              Pick a date range to find your posts, then select one and trigger a self-heal.
             </p>
 
-            <div
-              style={{
-                display: 'flex',
-                gap: 10,
-                flexWrap: 'wrap',
-                alignItems: 'flex-end',
-              }}
-            >
-              <div style={{ flex: '1 1 220px' }}>
-                <label style={labelStyle} htmlFor="trigger-post-id">
-                  Post ID
-                </label>
-                <input
-                  id="trigger-post-id"
-                  type="text"
-                  placeholder="Enter post ID…"
-                  value={triggerPostId}
-                  onChange={(e) => setTriggerPostId(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !triggerLoading) handleTrigger();
-                  }}
-                  style={inputStyle}
-                />
+            {/* Date range row */}
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 14 }}>
+              <div style={{ flex: '1 1 130px' }}>
+                <label style={labelStyle}>From</label>
+                <input type="date" value={triggerFromDate} onChange={e => setTriggerFromDate(e.target.value)} style={inputStyle} />
               </div>
-
+              <div style={{ flex: '1 1 130px' }}>
+                <label style={labelStyle}>To</label>
+                <input type="date" value={triggerToDate} onChange={e => setTriggerToDate(e.target.value)} style={inputStyle} />
+              </div>
               <button
-                onClick={handleTrigger}
-                disabled={triggerLoading}
-                style={{
-                  ...btnPrimaryStyle,
-                  opacity: triggerLoading ? 0.7 : 1,
-                  cursor: triggerLoading ? 'not-allowed' : 'pointer',
-                  flexShrink: 0,
-                  alignSelf: 'flex-end',
-                }}
-                onMouseEnter={(e) => {
-                  if (!triggerLoading) e.currentTarget.style.background = ACCENT_HV;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = ACCENT;
-                }}
+                onClick={fetchPostsInRange}
+                disabled={triggerPostsLoading}
+                style={{ ...btnPrimaryStyle, flexShrink: 0, alignSelf: 'flex-end', opacity: triggerPostsLoading ? 0.7 : 1 }}
+                onMouseEnter={e => { if (!triggerPostsLoading) e.currentTarget.style.background = ACCENT_HV; }}
+                onMouseLeave={e => { e.currentTarget.style.background = ACCENT; }}
               >
-                {triggerLoading ? 'Triggering…' : '⚡ Trigger Heal Now'}
+                {triggerPostsLoading ? 'Loading…' : '🔍 Find Posts'}
               </button>
             </div>
 
+            {/* Post list */}
+            {triggerPosts.length > 0 && (
+              <div style={{ border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden', marginBottom: 14 }}>
+                <div style={{ maxHeight: 280, overflowY: 'auto' }}>
+                  {triggerPosts.map(post => {
+                    const isSelected = selectedPost?.id === post.id;
+                    const status = (post.status || '').toUpperCase();
+                    const statusColors = {
+                      FAILED:  { bg: 'rgba(248,113,113,0.15)', text: '#f87171' },
+                      PENDING: { bg: 'rgba(251,191,36,0.15)',  text: '#fbbf24' },
+                      SUCCESS: { bg: 'rgba(74,222,128,0.15)',  text: '#4ade80' },
+                    };
+                    const sc = statusColors[status] || { bg: 'rgba(148,163,184,0.1)', text: '#94a3b8' };
+                    const ts = post.publishedAt || post.scheduledAt || post.createdAt;
+                    const dateStr = ts ? new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+                    const caption = post.caption ? (post.caption.length > 60 ? post.caption.slice(0, 60) + '…' : post.caption) : '(no caption)';
+                    const platformKey = post.platform?.toLowerCase();
+                    const pmeta = PLATFORM_META[platformKey] || { id: platformKey, color: '#64748b' };
+                    const mediaBadge = getMediaBadge(post);
+                    return (
+                      <button
+                        key={post.id}
+                        onClick={() => setSelectedPost(isSelected ? null : post)}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 10, width: '100%',
+                          padding: '10px 14px', background: isSelected ? 'rgba(99,102,241,0.18)' : status === 'FAILED' ? 'rgba(248,113,113,0.05)' : 'transparent',
+                          border: 'none', borderBottom: `1px solid ${BORDER}`,
+                          outline: isSelected ? `2px solid ${ACCENT}` : 'none',
+                          cursor: 'pointer', textAlign: 'left', color: TEXT_PRI,
+                          transition: 'background 0.12s',
+                        }}
+                        onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
+                        onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = status === 'FAILED' ? 'rgba(248,113,113,0.05)' : 'transparent'; }}
+                      >
+                        {/* Platform logo */}
+                        <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center' }}>
+                          <PlatformIcon platform={pmeta} size={18} />
+                        </span>
+                        {/* Media type badge */}
+                        {mediaBadge && (
+                          <span style={{
+                            fontSize: 9, fontWeight: 800, padding: '1px 6px', borderRadius: 4, flexShrink: 0,
+                            background: mediaBadge.color + '22', color: mediaBadge.color,
+                            border: `1px solid ${mediaBadge.color}44`, letterSpacing: '0.05em',
+                          }}>{mediaBadge.label}</span>
+                        )}
+                        <span style={{ flex: 1, fontSize: 13, color: TEXT_PRI, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{caption}</span>
+                        <span style={{ fontSize: 11, color: TEXT_SEC, flexShrink: 0, marginRight: 8 }}>{dateStr}</span>
+                        <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 6, background: sc.bg, color: sc.text, flexShrink: 0 }}>{status || 'UNKNOWN'}</span>
+                        {isSelected && <span style={{ fontSize: 14, color: ACCENT, flexShrink: 0 }}>✓</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div style={{ padding: '8px 14px', fontSize: 12, color: TEXT_SEC, background: 'rgba(0,0,0,0.15)' }}>
+                  {triggerPosts.length} post{triggerPosts.length !== 1 ? 's' : ''} found
+                  {selectedPost ? ` — 1 selected` : ' — click a post to select it'}
+                </div>
+              </div>
+            )}
+
+            {triggerPosts.length === 0 && !triggerPostsLoading && triggerPosts !== null && (
+              <p style={{ fontSize: 13, color: TEXT_SEC, marginBottom: 14 }}>No posts found — try a different date range.</p>
+            )}
+
+            {/* Trigger button */}
+            <button
+              onClick={handleTrigger}
+              disabled={triggerLoading || !selectedPost}
+              style={{
+                ...btnPrimaryStyle,
+                opacity: (triggerLoading || !selectedPost) ? 0.5 : 1,
+                cursor: (triggerLoading || !selectedPost) ? 'not-allowed' : 'pointer',
+              }}
+              onMouseEnter={e => { if (!triggerLoading && selectedPost) e.currentTarget.style.background = ACCENT_HV; }}
+              onMouseLeave={e => { e.currentTarget.style.background = ACCENT; }}
+            >
+              {triggerLoading ? 'Triggering…' : '⚡ Trigger Heal Now'}
+            </button>
+
             {triggerMsg && (
-              <p
-                style={{
-                  marginTop: 12,
-                  marginBottom: 0,
-                  fontSize: 13,
-                  color: triggerMsg.type === 'success' ? '#4ade80' : '#f87171',
-                  background:
-                    triggerMsg.type === 'success'
-                      ? 'rgba(74,222,128,0.08)'
-                      : 'rgba(248,113,113,0.08)',
-                  border: `1px solid ${
-                    triggerMsg.type === 'success'
-                      ? 'rgba(74,222,128,0.25)'
-                      : 'rgba(248,113,113,0.25)'
-                  }`,
-                  borderRadius: 8,
-                  padding: '10px 14px',
-                }}
-              >
-                {triggerMsg.type === 'success' ? '✓ ' : '✗ '}
-                {triggerMsg.text}
+              <p style={{
+                marginTop: 12, marginBottom: 0, fontSize: 13,
+                color: triggerMsg.type === 'success' ? '#4ade80' : '#f87171',
+                background: triggerMsg.type === 'success' ? 'rgba(74,222,128,0.08)' : 'rgba(248,113,113,0.08)',
+                border: `1px solid ${triggerMsg.type === 'success' ? 'rgba(74,222,128,0.25)' : 'rgba(248,113,113,0.25)'}`,
+                borderRadius: 8, padding: '10px 14px',
+              }}>
+                {triggerMsg.type === 'success' ? '✓ ' : '✗ '}{triggerMsg.text}
               </p>
             )}
           </div>

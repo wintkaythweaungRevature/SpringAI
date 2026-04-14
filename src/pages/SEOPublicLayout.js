@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import LandingSection from '../components/LandingSection';
 import VideoPublisherTutorial from '../components/VideoPublisherTutorial';
-import { TemplatesTutorial, DashboardTutorial, GrowthPlannerTutorial } from '../components/FeatureTutorials';
+import { TemplatesTutorial, DashboardTutorial, GrowthPlannerTutorial, EchoScribeTutorial, UrlRepurposerTutorial, AiWorkspaceTutorial, SelfHealingTutorial, BrandGuardianTutorial, AssetLibraryTutorial } from '../components/FeatureTutorials';
 import BlogPage from '../components/BlogPage';
 import './SEOPublicLayout.css';
 
@@ -40,10 +40,16 @@ const ROUTE_META = {
 
 /* ─── Tutorial tab picker ──────────────────────────────────────── */
 const TUTORIAL_TABS = [
-  { id: 'video',     label: '📲 Video Publisher', Component: VideoPublisherTutorial },
-  { id: 'templates', label: '🎨 Templates',        Component: TemplatesTutorial },
-  { id: 'dashboard', label: '📊 Dashboard',         Component: DashboardTutorial },
-  { id: 'growth',    label: '🗓️ Growth Planner',    Component: GrowthPlannerTutorial },
+  { id: 'video',        label: '📲 Video Publisher', Component: VideoPublisherTutorial },
+  { id: 'templates',    label: '🎨 Templates',        Component: TemplatesTutorial },
+  { id: 'dashboard',    label: '📊 Dashboard',         Component: DashboardTutorial },
+  { id: 'growth',       label: '🗓️ Growth Planner',    Component: GrowthPlannerTutorial },
+  { id: 'echoscribe',   label: '🎙 EchoScribe',        Component: EchoScribeTutorial },
+  { id: 'repurposer',   label: '🔗 URL Repurposer',    Component: UrlRepurposerTutorial },
+  { id: 'ai-workspace', label: '🤖 AI Workspace',      Component: AiWorkspaceTutorial },
+  { id: 'self-healing', label: '🩺 Self-Healing',       Component: SelfHealingTutorial },
+  { id: 'guardian',     label: '🛡 Brand Guardian',     Component: BrandGuardianTutorial },
+  { id: 'assets',       label: '🗂 Asset Library',      Component: AssetLibraryTutorial },
 ];
 
 function TutorialTabs() {

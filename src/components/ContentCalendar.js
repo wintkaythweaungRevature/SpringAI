@@ -786,7 +786,8 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
       const activity = normalizePostListPayload(data?.recentActivity);
       const historyRaw = historyRes.ok ? await historyRes.json() : [];
       const history = normalizePostListPayload(historyRaw);
-      const enriched = mergeRecentWithHistory(activity, history);
+      const enriched = mergeRecentWithHistory(activity, history)
+        .filter(p => PLATFORMS_ALL.some(pm => pm.id === p.platform?.toLowerCase()));
       setPosts(enriched);
     } catch {
       setPosts([]);

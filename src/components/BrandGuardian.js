@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
+import BrandKitSettings from './BrandKitSettings';
+import UrlRepurposer from './UrlRepurposer';
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -339,6 +341,9 @@ export default function BrandGuardian() {
   const [scanning, setScanning] = useState(false);
   const [scanResult, setScanResult] = useState('');
 
+  // Tab
+  const [tab, setTab] = useState('guardian');
+
   // Modal state
   const [selectedMention, setSelectedMention] = useState(null);
   const [aiResponse, setAiResponse] = useState(null);
@@ -551,16 +556,73 @@ export default function BrandGuardian() {
 
   // ── render ─────────────────────────────────────────────────────────────────
 
+  const TABS = [
+    { id: 'guardian',    label: '🛡 Guardian' },
+    { id: 'brand-kit',   label: '🎨 Brand Kit' },
+    { id: 'repurposer',  label: '🔗 URL Repurposer' },
+  ];
+
   return (
     <div style={{
       minHeight: '100vh',
       background: '#0f172a',
       color: '#f1f5f9',
-      padding: '28px 24px',
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-      maxWidth: 820,
-      margin: '0 auto',
     }}>
+
+      {/* Tab bar */}
+      <div style={{
+        display: 'flex', gap: 4, padding: '20px 24px 0',
+        borderBottom: '1px solid #1e293b',
+        background: '#0f172a',
+      }}>
+        {TABS.map(t => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            style={{
+              padding: '10px 22px', borderRadius: '10px 10px 0 0',
+              border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700,
+              background: tab === t.id ? '#1e293b' : 'transparent',
+              color: tab === t.id ? '#f1f5f9' : '#64748b',
+              borderBottom: tab === t.id ? '2px solid #6366f1' : '2px solid transparent',
+              transition: 'all 0.15s',
+              position: 'relative',
+            }}
+          >
+            {t.label}
+            {t.id === 'guardian' && unreadCount > 0 && (
+              <span style={{
+                position: 'absolute', top: 6, right: 6,
+                width: 8, height: 8, borderRadius: '50%',
+                background: '#ef4444',
+              }} />
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* Brand Kit tab */}
+      {tab === 'brand-kit' && (
+        <div style={{ background: '#fff', minHeight: '100vh' }}>
+          <BrandKitSettings />
+        </div>
+      )}
+
+      {/* URL Repurposer tab */}
+      {tab === 'repurposer' && (
+        <div style={{ background: '#fff', minHeight: '100vh' }}>
+          <UrlRepurposer />
+        </div>
+      )}
+
+      {/* Guardian tab */}
+      {tab === 'guardian' && (
+      <div style={{
+        padding: '28px 24px',
+        maxWidth: 820,
+        margin: '0 auto',
+      }}>
 
       {/* Page header */}
       <div style={{ marginBottom: 28 }}>
@@ -830,6 +892,9 @@ export default function BrandGuardian() {
       )}
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+      )}  {/* end guardian tab */}
+
     </div>
   );
 }

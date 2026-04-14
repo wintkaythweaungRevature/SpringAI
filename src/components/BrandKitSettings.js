@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
+import PlatformIcon from './PlatformIcon';
 
 const EMPTY_FORM = {
   name: '',
@@ -327,6 +328,8 @@ export default function BrandKitSettings() {
   const [analyzing, setAnalyzing] = useState(false);
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
+  const [scannedColors, setScannedColors] = useState([]);
+  const [scannedLogo, setScannedLogo] = useState('');
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [mobile, setMobile] = useState(window.innerWidth < 680);
 
@@ -444,20 +447,48 @@ export default function BrandKitSettings() {
   const handleAnalyze = async () => {
     if (!form.websiteUrl.trim()) { setErr('Enter a website URL first.'); return; }
     setAnalyzing(true); setErr(''); setMsg('');
+    setScannedColors([]); setScannedLogo('');
     try {
-      const body = { url: form.websiteUrl.trim(), ...(selectedId ? { brandId: selectedId } : {}) };
-      if (activeWorkspaceId) body.workspaceId = activeWorkspaceId;
-      const res = await fetch(`${base}/api/brand/analyze`, {
-        method: 'POST', headers: authH(), body: JSON.stringify(body),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Analysis failed');
+      const urlStr = form.websiteUrl.trim();
+
+      // Run logo/color scan AND brand DNA analysis in parallel
+      const [scanRes, analyzeRes] = await Promise.all([
+        fetch(`${base}/api/brand/scan`, {
+          method: 'POST', headers: authH(), body: JSON.stringify({ url: urlStr }),
+        }),
+        fetch(`${base}/api/brand/analyze`, {
+          method: 'POST', headers: authH(),
+          body: JSON.stringify({ url: urlStr, ...(selectedId ? { brandId: selectedId } : {}), ...(activeWorkspaceId ? { workspaceId: activeWorkspaceId } : {}) }),
+        }),
+      ]);
+
+      const scanData    = await scanRes.json().catch(() => ({}));
+      const analyzeData = await analyzeRes.json().catch(() => ({}));
+      if (!analyzeRes.ok) throw new Error(analyzeData.error || 'Analysis failed');
+
+      // Auto-apply logo: prefer og:image/apple-touch-icon, fallback to favicon
+      const autoLogo = scanData.logoUrl || scanData.favicon || '';
+      // Auto-apply primary color: first non-default extracted color
+      const autoColor = (scanData.colors && scanData.colors.length > 0) ? scanData.colors[0] : '';
+
+      // Always overwrite logo + primary color with real extracted values
+      const merged = {
+        ...analyzeData,
+        logoUrl:      autoLogo  || analyzeData.logoUrl  || '',
+        primaryColor: autoColor || analyzeData.primaryColor || '',
+      };
+
       if (selectedId) {
-        setBrands(prev => prev.map(b => b.id === selectedId ? data : b));
-        setForm(brandToForm(data));
+        setBrands(prev => prev.map(b => b.id === selectedId ? merged : b));
       }
-      setMsg('✅ Website analyzed! Review and save.');
-      setTimeout(() => setMsg(''), 5000);
+      setForm(brandToForm(merged));
+
+      // Save all extracted colors so user can click to pick an alternative
+      if (scanData.colors?.length > 0) setScannedColors(scanData.colors);
+      if (autoLogo) setScannedLogo(autoLogo);
+
+      setMsg('✅ Brand identity extracted! Colors and logo applied automatically. Review and save.');
+      setTimeout(() => setMsg(''), 6000);
     } catch (e) { setErr(e.message); }
     setAnalyzing(false);
   };
@@ -652,6 +683,23 @@ export default function BrandKitSettings() {
                       </div>
                     </div>
 
+                    {/* Extracted colors palette — shown after analyze, click to pick */}
+                    {scannedColors.length > 0 && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', whiteSpace: 'nowrap' }}>DETECTED COLORS</span>
+                        {scannedColors.map((c, i) => (
+                          <button key={i} onClick={() => setF('primaryColor', c)} title={`Use ${c}`}
+                            style={{
+                              width: 28, height: 28, borderRadius: 7, background: c, flexShrink: 0,
+                              border: form.primaryColor === c ? `3px solid ${c}` : '2px solid #e2e8f0',
+                              cursor: 'pointer', outline: form.primaryColor === c ? `2px solid ${c}55` : 'none',
+                              boxShadow: form.primaryColor === c ? `0 0 0 2px ${c}44` : 'none',
+                            }} />
+                        ))}
+                        <span style={{ fontSize: 10, color: '#94a3b8' }}>click to set as primary</span>
+                      </div>
+                    )}
+
                     {/* Action buttons */}
                     <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
                       <button
@@ -719,17 +767,20 @@ export default function BrandKitSettings() {
                 {/* ── Platform Voices card ──────────────────────────────── */}
                 <div style={cardStyle}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: '#475569', marginBottom: 14 }}>🎙 Platform Voices</div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 14 }}>
                     {[
-                      { key: 'linkedin', label: '💼 LinkedIn' },
-                      { key: 'tiktok',   label: '🎵 TikTok' },
-                      { key: 'instagram',label: '📸 Instagram' },
-                      { key: 'facebook', label: '📘 Facebook' },
-                      { key: 'youtube',  label: '▶️ YouTube' },
-                      { key: 'x',        label: '✖ X (Twitter)' },
-                    ].map(({ key, label }) => (
+                      { key: 'linkedin',  label: 'LinkedIn',    logo: 'linkedin',  color: '#0A66C2', emoji: '💼' },
+                      { key: 'tiktok',    label: 'TikTok',      logo: 'tiktok',    color: '#010101', emoji: '🎵' },
+                      { key: 'instagram', label: 'Instagram',   logo: 'instagram', color: '#E1306C', emoji: '📸' },
+                      { key: 'facebook',  label: 'Facebook',    logo: 'facebook',  color: '#1877F2', emoji: '👍' },
+                      { key: 'youtube',   label: 'YouTube',     logo: 'youtube',   color: '#FF0000', emoji: '▶️' },
+                      { key: 'x',         label: 'X (Twitter)', logo: 'x',         color: '#000000', emoji: '🐦' },
+                    ].map(({ key, label, logo, color, emoji }) => (
                       <div key={key}>
-                        <label style={labelStyle}>{label}</label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 6, cursor: 'default' }}>
+                          <PlatformIcon platform={{ id: key, logo, color, emoji }} size={18} />
+                          <span style={{ fontSize: 12, fontWeight: 700, color, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</span>
+                        </label>
                         <input value={form.platformVoices[key]} onChange={e => setPV(key, e.target.value)}
                           placeholder="e.g. Professional, insight-driven" style={inputStyle} />
                       </div>

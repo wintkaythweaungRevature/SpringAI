@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import PlatformIcon from './PlatformIcon';
 
 const PLATFORMS = [
-  { id: 'instagram', label: 'Instagram', emoji: '📸', color: '#E1306C' },
-  { id: 'twitter',   label: 'X / Twitter', emoji: '✖️', color: '#000' },
-  { id: 'linkedin',  label: 'LinkedIn',  emoji: '💼', color: '#0A66C2' },
-  { id: 'facebook',  label: 'Facebook',  emoji: '📘', color: '#1877F2' },
+  { id: 'instagram', label: 'Instagram',  emoji: '📸', color: '#E1306C', logo: 'instagram' },
+  { id: 'twitter',   label: 'X / Twitter',emoji: '✖️', color: '#000000', logo: 'x'         },
+  { id: 'linkedin',  label: 'LinkedIn',   emoji: '💼', color: '#0A66C2', logo: 'linkedin'  },
+  { id: 'facebook',  label: 'Facebook',   emoji: '📘', color: '#1877F2', logo: 'facebook'  },
 ];
 
 function copyText(text) {
@@ -32,7 +33,7 @@ function InstagramResult({ data }) {
   if (!data?.slides) return null;
   return (
     <div>
-      <div style={{ fontWeight: 700, fontSize: 12, color: '#475569', marginBottom: 8 }}>📸 INSTAGRAM CAROUSEL — 5 slides</div>
+      <div style={{ fontWeight: 700, fontSize: 12, color: '#475569', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}><PlatformIcon platform={PLATFORMS[0]} size={14} /> INSTAGRAM CAROUSEL — 5 slides</div>
       <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 6 }}>
         {data.slides.map((sl, i) => (
           <div key={i} style={{
@@ -60,7 +61,7 @@ function TwitterResult({ data }) {
   if (!data?.thread) return null;
   return (
     <div>
-      <div style={{ fontWeight: 700, fontSize: 12, color: '#475569', marginBottom: 8 }}>✖️ X / TWITTER THREAD — {data.thread.length} tweets</div>
+      <div style={{ fontWeight: 700, fontSize: 12, color: '#475569', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}><PlatformIcon platform={PLATFORMS[1]} size={14} /> X / TWITTER THREAD — {data.thread.length} tweets</div>
       {data.thread.map((tweet, i) => (
         <div key={i} style={{
           display: 'flex', gap: 8, marginBottom: 8, padding: '10px 12px',
@@ -92,7 +93,7 @@ function LinkedInResult({ data }) {
   if (!data?.post) return null;
   return (
     <div>
-      <div style={{ fontWeight: 700, fontSize: 12, color: '#475569', marginBottom: 8 }}>💼 LINKEDIN POST</div>
+      <div style={{ fontWeight: 700, fontSize: 12, color: '#475569', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}><PlatformIcon platform={PLATFORMS[2]} size={14} /> LINKEDIN POST</div>
       <div style={{ padding: '12px 14px', background: '#fff', border: '1.5px solid #e0e7ff', borderRadius: 10 }}>
         <div style={{ fontSize: 13, color: '#1e293b', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{data.post}</div>
         <div style={{ fontSize: 12, color: '#0A66C2', marginTop: 6 }}>{data.hashtags}</div>
@@ -106,7 +107,7 @@ function FacebookResult({ data }) {
   if (!data?.post) return null;
   return (
     <div>
-      <div style={{ fontWeight: 700, fontSize: 12, color: '#475569', marginBottom: 8 }}>📘 FACEBOOK POST</div>
+      <div style={{ fontWeight: 700, fontSize: 12, color: '#475569', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}><PlatformIcon platform={PLATFORMS[3]} size={14} /> FACEBOOK POST</div>
       <div style={{ padding: '12px 14px', background: '#fff', border: '1.5px solid #dbeafe', borderRadius: 10 }}>
         <div style={{ fontSize: 13, color: '#1e293b', lineHeight: 1.7 }}>{data.post}</div>
         <div style={{ fontSize: 12, color: '#1877F2', marginTop: 6 }}>{data.hashtags}</div>
@@ -198,10 +199,13 @@ export default function UrlRepurposer() {
           <div style={{ marginTop: 14, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {PLATFORMS.map(p => (
               <span key={p.id} style={{
-                padding: '4px 12px', borderRadius: 20,
+                padding: '4px 12px', borderRadius: 20, display: 'flex', alignItems: 'center', gap: 6,
                 background: p.color + '14', border: `1px solid ${p.color}40`,
                 fontSize: 11, fontWeight: 700, color: p.color,
-              }}>{p.emoji} {p.label}</span>
+              }}>
+                <PlatformIcon platform={p} size={13} />
+                {p.label}
+              </span>
             ))}
           </div>
         )}
@@ -235,12 +239,14 @@ export default function UrlRepurposer() {
                 onClick={() => setActiveTab(p.id)}
                 style={{
                   padding: '8px 16px', borderRadius: 10, border: 'none', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: 7,
                   background: activeTab === p.id ? p.color : '#f1f5f9',
                   color: activeTab === p.id ? '#fff' : '#475569',
                   fontSize: 12, fontWeight: 700, transition: 'all 0.15s',
                 }}
               >
-                {p.emoji} {p.label}
+                <PlatformIcon platform={p} size={16} style={{ filter: activeTab === p.id ? 'brightness(0) invert(1)' : 'none' }} />
+                {p.label}
               </button>
             ))}
           </div>

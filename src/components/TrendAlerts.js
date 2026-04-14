@@ -9,7 +9,7 @@ const SOURCE_COLORS = {
   general: { bg: '#f5f3ff', border: '#ddd6fe', text: '#5b21b6', label: '🌐 Trending' },
 };
 
-const CATEGORY_FILTERS = ['All', 'Marketing', 'Social Media', 'Business', 'Tech', 'Entertainment'];
+const CATEGORY_FILTERS = ['All', 'Marketing', 'Business', 'Tech'];
 
 function TrendCard({ trend, onGenerate }) {
   const src = SOURCE_COLORS[trend.source] || SOURCE_COLORS.general;
@@ -213,6 +213,10 @@ export default function TrendAlerts() {
     if (isRefresh) setRefreshing(true); else setLoading(true);
     setErr('');
     try {
+      // On manual refresh: clear stale google cache & re-poll backend first
+      if (isRefresh) {
+        await fetch(`${base}/api/trends/refresh`, { method: 'POST', headers: authHeaders() });
+      }
       const res = await fetch(`${base}/api/trends/alerts`, { headers: authHeaders() });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Failed to load trends');

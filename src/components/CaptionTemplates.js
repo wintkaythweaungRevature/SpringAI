@@ -2638,7 +2638,22 @@ function hexToHue(hex) {
    MAIN COMPONENT
 ══════════════════════════════════════════════════════════ */
 export default function CaptionTemplates({ onBack, onUseTemplate }) {
-  const { user } = useAuth();
+  const { user, token, apiBase } = useAuth();
+  const [activeBrandName, setActiveBrandName] = useState('My Brand');
+
+  // Fetch active brand name
+  useEffect(() => {
+    if (!token) return;
+    const base = apiBase || 'https://api.wintaibot.com';
+    fetch(`${base}/api/brand/brands`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.ok ? r.json() : [])
+      .then(list => {
+        if (!Array.isArray(list) || !list.length) return;
+        const active = list.find(b => b.isActive) || list[0];
+        if (active?.name) setActiveBrandName(active.name);
+      })
+      .catch(() => {});
+  }, [token, apiBase]);
 
   // Build brand theme from user's saved brand kit (if any)
   const brandTheme = useMemo(() => {
@@ -2651,14 +2666,14 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
       const accent    = colors[2] || '#ffffff';
       return {
         id: 'brand',
-        label: '🎨 My Brand',
+        label: `🎨 ${activeBrandName}`,
         frameBg: `linear-gradient(160deg, ${primary}22, ${secondary}44)`,
         filter: 'none',
         swatch: [primary, secondary, accent],
         _isBrand: true,
       };
     } catch { return null; }
-  }, [user?.brandColors]);
+  }, [user?.brandColors, activeBrandName]);
 
   // All themes: brand first (if exists), then defaults
   const allThemes = useMemo(() =>

@@ -489,6 +489,7 @@ export default function AiWorkspace() {
   const [loadingTasks, setLoadingTasks] = useState(true);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [error, setError] = useState('');
+  const [approveMsg, setApproveMsg] = useState('');
 
   // ── Data fetching ──────────────────────────────────────────────────────────
 
@@ -644,14 +645,23 @@ export default function AiWorkspace() {
 
   const handleApprove = async (taskId) => {
     setProcessingTaskId(taskId);
+    setApproveMsg('');
     try {
       const res = await fetch(`${apiBase}/api/ai-agents/tasks/${taskId}/approve`, {
         method: 'POST',
         headers: authHeaders(),
       });
       if (res.ok) {
+        const data = await res.json();
         setTasks(prev => prev.filter(t => t.id !== taskId));
         setPendingCount(prev => Math.max(0, prev - 1));
+        if (data.postsCreated > 0) {
+          setApproveMsg(`✅ ${data.postsCreated} post${data.postsCreated > 1 ? 's' : ''} scheduled to your Content Calendar!`);
+          setTimeout(() => setApproveMsg(''), 6000);
+        } else if (data.captionApplied) {
+          setApproveMsg(`✅ ${data.captionApplied}`);
+          setTimeout(() => setApproveMsg(''), 5000);
+        }
       }
     } catch {
       setError('Failed to approve task.');
@@ -718,6 +728,14 @@ export default function AiWorkspace() {
           marginBottom: '16px',
         }}>
           {runMsg}
+        </div>
+      )}
+
+      {/* Approve success */}
+      {approveMsg && (
+        <div style={{ background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.4)', color: '#4ade80', borderRadius: '8px', padding: '10px 14px', fontSize: '13px', marginBottom: '16px', display: 'flex', justifyContent: 'space-between' }}>
+          {approveMsg}
+          <button style={{ background: 'none', border: 'none', color: '#4ade80', cursor: 'pointer', fontSize: '16px' }} onClick={() => setApproveMsg('')}>×</button>
         </div>
       )}
 

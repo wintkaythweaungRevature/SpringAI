@@ -880,7 +880,9 @@ function App() {
           )}
           {user && (!activeTab || activeTab === 'analytics') && (
             <MemberGate featureName="Analytics">
-              <AnalyticsDashboard />
+              <WorkspaceGate permKey="analytics">
+                <AnalyticsDashboard />
+              </WorkspaceGate>
             </MemberGate>
           )}
           {activeTab === 'image-generator'  && <MemberGate featureName="Image Generator"><WorkspaceGate permKey="imageGenerator"><ImageGenerator /></WorkspaceGate></MemberGate>}
@@ -897,7 +899,7 @@ function App() {
           {activeTab === 'social-connect'   && <MemberGate featureName="Connected Accounts"><WorkspaceGate permKey="connectAccounts"><SocialConnect onConnectionChange={setConnectedPlatforms} /></WorkspaceGate></MemberGate>}
           {activeTab === 'bio'              && <MemberGate featureName="Link in Bio"><WorkspaceGate permKey="linkInBio"><LinkInBioBuilder /></WorkspaceGate></MemberGate>}
           {activeTab === 'trends'          && <MemberGate featureName="Growth Planner"><WorkspaceGate permKey="analytics"><ProGate featureName="Growth Planner"><DeepAnalytics /></ProGate></WorkspaceGate></MemberGate>}
-          {activeTab === 'social-ai'       && <MemberGate featureName="Social AI"><ProGate featureName="Social AI"><SocialAIChat /></ProGate></MemberGate>}
+          {activeTab === 'social-ai'       && <MemberGate featureName="Social AI"><ProGate featureName="Social AI"><WorkspaceGate permKey="aiCaptions"><SocialAIChat /></WorkspaceGate></ProGate></MemberGate>}
           {activeTab === 'pricing'         && <PricingPage onClose={() => go(null)} />}
           {activeTab === 'brand'           && <BrandKitSettings />}
           {activeTab === 'team'            && <TeamSettings />}

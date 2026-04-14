@@ -49,6 +49,7 @@ export function AuthProvider({ children }) {
   const [activeWorkspaceId, setActiveWorkspaceId] = useState(null);
   const [workspacePermissions, setWorkspacePermissions] = useState(null);
   const [isOrgOwner, setIsOrgOwner] = useState(false);
+  const [myOrgRole, setMyOrgRole] = useState(null); // "OWNER" | "ADMIN" | "MEMBER" | "CLIENT" | null
 
   const refetchUser = () => {
     if (!token) return;
@@ -200,10 +201,23 @@ export function AuthProvider({ children }) {
     setTeam(null);
   };
 
-  // Derive isOrgOwner whenever user or activeOrg changes
+  // Derive isOrgOwner + myOrgRole whenever user or activeOrg changes
   useEffect(() => {
-    if (!activeOrg || !user) { setIsOrgOwner(false); return; }
-    setIsOrgOwner(String(activeOrg.ownerId) === String(user.id));
+    if (!activeOrg || !user) {
+      setIsOrgOwner(false);
+      setMyOrgRole(null);
+      return;
+    }
+    const isOwner = String(activeOrg.ownerId) === String(user.id);
+    setIsOrgOwner(isOwner);
+    if (isOwner) {
+      setMyOrgRole("OWNER");
+    } else {
+      const me = (activeOrg.members || []).find(
+        (m) => m.userId && String(m.userId) === String(user.id)
+      );
+      setMyOrgRole(me?.role || null);
+    }
   }, [activeOrg, user]);
 
   /* ── Organization / Workspace API methods ──────────────────────────────── */
@@ -242,6 +256,13 @@ export function AuthProvider({ children }) {
       if (defaultWs) {
         setActiveWorkspaceId(defaultWs.id);
         localStorage.setItem("wint_active_workspace", String(defaultWs.id));
+        // Immediately fetch permissions so CLIENTs see restricted UI right after login
+        fetch(`${API_BASE}/api/workspace/${defaultWs.id}/my-permissions`, {
+          headers: { Authorization: `Bearer ${t}` },
+        })
+          .then((r) => (r.ok ? r.json() : null))
+          .then((perms) => { if (perms) setWorkspacePermissions(perms); })
+          .catch(() => {});
       }
       return list;
     } catch { return []; }
@@ -548,6 +569,7 @@ export function AuthProvider({ children }) {
     activeWorkspace,
     workspacePermissions,
     isOrgOwner,
+    myOrgRole,
     switchWorkspace,
     isSubscribed: isPaidMembershipType(user?.membershipType),
     isLoggedIn: !!user,

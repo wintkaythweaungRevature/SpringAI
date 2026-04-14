@@ -162,14 +162,18 @@ function isPostScheduled(post) {
 }
 
 const POST_STATUS_UI = {
-  published: { label: 'Published', emoji: '🟢', pillBg: '#f0fdf4', pillFg: '#15803d', solid: '#16a34a' },
-  scheduled: { label: 'Scheduled', emoji: '🟡', pillBg: '#fffbeb', pillFg: '#b45309', solid: '#ca8a04' },
-  draft: { label: 'Draft', emoji: '🔵', pillBg: '#eff6ff', pillFg: '#1d4ed8', solid: '#2563eb' },
-  failed: { label: 'Failed', emoji: '🔴', pillBg: '#fef2f2', pillFg: '#b91c1c', solid: '#dc2626' },
+  published:        { label: 'Published',       emoji: '🟢', pillBg: '#f0fdf4', pillFg: '#15803d', solid: '#16a34a' },
+  scheduled:        { label: 'Scheduled',       emoji: '🟡', pillBg: '#fffbeb', pillFg: '#b45309', solid: '#ca8a04' },
+  draft:            { label: 'Draft',           emoji: '🔵', pillBg: '#eff6ff', pillFg: '#1d4ed8', solid: '#2563eb' },
+  failed:           { label: 'Failed',          emoji: '🔴', pillBg: '#fef2f2', pillFg: '#b91c1c', solid: '#dc2626' },
+  pending_approval: { label: 'Pending Approval',emoji: '🔶', pillBg: '#fef3c7', pillFg: '#92400e', solid: '#f59e0b' },
+  changes_requested:{ label: 'Changes Requested',emoji: '⛔',pillBg: '#fee2e2', pillFg: '#991b1b', solid: '#ef4444' },
 };
 
 function getPostStatusCategory(post) {
   const s = String(post?.status || '').toUpperCase();
+  if (s === 'PENDING_APPROVAL') return 'pending_approval';
+  if (s === 'CHANGES_REQUESTED') return 'changes_requested';
   if (s === 'FAILED') return 'failed';
   if (s === 'DRAFT' || s === 'UNSCHEDULED') return 'draft';
   if (s === 'SUCCESS' || s === 'PUBLISHED' || s === 'COMPLETED') return 'published';
@@ -615,6 +619,17 @@ function DayModal({ date, posts, onClose, onRetryFailed, retryingIds = {}, onCan
                         {safeDecodeCaption(p.caption) || <em style={{ color: '#94a3b8' }}>(no caption)</em>}
                       </div>
 
+                      {/* Changes Requested comment — visible to agency (OWNER/ADMIN) */}
+                      {String(p.status || '').toUpperCase() === 'CHANGES_REQUESTED' && p.approvalComment && (
+                        <div style={{
+                          marginTop: 6, padding: '6px 10px', borderRadius: 8, fontSize: 11,
+                          background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)',
+                          color: '#f87171',
+                        }}>
+                          <strong>Client feedback:</strong> {p.approvalComment}
+                        </div>
+                      )}
+
                       {/* Media type tag */}
                       <div style={{ marginTop: 5 }}>
                         <span style={{ fontSize: 10, fontWeight: 600, color: '#94a3b8', background: '#f1f5f9', padding: '2px 7px', borderRadius: 6, textTransform: 'capitalize' }}>
@@ -724,7 +739,7 @@ const ms = {
 
 /* ─────────────────────────────────────────────────────────────────────────── */
 export default function ContentCalendar({ onOpenVideoPublisher }) {
-  const { apiBase, token } = useAuth();
+  const { apiBase, token, myOrgRole, activeWorkspaceId } = useAuth();
   const base = apiBase || 'https://api.wintaibot.com';
   const isMobile = useMediaQuery('(max-width: 768px)');
 
@@ -746,6 +761,12 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
   const [newDateTime, setNewDateTime]   = useState('');
   const [dragPost,    setDragPost]      = useState(null); // post being drag-rescheduled
   const [dragOverKey, setDragOverKey]   = useState(null); // day key hovered during drag
+
+  // ── Approval queue state (CLIENT sees posts pending their review) ──────────
+  const [pendingApprovalPosts, setPendingApprovalPosts] = useState([]);
+  const [changesModalPostId,   setChangesModalPostId]   = useState(null);
+  const [changesComment,       setChangesComment]       = useState('');
+  const [approvalActionIds,    setApprovalActionIds]    = useState({}); // postId → true while loading
 
   const loadPosts = useCallback(async () => {
     if (!token) return;
@@ -865,6 +886,63 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
     }
   };
 
+  // ── Fetch pending-approval posts for CLIENTs ─────────────────────────────
+  const loadPendingApprovals = useCallback(async () => {
+    if (!token || myOrgRole !== 'CLIENT') { setPendingApprovalPosts([]); return; }
+    try {
+      const headers = { Authorization: `Bearer ${token}` };
+      if (activeWorkspaceId) headers['X-Workspace-Id'] = String(activeWorkspaceId);
+      const res = await fetch(`${base}/api/social/post/pending-approval`, { headers });
+      if (res.ok) {
+        const data = await res.json().catch(() => []);
+        setPendingApprovalPosts(Array.isArray(data) ? data : []);
+      }
+    } catch { setPendingApprovalPosts([]); }
+  }, [base, token, myOrgRole, activeWorkspaceId]);
+
+  useEffect(() => { loadPendingApprovals(); }, [loadPendingApprovals]);
+
+  const approvePost = async (postId) => {
+    if (!token) return;
+    setApprovalActionIds(p => ({ ...p, [postId]: true }));
+    try {
+      const res = await fetch(`${base}/api/social/post/${postId}/approve`, {
+        method: 'POST', headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Approve failed');
+      setActionMsg('✅ Post approved — it will be published as scheduled.');
+      await Promise.all([loadPendingApprovals(), loadPosts()]);
+    } catch (_) {
+      setActionMsg('Could not approve this post. Please try again.');
+    } finally {
+      setApprovalActionIds(p => ({ ...p, [postId]: false }));
+      setTimeout(() => setActionMsg(''), 4000);
+    }
+  };
+
+  const submitRequestChanges = async () => {
+    if (!changesModalPostId || !token) return;
+    const postId = changesModalPostId;
+    setApprovalActionIds(p => ({ ...p, [postId]: true }));
+    setChangesModalPostId(null);
+    try {
+      const res = await fetch(`${base}/api/social/post/${postId}/request-changes`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ comment: changesComment }),
+      });
+      if (!res.ok) throw new Error('Request changes failed');
+      setActionMsg('📝 Changes requested — the agency has been notified.');
+      setChangesComment('');
+      await Promise.all([loadPendingApprovals(), loadPosts()]);
+    } catch (_) {
+      setActionMsg('Could not submit change request. Please try again.');
+    } finally {
+      setApprovalActionIds(p => ({ ...p, [postId]: false }));
+      setTimeout(() => setActionMsg(''), 4000);
+    }
+  };
+
   const prevMonth = () => {
     if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1); }
     else setViewMonth(m => m - 1);
@@ -907,6 +985,113 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
 
   return (
     <div style={{ ...s.page, ...(isMobile ? { padding: '12px 8px', borderRadius: 0, border: 'none' } : {}) }}>
+
+      {/* ── CLIENT Approval Queue Banner ── */}
+      {myOrgRole === 'CLIENT' && pendingApprovalPosts.length > 0 && (
+        <div style={{
+          marginBottom: 20, borderRadius: 14, overflow: 'hidden',
+          border: '1px solid rgba(245,158,11,0.35)', background: 'rgba(245,158,11,0.06)',
+        }}>
+          <div style={{
+            padding: '12px 18px', background: 'rgba(245,158,11,0.12)',
+            display: 'flex', alignItems: 'center', gap: 10,
+          }}>
+            <span style={{ fontSize: 20 }}>📋</span>
+            <span style={{ color: '#fbbf24', fontWeight: 700, fontSize: 15 }}>
+              Awaiting Your Approval ({pendingApprovalPosts.length} post{pendingApprovalPosts.length !== 1 ? 's' : ''})
+            </span>
+          </div>
+          {pendingApprovalPosts.map(post => (
+            <div key={post.id} style={{
+              padding: '14px 18px', borderTop: '1px solid rgba(245,158,11,0.15)',
+              display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+            }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                  <span style={{
+                    fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 10,
+                    background: `${platformColor(post.platform)}25`, color: platformColor(post.platform),
+                  }}>{(post.platform || 'unknown').toUpperCase()}</span>
+                  {post.scheduledAt && (
+                    <span style={{ color: '#888', fontSize: 12 }}>
+                      ⏰ {new Date(post.scheduledAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                    </span>
+                  )}
+                </div>
+                <p style={{ color: '#ddd', fontSize: 13, margin: 0, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', maxWidth: 400 }}>
+                  {post.caption || <em style={{ color: '#555' }}>No caption</em>}
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                <button
+                  disabled={approvalActionIds[post.id]}
+                  onClick={() => approvePost(post.id)}
+                  style={{
+                    padding: '7px 16px', borderRadius: 8, border: 'none', cursor: 'pointer',
+                    background: 'rgba(34,197,94,0.2)', color: '#4ade80', fontSize: 13, fontWeight: 700,
+                    opacity: approvalActionIds[post.id] ? 0.6 : 1,
+                  }}
+                >
+                  {approvalActionIds[post.id] ? '…' : '✅ Approve'}
+                </button>
+                <button
+                  disabled={approvalActionIds[post.id]}
+                  onClick={() => { setChangesModalPostId(post.id); setChangesComment(''); }}
+                  style={{
+                    padding: '7px 16px', borderRadius: 8, border: 'none', cursor: 'pointer',
+                    background: 'rgba(239,68,68,0.15)', color: '#f87171', fontSize: 13, fontWeight: 700,
+                    opacity: approvalActionIds[post.id] ? 0.6 : 1,
+                  }}
+                >
+                  ✏️ Request Changes
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Request Changes Modal ── */}
+      {changesModalPostId && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          onClick={() => setChangesModalPostId(null)}
+        >
+          <div
+            style={{ background: '#161625', borderRadius: 16, padding: 28, maxWidth: 480, width: '90%', border: '1px solid rgba(255,255,255,0.1)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 style={{ color: '#e0e0e0', marginBottom: 8, fontSize: 17, fontWeight: 700 }}>Request Changes</h3>
+            <p style={{ color: '#888', fontSize: 13, marginBottom: 16 }}>Describe what you'd like the agency to update:</p>
+            <textarea
+              value={changesComment}
+              onChange={e => setChangesComment(e.target.value)}
+              placeholder="e.g. Please update the caption to include our promo code SUMMER25"
+              rows={4}
+              style={{
+                width: '100%', padding: '10px 12px', borderRadius: 8,
+                border: '1px solid rgba(255,255,255,0.12)',
+                background: '#0d0d1a', color: '#e0e0e0', fontSize: 14,
+                outline: 'none', resize: 'vertical', boxSizing: 'border-box',
+              }}
+            />
+            <div style={{ display: 'flex', gap: 10, marginTop: 16, justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setChangesModalPostId(null)}
+                style={{ padding: '8px 18px', borderRadius: 8, border: 'none', cursor: 'pointer', background: 'rgba(255,255,255,0.06)', color: '#888', fontSize: 14 }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={submitRequestChanges}
+                style={{ padding: '8px 18px', borderRadius: 8, border: 'none', cursor: 'pointer', background: 'rgba(239,68,68,0.2)', color: '#f87171', fontSize: 14, fontWeight: 700 }}
+              >
+                Send Request
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div style={s.pageHeader}>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginLeft: 'auto' }}>

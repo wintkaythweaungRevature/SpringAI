@@ -16,10 +16,35 @@ const PERMISSION_KEYS = [
 
 const ALL_TRUE = Object.fromEntries(PERMISSION_KEYS.map(({ key }) => [key, true]));
 
+/** Default permissions for CLIENT members — mirrors Java WorkspaceService.CLIENT_PERMISSIONS */
+const CLIENT_DEFAULTS = {
+  contentCalendar: true,
+  videoPublisher: false,   // agency handles publishing
+  imageGenerator: true,
+  aiCaptions: true,
+  viralHooks: true,
+  analytics: true,
+  connectAccounts: true,
+  publishDirectly: false,  // agency approves before going live
+  templates: true,
+  linkInBio: true,
+};
+
+const ROLE_BADGE_STYLE = (role) => ({
+  padding: "2px 8px", borderRadius: 12, fontSize: 10, fontWeight: 700, flexShrink: 0,
+  background: { OWNER: "rgba(251,191,36,0.15)", ADMIN: "rgba(165,180,252,0.15)", MEMBER: "rgba(156,163,175,0.15)", CLIENT: "rgba(251,146,60,0.15)" }[role] || "rgba(255,255,255,0.08)",
+  color: { OWNER: "#fbbf24", ADMIN: "#a5b4fc", MEMBER: "#9ca3af", CLIENT: "#fb923c" }[role] || "#888",
+});
+
 const ROLES = ["ADMIN", "MEMBER", "CLIENT"];
 
 export default function OrganizationSettings() {
-  const { token, apiBase, activeOrg, fetchOrg, fetchWorkspaces, userWorkspaces, isOrgOwner, user } = useAuth();
+  const { token, apiBase, activeOrg, fetchOrg, fetchWorkspaces, userWorkspaces, isOrgOwner, myOrgRole, user } = useAuth();
+
+  // Derived role flags
+  const canManageMembers = isOrgOwner || myOrgRole === "OWNER" || myOrgRole === "ADMIN";
+  const canManageWorkspaces = isOrgOwner;
+  const isReadOnly = !canManageMembers; // MEMBER / CLIENT
   const [activeTab, setActiveTab] = useState("members");
 
   // ── Create org ────────────────────────────────────────────────────────────
@@ -33,6 +58,12 @@ export default function OrganizationSettings() {
   const [inviteLoading, setInviteLoading] = useState(false);
   const [inviteMsg, setInviteMsg] = useState(null);
 
+  // ── Import from Team ─────────────────────────────────────────────────────
+  const [teamMembers, setTeamMembers] = useState([]);
+  const [importLoading, setImportLoading] = useState(false);
+  const [importMsg, setImportMsg] = useState(null);
+  const [showImport, setShowImport] = useState(false);
+
   // ── Workspaces tab ───────────────────────────────────────────────────────
   const [wsName, setWsName] = useState("");
   const [wsColor, setWsColor] = useState("#6366f1");
@@ -44,6 +75,8 @@ export default function OrganizationSettings() {
   const [wsMembersLoading, setWsMembersLoading] = useState({});
   const [addMemberWsId, setAddMemberWsId] = useState(null);
   const [addMemberUserId, setAddMemberUserId] = useState("");
+  const [addMemberPreset, setAddMemberPreset] = useState("STAFF");   // "STAFF" | "CLIENT" | "CUSTOM"
+  const [addMemberPerms, setAddMemberPerms] = useState({ ...ALL_TRUE });
   const [addMemberLoading, setAddMemberLoading] = useState(false);
   const [addMemberMsg, setAddMemberMsg] = useState({});
 
@@ -100,6 +133,48 @@ export default function OrganizationSettings() {
     } catch (err) {
       setInviteMsg({ type: "err", text: err.message });
     } finally { setInviteLoading(false); }
+  };
+
+  // ── Import from Team ─────────────────────────────────────────────────────
+  const fetchTeamMembers = async () => {
+    setImportLoading(true);
+    try {
+      const res = await fetch(`${apiBase}/api/team`, { headers: authH() });
+      if (!res.ok) throw new Error("Could not load team");
+      const data = await res.json().catch(() => ({}));
+      // Team API returns { members: [...] } or array
+      const list = Array.isArray(data) ? data : (data.members || []);
+      // Filter out owner and get emails of non-owner team members
+      const orgEmails = new Set((activeOrg?.members || []).map((m) => m.email?.toLowerCase()));
+      const eligible = list.filter(
+        (m) => m.role !== "OWNER" && m.email && m.status !== "REMOVED" && !orgEmails.has(m.email.toLowerCase())
+      );
+      setTeamMembers(eligible);
+      setShowImport(true);
+    } catch (err) {
+      setImportMsg({ type: "err", text: err.message });
+    } finally { setImportLoading(false); }
+  };
+
+  const handleImportAll = async () => {
+    if (teamMembers.length === 0) return;
+    setImportLoading(true); setImportMsg(null);
+    let sent = 0; let failed = 0;
+    for (const m of teamMembers) {
+      try {
+        const res = await fetch(`${apiBase}/api/org/invite`, {
+          method: "POST", headers: authH(),
+          body: JSON.stringify({ email: m.email, role: "MEMBER" }),
+        });
+        if (res.ok) sent++; else failed++;
+      } catch { failed++; }
+    }
+    setImportMsg({
+      type: sent > 0 ? "ok" : "err",
+      text: `Sent ${sent} invite${sent !== 1 ? "s" : ""}${failed > 0 ? `, ${failed} failed` : ""}.`,
+    });
+    setShowImport(false);
+    fetchOrg();
   };
 
   const handleRemoveMember = async (memberId) => {
@@ -168,12 +243,13 @@ export default function OrganizationSettings() {
     try {
       const res = await fetch(`${apiBase}/api/workspace/${wsId}/members`, {
         method: "POST", headers: authH(),
-        body: JSON.stringify({ userId: Number(addMemberUserId), permissions: ALL_TRUE }),
+        body: JSON.stringify({ userId: Number(addMemberUserId), permissions: addMemberPerms }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || data.message || "Failed to add member");
       setAddMemberMsg((p) => ({ ...p, [wsId]: { type: "ok", text: "Member added!" } }));
       setAddMemberUserId(""); setAddMemberWsId(null);
+      setAddMemberPreset("STAFF"); setAddMemberPerms({ ...ALL_TRUE });
       loadWsMembers(wsId);
     } catch (err) {
       setAddMemberMsg((p) => ({ ...p, [wsId]: { type: "err", text: err.message } }));
@@ -235,8 +311,11 @@ export default function OrganizationSettings() {
   // ── Helpers ───────────────────────────────────────────────────────────────
   const members = activeOrg?.members || [];
 
-  // Active org members not the owner (eligible to add to workspace)
-  const activeMembers = members.filter((m) => m.status === "ACTIVE" && m.role !== "OWNER");
+  // Active + pending org members not the owner (eligible to add to workspace)
+  // PENDING members with a userId (existing account) can be pre-assigned
+  const activeMembers = members.filter(
+    (m) => (m.status === "ACTIVE" || m.status === "PENDING") && m.role !== "OWNER" && m.userId
+  );
 
   // Members NOT yet in a given workspace
   const membersNotInWs = (wsId) => {
@@ -330,12 +409,58 @@ export default function OrganizationSettings() {
       {/* ── MEMBERS TAB ── */}
       {activeTab === "members" && (
         <>
-          {activeOrg && (
+          {activeOrg && canManageMembers && (
             <div style={card}>
-              <h3 style={{ color: "#e0e0e0", marginBottom: 12, fontSize: 15, fontWeight: 600 }}>Invite Member</h3>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
+                <h3 style={{ color: "#e0e0e0", margin: 0, fontSize: 15, fontWeight: 600 }}>Invite Member</h3>
+                {/* Import from Team button */}
+                <button
+                  onClick={fetchTeamMembers}
+                  disabled={importLoading}
+                  style={{ ...btnSmall, display: "flex", alignItems: "center", gap: 6, opacity: importLoading ? 0.7 : 1 }}
+                >
+                  {importLoading ? "Loading…" : "📥 Import from Team"}
+                </button>
+              </div>
               <p style={{ color: "#666", fontSize: 13, marginBottom: 12 }}>
                 Send an invite email. They'll receive a link to join your organization.
               </p>
+
+              {/* Import from Team panel */}
+              {showImport && (
+                <div style={{
+                  marginBottom: 14, padding: "12px 14px", borderRadius: 10,
+                  background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)",
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                    <span style={{ color: "#a5b4fc", fontSize: 13, fontWeight: 600 }}>
+                      Team members not yet in this org ({teamMembers.length})
+                    </span>
+                    <button onClick={() => setShowImport(false)}
+                      style={{ background: "none", border: "none", color: "#666", cursor: "pointer", fontSize: 16 }}>✕</button>
+                  </div>
+                  {teamMembers.length === 0 ? (
+                    <p style={{ color: "#666", fontSize: 13 }}>All team members are already invited to this org.</p>
+                  ) : (
+                    <>
+                      {teamMembers.map((m) => (
+                        <div key={m.id || m.email} style={{ color: "#ccc", fontSize: 13, padding: "3px 0" }}>
+                          • {m.email} <span style={{ color: "#666" }}>({m.status})</span>
+                        </div>
+                      ))}
+                      <button
+                        onClick={handleImportAll}
+                        disabled={importLoading}
+                        style={{ ...btnPrimary, marginTop: 10, padding: "8px 16px", fontSize: 13 }}
+                      >
+                        {importLoading ? "Sending…" : `Send Invites to All ${teamMembers.length} →`}
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+              {msgBox(importMsg)}
+
               <form onSubmit={handleInvite} style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <input
                   type="email" placeholder="Email address" value={inviteEmail} required
@@ -355,57 +480,103 @@ export default function OrganizationSettings() {
           )}
 
           <div style={card}>
-            <h3 style={{ color: "#e0e0e0", marginBottom: 12, fontSize: 15, fontWeight: 600 }}>
-              Members ({members.length})
-            </h3>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+              <h3 style={{ color: "#e0e0e0", margin: 0, fontSize: 15, fontWeight: 600 }}>
+                Members ({members.length})
+              </h3>
+              <button
+                onClick={() => { fetchOrg(); fetchWorkspaces(); }}
+                style={{ ...btnSmall, fontSize: 12 }}
+                title="Refresh to see newly accepted members"
+              >
+                🔄 Refresh
+              </button>
+            </div>
             {members.length === 0 && (
               <p style={{ color: "#666", fontSize: 14 }}>No members yet. Invite someone above.</p>
             )}
-            {members.map((m) => (
-              <div key={m.id} style={{
-                display: "flex", alignItems: "center", gap: 10, padding: "10px 0",
-                borderBottom: "1px solid rgba(255,255,255,0.05)",
-              }}>
-                <div style={{
-                  width: 34, height: 34, borderRadius: "50%", background: "rgba(99,102,241,0.25)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  color: "#a5b4fc", fontWeight: 700, fontSize: 14, flexShrink: 0,
+            {members.map((m) => {
+              const isMe = user && m.userId && String(m.userId) === String(user.id);
+              return (
+                <div key={m.id} style={{
+                  display: "flex", alignItems: "center", gap: 10, padding: "10px 0",
+                  borderBottom: "1px solid rgba(255,255,255,0.05)",
+                  background: isMe ? "rgba(99,102,241,0.05)" : "transparent",
+                  borderRadius: isMe ? 8 : 0,
+                  padding: isMe ? "10px 8px" : "10px 0",
                 }}>
-                  {(m.firstName?.[0] || m.email?.[0] || "?").toUpperCase()}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ color: "#e0e0e0", fontSize: 14, fontWeight: 500 }}>
-                    {m.firstName || ""} {m.lastName || ""}
-                    {(!m.firstName && !m.lastName) && <span style={{ color: "#888" }}>{m.email}</span>}
+                  <div style={{
+                    width: 34, height: 34, borderRadius: "50%",
+                    background: isMe ? "rgba(99,102,241,0.4)" : "rgba(99,102,241,0.25)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    color: "#a5b4fc", fontWeight: 700, fontSize: 14, flexShrink: 0,
+                  }}>
+                    {(m.firstName?.[0] || m.email?.[0] || "?").toUpperCase()}
                   </div>
-                  {(m.firstName || m.lastName) && (
-                    <div style={{ color: "#666", fontSize: 12 }}>{m.email}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ color: "#e0e0e0", fontSize: 14, fontWeight: 500 }}>
+                      {m.firstName || ""} {m.lastName || ""}
+                      {(!m.firstName && !m.lastName) && <span style={{ color: "#888" }}>{m.email}</span>}
+                      {isMe && <span style={{ color: "#a5b4fc", fontSize: 11, marginLeft: 6 }}>(you)</span>}
+                    </div>
+                    {(m.firstName || m.lastName) && (
+                      <div style={{ color: "#666", fontSize: 12 }}>{m.email}</div>
+                    )}
+                  </div>
+                  <span style={{
+                    padding: "2px 8px", borderRadius: 12, fontSize: 11, fontWeight: 700,
+                    background: m.status === "ACTIVE" ? "rgba(34,197,94,0.12)" : "rgba(234,179,8,0.12)",
+                    color: m.status === "ACTIVE" ? "#4ade80" : "#fbbf24",
+                  }}>
+                    {m.status}
+                  </span>
+                  {/* Role badge or selector — OWNER only can change roles */}
+                  {m.role === "OWNER" ? (
+                    <span style={{ color: "#fbbf24", fontSize: 12, fontWeight: 700 }}>OWNER</span>
+                  ) : isOrgOwner ? (
+                    <select
+                      value={m.role} onChange={(e) => handleRoleChange(m.id, e.target.value)}
+                      style={{ ...inputStyle, width: "auto", padding: "4px 8px", fontSize: 12 }}
+                    >
+                      {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+                    </select>
+                  ) : (
+                    <span style={{
+                      padding: "2px 8px", borderRadius: 12, fontSize: 11, fontWeight: 700,
+                      background: "rgba(99,102,241,0.12)", color: "#a5b4fc",
+                    }}>{m.role}</span>
+                  )}
+                  {/* Remove — OWNER only, can't remove owner */}
+                  {isOrgOwner && m.role !== "OWNER" && (
+                    <button onClick={() => handleRemoveMember(m.id)} style={btnDanger}>Remove</button>
                   )}
                 </div>
-                <span style={{
-                  padding: "2px 8px", borderRadius: 12, fontSize: 11, fontWeight: 700,
-                  background: m.status === "ACTIVE" ? "rgba(34,197,94,0.12)" : "rgba(234,179,8,0.12)",
-                  color: m.status === "ACTIVE" ? "#4ade80" : "#fbbf24",
-                }}>
-                  {m.status}
-                </span>
-                {isOrgOwner && m.role !== "OWNER" && (
-                  <select
-                    value={m.role} onChange={(e) => handleRoleChange(m.id, e.target.value)}
-                    style={{ ...inputStyle, width: "auto", padding: "4px 8px", fontSize: 12 }}
-                  >
-                    {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
-                  </select>
-                )}
-                {m.role === "OWNER" && (
-                  <span style={{ color: "#fbbf24", fontSize: 12, fontWeight: 700 }}>OWNER</span>
-                )}
-                {isOrgOwner && m.role !== "OWNER" && (
-                  <button onClick={() => handleRemoveMember(m.id)} style={btnDanger}>Remove</button>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
+
+          {/* Read-only member view — show own workspaces */}
+          {isReadOnly && activeOrg && (
+            <div style={{ ...card, border: "1px solid rgba(99,102,241,0.2)", background: "rgba(99,102,241,0.04)" }}>
+              <h3 style={{ color: "#a5b4fc", marginBottom: 8, fontSize: 15, fontWeight: 600 }}>
+                📁 My Workspaces
+              </h3>
+              <p style={{ color: "#666", fontSize: 13, marginBottom: 12 }}>
+                You are a <strong style={{ color: "#e0e0e0" }}>{myOrgRole}</strong> in <strong style={{ color: "#e0e0e0" }}>{activeOrg.name}</strong>.
+                The workspaces below are assigned to you.
+              </p>
+              {userWorkspaces.length === 0 ? (
+                <p style={{ color: "#555", fontSize: 13 }}>No workspaces assigned yet. Ask your admin.</p>
+              ) : (
+                userWorkspaces.map((ws) => (
+                  <div key={ws.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                    <span style={{ width: 12, height: 12, borderRadius: "50%", background: ws.color || "#6366f1", display: "inline-block" }} />
+                    <span style={{ color: "#ddd", fontSize: 14 }}>{ws.name}</span>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
         </>
       )}
 
@@ -510,6 +681,9 @@ export default function OrganizationSettings() {
                             </div>
                             {(m.firstName || m.lastName) && <div style={{ color: "#555", fontSize: 11 }}>{m.email}</div>}
                           </div>
+                          {/* Org role badge */}
+                          {m.orgRole && <span style={ROLE_BADGE_STYLE(m.orgRole)}>{m.orgRole}</span>}
+                          {/* Remove — OWNER only */}
                           {isOrgOwner && (
                             <button onClick={() => handleRemoveFromWs(ws.id, m.userId)} style={btnDanger}>
                               Remove
@@ -518,47 +692,127 @@ export default function OrganizationSettings() {
                         </div>
                       ))}
 
-                      {/* Add member to workspace */}
-                      {isOrgOwner && (
+                      {/* Add member to workspace — OWNER or ADMIN can add */}
+                      {(isOrgOwner || myOrgRole === "ADMIN") && (
                         <div style={{ marginTop: 12 }}>
-                          {!isAddingHere ? (
+                          {/* No invitable members at all */}
+                          {members.filter((m) => m.role !== "OWNER").length === 0 && (
+                            <div style={{
+                              padding: "10px 14px", borderRadius: 8, fontSize: 13,
+                              background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)",
+                              color: "#fbbf24",
+                            }}>
+                              ⚠️ No members in your organization yet. Go to the{" "}
+                              <button onClick={() => setActiveTab("members")}
+                                style={{ background: "none", border: "none", color: "#a5b4fc", cursor: "pointer", fontWeight: 700, fontSize: 13, padding: 0 }}>
+                                Members tab
+                              </button>{" "}
+                              to invite people first.
+                            </div>
+                          )}
+
+                          {/* Has org members but none with accounts yet */}
+                          {members.filter((m) => m.role !== "OWNER").length > 0 && activeMembers.length === 0 && (
+                            <div style={{
+                              padding: "10px 14px", borderRadius: 8, fontSize: 13,
+                              background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)",
+                              color: "#fbbf24",
+                            }}>
+                              ⏳ Invited members haven't accepted yet or don't have a W!ntAi account. They'll appear here once they sign up.
+                            </div>
+                          )}
+
+                          {/* Has addable members */}
+                          {activeMembers.length > 0 && !isAddingHere && (
                             <button
-                              onClick={() => { setAddMemberWsId(ws.id); setAddMemberUserId(""); }}
+                              onClick={() => { setAddMemberWsId(ws.id); setAddMemberUserId(""); setAddMemberPreset("STAFF"); setAddMemberPerms({ ...ALL_TRUE }); }}
                               style={btnSmall}
                             >
                               + Add Member
                             </button>
-                          ) : (
-                            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                              <select
-                                value={addMemberUserId}
-                                onChange={(e) => setAddMemberUserId(e.target.value)}
-                                style={{ ...inputStyle, flex: "1 1 180px", fontSize: 13 }}
-                              >
-                                <option value="">-- Select org member --</option>
-                                {available.map((m) => (
-                                  <option key={m.userId || m.id} value={m.userId || m.id}>
-                                    {m.firstName || m.email} {m.lastName || ""} ({m.role})
-                                  </option>
-                                ))}
-                              </select>
-                              <button
-                                onClick={() => handleAddMemberToWs(ws.id)}
-                                disabled={!addMemberUserId || addMemberLoading}
-                                style={{ ...btnPrimary, padding: "8px 14px", fontSize: 13, opacity: (!addMemberUserId || addMemberLoading) ? 0.6 : 1 }}
-                              >
-                                {addMemberLoading ? "Adding…" : "Add"}
-                              </button>
-                              <button
-                                onClick={() => setAddMemberWsId(null)}
-                                style={{ ...btnDanger, background: "rgba(255,255,255,0.06)", color: "#888" }}
-                              >
-                                Cancel
-                              </button>
+                          )}
+
+                          {isAddingHere && (
+                            <div>
+                              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginBottom: 8 }}>
+                                <select
+                                  value={addMemberUserId}
+                                  onChange={(e) => {
+                                    const uid = e.target.value;
+                                    setAddMemberUserId(uid);
+                                    const sel = available.find((m) => String(m.userId || m.id) === uid);
+                                    const preset = sel?.role === "CLIENT" ? "CLIENT" : "STAFF";
+                                    setAddMemberPreset(preset);
+                                    setAddMemberPerms(preset === "CLIENT" ? { ...CLIENT_DEFAULTS } : { ...ALL_TRUE });
+                                  }}
+                                  style={{ ...inputStyle, flex: "1 1 180px", fontSize: 13 }}
+                                >
+                                  <option value="">-- Select org member --</option>
+                                  {available.map((m) => (
+                                    <option key={m.userId || m.id} value={m.userId || m.id}>
+                                      {m.firstName || m.email} {m.lastName || ""}
+                                      {m.status === "PENDING" ? " (pending)" : ""} — {m.role}
+                                    </option>
+                                  ))}
+                                </select>
+                                <button
+                                  onClick={() => handleAddMemberToWs(ws.id)}
+                                  disabled={!addMemberUserId || addMemberLoading}
+                                  style={{ ...btnPrimary, padding: "8px 14px", fontSize: 13, opacity: (!addMemberUserId || addMemberLoading) ? 0.6 : 1 }}
+                                >
+                                  {addMemberLoading ? "Adding…" : "Add"}
+                                </button>
+                                <button
+                                  onClick={() => { setAddMemberWsId(null); setAddMemberPreset("STAFF"); setAddMemberPerms({ ...ALL_TRUE }); }}
+                                  style={{ ...btnDanger, background: "rgba(255,255,255,0.06)", color: "#888" }}
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+
+                              {/* Preset pills + permission summary */}
+                              {addMemberUserId && (
+                                <div style={{ marginBottom: 8 }}>
+                                  <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
+                                    {[{ id: "STAFF", label: "Staff (Full)" }, { id: "CLIENT", label: "Client (View)" }, { id: "CUSTOM", label: "Custom" }].map(({ id, label }) => (
+                                      <button key={id} onClick={() => {
+                                        setAddMemberPreset(id);
+                                        if (id === "STAFF") setAddMemberPerms({ ...ALL_TRUE });
+                                        else if (id === "CLIENT") setAddMemberPerms({ ...CLIENT_DEFAULTS });
+                                      }} style={{
+                                        padding: "4px 12px", borderRadius: 20, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600,
+                                        background: addMemberPreset === id ? (id === "CLIENT" ? "rgba(251,146,60,0.25)" : "rgba(99,102,241,0.3)") : "rgba(255,255,255,0.06)",
+                                        color: addMemberPreset === id ? (id === "CLIENT" ? "#fb923c" : "#a5b4fc") : "#888",
+                                      }}>{label}</button>
+                                    ))}
+                                  </div>
+                                  {addMemberPreset === "STAFF" && (
+                                    <p style={{ color: "#4ade80", fontSize: 12, margin: "0 0 4px" }}>✓ All 10 features enabled</p>
+                                  )}
+                                  {addMemberPreset === "CLIENT" && (
+                                    <p style={{ color: "#f59e0b", fontSize: 12, margin: "0 0 4px" }}>⚠ 2 features restricted: Video Publisher, Publish Directly</p>
+                                  )}
+                                  {addMemberPreset === "CUSTOM" && (
+                                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4, marginBottom: 6 }}>
+                                      {PERMISSION_KEYS.map(({ key, label }) => (
+                                        <label key={key} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 12 }}>
+                                          <input type="checkbox" checked={!!addMemberPerms[key]}
+                                            onChange={(e) => setAddMemberPerms((p) => ({ ...p, [key]: e.target.checked }))}
+                                            style={{ accentColor: "#6366f1" }} />
+                                          <span style={{ color: "#ccc" }}>{label}</span>
+                                        </label>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           )}
+
                           {available.length === 0 && isAddingHere && (
-                            <p style={{ color: "#666", fontSize: 12, marginTop: 6 }}>All active org members are already in this workspace.</p>
+                            <p style={{ color: "#4ade80", fontSize: 12, marginTop: 6 }}>
+                              ✓ All org members are already in this workspace.
+                            </p>
                           )}
                           {msgBox(addMemberMsg[ws.id])}
                         </div>

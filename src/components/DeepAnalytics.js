@@ -175,11 +175,11 @@ function PlatformScopeMenu({ value, onChange }) {
   const triggerBase = {
     display: 'inline-flex',
     alignItems: 'center',
-    gap: 10,
-    minHeight: 40,
-    paddingLeft: 14,
-    paddingRight: 12,
-    borderRadius: 10,
+    gap: 6,
+    minHeight: 30,
+    paddingLeft: 8,
+    paddingRight: 8,
+    borderRadius: 8,
     border: `1px solid ${open || triggerHover ? 'rgba(99, 102, 241, 0.45)' : '#e2e8f0'}`,
     background: open ? '#fafaff' : '#ffffff',
     boxShadow: open
@@ -187,7 +187,7 @@ function PlatformScopeMenu({ value, onChange }) {
       : '0 1px 2px rgba(15, 23, 42, 0.05)',
     cursor: 'pointer',
     fontFamily: "'Inter', -apple-system, sans-serif",
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: 600,
     color: '#0f172a',
     letterSpacing: '-0.01em',
@@ -222,19 +222,6 @@ function PlatformScopeMenu({ value, onChange }) {
         fontFamily: "'Inter', -apple-system, sans-serif",
       }}
     >
-      <span
-        id={`${listboxId}-label`}
-        style={{
-          fontSize: 11,
-          fontWeight: 600,
-          color: '#94a3b8',
-          textTransform: 'uppercase',
-          letterSpacing: '0.08em',
-          userSelect: 'none',
-        }}
-      >
-        Platform
-      </span>
       <div style={{ position: 'relative' }}>
         <button
           ref={triggerRef}
@@ -247,7 +234,7 @@ function PlatformScopeMenu({ value, onChange }) {
           aria-haspopup="listbox"
           aria-expanded={open}
           aria-controls={listboxId}
-          aria-labelledby={`${listboxId}-label ${listboxId}-trigger`}
+          aria-label="Platform"
           style={triggerBase}
         >
           <span
@@ -255,20 +242,20 @@ function PlatformScopeMenu({ value, onChange }) {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: 24,
-              height: 24,
-              borderRadius: 8,
+              width: 18,
+              height: 18,
+              borderRadius: 6,
               background: '#f1f5f9',
             }}
           >
-            <PlatformIcon platform={current} size={18} />
+            <PlatformIcon platform={current} size={14} />
           </span>
-          <span style={{ maxWidth: 152, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <span style={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {current.label}
           </span>
           <svg
-            width="16"
-            height="16"
+            width="14"
+            height="14"
             viewBox="0 0 24 24"
             fill="none"
             aria-hidden
@@ -286,7 +273,7 @@ function PlatformScopeMenu({ value, onChange }) {
           <div
             id={listboxId}
             role="listbox"
-            aria-labelledby={`${listboxId}-label`}
+            aria-label="Platform"
             style={menuSurface}
           >
             <div

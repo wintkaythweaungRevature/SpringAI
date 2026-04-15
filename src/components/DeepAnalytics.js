@@ -1485,8 +1485,10 @@ function TrendsCalendar({ authHeaders }) {
           const history = historyRes.ok ? await historyRes.json() : [];
           const schedulePayload = scheduleRes.ok ? await scheduleRes.json() : [];
           const recent = Array.isArray(overview?.recentActivity) ? overview.recentActivity : [];
+          const VALID_PLATFORM_IDS = PLATFORMS.map(p => p.id);
           const mergedPosts = [...recent, ...(Array.isArray(history) ? history : [])]
             .map(normalizeFallbackPost)
+            .filter((p) => VALID_PLATFORM_IDS.includes((p.platform || '').toLowerCase()))
             .filter((p) => {
               const key = calendarLocalDateKey(p);
               if (!key) return false;

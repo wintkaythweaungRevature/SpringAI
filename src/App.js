@@ -708,7 +708,7 @@ function App() {
 
         {/* Top Bar — only shown when logged in (MarketingNav handles logged-out state) */}
         {user && (
-          <header style={{ ...s.topBar, position: 'relative' }}>
+          <header style={{ ...s.topBar, position: 'relative', overflow: 'visible' }}>
             <button style={s.menuBtn} onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>
 
             {/* Platform bar — left of back button (in document order) */}
@@ -826,35 +826,36 @@ function App() {
                 title="App Launcher"
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  width: 56, height: 20, borderRadius: '0 0 20px 20px',
+                  width: 56, height: 22, borderRadius: '0 0 22px 22px',
                   background: showTopNav
                     ? 'linear-gradient(180deg, #4f46e5 0%, #6366f1 100%)'
-                    : 'linear-gradient(180deg, #1e293b 0%, #0f172a 100%)',
+                    : 'linear-gradient(180deg, #1e293b 0%, #334155 100%)',
                   border: showTopNav
-                    ? '1px solid rgba(129,140,248,0.6)'
-                    : '1px solid rgba(148,163,184,0.2)',
+                    ? '1.5px solid rgba(129,140,248,0.8)'
+                    : '1.5px solid rgba(148,163,184,0.45)',
                   borderTop: 'none',
                   cursor: 'pointer', padding: 0,
                   transition: 'all 0.2s ease',
+                  /* Always-visible ring — contrasts against any content bg */
                   boxShadow: showTopNav
-                    ? '0 6px 20px rgba(99,102,241,0.45), 0 2px 6px rgba(0,0,0,0.4)'
-                    : '0 4px 12px rgba(0,0,0,0.35)',
+                    ? '0 6px 20px rgba(99,102,241,0.55), 0 2px 8px rgba(0,0,0,0.6), 0 0 0 2px rgba(99,102,241,0.35)'
+                    : '0 4px 14px rgba(0,0,0,0.6), 0 0 0 2px rgba(255,255,255,0.12)',
                 }}
                 onMouseEnter={e => {
                   e.currentTarget.style.background = 'linear-gradient(180deg, #4f46e5 0%, #6366f1 100%)';
-                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(99,102,241,0.4), 0 2px 6px rgba(0,0,0,0.4)';
-                  e.currentTarget.style.borderColor = 'rgba(129,140,248,0.5)';
+                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(99,102,241,0.55), 0 2px 8px rgba(0,0,0,0.5), 0 0 0 2px rgba(99,102,241,0.4)';
+                  e.currentTarget.style.borderColor = 'rgba(129,140,248,0.8)';
                 }}
                 onMouseLeave={e => {
                   e.currentTarget.style.background = showTopNav
                     ? 'linear-gradient(180deg, #4f46e5 0%, #6366f1 100%)'
-                    : 'linear-gradient(180deg, #1e293b 0%, #0f172a 100%)';
+                    : 'linear-gradient(180deg, #1e293b 0%, #334155 100%)';
                   e.currentTarget.style.boxShadow = showTopNav
-                    ? '0 6px 20px rgba(99,102,241,0.45), 0 2px 6px rgba(0,0,0,0.4)'
-                    : '0 4px 12px rgba(0,0,0,0.35)';
+                    ? '0 6px 20px rgba(99,102,241,0.55), 0 2px 8px rgba(0,0,0,0.6), 0 0 0 2px rgba(99,102,241,0.35)'
+                    : '0 4px 14px rgba(0,0,0,0.6), 0 0 0 2px rgba(255,255,255,0.12)';
                   e.currentTarget.style.borderColor = showTopNav
-                    ? 'rgba(129,140,248,0.6)'
-                    : 'rgba(148,163,184,0.2)';
+                    ? 'rgba(129,140,248,0.8)'
+                    : 'rgba(148,163,184,0.45)';
                 }}
               >
                 {/* 3×3 waffle / app-launcher dots */}
@@ -862,7 +863,7 @@ function App() {
                   style={{ transition: 'opacity 0.2s' }}>
                   {[0,4,8].map(cy => [0,4,8].map(cx => (
                     <circle key={`${cx}-${cy}`} cx={cx + 2} cy={cy + 2} r="1.4"
-                      fill={showTopNav ? '#fff' : '#94a3b8'} />
+                      fill={showTopNav ? '#fff' : '#c4cfe0'} />
                   )))}
                 </svg>
               </button>

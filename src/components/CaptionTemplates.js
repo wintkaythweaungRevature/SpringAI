@@ -2638,14 +2638,14 @@ function hexToHue(hex) {
    MAIN COMPONENT
 ══════════════════════════════════════════════════════════ */
 export default function CaptionTemplates({ onBack, onUseTemplate }) {
-  const { user, token, apiBase } = useAuth();
+  const { user, token, apiBase, authHeaders } = useAuth();
   const [activeBrandName, setActiveBrandName] = useState('My Brand');
 
   // Fetch active brand name
   useEffect(() => {
     if (!token) return;
     const base = apiBase || 'https://api.wintaibot.com';
-    fetch(`${base}/api/brand/brands`, { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${base}/api/brand/brands`, { headers: authHeaders() })
       .then(r => r.ok ? r.json() : [])
       .then(list => {
         if (!Array.isArray(list) || !list.length) return;

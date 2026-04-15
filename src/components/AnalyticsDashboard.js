@@ -825,10 +825,13 @@ export default function AnalyticsDashboard() {
     }
   }, [base, token, user?.id, activeWorkspaceId, activeBrandId]);
 
+  const VALID_PLATFORM_SET = new Set(PLATFORMS.map(p => p.id));
   const recentVisible = useMemo(() => {
     const list = Array.isArray(recent) ? recent : [];
-    return list.filter((p) => p?.id == null || !hiddenActivityIds.has(String(p.id)));
-  }, [recent, hiddenActivityIds]);
+    return list
+      .filter((p) => VALID_PLATFORM_SET.has((p?.platform || '').toLowerCase()))
+      .filter((p) => p?.id == null || !hiddenActivityIds.has(String(p.id)));
+  }, [recent, hiddenActivityIds]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const byPlatform          = ownPosts.byPlatform          ?? {};
   const byType              = ownPosts.byType              ?? {};

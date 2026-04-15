@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
+import PlatformIcon from './PlatformIcon';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -287,6 +288,172 @@ function TaskTypeTag({ taskType }) {
   );
 }
 
+// ─── Platform helpers ──────────────────────────────────────────────────────────
+const PLATFORM_META_MAP = {
+  instagram: { id: 'instagram', color: '#E1306C' },
+  facebook:  { id: 'facebook',  color: '#1877F2' },
+  tiktok:    { id: 'tiktok',    color: '#010101' },
+  youtube:   { id: 'youtube',   color: '#FF0000' },
+  linkedin:  { id: 'linkedin',  color: '#0A66C2' },
+  x:         { id: 'x',         color: '#e2e8f0' },
+  twitter:   { id: 'twitter',   color: '#e2e8f0' },
+  threads:   { id: 'threads',   color: '#e2e8f0' },
+  pinterest: { id: 'pinterest', color: '#E60023' },
+};
+
+/**
+ * Smart renderer for task output.
+ * Post Strategy tasks (SUGGEST_POST_TIME) with JSON output get rendered as
+ * readable post cards. Everything else gets rendered as pre-wrapped text.
+ */
+function TaskOutputRenderer({ task }) {
+  // Only try to render as cards for Post Strategy tasks
+  if (task.taskType === 'SUGGEST_POST_TIME' && task.taskOutput) {
+    try {
+      let raw = task.taskOutput.trim();
+      // Strip markdown fences
+      if (raw.startsWith('```')) {
+        raw = raw.replace(/^```[a-z]*\n?/, '').replace(/```\s*$/, '').trim();
+      }
+      const start = raw.indexOf('[');
+      const end   = raw.lastIndexOf(']');
+      if (start >= 0 && end > start) {
+        const suggestions = JSON.parse(raw.slice(start, end + 1));
+        if (Array.isArray(suggestions) && suggestions.length > 0) {
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {suggestions.map((s, i) => {
+                const plat = (s.platform || 'instagram').toLowerCase();
+                const pmeta = PLATFORM_META_MAP[plat] || { id: plat, color: '#6366f1' };
+                const color = pmeta.color;
+                return (
+                  <div key={i} style={{
+                    background: '#0d1829',
+                    border: `1px solid ${C.border}`,
+                    borderLeft: `3px solid ${color}`,
+                    borderRadius: 8,
+                    padding: '12px 14px',
+                  }}>
+                    {/* Platform + time row */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
+                      <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center' }}>
+                        <PlatformIcon platform={pmeta} size={18} />
+                      </span>
+                      <span style={{
+                        fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
+                        color, background: color + '22',
+                        border: `1px solid ${color}44`,
+                        borderRadius: 4, padding: '1px 7px',
+                      }}>{plat}</span>
+                      <span style={{ fontSize: 12, color: '#6366f1', fontWeight: 600 }}>
+                        📅 {s.day} at {s.time || '09:00'}
+                      </span>
+                      {s.topic && (
+                        <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 'auto' }}>
+                          💡 {s.topic}
+                        </span>
+                      )}
+                    </div>
+                    {/* Caption */}
+                    <div style={{ fontSize: 13, color: '#e2e8f0', lineHeight: 1.6 }}>
+                      {s.caption || s.topic || '(no caption)'}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        }
+      }
+    } catch {
+      // fall through to plain text
+    }
+  }
+
+  // Default: plain pre-wrapped text
+  return (
+    <div style={{ fontSize: 14, color: '#cbd5e1', lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+      {task.taskOutput || task.taskInput || '(no output)'}
+    </div>
+  );
+}
+
+/**
+ * Panel shown after approving a Performance Insight task.
+ * Displays 3 concrete action items extracted by the AI.
+ */
+function InsightActionsPanel({ actions, onDismiss, onCreateStrategy }) {
+  const ctaStyle = (type) => ({
+    padding: '5px 12px',
+    borderRadius: '6px',
+    fontSize: '12px',
+    fontWeight: 600,
+    cursor: 'pointer',
+    border: 'none',
+    whiteSpace: 'nowrap',
+    ...(type === 'schedule'
+      ? { background: C.accent, color: '#fff' }
+      : type === 'post'
+      ? { background: C.card2, color: C.text, border: `1px solid ${C.border}` }
+      : { background: 'transparent', color: C.muted, border: `1px solid ${C.border}` }),
+  });
+
+  const handleCta = (type) => {
+    if (type === 'schedule') {
+      onCreateStrategy();
+    } else if (type === 'post') {
+      window.dispatchEvent(new CustomEvent('wint:openCompose'));
+    }
+    onDismiss();
+  };
+
+  return (
+    <div style={{
+      background: C.card,
+      border: `1px solid ${C.accent}55`,
+      borderRadius: '10px',
+      marginBottom: '16px',
+      overflow: 'hidden',
+    }}>
+      {/* Header */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '12px 16px',
+        borderBottom: `1px solid ${C.border}`,
+        background: `linear-gradient(90deg, ${C.accent}18 0%, transparent 100%)`,
+      }}>
+        <span style={{ fontWeight: 700, fontSize: '14px', color: C.text }}>
+          📊 Insight Actions
+        </span>
+        <span style={{ fontSize: '12px', color: C.muted, flex: 1, marginLeft: 10 }}>
+          — based on your approved insight
+        </span>
+        <button
+          onClick={onDismiss}
+          style={{ background: 'none', border: 'none', color: C.muted, fontSize: '18px', cursor: 'pointer', lineHeight: 1 }}
+        >×</button>
+      </div>
+
+      {/* Action cards */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+        {actions.map((item, i) => (
+          <div key={i} style={{
+            display: 'flex', alignItems: 'center', gap: 12,
+            padding: '12px 16px',
+            borderBottom: i < actions.length - 1 ? `1px solid ${C.border}` : 'none',
+          }}>
+            <span style={{ fontSize: '22px', flexShrink: 0 }}>{item.icon}</span>
+            <span style={{ flex: 1, fontSize: '13px', color: C.text, lineHeight: 1.5 }}>{item.action}</span>
+            <button style={ctaStyle(item.type)} onClick={() => handleCta(item.type)}>
+              {item.cta || 'Got it'}
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function PendingTaskCard({ task, agent, onApprove, onReject, processing }) {
   const busy = processing === task.id;
   return (
@@ -306,8 +473,8 @@ function PendingTaskCard({ task, agent, onApprove, onReject, processing }) {
       </div>
 
       {/* Output */}
-      <div style={{ background: '#0d1829', border: `1px solid ${C.border}`, borderRadius: '8px', padding: '14px', fontSize: '14px', color: '#cbd5e1', lineHeight: '1.6', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-        {task.taskOutput || task.taskInput || '(no output)'}
+      <div style={{ background: '#0d1829', border: `1px solid ${C.border}`, borderRadius: '8px', padding: '14px' }}>
+        <TaskOutputRenderer task={task} />
       </div>
 
       {/* Footer */}
@@ -349,8 +516,8 @@ function HistoryRow({ task, agentMap, expanded, onToggle }) {
         <span style={{ color: C.muted, fontSize: '12px' }}>{expanded ? '▲' : '▼'}</span>
       </div>
       {expanded && (
-        <div style={{ borderTop: `1px solid ${C.border}`, padding: '14px 16px', background: '#0d1829', fontSize: '13px', color: '#cbd5e1', lineHeight: '1.6', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-          {task.taskOutput || task.taskInput || '(no output)'}
+        <div style={{ borderTop: `1px solid ${C.border}`, padding: '14px 16px', background: '#0d1829' }}>
+          <TaskOutputRenderer task={task} />
         </div>
       )}
     </div>
@@ -490,6 +657,7 @@ export default function AiWorkspace() {
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [error, setError] = useState('');
   const [approveMsg, setApproveMsg] = useState('');
+  const [insightActions, setInsightActions] = useState(null); // [{icon,action,type,cta}]
 
   // ── Data fetching ──────────────────────────────────────────────────────────
 
@@ -661,6 +829,8 @@ export default function AiWorkspace() {
         } else if (data.captionApplied) {
           setApproveMsg(`✅ ${data.captionApplied}`);
           setTimeout(() => setApproveMsg(''), 5000);
+        } else if (data.actionsExtracted?.length > 0) {
+          setInsightActions(data.actionsExtracted);
         }
       }
     } catch {
@@ -729,6 +899,15 @@ export default function AiWorkspace() {
         }}>
           {runMsg}
         </div>
+      )}
+
+      {/* Insight Actions panel */}
+      {insightActions && (
+        <InsightActionsPanel
+          actions={insightActions}
+          onDismiss={() => setInsightActions(null)}
+          onCreateStrategy={handleRunAll}
+        />
       )}
 
       {/* Approve success */}

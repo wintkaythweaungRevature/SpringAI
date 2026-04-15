@@ -32,7 +32,7 @@
     "security:guard": "node scripts/security/scan-security-guard.mjs",
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "postbuild": "react-snap",
+    "postbuild": "node -e \"const fs=require('fs');['200.html','404.html'].forEach(f=>{try{fs.unlinkSync('build/'+f)}catch{}})\" && react-snap",
     "build:prod": "REACT_APP_API_BASE=https://api.wintaibot.com react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",

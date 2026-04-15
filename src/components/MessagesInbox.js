@@ -459,7 +459,7 @@ function ConversationItem({ item, selected, onClick }) {
   );
 }
 
-function CommentItem({ item, apiBase, token, selected, onSelect, onReplySent, replyExtras }) {
+function CommentItem({ item, apiBase, token, authHeaders, selected, onSelect, onReplySent, replyExtras }) {
   const p  = PLATFORM_META[item.platform] ?? PLATFORM_META.instagram;
   const sl = SOURCE_LABELS[item.source]   ?? { label: item.source, icon: '💭' };
 
@@ -480,7 +480,7 @@ function CommentItem({ item, apiBase, token, selected, onSelect, onReplySent, re
     try {
       const res = await fetch(`${apiBase}/api/auto-reply/manual-reply`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({
           platform: item.platform,
           commentId: item.id,
@@ -660,7 +660,7 @@ function CommentItem({ item, apiBase, token, selected, onSelect, onReplySent, re
 }
 
 /** Right pane: full DM thread or comment + all replies (matches list selection). */
-function InboxDetailPanel({ item, kind, commentReplyExtras, onClose, onOpenAutoReply, onOpenConnectedAccounts, apiBase, token }) {
+function InboxDetailPanel({ item, kind, commentReplyExtras, onClose, onOpenAutoReply, onOpenConnectedAccounts, apiBase, token, authHeaders }) {
   const p = PLATFORM_META[item.platform] ?? PLATFORM_META.instagram;
   const sl = SOURCE_LABELS[item.source] ?? { label: item.source, icon: '💬' };
   const isMetaDm = item.source === 'facebook_messenger' || item.source === 'instagram_dm';
@@ -692,7 +692,7 @@ function InboxDetailPanel({ item, kind, commentReplyExtras, onClose, onOpenAutoR
       if (platform === 'instagram' && item.igUserId) payload.igUserId = String(item.igUserId);
       const res = await fetch(`${apiBase}/api/auto-reply/dm-reply`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
       const d = await res.json().catch(() => ({}));
@@ -1012,7 +1012,7 @@ function InboxDetailPanel({ item, kind, commentReplyExtras, onClose, onOpenAutoR
 
 /* ─────────────────────────────────────────────────────────── */
 export default function MessagesInbox({ onOpenConnectedAccounts, onOpenAutoReply }) {
-  const { apiBase, token, user } = useAuth();
+  const { apiBase, token, user, authHeaders } = useAuth();
   const base = apiBase || 'https://api.wintaibot.com';
 
   const [data,      setData]      = useState(null);
@@ -1036,7 +1036,7 @@ export default function MessagesInbox({ onOpenConnectedAccounts, onOpenAutoReply
     (async () => {
       try {
         const res = await fetch(`${base}/api/social/status`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: authHeaders(),
         });
         if (!res.ok) throw new Error('social status');
         const j = await res.json();
@@ -1074,7 +1074,7 @@ export default function MessagesInbox({ onOpenConnectedAccounts, onOpenAutoReply
       const lastSeen = ignoreLastSeen ? '' : (localStorage.getItem(storageKey) ?? '');
       const url = `${base}/api/analytics/messages${lastSeen ? `?since=${encodeURIComponent(lastSeen)}` : ''}`;
       const res = await fetch(url, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: authHeaders(),
       });
       if (!res.ok) throw new Error(`Server error ${res.status}`);
       setData(await res.json());
@@ -1602,6 +1602,7 @@ export default function MessagesInbox({ onOpenConnectedAccounts, onOpenAutoReply
                     item={item}
                     apiBase={base}
                     token={token}
+                    authHeaders={authHeaders}
                     selected={selection?.kind === 'comment' && sameInboxId(selection.id, item.id)}
                     onSelect={() => setSelection(
                       (sel) => (sel?.kind === 'comment' && sameInboxId(sel.id, item.id) ? null : { kind: 'comment', id: item.id })
@@ -1720,6 +1721,7 @@ export default function MessagesInbox({ onOpenConnectedAccounts, onOpenAutoReply
                 onOpenConnectedAccounts={onOpenConnectedAccounts}
                 apiBase={base}
                 token={token}
+                authHeaders={authHeaders}
               />
             </div>
           )}

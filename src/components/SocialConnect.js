@@ -16,7 +16,7 @@ const PLATFORMS = filterEnabledPlatforms([
 ]);
 
 export default function SocialConnect({ onConnectionChange }) {
-  const { apiBase, token } = useAuth();
+  const { apiBase, token, authHeaders } = useAuth();
   const base = apiBase || 'https://api.wintaibot.com';
   const [upgradeModal, setUpgradeModal] = useState(null); // { reason, suggestPlan }
 
@@ -29,7 +29,7 @@ export default function SocialConnect({ onConnectionChange }) {
   const fetchStatus = useCallback(async () => {
     try {
       const res = await fetch(`${base}/api/social/status`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: authHeaders(),
       });
       if (res.ok) {
         const data = await res.json();
@@ -87,7 +87,7 @@ export default function SocialConnect({ onConnectionChange }) {
     setConnecting(platformId);
     try {
       const res = await fetch(`${base}/api/social/connect/${platformId}`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: authHeaders(),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -131,7 +131,7 @@ export default function SocialConnect({ onConnectionChange }) {
   const debugTikTokUrl = async () => {
     try {
       const res = await fetch(`${base}/api/social/debug/tiktok-url`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: authHeaders(),
       });
       const data = await res.json();
       if (data.error) {
@@ -149,7 +149,7 @@ export default function SocialConnect({ onConnectionChange }) {
     try {
       const res = await fetch(`${base}/api/social/disconnect/${platformId}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: authHeaders(),
       });
       if (res.ok) {
         setConnected(prev => {

@@ -740,7 +740,7 @@ const ms = {
 
 /* ─────────────────────────────────────────────────────────────────────────── */
 export default function ContentCalendar({ onOpenVideoPublisher }) {
-  const { apiBase, token, myOrgRole, activeWorkspaceId } = useAuth();
+  const { apiBase, token, myOrgRole, activeWorkspaceId, authHeaders } = useAuth();
   const base = apiBase || 'https://api.wintaibot.com';
   const isMobile = useMediaQuery('(max-width: 768px)');
 
@@ -773,9 +773,7 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
     if (!token) return;
     setLoading(true);
     try {
-      const headers = { Authorization: `Bearer ${token}` };
-      // Pass workspace filter so calendar only shows posts for the active workspace
-      if (activeWorkspaceId) headers['X-Workspace-Id'] = String(activeWorkspaceId);
+      const headers = authHeaders();
       const [overviewRes, historyRes] = await Promise.all([
         fetch(`${base}/api/analytics/overview`, { headers }),
         fetch(`${base}/api/social/post/history?limit=200`, { headers }),
@@ -806,7 +804,7 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
     try {
       const res = await fetch(`${base}/api/social/post/retry/${encodeURIComponent(sid)}`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: authHeaders(),
       });
       if (!res.ok) throw new Error('Retry failed');
       setActionMsg('Retry started. We refreshed your post list.');
@@ -823,7 +821,7 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
     if (!jobId || !token) return;
     try {
       const res = await fetch(`${base}/api/video-content/jobs/${jobId}`, {
-        method: 'DELETE', headers: { Authorization: `Bearer ${token}` },
+        method: 'DELETE', headers: authHeaders(),
       });
       if (!res.ok) throw new Error('Cancel failed');
       setActionMsg('Post cancelled.');
@@ -840,7 +838,7 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
     if (!postId || !token) return;
     try {
       const res = await fetch(`${base}/api/social/post/${postId}`, {
-        method: 'DELETE', headers: { Authorization: `Bearer ${token}` },
+        method: 'DELETE', headers: authHeaders(),
       });
       if (!res.ok) throw new Error('Delete failed');
       setActionMsg('Post deleted.');
@@ -858,7 +856,7 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
     try {
       const res = await fetch(`${base}/api/analytics/job/${jobId}/reschedule`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ newDateTime: dt }),
       });
       if (!res.ok) throw new Error('Reschedule failed');
@@ -877,7 +875,7 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
     try {
       const res = await fetch(`${base}/api/analytics/post/${postId}/reschedule`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ newDateTime: dt }),
       });
       if (!res.ok) throw new Error('Reschedule failed');
@@ -894,9 +892,7 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
   const loadPendingApprovals = useCallback(async () => {
     if (!token || myOrgRole !== 'CLIENT') { setPendingApprovalPosts([]); return; }
     try {
-      const headers = { Authorization: `Bearer ${token}` };
-      if (activeWorkspaceId) headers['X-Workspace-Id'] = String(activeWorkspaceId);
-      const res = await fetch(`${base}/api/social/post/pending-approval`, { headers });
+      const res = await fetch(`${base}/api/social/post/pending-approval`, { headers: authHeaders() });
       if (res.ok) {
         const data = await res.json().catch(() => []);
         setPendingApprovalPosts(Array.isArray(data) ? data : []);
@@ -911,7 +907,7 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
     setApprovalActionIds(p => ({ ...p, [postId]: true }));
     try {
       const res = await fetch(`${base}/api/social/post/${postId}/approve`, {
-        method: 'POST', headers: { Authorization: `Bearer ${token}` },
+        method: 'POST', headers: authHeaders(),
       });
       if (!res.ok) throw new Error('Approve failed');
       setActionMsg('✅ Post approved — it will be published as scheduled.');
@@ -932,7 +928,7 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
     try {
       const res = await fetch(`${base}/api/social/post/${postId}/request-changes`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ comment: changesComment }),
       });
       if (!res.ok) throw new Error('Request changes failed');

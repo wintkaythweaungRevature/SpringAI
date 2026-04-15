@@ -414,7 +414,7 @@ export default function BrandKitSettings() {
     if (!window.confirm('Delete this brand? This cannot be undone.')) return;
     try {
       const res = await fetch(`${base}/api/brand/brands/${id}`, {
-        method: 'DELETE', headers: { Authorization: `Bearer ${token}` },
+        method: 'DELETE', headers: authH(),
       });
       if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
       setBrands(prev => {
@@ -432,7 +432,7 @@ export default function BrandKitSettings() {
     if (!selectedId) return;
     try {
       const res = await fetch(`${base}/api/brand/brands/${selectedId}/set-active`, {
-        method: 'POST', headers: { Authorization: `Bearer ${token}` },
+        method: 'POST', headers: authH(),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed');

@@ -27,7 +27,7 @@ const MEDIA_TYPES = ['Text', 'Image', 'Video', 'Story'];
  *   onPosted     () => void — called after successful post/schedule so calendar can refresh
  */
 export default function ComposePostModal({ open, onClose, defaultDate, onPosted }) {
-  const { apiBase, token } = useAuth();
+  const { apiBase, authHeaders, token } = useAuth();
   const base = apiBase || 'https://api.wintaibot.com';
 
   const [selectedPlatforms, setSelectedPlatforms] = useState(['instagram']);
@@ -84,7 +84,7 @@ export default function ComposePostModal({ open, onClose, defaultDate, onPosted 
           // Immediate post
           const r = await fetch(`${base}/api/social/post/${platform}`, {
             method: 'POST',
-            headers: { Authorization: `Bearer ${token}` },
+            headers: authHeaders(),
             body: fd,
           });
           const data = await r.json();
@@ -99,7 +99,7 @@ export default function ComposePostModal({ open, onClose, defaultDate, onPosted 
           if (file) fdSched.append('file', file);
           const r = await fetch(`${base}/api/social/post/schedule/${platform}`, {
             method: 'POST',
-            headers: { Authorization: `Bearer ${token}` },
+            headers: authHeaders(),
             body: fdSched,
           });
           const data = await r.json().catch(() => ({}));

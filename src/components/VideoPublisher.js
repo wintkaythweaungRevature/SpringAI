@@ -371,7 +371,7 @@ function validateImage(file) {
 
 /* ─── Component ─────────────────────────────────────────────── */
 export default function VideoPublisher({ onNavigateToSocialConnect, templateCaption, onTemplateCaptionUsed }) {
-  const { apiBase, token, logout, user } = useAuth();
+  const { apiBase, token, logout, user, authHeaders } = useAuth();
   const isGrowth = user?.membershipType === 'GROWTH';
   const base = apiBase || 'https://api.wintaibot.com';
   const isMobile = useMediaQuery('(max-width: 768px)');
@@ -429,7 +429,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
 
   const api = (path) => `${base}/api/video-content${path}`;
   const socialApi = (path) => `${base}/api/social${path}`;
-  const authHeaders = () => (token ? { Authorization: `Bearer ${token}` } : {});
+
 
   useEffect(() => {
     if (thumbnailMode === 'ideas') setThumbnailMode('scrub');
@@ -632,7 +632,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
     try {
       const res = await fetch(`${base}/api/ai/viral-score`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({
           caption: v.caption,
           hashtags: (v.hashtags || []).join(' '),
@@ -866,7 +866,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
         log('☁️ Large file detected — using direct S3 upload...');
         const initRes = await fetch(`${base}/api/video-content/upload/init`, {
           method: 'POST',
-          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          headers: { ...authHeaders(), 'Content-Type': 'application/json' },
           body: JSON.stringify({
             filename: video.name,
             contentType: video.type || 'video/mp4',
@@ -894,7 +894,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
         }
         res = await fetch(`${base}/api/video-content/upload/complete?async=true`, {
           method: 'POST',
-          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          headers: { ...authHeaders(), 'Content-Type': 'application/json' },
           body: JSON.stringify({
             key: objectKey,
             filename: video.name,
@@ -907,7 +907,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
         if (contentIdea) formData.append('prompt', contentIdea);
         res = await fetch(`${base}/api/video-content/upload?async=true`, {
           method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
+          headers: authHeaders(),
           body: formData,
         });
       }
@@ -935,7 +935,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
         await new Promise(r => setTimeout(r, 3000));
         try {
           const pollRes = await fetch(`${base}/api/video-content/videos/${videoId}`, {
-            headers: { Authorization: `Bearer ${token}` },
+            headers: authHeaders(),
           });
           if (pollRes.ok) {
             pollData = await pollRes.json();

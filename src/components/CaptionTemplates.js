@@ -3080,6 +3080,30 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
                     style={{ flex:1, minWidth:0, padding:'8px 8px', borderRadius:8, border:'1.5px solid #e2e8f0', background: copied===t.id ? '#f0fdf4' : '#fff', color: copied===t.id ? '#15803d' : '#64748b', fontSize:11, fontWeight:600, cursor:'pointer' }}>
                     {copied===t.id ? '✓' : '📋'} Copy
                   </button>
+                  <div style={{ position:'relative', flexShrink:0 }}>
+                    <button type="button"
+                      onClick={(e) => { e.stopPropagation(); setDlMenu(dlMenu === t.id ? null : t.id); }}
+                      title="Download design as PNG / JPG / PDF"
+                      style={{ padding:'8px 12px', borderRadius:8, border:'1.5px solid #e2e8f0', background:'#fff', color:'#475569', fontSize:11, fontWeight:600, cursor:'pointer', whiteSpace:'nowrap' }}>
+                      {dlLoading === t.id ? '⏳' : '⬇ ▾'}
+                    </button>
+                    {dlMenu === t.id && (
+                      <div
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ position:'absolute', bottom:'calc(100% + 6px)', right:0, background:'#fff', borderRadius:10, border:'1px solid #e2e8f0', boxShadow:'0 8px 24px rgba(15,23,42,0.12)', padding:6, zIndex:50, display:'flex', flexDirection:'column', minWidth:120 }}>
+                        {[['png','🖼','PNG'],['jpg','📷','JPG'],['pdf','📄','PDF']].map(([fmt, icon, label]) => (
+                          <button key={fmt} type="button"
+                            onClick={(e) => handleDownload(t, fmt, e)}
+                            style={{ padding:'7px 10px', borderRadius:6, border:'none', background:'transparent', color:'#334155', fontSize:12, fontWeight:600, cursor:'pointer', textAlign:'left', display:'flex', alignItems:'center', gap:8 }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = '#f1f5f9'}
+                            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
+                            <span style={{ fontSize:13 }}>{icon}</span>
+                            <span>{label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                   <button type="button" onClick={() => setCustomize(t)} title="Customize placeholders, then use in Video Publisher"
                     style={{ padding:'8px 14px', borderRadius:8, border:'none', background:'#6366f1', color:'#fff', fontSize:11, fontWeight:600, cursor:'pointer', whiteSpace:'nowrap', flexShrink:0 }}>
                     ✏️ Use

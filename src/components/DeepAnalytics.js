@@ -175,11 +175,11 @@ function PlatformScopeMenu({ value, onChange }) {
   const triggerBase = {
     display: 'inline-flex',
     alignItems: 'center',
-    gap: 10,
-    minHeight: 40,
-    paddingLeft: 14,
-    paddingRight: 12,
-    borderRadius: 10,
+    gap: 6,
+    minHeight: 32,
+    paddingLeft: 8,
+    paddingRight: 8,
+    borderRadius: 8,
     border: `1px solid ${open || triggerHover ? 'rgba(99, 102, 241, 0.45)' : '#e2e8f0'}`,
     background: open ? '#fafaff' : '#ffffff',
     boxShadow: open
@@ -222,19 +222,6 @@ function PlatformScopeMenu({ value, onChange }) {
         fontFamily: "'Inter', -apple-system, sans-serif",
       }}
     >
-      <span
-        id={`${listboxId}-label`}
-        style={{
-          fontSize: 11,
-          fontWeight: 600,
-          color: '#94a3b8',
-          textTransform: 'uppercase',
-          letterSpacing: '0.08em',
-          userSelect: 'none',
-        }}
-      >
-        Platform
-      </span>
       <div style={{ position: 'relative' }}>
         <button
           ref={triggerRef}
@@ -247,7 +234,8 @@ function PlatformScopeMenu({ value, onChange }) {
           aria-haspopup="listbox"
           aria-expanded={open}
           aria-controls={listboxId}
-          aria-labelledby={`${listboxId}-label ${listboxId}-trigger`}
+          aria-labelledby={`${listboxId}-trigger`}
+          aria-label="Filter by platform"
           style={triggerBase}
         >
           <span
@@ -255,15 +243,15 @@ function PlatformScopeMenu({ value, onChange }) {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: 24,
-              height: 24,
-              borderRadius: 8,
+              width: 20,
+              height: 20,
+              borderRadius: 6,
               background: '#f1f5f9',
             }}
           >
-            <PlatformIcon platform={current} size={18} />
+            <PlatformIcon platform={current} size={14} />
           </span>
-          <span style={{ maxWidth: 152, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <span style={{ maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 12 }}>
             {current.label}
           </span>
           <svg

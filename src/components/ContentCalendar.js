@@ -741,6 +741,12 @@ const ms = {
 /* ─────────────────────────────────────────────────────────────────────────── */
 export default function ContentCalendar({ onOpenVideoPublisher }) {
   const { apiBase, token, myOrgRole, activeWorkspaceId, authHeaders } = useAuth();
+  // Calendar shows all posts for the workspace — do NOT filter by brand
+  const wsHeaders = () => {
+    const h = { Authorization: `Bearer ${token}` };
+    if (activeWorkspaceId) h['X-Workspace-Id'] = String(activeWorkspaceId);
+    return h;
+  };
   const base = apiBase || 'https://api.wintaibot.com';
   const isMobile = useMediaQuery('(max-width: 768px)');
 

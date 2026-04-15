@@ -18,8 +18,10 @@ const TONES = [
  *   apiBase      {string}   — base API URL
  *   token        {string}   — JWT bearer token
  *   onApply      {function} — called with { caption, hashtags } when user applies result
+ *   toolbarLeading   {React.ReactNode} — optional node before “Get Content Ideas” (e.g. Viral Score)
+ *   toolbarBetween   {React.ReactNode} — optional row below the button row, full width (e.g. score card)
  */
-export default function CaptionIdeasPanel({ captionText, platform, apiBase, token, onApply }) {
+export default function CaptionIdeasPanel({ captionText, platform, apiBase, token, onApply, toolbarLeading, toolbarBetween }) {
   const [open,          setOpen]          = useState(false);
   const [loadingIdeas,  setLoadingIdeas]  = useState(false);
   const [ideas,         setIdeas]         = useState([]);
@@ -73,22 +75,35 @@ export default function CaptionIdeasPanel({ captionText, platform, apiBase, toke
     }
   };
 
+  const ideasButton = (
+    <button
+      type="button"
+      onClick={ideas.length > 0 ? () => setOpen(o => !o) : fetchIdeas}
+      disabled={loadingIdeas}
+      style={{
+        display: 'inline-flex', alignItems: 'center', gap: 6,
+        padding: '6px 14px', borderRadius: 20, border: '1.5px solid #c7d2fe',
+        background: '#eef2ff', color: '#4f46e5', fontSize: 12, fontWeight: 700,
+        cursor: loadingIdeas ? 'wait' : 'pointer', opacity: loadingIdeas ? 0.7 : 1,
+      }}
+    >
+      {loadingIdeas ? '⏳ Thinking…' : '✨ Get Content Ideas'}
+    </button>
+  );
+
   return (
-    <div style={{ marginTop: 8 }}>
-      {/* Trigger button */}
-      <button
-        type="button"
-        onClick={ideas.length > 0 ? () => setOpen(o => !o) : fetchIdeas}
-        disabled={loadingIdeas}
-        style={{
-          display: 'inline-flex', alignItems: 'center', gap: 6,
-          padding: '6px 14px', borderRadius: 20, border: '1.5px solid #c7d2fe',
-          background: '#eef2ff', color: '#4f46e5', fontSize: 12, fontWeight: 700,
-          cursor: loadingIdeas ? 'wait' : 'pointer', opacity: loadingIdeas ? 0.7 : 1,
-        }}
-      >
-        {loadingIdeas ? '⏳ Thinking…' : '✨ Get Content Ideas'}
-      </button>
+    <div style={{ marginTop: toolbarLeading ? 0 : 8 }}>
+      {toolbarLeading ? (
+        <>
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10 }}>
+            {toolbarLeading}
+            {ideasButton}
+          </div>
+          {toolbarBetween ? <div style={{ width: '100%' }}>{toolbarBetween}</div> : null}
+        </>
+      ) : (
+        ideasButton
+      )}
 
       {error && (
         <div style={{ marginTop: 6, fontSize: 12, color: '#dc2626' }}>⚠️ {error}</div>

@@ -8,7 +8,7 @@ import Box from '@mui/material/Box';
 import { HiHome, HiChatBubbleLeftRight, HiPhoto, HiSparkles } from 'react-icons/hi2';
 import { HiDocumentText, HiMicrophone } from 'react-icons/hi2';
 import { HiChatBubbleOvalLeft, HiArrowTrendingUp, HiLink } from 'react-icons/hi2';
-import { HiDocumentMagnifyingGlass, HiRectangleGroup, HiFilm } from 'react-icons/hi2';
+import { HiDocumentMagnifyingGlass, HiRectangleGroup, HiFilm, HiArrowPath, HiShieldCheck } from 'react-icons/hi2';
 import { HiCog6Tooth, HiCreditCard, HiQuestionMarkCircle } from 'react-icons/hi2';
 import PlatformIcon from './components/PlatformIcon';
 import HelpPanel from './components/HelpPanel';
@@ -76,6 +76,7 @@ const PUBLISHING_TAB_SEO = {
 /** Sidebar section titles — single source of truth for the logged-in nav. */
 const SIDEBAR_GROUPS = {
   socialHq: 'Social HQ',
+  socialHerbs: 'Social Herbs',
   settings: 'Settings',
 };
 
@@ -655,14 +656,17 @@ function App() {
             <NavItem icon={<HiHome size={17} />} label="Dashboard" active={activeTab === null || activeTab === 'analytics'} onClick={() => { go(null); if (isMobile || isTablet) setSidebarOpen(false); }} />
 
             <div style={s.navDivider} role="separator" aria-hidden="true" />
-
-            <div style={s.navDivider} role="separator" aria-hidden="true" />
             <div style={s.groupLabel}>{SIDEBAR_GROUPS.socialHq}</div>
             <NavItem icon={<HiPhoto size={17} />}                    label="Content Calendar"   active={activeTab === 'calendar'}          onClick={() => { go('calendar'); if (isMobile || isTablet) setSidebarOpen(false); }} />
             <NavItem icon={<HiArrowTrendingUp size={17} />}          label="Growth Planner"     active={activeTab === 'trends'}            onClick={() => { go('trends'); if (isMobile || isTablet) setSidebarOpen(false); }} />
             <NavItem icon={<HiRectangleGroup size={17} />}           label="Templates"          active={activeTab === 'caption-templates'} onClick={() => { go('caption-templates'); if (isMobile || isTablet) setSidebarOpen(false); }} />
             <NavItem icon={<HiLink size={17} />}                     label="Connected Accounts" active={activeTab === 'social-connect'}     onClick={() => { go('social-connect'); if (isMobile || isTablet) setSidebarOpen(false); }} />
             <NavItem icon={<HiChatBubbleOvalLeft size={17} />}       label="Inbox"              active={activeTab === 'messages'}         onClick={() => { go('messages'); if (isMobile || isTablet) setSidebarOpen(false); }} />
+
+            <div style={s.navDivider} role="separator" aria-hidden="true" />
+            <div style={s.groupLabel}>{SIDEBAR_GROUPS.socialHerbs}</div>
+            <NavItem icon={<HiArrowPath size={17} />}                label="Repurposer"   active={activeTab === 'repurposer'} onClick={() => { go('repurposer'); if (isMobile || isTablet) setSidebarOpen(false); }} />
+            <NavItem icon={<HiShieldCheck size={17} />}              label="Self-Healing" active={activeTab === 'self-heal'}  onClick={() => { go('self-heal'); if (isMobile || isTablet) setSidebarOpen(false); }} />
 
             <div style={s.navFooterBlock}>
               <div style={s.navDividerStrong} role="separator" aria-hidden="true" />
@@ -879,7 +883,7 @@ function App() {
                   {/* Top accent line */}
                   <div style={{ height: 2, background: 'linear-gradient(90deg, transparent 0%, #6366f1 30%, #818cf8 50%, #6366f1 70%, transparent 100%)' }} />
 
-                  <div style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 40px 32px', display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)' }}>
+                  <div style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 40px 32px', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)' }}>
                     {[
                       { label: 'Smart Hub',    icon: '🧠', color: '#f472b6', items: [
                         { icon: '🖼', label: 'Image Generator',  tab: 'image-generator'  },
@@ -894,10 +898,6 @@ function App() {
                         { icon: '📄', label: 'Career Alchemist', tab: 'Resume'         },
                         { icon: '🗂', label: 'Asset Library',    tab: 'asset-library'  },
                       ]},
-                      { label: 'Social Herbs', icon: '🌿', color: '#34d399', items: [
-                        { icon: '♻️', label: 'Repurposer',   tab: 'repurposer' },
-                        { icon: '🩺', label: 'Self-Healing', tab: 'self-heal'  },
-                      ]},
                       { label: 'Social HQ',   icon: '📡', color: '#a78bfa', items: [
                         { icon: '🛡', label: 'Brand Guardian', tab: 'brand-guardian' },
                         { icon: '👥', label: 'Team',           tab: 'team'           },
@@ -905,8 +905,8 @@ function App() {
                       ]},
                     ].map((section, idx) => (
                       <div key={section.label} style={{
-                        padding: idx === 0 ? '0 22px 0 0' : idx === 4 ? '0 0 0 22px' : '0 22px',
-                        borderRight: idx < 4 ? '1px solid rgba(255,255,255,0.05)' : 'none',
+                        padding: idx === 0 ? '0 22px 0 0' : idx === 3 ? '0 0 0 22px' : '0 22px',
+                        borderRight: idx < 3 ? '1px solid rgba(255,255,255,0.05)' : 'none',
                       }}>
                         {/* Section header */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 16 }}>

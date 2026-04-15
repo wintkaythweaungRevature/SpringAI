@@ -733,7 +733,7 @@ function PlatformCard({ platform, data }) {
 
 /* ─────────────────────────────────────────────────────────── */
 export default function AnalyticsDashboard() {
-  const { apiBase, token, user } = useAuth();
+  const { apiBase, token, user, authHeaders, activeWorkspaceId, activeBrandId } = useAuth();
   const base = apiBase || 'https://api.wintaibot.com';
 
   const [data,    setData]    = useState(null);
@@ -761,7 +761,7 @@ export default function AnalyticsDashboard() {
     setLoading(true); setError(null);
     try {
       const res = await fetch(`${base}/api/analytics/overview`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: authHeaders(),
       });
       if (!res.ok) throw new Error(`Server returned ${res.status}`);
       setData(await res.json());
@@ -770,7 +770,7 @@ export default function AnalyticsDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [base, token]);
+  }, [base, token, activeWorkspaceId, activeBrandId]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -778,11 +778,11 @@ export default function AnalyticsDashboard() {
     if (!token) return;
     try {
       const res = await fetch(`${base}/api/analytics/top-posts?limit=40`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: authHeaders(),
       });
       if (res.ok) setTopPosts(await res.json());
     } catch {}
-  }, [base, token]);
+  }, [base, token, activeWorkspaceId, activeBrandId]);
 
   const loadMonthlyStats = useCallback(async (from, to) => {
     if (!token) return;
@@ -792,13 +792,13 @@ export default function AnalyticsDashboard() {
       if (from) q.set('from', from);
       if (to)   q.set('to', to);
       const res = await fetch(`${base}/api/analytics/monthly-stats?${q}`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: authHeaders(),
       });
       if (res.ok) setMonthlyStats(await res.json());
     } catch {} finally {
       setLoadMonthly(false);
     }
-  }, [base, token]);
+  }, [base, token, activeWorkspaceId, activeBrandId]);
 
   useEffect(() => { loadTopPosts(); }, [loadTopPosts]);
   useEffect(() => { loadMonthlyStats('', ''); }, [loadMonthlyStats]);
@@ -820,10 +820,10 @@ export default function AnalyticsDashboard() {
     if (token) {
       fetch(`${base}/api/analytics/activity/${encodeURIComponent(sid)}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: authHeaders(),
       }).catch(() => {});
     }
-  }, [base, token, user?.id]);
+  }, [base, token, user?.id, activeWorkspaceId, activeBrandId]);
 
   const recentVisible = useMemo(() => {
     const list = Array.isArray(recent) ? recent : [];

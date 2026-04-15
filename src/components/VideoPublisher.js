@@ -2412,79 +2412,74 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
                         </span>
                       </div>
 
-                      {/* ── Viral Score ── */}
+                      {/* ── Viral Score + Content ideas (one row) ── */}
                       <div style={{ marginTop: 10, marginBottom: 6 }}>
-                        <button
-                          type="button"
-                          onClick={() => checkViralScore(pid)}
-                          disabled={viralLoading || !v.caption?.trim()}
-                          style={{
-                            padding: '7px 16px', fontSize: 12, fontWeight: 700,
-                            color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer',
-                            background: viralLoading || !v.caption?.trim() ? '#cbd5e1' : 'linear-gradient(135deg, #8b5cf6, #6366f1)',
-                            boxShadow: viralLoading || !v.caption?.trim() ? 'none' : '0 2px 8px rgba(99,102,241,0.3)',
-                            transition: 'all 0.2s',
-                            display: 'inline-flex', alignItems: 'center', gap: 6,
-                          }}
-                        >
-                          {viralLoading ? (
-                            <><span style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid #fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite', display: 'inline-block' }} /> Analyzing...</>
-                          ) : '🔮 Viral Score'}
-                        </button>
-
-                        {viralScore && typeof viralScore.score === 'number' && (() => {
-                          const sc = viralScore.score;
-                          const clr = sc >= 70 ? '#22c55e' : sc >= 40 ? '#f59e0b' : '#ef4444';
-                          const lbl = sc >= 70 ? 'High' : sc >= 40 ? 'Moderate' : 'Low';
-                          const bg  = sc >= 70 ? '#f0fdf4' : sc >= 40 ? '#fffbeb' : '#fef2f2';
-                          const pct = sc / 100;
-                          return (
-                            <div style={{ marginTop: 10, background: bg, borderRadius: 12, padding: '14px 16px', border: `1px solid ${clr}22` }}>
-                              {/* Score bar */}
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
-                                <div style={{ flex: 1, height: 8, background: '#e2e8f0', borderRadius: 4, overflow: 'hidden' }}>
-                                  <div style={{ width: `${pct * 100}%`, height: '100%', background: clr, borderRadius: 4, transition: 'width 0.6s ease' }} />
+                        <CaptionIdeasPanel
+                          captionText={v.caption}
+                          platform={pid}
+                          apiBase={base}
+                          token={token}
+                          onApply={({ caption, hashtags }) => applyCaptionText(pid, hashtags ? `${caption}\n${hashtags}` : caption, false)}
+                          toolbarLeading={(
+                            <button
+                              type="button"
+                              onClick={() => checkViralScore(pid)}
+                              disabled={viralLoading || !v.caption?.trim()}
+                              style={{
+                                padding: '7px 16px', fontSize: 12, fontWeight: 700,
+                                color: '#fff', border: 'none', borderRadius: 20, cursor: 'pointer',
+                                background: viralLoading || !v.caption?.trim() ? '#cbd5e1' : 'linear-gradient(135deg, #8b5cf6, #6366f1)',
+                                boxShadow: viralLoading || !v.caption?.trim() ? 'none' : '0 2px 8px rgba(99,102,241,0.3)',
+                                transition: 'all 0.2s',
+                                display: 'inline-flex', alignItems: 'center', gap: 6,
+                              }}
+                            >
+                              {viralLoading ? (
+                                <><span style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid #fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite', display: 'inline-block' }} /> Analyzing...</>
+                              ) : '🔮 Viral Score'}
+                            </button>
+                          )}
+                          toolbarBetween={viralScore && typeof viralScore.score === 'number' ? (() => {
+                            const sc = viralScore.score;
+                            const clr = sc >= 70 ? '#22c55e' : sc >= 40 ? '#f59e0b' : '#ef4444';
+                            const lbl = sc >= 70 ? 'High' : sc >= 40 ? 'Moderate' : 'Low';
+                            const bg  = sc >= 70 ? '#f0fdf4' : sc >= 40 ? '#fffbeb' : '#fef2f2';
+                            const pct = sc / 100;
+                            return (
+                              <div style={{ marginTop: 10, background: bg, borderRadius: 12, padding: '14px 16px', border: `1px solid ${clr}22` }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+                                  <div style={{ flex: 1, height: 8, background: '#e2e8f0', borderRadius: 4, overflow: 'hidden' }}>
+                                    <div style={{ width: `${pct * 100}%`, height: '100%', background: clr, borderRadius: 4, transition: 'width 0.6s ease' }} />
+                                  </div>
+                                  <span style={{ fontSize: 18, fontWeight: 800, color: clr, minWidth: 40, textAlign: 'right' }}>{sc}</span>
+                                  <span style={{ fontSize: 10, color: '#64748b' }}>/100</span>
                                 </div>
-                                <span style={{ fontSize: 18, fontWeight: 800, color: clr, minWidth: 40, textAlign: 'right' }}>{sc}</span>
-                                <span style={{ fontSize: 10, color: '#64748b' }}>/100</span>
+                                <div style={{ fontSize: 11, fontWeight: 700, color: clr, marginBottom: 8 }}>{lbl} Viral Potential</div>
+                                {viralScore.reasons?.length > 0 && (
+                                  <div style={{ marginBottom: 8 }}>
+                                    <div style={{ fontSize: 11, fontWeight: 700, color: '#334155', marginBottom: 4 }}>Why this score</div>
+                                    {viralScore.reasons.map((r, i) => (
+                                      <div key={i} style={{ fontSize: 11, color: '#475569', lineHeight: 1.5, display: 'flex', gap: 5, marginBottom: 2 }}>
+                                        <span>📌</span><span>{r}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                                {viralScore.tips?.length > 0 && (
+                                  <div>
+                                    <div style={{ fontSize: 11, fontWeight: 700, color: '#334155', marginBottom: 4 }}>Tips to boost</div>
+                                    {viralScore.tips.map((t, i) => (
+                                      <div key={i} style={{ fontSize: 11, color: '#475569', lineHeight: 1.5, display: 'flex', gap: 5, marginBottom: 2 }}>
+                                        <span>💡</span><span>{t}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
                               </div>
-                              <div style={{ fontSize: 11, fontWeight: 700, color: clr, marginBottom: 8 }}>{lbl} Viral Potential</div>
-
-                              {/* Reasons */}
-                              {viralScore.reasons?.length > 0 && (
-                                <div style={{ marginBottom: 8 }}>
-                                  <div style={{ fontSize: 11, fontWeight: 700, color: '#334155', marginBottom: 4 }}>Why this score</div>
-                                  {viralScore.reasons.map((r, i) => (
-                                    <div key={i} style={{ fontSize: 11, color: '#475569', lineHeight: 1.5, display: 'flex', gap: 5, marginBottom: 2 }}>
-                                      <span>📌</span><span>{r}</span>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-
-                              {/* Tips */}
-                              {viralScore.tips?.length > 0 && (
-                                <div>
-                                  <div style={{ fontSize: 11, fontWeight: 700, color: '#334155', marginBottom: 4 }}>Tips to boost</div>
-                                  {viralScore.tips.map((t, i) => (
-                                    <div key={i} style={{ fontSize: 11, color: '#475569', lineHeight: 1.5, display: 'flex', gap: 5, marginBottom: 2 }}>
-                                      <span>💡</span><span>{t}</span>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })()}
+                            );
+                          })() : null}
+                        />
                       </div>
-
-                      <CaptionIdeasPanel
-                        captionText={v.caption}
-                        platform={pid}
-                        apiBase={base}
-                        token={token}
-                        onApply={({ caption, hashtags }) => applyCaptionText(pid, hashtags ? `${caption}\n${hashtags}` : caption, false)}
-                      />
 
                       <div style={{ marginTop: '10px' }}>
                         <div style={{ fontSize: '11px', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>Quick rewrites</div>

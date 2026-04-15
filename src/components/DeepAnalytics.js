@@ -2960,7 +2960,8 @@ export default function DeepAnalytics() {
 const s = {
   wrap: {
     width: '100%', maxWidth: '100%', margin: 0,
-    padding: '8px 4px 24px', boxSizing: 'border-box',
+    // Top padding raised to clear the App Launcher (22px tall, hangs 18px below topbar).
+    padding: '28px 4px 24px', boxSizing: 'border-box',
     fontFamily: "'Inter', -apple-system, sans-serif",
   },
   chartStretch: { width: '100%', minHeight: 200 },

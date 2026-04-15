@@ -58,6 +58,8 @@ export default function AccountSettings() {
   const [confirmCancelSub, setConfirmCancelSub] = useState(false);
   const [message, setMessage] = useState(null);
   const [upgradeYearly, setUpgradeYearly] = useState(false);
+  const [useBrandContext, setUseBrandContext] = useState(false);
+  const [brandPrefSaving, setBrandPrefSaving] = useState(false);
 
   const isMember = isSubscribed;
   const planBadgeLabel = (() => {
@@ -92,6 +94,40 @@ export default function AccountSettings() {
       ac.abort();
     };
   }, [isMember, cancelAtPeriodEnd, apiBase, token, user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Fetch the user's "use brand context in all AI" preference once on mount.
+  useEffect(() => {
+    if (!apiBase || !token) return;
+    let cancelled = false;
+    fetch(`${apiBase}/api/user/ai-preferences`, { headers: authHeaders() })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (!cancelled && d) setUseBrandContext(!!d.useBrandContext); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [apiBase, token]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleToggleBrandContext = async (next) => {
+    if (brandPrefSaving) return;
+    setBrandPrefSaving(true);
+    setUseBrandContext(next); // optimistic
+    try {
+      const r = await fetch(`${apiBase}/api/user/ai-preferences`, {
+        method: "PUT",
+        headers: { ...authHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({ useBrandContext: next }),
+      });
+      if (!r.ok) throw new Error("save failed");
+      setMessage({ text: next
+        ? "AI agents will now use your brand profile."
+        : "AI agents will now use generic prompts (no brand context).", error: false });
+    } catch (e) {
+      setUseBrandContext(!next); // revert on failure
+      setMessage({ text: "Could not save preference. Try again.", error: true });
+    } finally {
+      setBrandPrefSaving(false);
+      setTimeout(() => setMessage(null), 4000);
+    }
+  };
 
   const tierKey = normalizeTierKey(subSnap?.plan, user?.membershipType);
 
@@ -418,6 +454,47 @@ export default function AccountSettings() {
               </button>
             </div>
           )}
+        </div>
+
+        {/* AI Preferences */}
+        <div style={s.section}>
+          <h3 style={s.sectionTitle}>AI Preferences</h3>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "#0f172a", marginBottom: 4 }}>
+                Use my brand profile in all AI generation
+              </div>
+              <p style={{ ...s.desc, marginTop: 0 }}>
+                When ON, agents (Writer, Strategist, Auto-Reply, Ask AI, Document Q&amp;A, etc.) prepend
+                your active brand voice, audience, and key phrases to every prompt. When OFF (default),
+                they use generic prompts. Brand-specific endpoints (Hooks, Video Captions, Voice → Content)
+                always use the brand regardless of this toggle.
+              </p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={useBrandContext}
+              disabled={brandPrefSaving}
+              onClick={() => handleToggleBrandContext(!useBrandContext)}
+              style={{
+                flexShrink: 0,
+                width: 52, height: 28, borderRadius: 999,
+                border: "none", cursor: brandPrefSaving ? "wait" : "pointer",
+                background: useBrandContext ? "#6366f1" : "#cbd5e1",
+                position: "relative", transition: "background 0.2s",
+                opacity: brandPrefSaving ? 0.6 : 1,
+              }}
+              title={useBrandContext ? "Click to turn OFF" : "Click to turn ON"}
+            >
+              <span style={{
+                position: "absolute", top: 3, left: useBrandContext ? 27 : 3,
+                width: 22, height: 22, borderRadius: "50%",
+                background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                transition: "left 0.2s",
+              }} />
+            </button>
+          </div>
         </div>
 
         {/* Billing */}

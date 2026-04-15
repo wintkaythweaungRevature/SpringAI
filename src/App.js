@@ -708,7 +708,7 @@ function App() {
 
         {/* Top Bar — only shown when logged in (MarketingNav handles logged-out state) */}
         {user && (
-          <header style={{ ...s.topBar, position: 'relative', overflow: 'visible' }}>
+          <header style={{ ...s.topBar, position: 'relative', overflow: 'visible', zIndex: 1100 }}>
             <button style={s.menuBtn} onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>
 
             {/* Platform bar — left of back button (in document order) */}
@@ -818,8 +818,10 @@ function App() {
               </div>
             )}
 
-            {/* ── App Launcher ── */}
-            <div ref={topNavRef} style={{ position: 'absolute', bottom: -18, left: 'calc(50% - 28px)', zIndex: 1250 }}>
+            {/* ── App Launcher ──
+                Fixed to viewport (not the topbar) so it can't be clipped or covered
+                by stacking-context boundaries from page content rendered below. */}
+            <div ref={topNavRef} style={{ position: 'fixed', top: isMobile ? 50 : 56, left: 'calc(50% - 28px)', zIndex: 1250 }}>
               <button
                 type="button"
                 onClick={() => setShowTopNav(v => !v)}

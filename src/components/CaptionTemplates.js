@@ -2688,6 +2688,7 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
   const [dlTarget, setDlTarget]   = useState(null);   // { template, format, filledCaption?, exportThemeId? }
   const [dlLoading, setDlLoading] = useState(null);   // templateId being downloaded
   const [previewTheme, setPreviewTheme] = useState('default');
+  const [themeMenuOpen, setThemeMenuOpen] = useState(false);
   const captureRef                = useRef(null);
   const selectedTheme             = allThemes.find((th) => th.id === previewTheme) || PREVIEW_THEMES[0];
   const selectedThemeIsBrand      = selectedTheme?._isBrand || previewTheme === 'brand';
@@ -2701,6 +2702,14 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
     window.addEventListener('click', close);
     return () => window.removeEventListener('click', close);
   }, [dlMenu]);
+
+  // Close theme menu when clicking outside
+  useEffect(() => {
+    if (!themeMenuOpen) return;
+    const close = () => setThemeMenuOpen(false);
+    window.addEventListener('click', close);
+    return () => window.removeEventListener('click', close);
+  }, [themeMenuOpen]);
 
   // Rasterize after DOM commit. Capture root stays in-viewport (invisible) so layout includes caption text;
   // off-screen fixed nodes often paint only the design (780×440), which broke "download right after fill".
@@ -2928,66 +2937,86 @@ export default function CaptionTemplates({ onBack, onUseTemplate }) {
         </div>
         <div style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:10, marginTop:14 }}>
           <span style={{ fontSize:11, fontWeight:800, color:'#94a3b8', letterSpacing:1.2 }}>THEME</span>
-          {allThemes.map((th) => {
-            const active = previewTheme === th.id;
-            const isBrandTheme = !!th._isBrand || th.id === 'brand';
-            const brandPrimary = th.swatch?.[0] || '#6366f1';
-            return (
-              <button
-                key={th.id}
-                type="button"
-                onClick={() => setPreviewTheme(th.id)}
-                title={th.label}
+          <div style={{ position:'relative' }}>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setThemeMenuOpen(o => !o); }}
+              aria-haspopup="listbox"
+              aria-expanded={themeMenuOpen}
+              style={{
+                display:'inline-flex', alignItems:'center', gap:10,
+                padding:'8px 12px', borderRadius:10,
+                border:`1px solid ${themeMenuOpen ? 'rgba(99,102,241,0.45)' : '#e2e8f0'}`,
+                background:'#fff',
+                boxShadow: themeMenuOpen
+                  ? '0 0 0 3px rgba(99,102,241,0.18), 0 4px 14px rgba(15,23,42,0.08)'
+                  : '0 1px 4px rgba(0,0,0,0.08)',
+                cursor:'pointer', minWidth:200,
+              }}
+            >
+              <span style={{ display:'inline-flex', gap:3, padding:'0 4px' }}>
+                {selectedTheme.swatch.map((c, i) => (
+                  <span key={i} style={{ width: 8, height: 22, borderRadius: 3, background: c, flexShrink: 0 }} />
+                ))}
+              </span>
+              <span style={{ fontSize:13, fontWeight:600, color:'#0f172a', flex:1, textAlign:'left' }}>
+                {selectedTheme.label}
+                {selectedThemeIsBrand && <span style={{ marginLeft:6, fontSize:11, color:'#6366f1' }}>💬 brand</span>}
+              </span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden
+                style={{ color:'#64748b', transform: themeMenuOpen ? 'rotate(180deg)' : 'none', transition:'transform 0.15s' }}>
+                <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+
+            {themeMenuOpen && (
+              <div
+                onClick={(e) => e.stopPropagation()}
+                role="listbox"
                 style={{
-                  width: 52,
-                  height: 44,
-                  borderRadius: 24,
-                  border: 'none',
-                  background: '#fff',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 3,
-                  padding: '0 9px',
-                  boxShadow: active
-                    ? '0 1px 4px rgba(0,0,0,0.08), 0 0 0 2px #6366f1'
-                    : '0 1px 4px rgba(0,0,0,0.08)',
-                  position: 'relative',
+                  position:'absolute', top:'calc(100% + 6px)', left:0, zIndex:50,
+                  minWidth:260, maxHeight:340, overflowY:'auto',
+                  background:'#fff', borderRadius:12,
+                  border:'1px solid #e2e8f0',
+                  boxShadow:'0 16px 48px rgba(15,23,42,0.14), 0 0 0 1px rgba(15,23,42,0.04)',
+                  padding:6,
                 }}
               >
-                {th.swatch.map((c, i) => (
-                  <span key={i} style={{ width: 8, height: 24, borderRadius: 3, background: c, flexShrink: 0 }} />
-                ))}
-                {isBrandTheme && (
-                  <span
-                    aria-hidden
-                    style={{
-                      position: 'absolute',
-                      left: -4,
-                      bottom: -4,
-                      width: 16,
-                      height: 16,
-                      borderRadius: '50%',
-                      background: brandPrimary,
-                      color: '#fff',
-                      fontSize: 9,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 800,
-                      boxShadow: '0 1px 2px rgba(0,0,0,0.18)',
-                    }}
-                  >
-                    💬
-                  </span>
-                )}
-                {active && (
-                  <span style={{ position: 'absolute', top: -4, right: -4, width: 16, height: 16, borderRadius: '50%', background: '#6366f1', color: '#fff', fontSize: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>✓</span>
-                )}
-              </button>
-            );
-          })}
+                {allThemes.map((th) => {
+                  const active = previewTheme === th.id;
+                  const isBrandTheme = !!th._isBrand || th.id === 'brand';
+                  return (
+                    <button
+                      key={th.id}
+                      type="button"
+                      role="option"
+                      aria-selected={active}
+                      onClick={() => { setPreviewTheme(th.id); setThemeMenuOpen(false); }}
+                      style={{
+                        width:'100%', display:'flex', alignItems:'center', gap:10,
+                        padding:'8px 10px', borderRadius:8, border:'none',
+                        background: active ? '#eef2ff' : 'transparent',
+                        color:'#0f172a', cursor:'pointer', textAlign:'left',
+                      }}
+                      onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = '#f1f5f9'; }}
+                      onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = 'transparent'; }}
+                    >
+                      <span style={{ display:'inline-flex', gap:3, padding:'0 2px' }}>
+                        {th.swatch.map((c, i) => (
+                          <span key={i} style={{ width: 8, height: 22, borderRadius: 3, background: c, flexShrink: 0 }} />
+                        ))}
+                      </span>
+                      <span style={{ flex:1, fontSize:13, fontWeight:600 }}>
+                        {th.label}
+                        {isBrandTheme && <span style={{ marginLeft:6, fontSize:11, color:'#6366f1' }}>💬 brand</span>}
+                      </span>
+                      {active && <span style={{ color:'#6366f1', fontSize:14, fontWeight:800 }}>✓</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
         {selectedThemeIsBrand && (
           <div

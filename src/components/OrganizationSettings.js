@@ -87,6 +87,9 @@ export default function OrganizationSettings() {
   const [permsLoading, setPermsLoading] = useState(false);
   const [permsSaving, setPermsSaving] = useState(false);
   const [permsMsg, setPermsMsg] = useState(null);
+  // Set of permission keys the workspace owner's plan allows them to grant.
+  // Toggles outside this set are hidden from the UI.
+  const [availablePerms, setAvailablePerms] = useState(null);
 
   const authH = useCallback(() => ({
     Authorization: `Bearer ${token}`,
@@ -282,7 +285,27 @@ export default function OrganizationSettings() {
     finally { setPermsLoading(false); }
   };
 
-  const handleSelectWs = (wsId) => { setSelectedWsId(wsId); loadPermWsMembers(wsId); };
+  const handleSelectWs = (wsId) => {
+    setSelectedWsId(wsId);
+    loadPermWsMembers(wsId);
+    loadAvailablePerms(wsId);
+  };
+
+  // Fetch the list of permission keys the workspace owner's plan can grant.
+  // Toggles outside this set are hidden so admins/owners can't grant features
+  // their own plan doesn't include.
+  const loadAvailablePerms = async (wsId) => {
+    if (!wsId) { setAvailablePerms(null); return; }
+    try {
+      const res = await fetch(`${apiBase}/api/workspace/${wsId}/available-permissions`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) { setAvailablePerms(null); return; }
+      const data = await res.json().catch(() => null);
+      const list = Array.isArray(data?.availablePermissions) ? data.availablePermissions : null;
+      setAvailablePerms(list ? new Set(list) : null);
+    } catch { setAvailablePerms(null); }
+  };
 
   const handleSelectMember = (userId) => {
     setSelectedMemberId(userId);
@@ -905,7 +928,13 @@ export default function OrganizationSettings() {
           {selectedMemberId && (
             <>
               <div style={{ marginBottom: 8 }}>
-                <button onClick={() => setPerms({ ...ALL_TRUE })} style={{ ...btnSmall, marginRight: 8 }}>Enable All</button>
+                <button onClick={() => {
+                  const next = {};
+                  PERMISSION_KEYS.forEach(({ key }) => {
+                    next[key] = !availablePerms || availablePerms.has(key);
+                  });
+                  setPerms(next);
+                }} style={{ ...btnSmall, marginRight: 8 }}>Enable All</button>
                 <button onClick={() => setPerms(Object.fromEntries(PERMISSION_KEYS.map(({ key }) => [key, false])))}
                   style={{ ...btnSmall, background: "rgba(239,68,68,0.15)", color: "#f87171" }}>Disable All</button>
               </div>
@@ -913,7 +942,9 @@ export default function OrganizationSettings() {
               <div style={{
                 display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 10, marginBottom: 16,
               }}>
-                {PERMISSION_KEYS.map(({ key, label }) => (
+                {PERMISSION_KEYS
+                  .filter(({ key }) => !availablePerms || availablePerms.has(key))
+                  .map(({ key, label }) => (
                   <label key={key} style={{
                     display: "flex", alignItems: "center", gap: 10, cursor: "pointer",
                     background: "rgba(255,255,255,0.03)", borderRadius: 8, padding: "10px 12px",

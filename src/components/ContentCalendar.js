@@ -146,7 +146,18 @@ function postCalendarTimestamp(post) {
 }
 
 function postCalendarDate(post) {
-  return new Date(postCalendarTimestamp(post));
+  const ts = postCalendarTimestamp(post);
+  if (!ts) return new Date(NaN);
+  const str = String(ts);
+  // Backend stores dates as LocalDateTime (no timezone suffix) in UTC.
+  // Without "Z", JavaScript interprets bare ISO strings as local time,
+  // causing posts created at e.g. 9 PM EDT (= 1 AM UTC next day) to
+  // appear on tomorrow's calendar instead of today. Appending "Z" tells
+  // the browser the timestamp is UTC, so it converts to local date correctly.
+  if (/^\d{4}-\d{2}-\d{2}T/.test(str) && !str.includes('Z') && !str.includes('+') && !/T.*-/.test(str)) {
+    return new Date(str + 'Z');
+  }
+  return new Date(str);
 }
 
 /** True when the post is still scheduled / not yet published (for day-cell border). */

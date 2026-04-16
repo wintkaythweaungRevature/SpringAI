@@ -2269,14 +2269,18 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
                 {[
                   { label: 'Morning (9 AM)', hour: 9 },
-                  { label: 'Evening (7 PM)', hour: 19 },
                   { label: 'Lunch (12 PM)', hour: 12 },
+                  { label: 'Afternoon (3 PM)', hour: 15 },
+                  { label: 'Evening (7 PM)', hour: 19 },
                 ].map(({ label, hour }) => {
+                  // Use today if that hour is still in the future; otherwise tomorrow
+                  const now = new Date();
                   const d = new Date();
-                  d.setDate(d.getDate() + 1);
+                  if (now.getHours() >= hour) d.setDate(d.getDate() + 1);
                   d.setHours(hour, 0, 0, 0);
                   const pad = (n) => String(n).padStart(2, '0');
                   const iso = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+                  const isToday = d.toDateString() === now.toDateString();
                   return (
                     <button
                       key={label}
@@ -2288,7 +2292,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
                       }}
                       style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '11px', fontWeight: 600, color: '#475569', cursor: 'pointer' }}
                     >
-                      {label}
+                      {label} {isToday ? '(today)' : '(tomorrow)'}
                     </button>
                   );
                 })}
@@ -2302,9 +2306,15 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
                     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
                   };
                   const defaultScheduleStart = () => {
+                    const now = new Date();
                     const d = new Date();
-                    d.setDate(d.getDate() + 1);
-                    d.setHours(9, 0, 0, 0);
+                    // Default to next whole hour if still today, otherwise tomorrow 9 AM
+                    if (now.getHours() < 22) {
+                      d.setHours(now.getHours() + 1, 0, 0, 0);
+                    } else {
+                      d.setDate(d.getDate() + 1);
+                      d.setHours(9, 0, 0, 0);
+                    }
                     return localDatetimeLocal(d);
                   };
                   return (

@@ -1329,6 +1329,31 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
                 })}
               </div>
 
+              {/* Platform + Calendar marker legends — under the calendar grid */}
+              <div style={s.legend}>
+                {PLATFORMS.filter(p => monthPosts.some(m => m.platform?.toLowerCase() === p.id)).map(p => (
+                  <div key={p.id} style={s.legendItem}>
+                    <div style={{ ...s.dot, background: p.color }} />
+                    <span>{p.label}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ marginTop: 8, paddingTop: 10, borderTop: '1px dashed #e2e8f0' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 6 }}>Calendar markers</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 12px' }}>
+                  {[
+                    { color: HOLIDAY_COLORS.holiday,   label: 'Public Holiday' },
+                    { color: HOLIDAY_COLORS.awareness, label: 'Awareness Day' },
+                    { color: HOLIDAY_COLORS.shopping,  label: 'Shopping Event' },
+                  ].map(item => (
+                    <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <div style={{ width: 10, height: 10, borderRadius: 3, background: item.color }} />
+                      <span style={{ fontSize: 11, color: '#64748b' }}>{item.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
             </div>
 
             {/* Upcoming posts sidebar */}
@@ -1443,51 +1468,24 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
                 </div>
               )}
 
-              {/* Legends (moved from below calendar to fill empty space in sidebar) */}
+              {/* Post status legend — sidebar only (platform & marker legends live under the calendar) */}
               <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid #e2e8f0' }}>
-                <div style={{ ...s.legend, marginBottom: 0 }}>
-                  {PLATFORMS.filter(p => monthPosts.some(m => m.platform?.toLowerCase() === p.id)).map(p => (
-                    <div key={p.id} style={s.legendItem}>
-                      <div style={{ ...s.dot, background: p.color }} />
-                      <span>{p.label}</span>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 8 }}>Post status</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {[
+                    { emoji: '🟢', label: 'Published', hint: 'already live' },
+                    { emoji: '🟡', label: 'Scheduled', hint: 'posts later' },
+                    { emoji: '🔵', label: 'Draft', hint: 'not scheduled yet' },
+                    { emoji: '🔴', label: 'Failed', hint: 'posting error' },
+                  ].map((row) => (
+                    <div key={row.label} style={s.legendItem} title={`${row.label}: ${row.hint}`}>
+                      <span style={{ fontSize: 11, lineHeight: 1 }}>{row.emoji}</span>
+                      <span style={{ fontSize: 12, color: '#475569' }}>
+                        <strong>{row.label}</strong>
+                        <span style={{ color: '#94a3b8', fontWeight: 400 }}> — {row.hint}</span>
+                      </span>
                     </div>
                   ))}
-                </div>
-
-                <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px dashed #e2e8f0' }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 6 }}>Calendar markers</div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 12px' }}>
-                    {[
-                      { color: HOLIDAY_COLORS.holiday,   label: 'Public Holiday' },
-                      { color: HOLIDAY_COLORS.awareness, label: 'Awareness Day' },
-                      { color: HOLIDAY_COLORS.shopping,  label: 'Shopping Event' },
-                    ].map(item => (
-                      <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                        <div style={{ width: 10, height: 10, borderRadius: 3, background: item.color }} />
-                        <span style={{ fontSize: 11, color: '#64748b' }}>{item.label}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px dashed #e2e8f0' }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 8 }}>Post status</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    {[
-                      { emoji: '🟢', label: 'Published', hint: 'already live' },
-                      { emoji: '🟡', label: 'Scheduled', hint: 'posts later' },
-                      { emoji: '🔵', label: 'Draft', hint: 'not scheduled yet' },
-                      { emoji: '🔴', label: 'Failed', hint: 'posting error' },
-                    ].map((row) => (
-                      <div key={row.label} style={s.legendItem} title={`${row.label}: ${row.hint}`}>
-                        <span style={{ fontSize: 11, lineHeight: 1 }}>{row.emoji}</span>
-                        <span style={{ fontSize: 12, color: '#475569' }}>
-                          <strong>{row.label}</strong>
-                          <span style={{ color: '#94a3b8', fontWeight: 400 }}> — {row.hint}</span>
-                        </span>
-                      </div>
-                    ))}
-                  </div>
                 </div>
               </div>
             </div>

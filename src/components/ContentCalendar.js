@@ -1276,6 +1276,7 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
                             const pInfo = PLATFORM_MAP[p.platform?.toLowerCase()];
                             const preview = getPostPreview(p);
                             const t = fmtTime(postCalendarTimestamp(p));
+                            const pColor = platformColor(p.platform);
                             return (
                               <button
                                 key={`${key}-${i}`}
@@ -1283,8 +1284,14 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
                                 draggable={isPostScheduled(p) && (p.jobId != null || p.id != null)}
                                 onDragStart={(e) => { e.stopPropagation(); setDragPost(p); }}
                                 onDragEnd={() => { setDragPost(null); setDragOverKey(null); }}
-                                style={{ ...s.dayPostChip, ...(isPostScheduled(p) ? { cursor: 'grab' } : {}) }}
+                                style={{
+                                  ...s.dayPostChip,
+                                  borderLeft: `3px solid ${pColor}`,
+                                  ...(isPostScheduled(p) ? { cursor: 'grab' } : {}),
+                                }}
                                 onMouseEnter={(e) => {
+                                  e.currentTarget.style.boxShadow = `0 4px 14px ${pColor}30`;
+                                  e.currentTarget.style.transform = 'translateY(-1px)';
                                   const rect = e.currentTarget.getBoundingClientRect();
                                   setHoverPreview({
                                     post: p,
@@ -1292,26 +1299,41 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
                                     y: rect.top - 8,
                                   });
                                 }}
-                                onMouseLeave={() => setHoverPreview(null)}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.boxShadow = 'none';
+                                  e.currentTarget.style.transform = 'translateY(0)';
+                                  setHoverPreview(null);
+                                }}
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setFeedDetailPost(p);
                                 }}
-                                title="View post details"
                               >
-                                <span style={{ display: 'inline-flex', alignItems: 'center' }}>
-                                  {pInfo ? <PlatformIcon platform={pInfo} size={12} /> : '•'}
-                                </span>
-                                <span>{t || 'Post'}</span>
-                                {preview?.url && (
+                                {preview?.url ? (
                                   <ResolvedPostMedia
                                     post={p}
-                                    playOverlay={false}
-                                    wrapperStyle={{ width: 18, height: 18, borderRadius: 4, overflow: 'hidden', marginLeft: 'auto', flexShrink: 0, border: '1px solid #e2e8f0' }}
+                                    playOverlay={previewIsVideoPost(p, preview)}
+                                    wrapperStyle={{ ...s.dayChipThumb, overflow: 'hidden' }}
                                     imgStyle={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                     videoStyle={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                    playOverlayStyle={{ fontSize: 10 }}
                                   />
+                                ) : (
+                                  <div
+                                    style={{
+                                      ...s.dayChipThumbPlaceholder,
+                                      background: `linear-gradient(135deg, ${pColor}, ${pColor}cc)`,
+                                    }}
+                                  >
+                                    {pInfo ? <PlatformIcon platform={pInfo} size={16} /> : '•'}
+                                  </div>
                                 )}
+                                <div style={s.dayChipBody}>
+                                  <div style={s.dayChipTime}>{t || 'Post'}</div>
+                                  <div style={s.dayChipMeta}>
+                                    {pInfo?.label || p.platform || ''}
+                                  </div>
+                                </div>
                               </button>
                             );
                           })}
@@ -1479,25 +1501,25 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
                 </div>
               )}
 
-              {/* Post status legend — sidebar only (platform & marker legends live under the calendar) */}
-              <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid #e2e8f0' }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 8 }}>Post status</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {[
-                    { emoji: '🟢', label: 'Published', hint: 'already live' },
-                    { emoji: '🟡', label: 'Scheduled', hint: 'posts later' },
-                    { emoji: '🔵', label: 'Draft', hint: 'not scheduled yet' },
-                    { emoji: '🔴', label: 'Failed', hint: 'posting error' },
-                  ].map((row) => (
-                    <div key={row.label} style={s.legendItem} title={`${row.label}: ${row.hint}`}>
-                      <span style={{ fontSize: 11, lineHeight: 1 }}>{row.emoji}</span>
-                      <span style={{ fontSize: 12, color: '#475569' }}>
-                        <strong>{row.label}</strong>
-                        <span style={{ color: '#94a3b8', fontWeight: 400 }}> — {row.hint}</span>
-                      </span>
-                    </div>
-                  ))}
-                </div>
+            </div>
+            {/* Post status legend — OUTSIDE the scrollable sidebar card so it's always visible */}
+            <div style={{ background: '#fff', borderRadius: 12, border: '1.5px solid #e2e8f0', padding: '12px 16px', marginTop: 10, boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 8 }}>Post status</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 16px' }}>
+                {[
+                  { emoji: '🟢', label: 'Published', hint: 'already live' },
+                  { emoji: '🟡', label: 'Scheduled', hint: 'posts later' },
+                  { emoji: '🔵', label: 'Draft', hint: 'not scheduled yet' },
+                  { emoji: '🔴', label: 'Failed', hint: 'posting error' },
+                ].map((row) => (
+                  <div key={row.label} style={s.legendItem} title={`${row.label}: ${row.hint}`}>
+                    <span style={{ fontSize: 11, lineHeight: 1 }}>{row.emoji}</span>
+                    <span style={{ fontSize: 12, color: '#475569' }}>
+                      <strong>{row.label}</strong>
+                      <span style={{ color: '#94a3b8', fontWeight: 400 }}> — {row.hint}</span>
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
           </>
@@ -1816,21 +1838,31 @@ const s = {
   dotRow: { display: 'flex', gap: 3, flexWrap: 'wrap', marginTop: 4 },
   dot: { width: 8, height: 8, borderRadius: '50%', flexShrink: 0 },
   moreBadge: { fontSize: 9, color: '#94a3b8', fontWeight: 700 },
-  dayPostList: { display: 'flex', flexDirection: 'column', gap: 4, marginTop: 4 },
+  dayPostList: { display: 'flex', flexDirection: 'column', gap: 5, marginTop: 4 },
   dayPostChip: {
     border: '1px solid #e2e8f0',
-    background: '#f8fafc',
-    borderRadius: 8,
+    background: '#ffffff',
+    borderRadius: 10,
     fontSize: 11,
     color: '#334155',
-    padding: '3px 6px',
+    padding: 3,
     display: 'flex',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
     cursor: 'pointer',
     textAlign: 'left',
+    minHeight: 42,
+    transition: 'box-shadow 0.15s, transform 0.15s',
   },
-  dayChipThumb: { width: 18, height: 18, borderRadius: 4, marginLeft: 'auto', objectFit: 'cover', border: '1px solid #e2e8f0' },
+  dayChipThumb: { width: 36, height: 36, borderRadius: 6, objectFit: 'cover', border: '1px solid #e2e8f0', flexShrink: 0 },
+  dayChipThumbPlaceholder: {
+    width: 36, height: 36, borderRadius: 6, flexShrink: 0,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    color: '#fff', fontSize: 16, fontWeight: 800,
+  },
+  dayChipBody: { display: 'flex', flexDirection: 'column', gap: 1, minWidth: 0, flex: 1 },
+  dayChipTime: { fontSize: 11, fontWeight: 700, color: '#0f172a' },
+  dayChipMeta: { fontSize: 10, color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
   dayMoreBtn: {
     border: 'none',
     background: 'transparent',

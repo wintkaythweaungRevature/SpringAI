@@ -6,6 +6,21 @@ import ComposePostModal from './ComposePostModal';
 
 const API = process.env.REACT_APP_API_URL || 'https://api.wintaibot.com';
 
+/**
+ * Backend stores dates as Java LocalDateTime in UTC without a timezone suffix.
+ * JavaScript's `new Date("2026-04-16T01:00:00")` treats bare ISO strings as
+ * LOCAL time, which shifts the date by the user's UTC offset. Appending "Z"
+ * tells the browser the timestamp is UTC so it converts to local correctly.
+ */
+function parseUtcDate(raw) {
+  if (!raw) return new Date(NaN);
+  const s = String(raw);
+  if (/^\d{4}-\d{2}-\d{2}T/.test(s) && !s.includes('Z') && !s.includes('+') && !/T.*-/.test(s)) {
+    return new Date(s + 'Z');
+  }
+  return new Date(s);
+}
+
 const PLATFORMS = filterEnabledPlatforms([
   { id: 'instagram', label: 'Instagram', color: '#E1306C', emoji: '📸', logo: 'instagram' },
   { id: 'facebook',  label: 'Facebook',  color: '#1877F2', emoji: '👍', logo: 'facebook'  },
@@ -541,7 +556,13 @@ function buildHeatmapFromPostsDetail(postsDetail) {
     if (d == null || h == null) {
       const raw = p.createdAt || p.publishedAt || p.dateTime;
       if (!raw) return;
-      const dt = new Date(raw);
+      // Backend stores dates in UTC without timezone suffix. Append "Z" so
+      // JavaScript converts to local time — otherwise getHours() returns the
+      // UTC hour (e.g. 1 AM UTC instead of 9 PM local), skewing the heatmap.
+      const str = String(raw);
+      const utcAware = (/^\d{4}-\d{2}-\d{2}T/.test(str) && !str.includes('Z') && !str.includes('+') && !/T.*-/.test(str))
+        ? str + 'Z' : str;
+      const dt = new Date(utcAware);
       if (Number.isNaN(dt.getTime())) return;
       d = (dt.getDay() + 6) % 7;
       h = dt.getHours();
@@ -788,7 +809,7 @@ function PostHeatmap({ resolved, postsDetail = [], platformLabel = 'this platfor
                     .filter(Boolean)
                     .map((raw) => {
                       try {
-                        return new Date(raw).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+                        return parseUtcDate(raw).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
                       } catch {
                         return String(raw);
                       }
@@ -849,7 +870,7 @@ function PostHeatmap({ resolved, postsDetail = [], platformLabel = 'this platfor
           {selectedPosts.map((p, i) => {
             const platColor = PLATFORM_COLORS[p.platform?.toLowerCase()] || '#6366f1';
             const rowPlat = PLATFORMS.find((x) => x.id === (p.platform || '').toLowerCase());
-            const date = p.createdAt ? new Date(p.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+            const date = p.createdAt ? parseUtcDate(p.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
             return (
               <div key={i} style={{ padding: '14px 16px', borderBottom: i < selectedPosts.length - 1 ? '1px solid #f1f5f9' : 'none', background: '#fff' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
@@ -2213,7 +2234,7 @@ function TrendsCalendar({ authHeaders }) {
                   </p>
                   {item.dateTime && (
                     <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 4 }}>
-                      {new Date(item.dateTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                      {parseUtcDate(item.dateTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
                     </div>
                   )}
                 </div>
@@ -2336,7 +2357,7 @@ function TrendsCalendar({ authHeaders }) {
                         </span>
                         {(p.dateTime || p.date) && (
                           <span style={{ marginLeft: 'auto', fontSize: 10, color: '#94a3b8' }}>
-                            {p.dateTime ? new Date(p.dateTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : p.date}
+                            {p.dateTime ? parseUtcDate(p.dateTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : p.date}
                           </span>
                         )}
                       </div>
@@ -2408,7 +2429,7 @@ function TrendsCalendar({ authHeaders }) {
                         {(j.dateTime || j.scheduledAt || j.date) && (
                           <span style={{ marginLeft: 'auto', fontSize: 10, color: '#94a3b8' }}>
                             {j.dateTime
-                              ? new Date(j.dateTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+                              ? parseUtcDate(j.dateTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
                               : j.date}
                           </span>
                         )}
@@ -2467,7 +2488,7 @@ function TrendsCalendar({ authHeaders }) {
           {(calTip.item.dateTime || calTip.item.date) && (
             <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 6 }}>
               {calTip.item.dateTime
-                ? new Date(calTip.item.dateTime).toLocaleString()
+                ? parseUtcDate(calTip.item.dateTime).toLocaleString()
                 : calTip.item.date}
             </div>
           )}
@@ -2684,7 +2705,7 @@ function CompetitorTab({ authHeaders }) {
                       </div>
                     </div>
                     <div style={{ fontSize: 11, color: '#94a3b8', flexShrink: 0 }}>
-                      {v.publishedAt ? new Date(v.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}
+                      {v.publishedAt ? parseUtcDate(v.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}
                     </div>
                   </div>
                 ))}

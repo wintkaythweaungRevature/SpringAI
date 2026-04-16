@@ -165,7 +165,7 @@ function MarketingNav({ go, onLogin, onSignup }) {
       >
         <img src={BRAND_LOGO_SRC} alt="W!ntAi logo" width={32} height={32} style={{ display: 'block', flexShrink: 0, borderRadius: '8px' }} />
         <span style={{ color: '#f1f5f9', fontWeight: 800, fontSize: isMobile ? '15px' : '17px', letterSpacing: '-0.02em' }}>
-          <span style={{ color: '#818cf8' }}>W!</span>ntAi
+          <span style={{ color: '#ffffff' }}>W!</span>ntAi
         </span>
       </div>
 
@@ -303,7 +303,12 @@ function MarketingNav({ go, onLogin, onSignup }) {
 
 /* ─── App ─────────────────────────────────────────────────── */
 function App() {
-  const [activeTab, setActiveTab] = useState(null);
+  // Restore activeTab from URL hash on load (e.g. #inbox → 'inbox')
+  // so F5 refresh stays on the current page instead of resetting to Dashboard.
+  const [activeTab, setActiveTab] = useState(() => {
+    const hash = window.location.hash.replace('#', '').trim();
+    return hash || null;
+  });
   const [showAuthModal, setShowAuthModal] = useState(false);
   // authMode: 'login' | 'signup' | 'forgot-password'
   const [authMode, setAuthMode] = useState('login');
@@ -344,13 +349,29 @@ function App() {
       }
       return tab;
     });
+    // Push a real browser history entry so the back arrow navigates
+    // between tabs: Inbox → Templates → [back] → Inbox.
+    // F5 also works because the URL hash reflects the active tab.
+    const newHash = tab ? `#${tab}` : window.location.pathname;
+    if (window.location.hash !== (tab ? `#${tab}` : '')) {
+      window.history.pushState({ tab }, '', newHash);
+    }
+  }, []);
+
+  // Browser back/forward: read the hash and switch to that tab
+  useEffect(() => {
+    const onPopState = () => {
+      const hash = window.location.hash.replace('#', '').trim();
+      setActiveTab(hash || null);
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
   }, []);
 
   const goBack = useCallback(() => {
-    const stack = navStackRef.current;
-    if (stack.length > 0) {
-      const prev = stack.pop();
-      setActiveTab(prev ?? null);
+    // Use the browser's native back — popstate handler will update activeTab
+    if (navStackRef.current.length > 0) {
+      window.history.back();
     } else {
       setActiveTab(null);
     }
@@ -1069,7 +1090,7 @@ function App() {
           {activeTab === 'self-heal'        && <MemberGate featureName="Self-Healing Content"><ProGate featureName="Self-Healing Content"><SelfHealDashboard /></ProGate></MemberGate>}
           {activeTab === 'brand-guardian'   && <MemberGate featureName="Brand Guardian"><ProGate featureName="Brand Guardian"><BrandGuardian /></ProGate></MemberGate>}
           {activeTab === 'asset-library'    && <MemberGate featureName="Asset Library"><ProGate featureName="Asset Library"><MediaLibrary /></ProGate></MemberGate>}
-          {activeTab === 'ai-workspace'     && <MemberGate featureName="AI Workspace"><ProGate featureName="AI Workspace"><AiWorkspace /></ProGate></MemberGate>}
+          {activeTab === 'ai-workspace'     && <MemberGate featureName="AI Workspace"><ProGate featureName="AI Workspace"><AiWorkspace onCaptionApproved={(text) => { setTemplateCaption(text); go('video-publisher'); }} /></ProGate></MemberGate>}
           {activeTab === 'account'          && <AskAIGate  featureName="Account"><AccountSettings /></AskAIGate>}
           {activeTab === 'video-publisher'  && <MemberGate featureName="Video Publisher"><WorkspaceGate permKey="videoPublisher"><VideoPublisher onNavigateToSocialConnect={() => go('social-connect')} templateCaption={templateCaption} onTemplateCaptionUsed={() => setTemplateCaption(null)} /></WorkspaceGate></MemberGate>}
           {activeTab === 'caption-templates' && <MemberGate featureName="Templates"><WorkspaceGate permKey="templates"><CaptionTemplates onBack={() => go('video-publisher')} onUseTemplate={(text) => { setTemplateCaption(text); go('video-publisher'); }} /></WorkspaceGate></MemberGate>}

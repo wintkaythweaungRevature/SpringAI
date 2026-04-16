@@ -455,7 +455,15 @@ export default function BrandGuardian() {
       if (res.ok) {
         const data = await res.json().catch(() => ({}));
         setScanResult(data.result || 'Scan complete.');
-        await Promise.all([fetchMentions(), fetchUnreadCount()]);
+        // Mentions are returned live in the scan response — no follow-up GET.
+        const fresh = Array.isArray(data.mentions) ? data.mentions : [];
+        // Attach a stable client-side key for React (no DB id anymore).
+        setMentions(fresh.map((m, i) => ({
+          ...m,
+          _key: m.dedupKey || `${m.platform || 'x'}-${i}-${m.postUrl || ''}`,
+        })));
+        // Unread-negative counter is computed from the current in-memory list.
+        setUnreadCount(fresh.filter(m => m.sentiment === 'NEGATIVE' && !m.alertRead).length);
       } else {
         const err = await res.json().catch(() => ({}));
         setError(err.error || err.message || 'Scan failed.');
@@ -474,34 +482,31 @@ export default function BrandGuardian() {
     setAiResponse(null);
     setLoadingResponse(true);
 
-    // Fire both requests concurrently
-    const promises = [
-      fetch(`${apiBase}/api/brand-guardian/response`, {
-        method: 'POST',
-        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mentionId: mention.id }),
-      }),
-    ];
-
+    // Mark as read locally — no DB round-trip (mentions aren't persisted).
     if (mention.sentiment === 'NEGATIVE' && !mention.alertRead) {
-      promises.push(
-        fetch(`${apiBase}/api/brand-guardian/mentions/${mention.id}/read`, {
-          method: 'PUT',
-          headers: authHeaders(),
-        }).then(() => {
-          setMentions(prev => prev.map(m => m.id === mention.id ? { ...m, alertRead: true } : m));
-          setUnreadCount(prev => Math.max(0, prev - 1));
-        }).catch(() => {})
-      );
+      setMentions(prev => prev.map(m =>
+        (m._key || m.dedupKey) === (mention._key || mention.dedupKey)
+          ? { ...m, alertRead: true }
+          : m
+      ));
+      setUnreadCount(prev => Math.max(0, prev - 1));
     }
 
     try {
-      const [responseRes] = await Promise.all(promises);
-      if (responseRes.ok) {
-        const data = await responseRes.json().catch(() => ({}));
+      const res = await fetch(`${apiBase}/api/brand-guardian/response`, {
+        method: 'POST',
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mentionText: mention.mentionText || '',
+          platform:    mention.platform   || 'social media',
+          sentiment:   mention.sentiment  || 'NEUTRAL',
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json().catch(() => ({}));
         setAiResponse(data.response || '');
       } else {
-        const err = await responseRes.json().catch(() => ({}));
+        const err = await res.json().catch(() => ({}));
         setAiResponse(err.error || err.message || 'Could not generate response.');
       }
     } catch {
@@ -871,9 +876,9 @@ export default function BrandGuardian() {
             )}
           </div>
         ) : (
-          filteredMentions.map(mention => (
+          filteredMentions.map((mention, idx) => (
             <MentionCard
-              key={mention.id}
+              key={mention._key || mention.dedupKey || `mention-${idx}`}
               mention={mention}
               onDraftResponse={handleDraftResponse}
             />

@@ -542,13 +542,19 @@ export default function AccountSettings() {
 }
 
 const s = {
-  wrap: { padding: "4px 0" },
+  wrap: {
+    padding: "4px 0",
+    display: "flex",
+    justifyContent: "center",
+    width: "100%",
+  },
   card: {
     background: "#ffffff",
     borderRadius: "12px",
     border: "1px solid #e2e8f0",
     padding: "28px 32px",
     maxWidth: "560px",
+    width: "100%",
     boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
     fontFamily: "'Inter', -apple-system, sans-serif",
   },

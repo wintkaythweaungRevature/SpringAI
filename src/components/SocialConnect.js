@@ -258,14 +258,6 @@ export default function SocialConnect({ onConnectionChange }) {
                     >
                       {isConnecting ? 'Opening...' : `Connect ${p.label}`}
                     </button>
-                    {p.id === 'tiktok' && (
-                      <button
-                        style={{ fontSize: 10, background: 'none', border: '1px dashed #cbd5e1', borderRadius: 6, padding: '3px 8px', color: '#94a3b8', cursor: 'pointer' }}
-                        onClick={debugTikTokUrl}
-                      >
-                        🔍 Debug TikTok URL
-                      </button>
-                    )}
                   </div>
                 )}
               </div>

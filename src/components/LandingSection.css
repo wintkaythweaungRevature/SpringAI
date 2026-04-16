@@ -1474,24 +1474,26 @@
 
 /* ── Tool cards grid ───────────────────────────────────────── */
 .ls-tool-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-wrap: wrap;
   gap: 10px;
+  justify-content: center;
 }
 
 .ls-tool-card {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
+  gap: 8px;
+  padding: 10px 16px;
   background: var(--ls-glass);
   backdrop-filter: var(--ls-blur);
   -webkit-backdrop-filter: var(--ls-blur);
   border: 1px solid var(--ls-border);
   border-left: 3px solid var(--tool-accent, #6366f1);
-  border-radius: 12px;
+  border-radius: 10px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.12);
   transition: transform 0.15s, box-shadow 0.15s;
+  flex-shrink: 0;
 }
 
 .ls-tool-card:hover {
@@ -1513,10 +1515,7 @@
 }
 
 .ls-tool-card__desc {
-  font-size: 0.73rem;
-  color: var(--ls-text-muted);
-  line-height: 1.4;
-  margin-top: 2px;
+  display: none;
 }
 
 /* ── What Is ─────────────────────────────────────────────── */

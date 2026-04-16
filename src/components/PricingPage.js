@@ -24,8 +24,6 @@ const PLANS = [
       { text: 'Viral Hook Generator', included: true },
       { text: 'DocuWizard & Resume tools', included: true },
       { text: '1 seat (solo)', included: true },
-      { text: 'Organization & Workspaces', included: false },
-      { text: 'Team member seats', included: false },
     ],
   },
   {
@@ -253,20 +251,15 @@ export default function PricingPage({ onClose }) {
 
                 {/* Feature list */}
                 <ul style={s.featureList}>
-                  {plan.features.map(f => (
-                    <li key={f.text} style={{
-                      ...s.featureItem,
-                      opacity: f.included ? 1 : 0.35,
-                    }}>
+                  {plan.features.filter(f => f.included).map(f => (
+                    <li key={f.text} style={s.featureItem}>
                       <span style={{
-                        color: f.included ? '#22c55e' : '#94a3b8',
+                        color: '#22c55e',
                         marginRight: 8, flexShrink: 0, fontWeight: 700, fontSize: 14,
                       }}>
-                        {f.included ? '✓' : '✗'}
+                        ✓
                       </span>
-                      <span style={{ textDecoration: f.included ? 'none' : 'line-through' }}>
-                        {f.text}
-                      </span>
+                      <span>{f.text}</span>
                     </li>
                   ))}
                 </ul>

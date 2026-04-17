@@ -800,6 +800,39 @@ export default function AnalyticsDashboard() {
     }
   }, [base, token, activeWorkspaceId, activeBrandId]);
 
+  // ── Manual metrics refresh ──────────────────────────────────────────────
+  // Triggers the backend to re-fetch likes/comments/views for every SUCCESS post
+  // in the current workspace from each platform's API, then reloads the stats so
+  // the tiles and table show fresh numbers without waiting for the 6h scheduler.
+  const [refreshingMetrics, setRefreshingMetrics] = useState(false);
+  const [refreshResult, setRefreshResult] = useState(null); // { refreshed, attempted } | null
+  const handleRefreshMetrics = useCallback(async () => {
+    if (!token || refreshingMetrics) return;
+    setRefreshingMetrics(true);
+    setRefreshResult(null);
+    try {
+      const res = await fetch(`${base}/api/social/post/refresh-metrics`, {
+        method: 'POST',
+        // Content-Type required even with no body — Spring's negotiation returns 415 otherwise.
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      });
+      if (res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setRefreshResult({
+          refreshed: Number(data.refreshed ?? 0),
+          attempted: Number(data.attempted ?? 0),
+        });
+        await loadMonthlyStats(monthlyFrom, monthlyTo);
+      }
+    } catch { /* silent */ }
+    finally {
+      setRefreshingMetrics(false);
+      // Auto-clear the status pill after 6 seconds.
+      setTimeout(() => setRefreshResult(null), 6000);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [base, token, refreshingMetrics, loadMonthlyStats, monthlyFrom, monthlyTo]);
+
   useEffect(() => { loadTopPosts(); }, [loadTopPosts]);
   useEffect(() => { loadMonthlyStats('', ''); }, [loadMonthlyStats]);
 
@@ -1182,6 +1215,25 @@ export default function AnalyticsDashboard() {
                     style={{ padding: '6px 16px', borderRadius: 8, border: 'none', background: '#6366f1', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer', opacity: loadMonthly ? 0.6 : 1 }}>
                     {loadMonthly ? 'Loading…' : 'Apply'}
                   </button>
+                  <button
+                    onClick={handleRefreshMetrics}
+                    disabled={refreshingMetrics}
+                    title="Pull the latest likes / comments / views from each platform for every post in this workspace."
+                    style={{
+                      padding: '6px 14px', borderRadius: 8,
+                      border: '1px solid rgba(34,197,94,0.35)',
+                      background: refreshingMetrics ? 'rgba(34,197,94,0.1)' : 'rgba(34,197,94,0.18)',
+                      color: '#22c55e', fontWeight: 700, fontSize: 13,
+                      cursor: refreshingMetrics ? 'wait' : 'pointer',
+                      display: 'inline-flex', alignItems: 'center', gap: 6,
+                    }}>
+                    {refreshingMetrics ? '⏳ Syncing…' : '🔄 Refresh metrics'}
+                  </button>
+                  {refreshResult && (
+                    <span style={{ color: '#22c55e', fontSize: 12, fontWeight: 600 }}>
+                      ✅ Updated {refreshResult.refreshed}/{refreshResult.attempted} post{refreshResult.attempted === 1 ? '' : 's'}
+                    </span>
+                  )}
                 </div>
                 {monthlyStats?.months?.length > 0 ? (
                   <>

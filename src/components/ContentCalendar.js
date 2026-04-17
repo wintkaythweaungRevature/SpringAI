@@ -180,12 +180,14 @@ const POST_STATUS_UI = {
   failed:           { label: 'Failed',          emoji: '🔴', pillBg: '#fef2f2', pillFg: '#b91c1c', solid: '#dc2626' },
   pending_approval: { label: 'Pending Approval',emoji: '🔶', pillBg: '#fef3c7', pillFg: '#92400e', solid: '#f59e0b' },
   changes_requested:{ label: 'Changes Requested',emoji: '⛔',pillBg: '#fee2e2', pillFg: '#991b1b', solid: '#ef4444' },
+  rejected:         { label: 'Rejected',          emoji: '❌', pillBg: '#fee2e2', pillFg: '#dc2626', solid: '#dc2626' },
 };
 
 function getPostStatusCategory(post) {
   const s = String(post?.status || '').toUpperCase();
   if (s === 'PENDING_APPROVAL') return 'pending_approval';
   if (s === 'CHANGES_REQUESTED') return 'changes_requested';
+  if (s === 'REJECTED') return 'rejected';
   if (s === 'FAILED') return 'failed';
   if (s === 'DRAFT' || s === 'UNSCHEDULED') return 'draft';
   if (s === 'SUCCESS' || s === 'PUBLISHED' || s === 'COMPLETED') return 'published';
@@ -269,6 +271,7 @@ function getPostPreview(post) {
     post?.videoUrl,
     post?.fileUrl,
     post?.assetUrl,
+    post?.s3Key,
     post?.url,
   );
   const thumbUrl = pickFirstUrl(
@@ -786,6 +789,11 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
   const [changesComment,       setChangesComment]       = useState('');
   const [approvalActionIds,    setApprovalActionIds]    = useState({}); // postId → true while loading
 
+  // ── Right-click duplicate state ─────────────────────────────────────────────
+  const [contextMenu,    setContextMenu]    = useState(null);  // { post, x, y } | null
+  const [duplicateTarget, setDuplicateTarget] = useState(null); // post | null
+  const [duplicateDate,  setDuplicateDate]  = useState('');    // datetime-local value
+
   const loadPosts = useCallback(async () => {
     if (!token) return;
     setLoading(true);
@@ -868,13 +876,21 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
     }
   };
 
+  // Convert datetime-local value (local time) to UTC ISO string (no Z) for the backend.
+  // The calendar appends "Z" when reading stored dates back, so storing UTC keeps the
+  // displayed day consistent for users in any timezone.
+  const toUtcIso = (dtLocal) => {
+    const d = new Date(String(dtLocal));
+    return Number.isNaN(d.getTime()) ? String(dtLocal) : d.toISOString().slice(0, 19);
+  };
+
   const rescheduleJob = async (jobId, dt) => {
     if (!jobId || !dt || !token) return;
     try {
       const res = await fetch(`${base}/api/analytics/job/${jobId}/reschedule`, {
         method: 'POST',
         headers: { ...authHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ newDateTime: dt }),
+        body: JSON.stringify({ newDateTime: toUtcIso(dt) }),
       });
       if (!res.ok) throw new Error('Reschedule failed');
       setActionMsg('Post rescheduled.');
@@ -893,7 +909,7 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
       const res = await fetch(`${base}/api/analytics/post/${postId}/reschedule`, {
         method: 'POST',
         headers: { ...authHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ newDateTime: dt }),
+        body: JSON.stringify({ newDateTime: toUtcIso(dt) }),
       });
       if (!res.ok) throw new Error('Reschedule failed');
       setActionMsg('Post rescheduled.');
@@ -902,6 +918,37 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
       setActionMsg('Could not reschedule this post.');
     } finally {
       setTimeout(() => setActionMsg(''), 3000);
+    }
+  };
+
+  // Dismiss context menu on any outside click
+  useEffect(() => {
+    if (!contextMenu) return;
+    const dismiss = () => setContextMenu(null);
+    window.addEventListener('click', dismiss);
+    return () => window.removeEventListener('click', dismiss);
+  }, [contextMenu]);
+
+  const handleDuplicate = async () => {
+    if (!duplicateTarget || !duplicateDate) return;
+    try {
+      const utcIso = toUtcIso(duplicateDate);
+      const res = await fetch(
+        `${base}/api/social/post/${duplicateTarget.id}/duplicate`,
+        {
+          method: 'POST',
+          headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+          body: JSON.stringify({ scheduledAt: utcIso }),
+        }
+      );
+      if (!res.ok) throw new Error('Duplicate failed');
+      setDuplicateTarget(null);
+      setActionMsg('✅ Post duplicated!');
+      await loadPosts();
+    } catch {
+      setActionMsg('Could not duplicate post.');
+    } finally {
+      setTimeout(() => setActionMsg(''), 4000);
     }
   };
 
@@ -1308,6 +1355,12 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
                                   e.stopPropagation();
                                   setFeedDetailPost(p);
                                 }}
+                                onContextMenu={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setHoverPreview(null);
+                                  setContextMenu({ post: p, x: e.clientX, y: e.clientY });
+                                }}
                               >
                                 {preview?.url ? (
                                   <ResolvedPostMedia
@@ -1325,7 +1378,7 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
                                       background: `linear-gradient(135deg, ${pColor}, ${pColor}cc)`,
                                     }}
                                   >
-                                    {pInfo ? <PlatformIcon platform={pInfo} size={16} /> : '•'}
+                                    {pInfo ? <PlatformIcon platform={pInfo} size={12} /> : '•'}
                                   </div>
                                 )}
                                 <div style={s.dayChipBody}>
@@ -1787,6 +1840,124 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
           </div>
         );
       })()}
+
+      {/* ── Right-click context menu ─────────────────────────────────────── */}
+      {contextMenu && (
+        <div
+          style={{
+            position: 'fixed',
+            left: contextMenu.x,
+            top: contextMenu.y,
+            zIndex: 2500,
+            background: '#fff',
+            border: '1px solid #e2e8f0',
+            borderRadius: 10,
+            boxShadow: '0 8px 30px rgba(15,23,42,0.18)',
+            minWidth: 160,
+            overflow: 'hidden',
+          }}
+          onClick={e => e.stopPropagation()}
+        >
+          <button
+            style={{
+              display: 'block',
+              width: '100%',
+              padding: '10px 16px',
+              background: 'none',
+              border: 'none',
+              textAlign: 'left',
+              fontSize: 13,
+              fontWeight: 600,
+              color: '#1e293b',
+              cursor: 'pointer',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#f8fafc'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
+            onClick={() => {
+              const base = contextMenu.post.scheduledAt
+                ? new Date(contextMenu.post.scheduledAt + (contextMenu.post.scheduledAt.endsWith('Z') ? '' : 'Z'))
+                : new Date();
+              base.setDate(base.getDate() + 7);
+              // datetime-local format: YYYY-MM-DDTHH:MM (in local time)
+              const pad = n => String(n).padStart(2, '0');
+              const localStr = `${base.getFullYear()}-${pad(base.getMonth()+1)}-${pad(base.getDate())}T${pad(base.getHours())}:${pad(base.getMinutes())}`;
+              setDuplicateDate(localStr);
+              setDuplicateTarget(contextMenu.post);
+              setContextMenu(null);
+            }}
+          >
+            📋 Duplicate
+          </button>
+        </div>
+      )}
+
+      {/* ── Duplicate post modal ─────────────────────────────────────────── */}
+      {duplicateTarget && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.45)',
+            zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+          onClick={() => setDuplicateTarget(null)}
+        >
+          <div
+            style={{
+              background: '#fff', borderRadius: 14, padding: '24px 28px',
+              width: 360, maxWidth: '92vw', boxShadow: '0 20px 60px rgba(15,23,42,0.25)',
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4, color: '#0f172a' }}>
+              📋 Duplicate Post
+            </div>
+            <div style={{ fontSize: 12, color: '#64748b', marginBottom: 16 }}>
+              <span style={{ textTransform: 'capitalize', fontWeight: 600, color: platformColor(duplicateTarget.platform) }}>
+                {duplicateTarget.platform}
+              </span>
+              {' · '}
+              {(safeDecodeCaption(duplicateTarget.caption) || '').slice(0, 60)}
+              {(safeDecodeCaption(duplicateTarget.caption) || '').length > 60 ? '…' : ''}
+            </div>
+            <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 6 }}>
+              Schedule for
+            </label>
+            <input
+              type="datetime-local"
+              value={duplicateDate}
+              onChange={e => setDuplicateDate(e.target.value)}
+              style={{
+                display: 'block', width: '100%', marginBottom: 20,
+                padding: '8px 10px', borderRadius: 8,
+                border: '1px solid #cbd5e1', fontSize: 13, color: '#0f172a',
+                boxSizing: 'border-box',
+              }}
+            />
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setDuplicateTarget(null)}
+                style={{
+                  padding: '8px 18px', borderRadius: 8, border: '1px solid #cbd5e1',
+                  background: '#f8fafc', color: '#475569', fontSize: 13, fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDuplicate}
+                style={{
+                  padding: '8px 18px', borderRadius: 8, border: 'none',
+                  background: '#6366f1', color: '#fff', fontSize: 13, fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                Duplicate →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
@@ -1842,27 +2013,27 @@ const s = {
   dayPostChip: {
     border: '1px solid #e2e8f0',
     background: '#ffffff',
-    borderRadius: 10,
-    fontSize: 11,
+    borderRadius: 7,
+    fontSize: 10,
     color: '#334155',
-    padding: 3,
+    padding: 2,
     display: 'flex',
     alignItems: 'center',
-    gap: 8,
+    gap: 5,
     cursor: 'pointer',
     textAlign: 'left',
-    minHeight: 42,
+    minHeight: 28,
     transition: 'box-shadow 0.15s, transform 0.15s',
   },
-  dayChipThumb: { width: 36, height: 36, borderRadius: 6, objectFit: 'cover', border: '1px solid #e2e8f0', flexShrink: 0 },
+  dayChipThumb: { width: 24, height: 24, borderRadius: 4, objectFit: 'cover', border: '1px solid #e2e8f0', flexShrink: 0 },
   dayChipThumbPlaceholder: {
-    width: 36, height: 36, borderRadius: 6, flexShrink: 0,
+    width: 24, height: 24, borderRadius: 4, flexShrink: 0,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    color: '#fff', fontSize: 16, fontWeight: 800,
+    color: '#fff', fontSize: 11, fontWeight: 800,
   },
-  dayChipBody: { display: 'flex', flexDirection: 'column', gap: 1, minWidth: 0, flex: 1 },
-  dayChipTime: { fontSize: 11, fontWeight: 700, color: '#0f172a' },
-  dayChipMeta: { fontSize: 10, color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+  dayChipBody: { display: 'flex', flexDirection: 'column', gap: 0, minWidth: 0, flex: 1 },
+  dayChipTime: { fontSize: 10, fontWeight: 700, color: '#0f172a' },
+  dayChipMeta: { fontSize: 9, color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
   dayMoreBtn: {
     border: 'none',
     background: 'transparent',

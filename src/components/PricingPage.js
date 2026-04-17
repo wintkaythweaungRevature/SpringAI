@@ -68,7 +68,7 @@ const PLANS = [
     tagline: 'Maximum power for teams',
     seats: 5,
     features: [
-      { text: 'All 8 social platforms', included: true },
+      { text: 'Unlimited connected accounts', included: true },
       { text: 'Unlimited videos', included: true },
       { text: 'Unlimited AI-generated images', included: true },
       { text: 'Unlimited scheduled posts', included: true },
@@ -92,7 +92,7 @@ const PLANS = [
 
 /* ─── Comparison table rows ─────────────────────────────────────────── */
 const COMPARE_ROWS = [
-  { label: 'Social platforms',                  starter: '3',          pro: '5',          growth: 'All 8' },
+  { label: 'Connected accounts',                 starter: '3',          pro: '5',          growth: 'Unlimited' },
   { label: 'Videos to post / month',            starter: '100',        pro: 'Unlimited',  growth: 'Unlimited' },
   { label: 'Images to post / month',            starter: '1,000',      pro: 'Unlimited',  growth: 'Unlimited' },
   { label: 'AI-generated images / mo',          starter: '—',          pro: '100',        growth: 'Unlimited' },

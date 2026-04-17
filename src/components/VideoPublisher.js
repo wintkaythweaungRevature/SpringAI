@@ -205,21 +205,17 @@ async function normalizeImageForPlatformPublish(file, platformId, publishType) {
 }
 
 /**
- * Keep the exact wall-clock time selected in the browser for schedule APIs.
- * We intentionally avoid UTC offset conversion here because it shifts the
- * selected local time when server/app timezones differ.
+ * Convert the browser-local datetime to a UTC ISO string (no "Z" suffix) for
+ * schedule APIs. The calendar treats stored bare ISO strings as UTC (appends "Z"),
+ * so sending UTC here ensures the post appears on the correct calendar day for
+ * users in any timezone (including negative UTC offsets like UTC-5 / UTC-7).
  */
 function formatScheduledAtForScheduleApi(input) {
   const d = new Date(String(input));
   if (Number.isNaN(d.getTime())) return String(input);
-  const pad = n => String(n).padStart(2, '0');
-  const y = d.getFullYear();
-  const m = pad(d.getMonth() + 1);
-  const day = pad(d.getDate());
-  const h = pad(d.getHours());
-  const min = pad(d.getMinutes());
-  const s = pad(d.getSeconds());
-  return `${y}-${m}-${day}T${h}:${min}:${s}`;
+  // toISOString() is always UTC; strip the trailing "Z" so the backend receives
+  // a bare LocalDateTime string it can parse without timezone handling.
+  return d.toISOString().slice(0, 19);
 }
 
 /* ── Video Frame Scrubber ─────────────────────────────────────────────────── */
@@ -371,7 +367,7 @@ function validateImage(file) {
 
 /* ─── Component ─────────────────────────────────────────────── */
 export default function VideoPublisher({ onNavigateToSocialConnect, templateCaption, onTemplateCaptionUsed }) {
-  const { apiBase, token, logout, user, authHeaders } = useAuth();
+  const { apiBase, token, logout, user, authHeaders, activeWorkspaceId } = useAuth();
   const isGrowth = user?.membershipType === 'GROWTH';
   const base = apiBase || 'https://api.wintaibot.com';
   const isMobile = useMediaQuery('(max-width: 768px)');
@@ -401,6 +397,10 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
   const [imageFile, setImageFile]     = useState(null);
   const [textCaption, setTextCaption] = useState('');
   const [dashStats, setDashStats]     = useState(null);
+  // ── Send for Approval ───────────────────────────────────────────────────────
+  const [approvalMode,      setApprovalMode]      = useState(false);
+  const [approvalMembers,   setApprovalMembers]   = useState([]); // workspace members list
+  const [selectedApprover,  setSelectedApprover]  = useState(null); // { userId, email, firstName, lastName }
   const [dashHistory, setDashHistory] = useState([]);
   const [dashLoading, setDashLoading] = useState(false);
   const [retryingId, setRetryingId]   = useState(null);
@@ -1070,6 +1070,20 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
     } catch (_) {}
   };
 
+  // Load workspace members for approval picker whenever approval mode is toggled on
+  useEffect(() => {
+    if (!approvalMode || !activeWorkspaceId) return;
+    (async () => {
+      try {
+        const res = await fetch(`${base}/api/workspace/${activeWorkspaceId}/members`,
+          { headers: authHeaders() });
+        if (!res.ok) return;
+        const data = await res.json().catch(() => []);
+        setApprovalMembers(Array.isArray(data) ? data : []);
+      } catch { /* silent — approval mode is optional */ }
+    })();
+  }, [approvalMode, activeWorkspaceId]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const scheduleSocialPost = async ({ platform, scheduledAt, variant }) => {
     if (!platform || !scheduledAt) return { ok: false, error: 'Missing schedule fields' };
     try {
@@ -1103,21 +1117,19 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
         return { ok: true, data };
       }
 
-      if (postType === 'video' && !variant?.variantId) {
-        return {
-          ok: false,
-          error:
-            'Cannot schedule video without a processed variant. Run Generate Content and wait for variants, or publish immediately after processing.',
-        };
-      }
+      // Video without a processed variant — fall through to legacy multipart scheduler
+      // and include the raw video file so the backend uploads it to S3 and stores s3Key.
 
-      // Image / text-only → legacy social multipart scheduler (no large video body).
+      // Image / text-only, or video without variant → legacy social multipart scheduler.
       const fd = new FormData();
       const scheduledIso = formatScheduledAtForScheduleApi(scheduledAt);
       fd.append('scheduledAt', scheduledIso);
       fd.append('caption', variant?.caption || '');
       fd.append('hashtags', variant?.hashtags?.join ? variant.hashtags.join(' ') : (variant?.hashtags || ''));
       fd.append('postType', postType || 'video');
+      // Attach the video/image file so the backend can upload it to S3
+      if (video) fd.append('file', video, video.name || 'media.mp4');
+      else if (imageFile) fd.append('file', imageFile, imageFile.name || 'image.jpg');
 
       const res = await fetch(`${base}/api/social/post/schedule/${platform}`, {
         method: 'POST',
@@ -1193,6 +1205,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
     setStep('publishing');
 
     const successPlatforms = [];
+    const scheduledPostIds = []; // collect postIds for approval emails
 
     for (const pid of toPublish) {
       const variant = variants[pid];
@@ -1208,6 +1221,9 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
           const result = await scheduleSocialPost({ platform: pid, scheduledAt, variant });
           if (result.ok) {
             successPlatforms.push(pid);
+            // Collect postId for send-for-approval (legacy scheduler returns { id: ... })
+            const postId = result.data?.id ?? result.data?.postId;
+            if (postId) scheduledPostIds.push(postId);
             setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'done', error: null } }));
           } else {
             setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'failed', error: result.error || 'Schedule failed' } }));
@@ -1381,6 +1397,22 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
 
     setPublished(successPlatforms);
     if (successPlatforms.length > 0) loadDashboard();
+
+    // ── Send approval emails if approval mode is on ──
+    if (approvalMode && selectedApprover && scheduledPostIds.length > 0) {
+      const memberName = selectedApprover.firstName
+        ? `${selectedApprover.firstName} ${selectedApprover.lastName || ''}`.trim()
+        : selectedApprover.email;
+      for (const postId of scheduledPostIds) {
+        try {
+          await fetch(`${base}/api/approve/send/${postId}`, {
+            method: 'POST',
+            headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+            body: JSON.stringify({ memberEmail: selectedApprover.email, memberName }),
+          });
+        } catch { /* silent — schedule already succeeded */ }
+      }
+    }
   };
 
   /* ── render sections ── */
@@ -2052,7 +2084,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
               ]).map(([icon, title]) => (
                 <div key={title} style={s.aiFeatureRow}>
                   <span style={{ fontSize: '20px' }}>{icon}</span>
-                  <div style={{ fontWeight: 600, fontSize: '13px' }}>{title}</div>
+                  <div style={{ fontWeight: 600, fontSize: '13px', color: '#1e293b' }}>{title}</div>
                 </div>
               ))}
             </div>
@@ -2353,6 +2385,64 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
               </div>
             </div>
 
+            {/* ── Send for Approval ─────────────────────────────────── */}
+            <div style={{
+              marginTop: '14px', padding: '12px 14px', borderRadius: 10,
+              border: `1.5px solid ${approvalMode ? '#a5b4fc' : '#e2e8f0'}`,
+              background: approvalMode ? '#eef2ff' : '#f8fafc',
+              transition: 'border-color .2s, background .2s',
+            }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none' }}>
+                <input
+                  type="checkbox"
+                  checked={approvalMode}
+                  onChange={e => { setApprovalMode(e.target.checked); if (!e.target.checked) setSelectedApprover(null); }}
+                  style={{ width: 15, height: 15, accentColor: '#6366f1', cursor: 'pointer' }}
+                />
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#1e293b' }}>
+                  👤 Send for Approval before publishing
+                </span>
+              </label>
+              {approvalMode && (
+                <div style={{ marginTop: 10 }}>
+                  <label style={{ fontSize: 11, fontWeight: 600, color: '#64748b', display: 'block', marginBottom: 5 }}>
+                    Select workspace member to review:
+                  </label>
+                  {approvalMembers.length === 0 ? (
+                    <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>
+                      No members found in this workspace.
+                    </p>
+                  ) : (
+                    <select
+                      value={selectedApprover ? String(selectedApprover.userId) : ''}
+                      onChange={e => {
+                        const m = approvalMembers.find(x => String(x.userId) === e.target.value);
+                        setSelectedApprover(m || null);
+                      }}
+                      style={{
+                        width: '100%', padding: '7px 10px', borderRadius: 8,
+                        border: '1.5px solid #c7d2fe', fontSize: 12, color: '#1e293b',
+                        background: '#fff', cursor: 'pointer',
+                      }}
+                    >
+                      <option value="">— choose a member —</option>
+                      {approvalMembers.map(m => (
+                        <option key={m.userId} value={m.userId}>
+                          {m.firstName ? `${m.firstName} ${m.lastName || ''}`.trim() : m.email}
+                          {m.email ? ` (${m.email})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  {selectedApprover && (
+                    <p style={{ fontSize: 11, color: '#6366f1', marginTop: 6, marginBottom: 0, fontWeight: 600 }}>
+                      ✉️ Approval email will be sent to {selectedApprover.email}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+
             <div style={{ marginTop: '16px' }}>
               <button
                 type="button"
@@ -2360,7 +2450,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
                 onClick={scheduleAndPublishAll}
                 disabled={publishBlockedByVideoRules || publishBlockedByImageRules}
               >
-                🚀 Schedule & Publish
+                {approvalMode && selectedApprover ? '📤 Schedule & Send for Approval' : '🚀 Schedule & Publish'}
               </button>
               <p style={{ fontSize: '11px', color: '#64748b', marginTop: '8px', marginBottom: 0 }}>
                 Platforms with a date set will be scheduled; others publish now.

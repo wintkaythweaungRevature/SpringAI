@@ -356,8 +356,8 @@ function TaskOutputRenderer({ task }) {
                       )}
                     </div>
                     {/* Caption */}
-                    <div style={{ fontSize: 13, color: '#e2e8f0', lineHeight: 1.6 }}>
-                      {s.caption || s.topic || '(no caption)'}
+                    <div style={{ fontSize: 13, color: '#e2e8f0', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+                      {(s.caption || s.topic || '(no caption)').replace(/\\n/g, '\n')}
                     </div>
                   </div>
                 );
@@ -371,10 +371,12 @@ function TaskOutputRenderer({ task }) {
     }
   }
 
-  // Default: plain pre-wrapped text
+  // Default: plain pre-wrapped text — replace literal \n sequences with real newlines
+  const rawText = task.taskOutput || task.taskInput || '(no output)';
+  const displayText = rawText.replace(/\\n/g, '\n');
   return (
     <div style={{ fontSize: 14, color: '#cbd5e1', lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-      {task.taskOutput || task.taskInput || '(no output)'}
+      {displayText}
     </div>
   );
 }

@@ -301,12 +301,15 @@ export function AuthProvider({ children }) {
         if (savedBrand) setActiveBrandId(Number(savedBrand));
         else setActiveBrandId(null);
         // Immediately fetch permissions so CLIENTs see restricted UI right after login
-        fetch(`${API_BASE}/api/workspace/${defaultWs.id}/my-permissions`, {
-          headers: { Authorization: `Bearer ${t}` },
-        })
-          .then((r) => (r.ok ? r.json() : null))
-          .then((perms) => { if (perms) setWorkspacePermissions(perms); })
-          .catch(() => {});
+        // Skip if id is null (synthetic "General" for legacy unassigned posts)
+        if (defaultWs.id != null) {
+          fetch(`${API_BASE}/api/workspace/${defaultWs.id}/my-permissions`, {
+            headers: { Authorization: `Bearer ${t}` },
+          })
+            .then((r) => (r.ok ? r.json() : null))
+            .then((perms) => { if (perms) setWorkspacePermissions(perms); })
+            .catch(() => {});
+        }
       }
       return list;
     } catch { return []; }
@@ -320,7 +323,7 @@ export function AuthProvider({ children }) {
     if (savedBrand) setActiveBrandId(Number(savedBrand));
     else setActiveBrandId(null);
     // Fetch own permissions in this workspace
-    if (!token || isOwnerToken(token)) { setWorkspacePermissions(null); return; }
+    if (!token || isOwnerToken(token) || wsId == null) { setWorkspacePermissions(null); return; }
     try {
       const res = await fetch(`${API_BASE}/api/workspace/${wsId}/my-permissions`, {
         headers: { Authorization: `Bearer ${token}` },

@@ -7,18 +7,22 @@ import { useAuth } from '../context/AuthContext';
  * Shows Pro + Growth upgrade cards for Starter users.
  */
 export default function ProGate({ featureName = 'this feature', children }) {
-  const { user, apiBase, authHeaders } = useAuth();
+  const { user, apiBase, authHeaders, activeWorkspaceId } = useAuth();
   const [plan, setPlan] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Re-fetch plan whenever the active workspace changes — a free-tier member viewing
+  // a workspace whose owner has Pro/Growth should inherit that plan inside the workspace.
+  // authHeaders() already sends X-Workspace-Id; backend /api/subscription/current reads it.
   useEffect(() => {
     if (!user) { setLoading(false); return; }
+    setLoading(true);
     fetch(`${apiBase}/api/subscription/current`, { headers: authHeaders() })
       .then(r => r.json())
       .then(d => setPlan(d?.plan?.toUpperCase()))
       .catch(() => setPlan(null))
       .finally(() => setLoading(false));
-  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user, activeWorkspaceId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#64748b', fontSize: 14 }}>

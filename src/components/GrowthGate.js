@@ -8,18 +8,20 @@ import { UpgradeWall } from './ProGate';
  * Shows Growth plan upgrade card for Pro users.
  */
 export default function GrowthGate({ featureName = 'this feature', children }) {
-  const { user, apiBase, authHeaders } = useAuth();
+  const { user, apiBase, authHeaders, activeWorkspaceId } = useAuth();
   const [plan, setPlan] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Re-fetch when active workspace changes — inherits owner plan via X-Workspace-Id header.
   useEffect(() => {
     if (!user) { setLoading(false); return; }
+    setLoading(true);
     fetch(`${apiBase}/api/subscription/current`, { headers: authHeaders() })
       .then(r => r.json())
       .then(d => setPlan(d?.plan?.toUpperCase()))
       .catch(() => setPlan(null))
       .finally(() => setLoading(false));
-  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user, activeWorkspaceId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#64748b', fontSize: 14 }}>

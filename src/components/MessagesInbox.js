@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { isPlatformDisabled } from '../config/disabledPlatforms';
 import PlatformIcon from './PlatformIcon';
+import ProfileAvatar from './ProfileAvatar';
 
 const PLATFORM_META = {
   instagram: { id: 'instagram', label: 'Instagram', color: '#E1306C', logo: 'instagram' },
@@ -1026,29 +1027,43 @@ export default function MessagesInbox({ onOpenConnectedAccounts, onOpenAutoReply
   const [showAll, setShowAll] = useState(false); // true = ignore lastSeen, fetch full history
   /** `null` = loading or failed to load status; `Set` = loaded — sidebar lists only connected IDs. */
   const [connectedPlatformIds, setConnectedPlatformIds] = useState(null);
+  // Full account pool from /api/social/accounts — used to render real profile
+  // avatars in the sidebar instead of generic platform logos when a platform has
+  // a single connected account. Shape: { youtube: [{id, username, profileImageUrl}], ... }
+  const [accountsByPlatform, setAccountsByPlatform] = useState({});
 
   useEffect(() => {
     if (!token) {
       setConnectedPlatformIds(null);
+      setAccountsByPlatform({});
       return;
     }
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(`${base}/api/social/status`, {
+        // /accounts returns the full account pool AND the distinct-platforms list;
+        // one round-trip populates both the sidebar filter state and the avatar data.
+        const res = await fetch(`${base}/api/social/accounts`, {
           headers: authHeaders(),
         });
-        if (!res.ok) throw new Error('social status');
+        if (!res.ok) throw new Error('social accounts');
         const j = await res.json();
-        const raw = Array.isArray(j.connected) ? j.connected : [];
-        const next = new Set();
-        for (const x of raw) {
-          const id = normalizeSocialStatusPlatformId(x);
-          if (id) next.add(id);
+        const pool = j?.accounts || {};
+        if (!cancelled) {
+          setAccountsByPlatform(pool);
+          const next = new Set();
+          for (const rawPlat of Object.keys(pool)) {
+            if ((pool[rawPlat] || []).length === 0) continue;
+            const id = normalizeSocialStatusPlatformId(rawPlat);
+            if (id) next.add(id);
+          }
+          setConnectedPlatformIds(next);
         }
-        if (!cancelled) setConnectedPlatformIds(next);
       } catch {
-        if (!cancelled) setConnectedPlatformIds(null);
+        if (!cancelled) {
+          setConnectedPlatformIds(null);
+          setAccountsByPlatform({});
+        }
       }
     })();
     return () => { cancelled = true; };
@@ -1404,17 +1419,35 @@ export default function MessagesInbox({ onOpenConnectedAccounts, onOpenAutoReply
                           : p.id === 'tiktok'
                             ? ttComments.length
                             : xComments.length;
+                // Prefer the real connected-account avatar when the user has EXACTLY
+                // ONE account on this platform (unambiguous "this button = that account").
+                // With 0 or 2+ accounts, fall back to the platform logo so we don't
+                // misrepresent which account this filter chip maps to.
+                const pAccounts = accountsByPlatform[p.id] || [];
+                const singleAccount = pAccounts.length === 1 ? pAccounts[0] : null;
+                const title = singleAccount?.username
+                  ? `${p.label} — ${singleAccount.username}`
+                  : p.label;
                 return (
                   <SidebarPlatformButton
                     key={p.id}
                     active={platformTab === p.id}
                     onClick={() => handlePlatformTab(p.id)}
-                    title={p.label}
+                    title={title}
                     accent={p.color}
                     unreadBadge={unread}
                     countBadge={unread > 0 ? undefined : cnt}
                   >
-                    <PlatformIcon platform={p} size={22} />
+                    {singleAccount ? (
+                      <ProfileAvatar
+                        imageUrl={singleAccount.profileImageUrl}
+                        platform={p}
+                        size={26}
+                        ringWidth={0}
+                      />
+                    ) : (
+                      <PlatformIcon platform={p} size={22} />
+                    )}
                   </SidebarPlatformButton>
                 );
               })}

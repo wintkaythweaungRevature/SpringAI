@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { filterEnabledPlatforms } from '../config/disabledPlatforms';
 import PlatformIcon from './PlatformIcon';
+import ProfileAvatar from './ProfileAvatar';
 import UpgradeModal from './UpgradeModal';
 
 const PLATFORMS = filterEnabledPlatforms([
@@ -262,14 +263,18 @@ export default function SocialConnect({ onConnectionChange }) {
                       <div key={acct.id}
                            style={{ ...s.card, ...s.cardConnected, borderColor: p.color + '40' }}>
                         <div style={s.cardHeader}>
-                          <div style={{ ...s.platformIcon, background: p.color + '15' }}>
-                            <PlatformIcon platform={p} size={28} />
-                          </div>
+                          {/* Avatar — real profile image fetched from the platform, falls back
+                              to the platform icon if the image URL is missing or failed to load. */}
+                          <ProfileAvatar
+                            imageUrl={acct.profileImageUrl}
+                            platform={p}
+                            size={40}
+                          />
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ ...s.platformName, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                               {acct.username || p.label}
                             </div>
-                            <div style={s.platformDesc}>{p.desc}</div>
+                            <div style={s.platformDesc}>{p.label}</div>
                           </div>
                           <div style={{ ...s.statusDot, background: '#22c55e' }} />
                         </div>

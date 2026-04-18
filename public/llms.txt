@@ -43,7 +43,7 @@ All paid plans include a 7-day trial.
 - [Who Uses WintAi](https://www.wintaibot.com/use-cases)
 - [Blog](https://www.wintaibot.com/blog)
 - [Documentation](https://www.wintaibot.com/docs)
-- [About](https://www.wintaibot.com/static/about.html)
+- [About](https://www.wintaibot.com/about)
 
 ## Developer / technical
 

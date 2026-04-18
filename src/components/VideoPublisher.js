@@ -426,9 +426,41 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
     }
     return plats;
   }, [accountsByPlatform, selectedTokenIds]);
-  // Legacy stubs so any component passing `setSelected` as a prop doesn't crash
-  // mid-migration. No-op — real control flows through the chip row now.
-  const setSelected = useCallback(() => {}, []);
+  // Bridge legacy platform-level `setSelected` calls into the account-pool model.
+  // Accepts the same API as useState's setter (either a new array or an updater fn
+  // that receives the current selectedPlatforms), and translates to adds/removes on
+  // `selectedTokenIds`. Adding a platform ticks EVERY account on that platform;
+  // removing unticks them all. Used by `togglePlatform` and `switchPostType`.
+  const setSelected = useCallback((updater) => {
+    setSelectedTokenIdsRaw(prev => {
+      // Derive current selected platforms from the incoming token set
+      const currentPlatforms = [];
+      for (const [p, list] of Object.entries(accountsByPlatform)) {
+        if ((list || []).some(a => prev.has(a.id))) currentPlatforms.push(p);
+      }
+      const nextPlatforms = typeof updater === 'function' ? updater(currentPlatforms) : updater;
+      const added   = (nextPlatforms || []).filter(p => !currentPlatforms.includes(p));
+      const removed = currentPlatforms.filter(p => !(nextPlatforms || []).includes(p));
+      const next = new Set(prev);
+      added.forEach(p => (accountsByPlatform[p] || []).forEach(a => next.add(a.id)));
+      removed.forEach(p => (accountsByPlatform[p] || []).forEach(a => next.delete(a.id)));
+      try { localStorage.setItem(LS_PICKED, JSON.stringify(Array.from(next))); } catch {}
+      return next;
+    });
+  }, [accountsByPlatform]);
+
+  // Expand-state for the "Select Platforms" card grid — when a card is clicked,
+  // that platform's accounts pop open inside the card for tick/untick. Only one
+  // card can be expanded at a time; null means all collapsed.
+  const [expandedPlatform, setExpandedPlatform] = useState(null);
+
+  // One-shot toast used when auto-un-ticking accounts after a postType switch.
+  const [platformSyncToast, setPlatformSyncToast] = useState(null);
+  useEffect(() => {
+    if (!platformSyncToast) return;
+    const t = setTimeout(() => setPlatformSyncToast(null), 4000);
+    return () => clearTimeout(t);
+  }, [platformSyncToast]);
   const [connectLoading, setConnectLoading] = useState(null);
   const [connectMessage, setConnectMessage] = useState('');
   const [canSkipProcessing, setCanSkipProcessing] = useState(false);
@@ -793,11 +825,40 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
     setVariants({});
     setPublished([]);
     setStep('upload');
-    // Keep only platforms that support the new type
-    setSelected(prev => prev.filter(id => {
-      const p = PLATFORMS.find(x => x.id === id);
-      return p && p.supports.includes(type);
-    }));
+    // Keep only accounts whose platform supports the new post type. Direct set
+    // manipulation (vs setSelected bridge) so we can count how many got pruned
+    // and surface that in a toast — otherwise users silently lose YouTube ticks
+    // when switching to Image and wonder why their publish doesn't include YT.
+    setSelectedTokenIdsRaw(prev => {
+      const next = new Set();
+      let removedCount = 0;
+      const removedPlatforms = new Set();
+      for (const id of prev) {
+        let platform = null;
+        for (const [p, list] of Object.entries(accountsByPlatform)) {
+          if ((list || []).some(a => a.id === id)) { platform = p; break; }
+        }
+        const pMeta = PLATFORMS.find(x => x.id === platform);
+        if (pMeta && pMeta.supports.includes(type)) {
+          next.add(id);
+        } else {
+          removedCount++;
+          if (platform) removedPlatforms.add(platform);
+        }
+      }
+      try { localStorage.setItem(LS_PICKED, JSON.stringify(Array.from(next))); } catch {}
+      if (removedCount > 0) {
+        const platformLabels = Array.from(removedPlatforms)
+          .map(p => PLATFORMS.find(x => x.id === p)?.label || p)
+          .join(', ');
+        setPlatformSyncToast(
+          `Unticked ${removedCount} account${removedCount === 1 ? '' : 's'} — ${platformLabels} doesn't support ${type} posts.`
+        );
+      }
+      return next;
+    });
+    // Collapse any expanded card on type change — its relevance just flipped.
+    setExpandedPlatform(null);
   };
 
   const handleDrop = (e) => {
@@ -1272,7 +1333,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
 
     if (toPublish.length === 0) {
       setPublishError({
-        message: 'Tick at least one account in the "Post to" row before publishing.',
+        message: 'Tap a platform in "Select Platforms" and tick at least one account before publishing.',
         platforms: [],
         requiresReconnect: false,
         requiresReLogin: false,
@@ -1577,93 +1638,6 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
             >
               Dismiss
             </button>
-          </div>
-        </div>
-      )}
-
-      {/* ── "Post to" chip row — account-pool picker ──
-           One row per platform that the user has at least one connected account on.
-           Each chip = one social account; tick/untick to include/exclude from this post.
-           Selection persists in localStorage across sessions. */}
-      {Object.values(accountsByPlatform).some(arr => (arr || []).length > 0) && (
-        <div style={{
-          background: 'rgba(255,255,255,0.04)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: 14,
-          padding: '14px 16px',
-          marginBottom: 16,
-        }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
-            <div style={{ fontSize: 13, fontWeight: 800, color: '#f1f5f9', letterSpacing: '0.02em' }}>Post to</div>
-            <div style={{ fontSize: 12, color: '#94a3b8' }}>
-              {selectedTokenIds.size === 0
-                ? 'Tick at least one account to publish to'
-                : `Publishing to ${selectedTokenIds.size} account${selectedTokenIds.size === 1 ? '' : 's'}`}
-            </div>
-            {selectedTokenIds.size > 0 && (
-              <button
-                type="button"
-                onClick={() => setSelectedTokenIds(new Set())}
-                style={{
-                  marginLeft: 'auto', background: 'transparent', border: '1px solid rgba(255,255,255,0.15)',
-                  color: '#94a3b8', fontSize: 11, fontWeight: 600, padding: '4px 10px',
-                  borderRadius: 999, cursor: 'pointer',
-                }}
-              >
-                Clear all
-              </button>
-            )}
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {PLATFORMS.map(p => {
-              const list = accountsByPlatform[p.id] || [];
-              if (list.length === 0) return null;
-              return (
-                <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                  <div style={{
-                    width: 96, flexShrink: 0, fontSize: 11, fontWeight: 700,
-                    color: p.color, textTransform: 'uppercase', letterSpacing: '0.04em',
-                  }}>
-                    {p.label}
-                  </div>
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', flex: 1 }}>
-                    {list.map(acct => {
-                      const ticked = selectedTokenIds.has(acct.id);
-                      return (
-                        <button
-                          key={acct.id}
-                          type="button"
-                          onClick={() => toggleTokenId(acct.id)}
-                          title={acct.username || `Account ${acct.id}`}
-                          style={{
-                            display: 'inline-flex', alignItems: 'center', gap: 8,
-                            padding: '4px 12px 4px 4px',
-                            borderRadius: 999,
-                            background: ticked ? `${p.color}20` : 'rgba(255,255,255,0.04)',
-                            border: `1.5px solid ${ticked ? p.color : 'rgba(255,255,255,0.12)'}`,
-                            color: ticked ? '#fff' : '#cbd5e1',
-                            fontSize: 12, fontWeight: ticked ? 700 : 500,
-                            cursor: 'pointer',
-                            transition: 'all 0.15s',
-                          }}
-                        >
-                          <ProfileAvatar
-                            imageUrl={acct.profileImageUrl}
-                            platform={p}
-                            size={28}
-                            ringWidth={ticked ? 2 : 1}
-                          />
-                          <span style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {acct.username || `Account ${acct.id}`}
-                          </span>
-                          {ticked && <span style={{ fontSize: 11, color: p.color, fontWeight: 800 }}>✓</span>}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
           </div>
         </div>
       )}
@@ -2158,33 +2132,214 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
           <div style={s.right}>
             <div style={s.card}>
               <div style={s.sectionTitle}>📡 Select Platforms</div>
+
+              {/* Auto-cleanup toast: appears briefly after a postType change
+                  removes incompatible-platform tickings from the selection set. */}
+              {platformSyncToast && (
+                <div
+                  role="status"
+                  style={{
+                    marginBottom: 10, padding: '8px 12px', borderRadius: 8,
+                    background: '#fef3c7', border: '1px solid #fcd34d',
+                    color: '#78350f', fontSize: 12, fontWeight: 600,
+                  }}
+                >
+                  ⚠️ {platformSyncToast}
+                </div>
+              )}
+
               <div style={{ ...s.platformGrid, ...(isMobile ? { gridTemplateColumns: 'repeat(2, 1fr)' } : {}) }}>
                 {PLATFORMS.map(p => {
-                  const supported = p.supports.includes(postType);
+                  const supported   = p.supports.includes(postType);
+                  const pAccounts   = accountsByPlatform[p.id] || [];
+                  const anyTicked   = pAccounts.some(a => selectedTokenIds.has(a.id));
+                  const isExpanded  = expandedPlatform === p.id && supported;
+                  const allTicked   = pAccounts.length > 0 && pAccounts.every(a => selectedTokenIds.has(a.id));
+
                   return (
-                  <button
-                    key={p.id}
-                    title={!supported ? `${p.label} does not support ${postType} posts` : ''}
-                    style={{
+                    <div key={p.id} style={{
                       ...s.platformBtn,
-                      ...(selectedPlatforms.includes(p.id) && supported ? { ...s.platformBtnActive, borderColor: p.color } : {}),
+                      // Account-pool card: takes full width when expanded so the
+                      // account list has room to breathe instead of clipping.
+                      gridColumn: isExpanded ? '1 / -1' : 'auto',
+                      ...(anyTicked && supported ? { ...s.platformBtnActive, borderColor: p.color } : {}),
                       ...((!supported) ? { opacity: 0.35, cursor: 'not-allowed', filter: 'grayscale(1)' } : {}),
-                    }}
-                    onClick={() => supported && togglePlatform(p.id)}
-                    disabled={!supported}
-                  >
-                    <PlatformIcon platform={p} size={28} />
-                    <span style={{ fontSize: '12px', fontWeight: 600 }}>{p.label}</span>
-                    {!supported && <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 400 }}>Not available</span>}
-                    {selectedPlatforms.includes(p.id) && supported && (
-                      <span style={{ ...s.platformCheck, background: p.color }}>✓</span>
-                    )}
-                  </button>
+                      padding: isExpanded ? 0 : s.platformBtn.padding, // expanded cards control their own padding
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'stretch',
+                      overflow: 'hidden',
+                      transition: 'all 0.2s',
+                    }}>
+                      {/* Card head — clickable. Toggles the expand state. */}
+                      <button
+                        type="button"
+                        title={!supported ? `${p.label} does not support ${postType} posts` : ''}
+                        disabled={!supported}
+                        onClick={() => {
+                          if (!supported) return;
+                          setExpandedPlatform(prev => prev === p.id ? null : p.id);
+                        }}
+                        style={{
+                          display: 'flex', flexDirection: 'column', alignItems: 'center',
+                          gap: 6, padding: '14px 10px', background: 'transparent',
+                          border: 'none', cursor: supported ? 'pointer' : 'not-allowed',
+                          color: 'inherit', width: '100%', position: 'relative',
+                        }}
+                      >
+                        <PlatformIcon platform={p} size={28} />
+                        <span style={{ fontSize: '12px', fontWeight: 600 }}>{p.label}</span>
+                        {!supported && (
+                          <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 400 }}>
+                            Not available
+                          </span>
+                        )}
+                        {supported && pAccounts.length > 0 && (
+                          <span style={{
+                            fontSize: 10, color: anyTicked ? p.color : '#94a3b8',
+                            fontWeight: 700,
+                          }}>
+                            {pAccounts.filter(a => selectedTokenIds.has(a.id)).length}/{pAccounts.length} account{pAccounts.length === 1 ? '' : 's'}
+                          </span>
+                        )}
+                        {supported && pAccounts.length === 0 && (
+                          <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 400 }}>
+                            Not connected
+                          </span>
+                        )}
+                        {anyTicked && supported && (
+                          <span style={{ ...s.platformCheck, background: p.color }}>✓</span>
+                        )}
+                        {supported && (
+                          <span aria-hidden="true" style={{
+                            position: 'absolute', right: 10, top: 10,
+                            fontSize: 14, color: '#94a3b8',
+                            transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                            transition: 'transform 0.2s',
+                          }}>
+                            ▾
+                          </span>
+                        )}
+                      </button>
+
+                      {/* Expanded body — accounts list, or "connect first" CTA */}
+                      {isExpanded && (
+                        <div style={{
+                          padding: '12px 14px 14px',
+                          borderTop: `1px solid ${p.color}22`,
+                          background: '#ffffff',
+                        }}>
+                          {pAccounts.length === 0 ? (
+                            <div style={{ textAlign: 'center', padding: '8px 0' }}>
+                              <div style={{ fontSize: 13, color: '#64748b', marginBottom: 10 }}>
+                                No {p.label} account connected yet.
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setExpandedPlatform(null);
+                                  if (typeof onNavigateToSocialConnect === 'function') onNavigateToSocialConnect();
+                                }}
+                                style={{
+                                  padding: '8px 14px', borderRadius: 8,
+                                  border: `1px solid ${p.color}`, background: '#fff',
+                                  color: p.color, fontSize: 12, fontWeight: 700,
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                Connect {p.label} →
+                              </button>
+                            </div>
+                          ) : (
+                            <>
+                              <div style={{
+                                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                marginBottom: 8,
+                              }}>
+                                <span style={{ fontSize: 11, fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                                  Pick accounts
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    // Toggle all — if all currently ticked, untick all; else tick all
+                                    setSelectedTokenIds(prev => {
+                                      const next = new Set(prev);
+                                      if (allTicked) pAccounts.forEach(a => next.delete(a.id));
+                                      else pAccounts.forEach(a => next.add(a.id));
+                                      return next;
+                                    });
+                                  }}
+                                  style={{
+                                    padding: '3px 8px', borderRadius: 6,
+                                    border: '1px solid #cbd5e1', background: '#f8fafc',
+                                    color: '#475569', fontSize: 10, fontWeight: 600,
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  {allTicked ? 'Untick all' : 'Tick all'}
+                                </button>
+                              </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                {pAccounts.map(acct => {
+                                  const ticked = selectedTokenIds.has(acct.id);
+                                  return (
+                                    <button
+                                      key={acct.id}
+                                      type="button"
+                                      onClick={() => toggleTokenId(acct.id)}
+                                      style={{
+                                        display: 'flex', alignItems: 'center', gap: 10,
+                                        padding: '8px 10px', borderRadius: 8,
+                                        background: ticked ? `${p.color}14` : '#fafbff',
+                                        border: `1.5px solid ${ticked ? p.color : '#e2e8f0'}`,
+                                        cursor: 'pointer', textAlign: 'left',
+                                        transition: 'all 0.15s',
+                                      }}
+                                    >
+                                      <ProfileAvatar
+                                        imageUrl={acct.profileImageUrl}
+                                        platform={p}
+                                        size={28}
+                                        ringWidth={1}
+                                      />
+                                      <span style={{
+                                        flex: 1, minWidth: 0,
+                                        fontSize: 13, fontWeight: ticked ? 700 : 500,
+                                        color: ticked ? '#0f172a' : '#334155',
+                                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                                      }}>
+                                        {acct.username || `Account ${acct.id}`}
+                                      </span>
+                                      <span style={{
+                                        width: 18, height: 18, borderRadius: 4,
+                                        border: `1.5px solid ${ticked ? p.color : '#cbd5e1'}`,
+                                        background: ticked ? p.color : 'transparent',
+                                        color: '#fff', fontSize: 12, fontWeight: 800,
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        flexShrink: 0,
+                                      }}>
+                                        {ticked ? '✓' : ''}
+                                      </span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
               </div>
               <div style={s.platformCount}>
                 {selectedPlatforms.length} platform{selectedPlatforms.length !== 1 ? 's' : ''} selected
+                {selectedTokenIds.size > 0 && (
+                  <span style={{ color: '#64748b', fontWeight: 400 }}>
+                    {' · '}{selectedTokenIds.size} account{selectedTokenIds.size === 1 ? '' : 's'} total
+                  </span>
+                )}
               </div>
             </div>
 

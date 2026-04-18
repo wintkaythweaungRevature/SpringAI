@@ -1159,6 +1159,28 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
 
       <div style={s.pageHeader}>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginLeft: 'auto' }}>
+          {typeof onOpenVideoPublisher === 'function' && (
+            <button
+              type="button"
+              onClick={() => onOpenVideoPublisher()}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '8px 14px',
+                background: 'linear-gradient(135deg, #2563eb, #1e3a8a)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 8,
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: 'pointer',
+                boxShadow: '0 2px 8px rgba(37,99,235,0.28)',
+              }}
+              title="Create a new post"
+            >
+              <span style={{ fontSize: 15, lineHeight: 1 }}>＋</span>
+              <span>Add Post</span>
+            </button>
+          )}
           <div style={s.viewToggle}>
             <button style={{ ...s.viewBtn, ...(view === 'calendar' ? s.viewBtnActive : {}) }} onClick={() => setView('calendar')}>
               🗓 Calendar

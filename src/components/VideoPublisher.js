@@ -383,6 +383,14 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
   const [activeVariant, setActiveVariant] = useState(null);
   const [scheduledTimes, setScheduledTimes] = useState({}); // { [platformId]: ISO datetime or null }
   const [connectedAccounts, setConnectedAccounts] = useState({});
+
+  // Account-pool model: full list of accounts per platform (from /api/social/accounts).
+  // Populated on mount alongside connectedAccounts; consumed by the "Post as" picker.
+  // Shape: { youtube: [{id, username, ...}, ...], facebook: [], ... }
+  const [accountsByPlatform, setAccountsByPlatform] = useState({});
+  // Which specific account the user picked per platform (tokenId from accountsByPlatform).
+  // When a platform has only one account we auto-fill it so the picker is invisible.
+  const [selectedTokenByPlatform, setSelectedTokenByPlatform] = useState({}); // { [pid]: tokenId }
   const [connectLoading, setConnectLoading] = useState(null);
   const [connectMessage, setConnectMessage] = useState('');
   const [canSkipProcessing, setCanSkipProcessing] = useState(false);
@@ -437,15 +445,25 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
 
   useEffect(() => {
     if (!token) return;
-    fetch(socialApi('/status'), { headers: authHeaders() })
+    // /accounts returns both the distinct-platforms list AND the full pool, so one
+    // round-trip fills connectedAccounts (for the yes/no indicator) and the new
+    // accountsByPlatform map (for the "Post as" picker).
+    fetch(socialApi('/accounts'), { headers: authHeaders() })
       .then(res => res.ok ? res.json() : null)
       .then(data => {
-        const list = data?.connected;
-        if (Array.isArray(list)) {
-          const map = {};
-          list.forEach(p => { map[p] = true; });
-          setConnectedAccounts(map);
-        }
+        const pool = data?.accounts || {};
+        setAccountsByPlatform(pool);
+        // Flat {platform: true} map for legacy "is this platform connected?" checks
+        const map = {};
+        Object.keys(pool).forEach(p => { if ((pool[p] || []).length > 0) map[p] = true; });
+        setConnectedAccounts(map);
+        // Auto-pick when there's exactly 1 account — picker stays hidden in that case.
+        // With multiple accounts we leave selection null; UI must prompt before publish.
+        const autoPick = {};
+        Object.entries(pool).forEach(([p, list]) => {
+          if (Array.isArray(list) && list.length === 1) autoPick[p] = list[0].id;
+        });
+        setSelectedTokenByPlatform(prev => ({ ...autoPick, ...prev }));
       })
       .catch(() => {});
   }, [base, token]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -1127,6 +1145,10 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
       fd.append('caption', variant?.caption || '');
       fd.append('hashtags', variant?.hashtags?.join ? variant.hashtags.join(' ') : (variant?.hashtags || ''));
       fd.append('postType', postType || 'video');
+      // Account-pool: include the picked token id so the backend scheduler uses the
+      // specific account the user chose (falls back to any-token when missing).
+      const picked = selectedTokenByPlatform?.[platform];
+      if (picked != null) fd.append('socialTokenId', String(picked));
       // Attach the video/image file so the backend can upload it to S3
       if (video) fd.append('file', video, video.name || 'media.mp4');
       else if (imageFile) fd.append('file', imageFile, imageFile.name || 'image.jpg');
@@ -1215,6 +1237,20 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
 
       setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'publishing', error: null } }));
 
+      // Account-pool guard: don't let a post slip through without an explicit account pick.
+      // When multiple accounts are connected, the user must pick which one publishes.
+      const acctList = accountsByPlatform[pid] || [];
+      if (acctList.length > 1 && selectedTokenByPlatform[pid] == null) {
+        setPublishingStatus(prev => ({
+          ...prev,
+          [pid]: {
+            state: 'failed',
+            error: `Pick a ${pid} account in the "Post as" dropdown before publishing.`,
+          },
+        }));
+        continue;
+      }
+
       try {
         if (hasSchedule) {
           // ── Schedule for later via social post scheduler ──
@@ -1297,6 +1333,10 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
             fd.append('hashtags', hashtags);
             const platformPublishType = effectivePublishTypeForPlatform(pid, postType, publishType);
             fd.append('postType', platformPublishType);
+            // Account-pool model: pass the specific connected-account id when the user
+            // picked one. Falls back to "any token for platform" on the backend when null.
+            const pickedTokenId = selectedTokenByPlatform?.[pid];
+            if (pickedTokenId != null) fd.append('socialTokenId', String(pickedTokenId));
             const res = await fetch(api(`/publish/${pid}`), {
               method: 'POST',
               headers: authHeaders(),
@@ -2481,6 +2521,56 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
                     </div>
                   </div>
 
+                  {/* Post as: required account picker (account-pool model).
+                      Always shown so the user EXPLICITLY chooses which connected
+                      account this post goes out from — matches user's spec
+                      "Force the user to pick every time". If only one account
+                      is connected we still show it (pre-selected) for clarity. */}
+                  {(() => {
+                    const acctList = accountsByPlatform[pid] || [];
+                    const picked   = selectedTokenByPlatform[pid];
+                    if (acctList.length === 0) {
+                      return (
+                        <div style={{
+                          marginBottom: 12, padding: '10px 12px', borderRadius: 8,
+                          background: '#fef2f2', border: '1px solid #fecaca',
+                          fontSize: 12, color: '#991b1b',
+                        }}>
+                          ⚠️ No {p.label} account connected. Go to <strong>Connected Accounts</strong> to connect one before publishing.
+                        </div>
+                      );
+                    }
+                    return (
+                      <div style={{ marginBottom: 14 }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: '#334155', marginBottom: 6 }}>
+                          Post as {picked == null && <span style={{ color: '#dc2626' }}>(required)</span>}
+                        </div>
+                        <select
+                          value={picked == null ? '' : String(picked)}
+                          onChange={e => {
+                            const val = e.target.value;
+                            setSelectedTokenByPlatform(prev => ({
+                              ...prev,
+                              [pid]: val === '' ? null : Number(val),
+                            }));
+                          }}
+                          style={{
+                            width: '100%', padding: '9px 12px', borderRadius: 8,
+                            border: picked == null ? '1.5px solid #dc2626' : '1px solid #cbd5e1',
+                            fontSize: 13, background: '#fff', color: '#0f172a',
+                          }}
+                        >
+                          <option value="">— Choose an account —</option>
+                          {acctList.map(acct => (
+                            <option key={acct.id} value={acct.id}>
+                              {acct.username || `Account ${acct.id}`}
+                              {acct.platformUserId ? ` (${String(acct.platformUserId).slice(0, 12)})` : ''}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    );
+                  })()}
 
                   {!isImageStoryEditor ? (
                     <>

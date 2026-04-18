@@ -7,34 +7,73 @@ import { TemplatesTutorial, DashboardTutorial, GrowthPlannerTutorial, EchoScribe
 import BlogPage from '../components/BlogPage';
 import './SEOPublicLayout.css';
 
+// Route → (title, description, breadcrumbs). Descriptions prioritize the current
+// social-media product positioning (previous copy referenced PDF/flashcards which
+// was the MVP era — stale for 2026). Breadcrumbs drive Google rich-result snippets
+// AND give LLMs a navigable site graph when they cite individual pages.
 const ROUTE_META = {
   '/': {
-    title: 'W!ntAi – AI Assistant for PDF Analysis, Documents & Productivity',
-    description: 'W!ntAi is an AI assistant that analyzes PDFs, extracts data from documents, transcribes audio, generates images, writes emails, and prepares you for interviews. Start free.',
+    title: 'WintAi — AI Social Media Management for Creators & Agencies',
+    description: 'Publish one video to 8 platforms — YouTube, Instagram, TikTok, Facebook, LinkedIn, X, Threads, Pinterest — with AI captions in your brand voice. Start free.',
+    breadcrumbs: [
+      { name: 'Home', item: 'https://www.wintaibot.com/' },
+    ],
+  },
+  '/about': {
+    title: 'About WintAi — What It Is & Who Uses It',
+    description: 'WintAi is an AI social media management platform for creators and agencies. Publish videos, schedule posts, and manage 8 platforms from one dashboard.',
+    breadcrumbs: [
+      { name: 'Home',  item: 'https://www.wintaibot.com/' },
+      { name: 'About', item: 'https://www.wintaibot.com/about' },
+    ],
   },
   '/features': {
-    title: 'Features – 8 AI Tools in One Platform | W!ntAi',
-    description: 'DocuWizard, EchoScribe, AI Image Generator, Reply Enchanter, Resume Warlock, Video Publisher, Ask AI, Recipe Generator. All in one dashboard.',
+    title: 'Features — 15+ AI Tools for Social Media | WintAi',
+    description: 'Video Publisher, AI Workspace, Viral Hooks, Content Calendar, Brand Guardian, Growth Planner, Self-Healing Content, Trend Hijacker, and more.',
+    breadcrumbs: [
+      { name: 'Home',     item: 'https://www.wintaibot.com/' },
+      { name: 'Features', item: 'https://www.wintaibot.com/features' },
+    ],
   },
   '/pricing': {
-    title: 'Pricing – Starter $19, Pro $39, Growth $79 | W!ntAi',
-    description: 'Paid plans from $19/mo ($15/mo annual) with video publisher limits; Pro $39 and Growth $79 with annual savings. Compare features and why we priced this way.',
+    title: 'Pricing — Free, Starter $19, Pro $39, Growth $79 | WintAi',
+    description: 'WintAi pricing: Free tier, Starter $19/mo, Pro $39/mo, Growth $79/mo. 7-day free trial on all paid plans. Unlimited accounts on Growth.',
+    breadcrumbs: [
+      { name: 'Home',    item: 'https://www.wintaibot.com/' },
+      { name: 'Pricing', item: 'https://www.wintaibot.com/pricing' },
+    ],
   },
   '/use-cases': {
-    title: 'Who Uses W!ntAi – Job Seekers, Professionals, Creators | W!ntAi',
-    description: 'Job seekers, business professionals, students, content creators, and teams use W!ntAi to automate documents, emails, and more.',
+    title: 'Who Uses WintAi — Creators, Agencies, Teams | WintAi',
+    description: 'Solo creators, marketing agencies, and teams use WintAi to publish across 8 social platforms, schedule with AI, and grow with brand-voice captions.',
+    breadcrumbs: [
+      { name: 'Home',      item: 'https://www.wintaibot.com/' },
+      { name: 'Use Cases', item: 'https://www.wintaibot.com/use-cases' },
+    ],
   },
   '/blog': {
-    title: 'Blogs – Guides & Updates | W!ntAi',
-    description: 'Product updates, creator tips, and articles from the W!ntAi team.',
+    title: 'Blog — Social Media Tips, AI Content Guides | WintAi',
+    description: 'Expert guides on AI-powered social media: content calendars, cross-platform publishing, brand voice, and growth strategies for creators and agencies.',
+    breadcrumbs: [
+      { name: 'Home', item: 'https://www.wintaibot.com/' },
+      { name: 'Blog', item: 'https://www.wintaibot.com/blog' },
+    ],
   },
   '/tutorial': {
-    title: 'Tutorials – How to Use W!ntAi | W!ntAi',
-    description: 'Step-by-step tutorials for Video Publisher, scheduling, analytics, and more.',
+    title: 'Tutorials — How to Use WintAi | WintAi',
+    description: 'Step-by-step tutorials for Video Publisher, scheduling, analytics, AI Workspace, Brand Guardian, and more WintAi tools.',
+    breadcrumbs: [
+      { name: 'Home',      item: 'https://www.wintaibot.com/' },
+      { name: 'Tutorials', item: 'https://www.wintaibot.com/tutorial' },
+    ],
   },
   '/docs': {
-    title: 'Documentation & API | W!ntAi',
-    description: 'W!ntAi API documentation, Swagger UI, and integration guides.',
+    title: 'Documentation & API | WintAi',
+    description: 'WintAi API documentation, Swagger UI, and integration guides for developers.',
+    breadcrumbs: [
+      { name: 'Home', item: 'https://www.wintaibot.com/' },
+      { name: 'Docs', item: 'https://www.wintaibot.com/docs' },
+    ],
   },
 };
 
@@ -108,6 +147,32 @@ export default function SEOPublicLayout({ onGetStarted, onOpenVideoPublisher }) 
         <title>{meta.title}</title>
         <meta name="description" content={meta.description} />
         <link rel="canonical" href={`https://www.wintaibot.com${pathname}`} />
+        {/* Open Graph + Twitter so social previews match the per-route title/description. */}
+        <meta property="og:title" content={meta.title} />
+        <meta property="og:description" content={meta.description} />
+        <meta property="og:url" content={`https://www.wintaibot.com${pathname}`} />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="WintAi" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={meta.title} />
+        <meta name="twitter:description" content={meta.description} />
+        {/* BreadcrumbList — Google uses this to render the "Home › Pricing" trail in
+            search results (rich snippet), and LLMs use it to understand site hierarchy
+            when they cite an inner page. */}
+        {meta.breadcrumbs && meta.breadcrumbs.length > 1 && (
+          <script type="application/ld+json">
+            {JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'BreadcrumbList',
+              itemListElement: meta.breadcrumbs.map((b, i) => ({
+                '@type': 'ListItem',
+                position: i + 1,
+                name: b.name,
+                item: b.item,
+              })),
+            })}
+          </script>
+        )}
       </Helmet>
 
       <header className="seo-nav" role="banner">

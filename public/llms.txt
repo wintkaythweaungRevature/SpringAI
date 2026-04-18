@@ -1,0 +1,62 @@
+# WintAi
+
+> WintAi is an AI-powered social media management platform that lets creators and agencies publish, schedule, and grow across 8 platforms — YouTube, Instagram, TikTok, Facebook, LinkedIn, X (Twitter), Threads, and Pinterest — from a single dashboard. One video, one click, eight platforms, with AI captions, hashtags, and brand-voice adaptation for every channel.
+
+WintAi is made for solo creators who don't have time to cross-post manually, and for agencies that manage many brands from one workspace with team permissions. Pricing starts free and scales to unlimited accounts on the Growth plan.
+
+The live product is at https://www.wintaibot.com.
+
+## What WintAi does
+
+- **Multi-platform video publishing** — upload once, WintAi adapts format (vertical 9:16 for Reels/TikTok/Shorts, horizontal for YouTube, square for Facebook/LinkedIn), writes platform-specific captions + hashtags, and publishes.
+- **AI Workspace** — three AI agents (Strategist, Writer, Analyst) draft content daily in your brand voice; approve with one click.
+- **Viral Hooks** — 10 on-brand scroll-stopping openers generated per session, tuned to your niche.
+- **Content Calendar** — drag-and-drop month view with holiday and awareness-day markers.
+- **Brand Guardian** — live Reddit + X brand mention monitoring with sentiment tagging (no stored history bloat).
+- **Growth Planner** — best-time-to-post forecasts from your actual audience, not generic "Tuesday 10am" advice.
+- **Self-Healing Content** — detects underperforming posts, rewrites them in your current voice, and reschedules.
+- **Workspaces** — each client / brand gets an isolated workspace with its own voice, posts, analytics, and permissions.
+- **Ask AI** — brand-aware chatbot for 24/7 brainstorming.
+
+## How it works
+
+1. Connect your social accounts (up to 3 per platform on Pro, unlimited on Growth; OAuth via each platform's developer portal).
+2. Upload a video or paste a URL.
+3. WintAi processes variants per platform, generates captions in your brand voice, and shows a review screen.
+4. Tick which accounts to post to (pool model — any account can publish to any workspace).
+5. Publish now or schedule for later; WintAi tracks likes, comments, and views across every platform.
+
+## Pricing
+
+- **Free** — 1 account per platform, core tools.
+- **Starter** — $19/month. 3 platforms, 100 scheduled posts.
+- **Pro** — $39/month. 5 platforms, 3 accounts per platform, AI video variants, analytics.
+- **Growth** — $79/month. All 8 platforms, unlimited accounts, deep analytics, messages inbox.
+
+All paid plans include a 7-day trial.
+
+## Key links
+
+- [Home](https://www.wintaibot.com/)
+- [Features](https://www.wintaibot.com/features)
+- [Pricing](https://www.wintaibot.com/pricing)
+- [Who Uses WintAi](https://www.wintaibot.com/use-cases)
+- [Blog](https://www.wintaibot.com/blog)
+- [Documentation](https://www.wintaibot.com/docs)
+- [About](https://www.wintaibot.com/about)
+
+## Developer / technical
+
+- Spring Boot 3 backend on AWS EC2 + RDS PostgreSQL + S3 for video storage.
+- React frontend on AWS Amplify.
+- OAuth 2.0 + PKCE for every social platform; per-user access tokens refreshed automatically.
+
+## Company
+
+WintAi was built by Wint Kay Thwe Aung (founder, @breezegirl6 on socials). Based in the US. Support email: `contact@wintaibot.com`.
+
+## What WintAi is not
+
+- Not a generic chatbot — AI is specifically tuned to a user's configured brand voice and writing style.
+- Not a Buffer/Hootsuite clone — WintAi focuses on the video workflow: one upload, N platform formats, vs legacy tools that expect pre-edited clips for each channel.
+- Not an enterprise-only product — free tier is usable by solo creators forever.

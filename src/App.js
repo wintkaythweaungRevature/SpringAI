@@ -11,6 +11,7 @@ import { HiChatBubbleOvalLeft, HiArrowTrendingUp, HiLink } from 'react-icons/hi2
 import { HiDocumentMagnifyingGlass, HiRectangleGroup, HiFilm, HiArrowPath, HiShieldCheck } from 'react-icons/hi2';
 import { HiCog6Tooth, HiCreditCard, HiQuestionMarkCircle } from 'react-icons/hi2';
 import PlatformIcon from './components/PlatformIcon';
+import ProfileAvatar from './components/ProfileAvatar';
 import HelpPanel from './components/HelpPanel';
 import ImageGenerator from './components/ImageGenerator';
 import ChatComponent from './components/ChatComponent';
@@ -319,6 +320,10 @@ function App() {
   const topNavRef = useRef(null);
   const [aiDockOpen, setAiDockOpen] = useState(false);
   const [connectedPlatforms, setConnectedPlatforms] = useState([]);
+  // Full account pool grouped by platform — used to show real profile avatars in
+  // the top-bar icons. Populated alongside connectedPlatforms from /social/accounts.
+  // Shape: { youtube: [{id, username, profileImageUrl, ...}, ...], facebook: [], ... }
+  const [accountsByPlatform, setAccountsByPlatform] = useState({});
   const [pendingInviteToken, setPendingInviteToken] = useState(null);
   const [pendingOrgInviteToken, setPendingOrgInviteToken] = useState(null);
   const [orgInviteHint, setOrgInviteHint] = useState(null); // { email, orgName } or null
@@ -377,13 +382,23 @@ function App() {
     }
   }, []);
 
-  // Fetch connected social platforms for topbar icons
+  // Fetch connected social accounts for topbar icons.
+  // /accounts returns the full pool — derives both the connected-platforms list
+  // (for button enabled/disabled state) AND the per-account profile avatars.
   useEffect(() => {
-    if (!user || !token) { setConnectedPlatforms([]); return; }
+    if (!user || !token) { setConnectedPlatforms([]); setAccountsByPlatform({}); return; }
     const base = apiBase || 'https://api.wintaibot.com';
-    fetch(`${base}/api/social/status`, { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${base}/api/social/accounts`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.ok ? r.json() : null)
-      .then(data => { if (data?.connected) setConnectedPlatforms(data.connected); })
+      .then(data => {
+        if (!data) return;
+        const pool = data.accounts || {};
+        setAccountsByPlatform(pool);
+        const connected = Object.entries(pool)
+          .filter(([, list]) => (list || []).length > 0)
+          .map(([p]) => p);
+        setConnectedPlatforms(connected);
+      })
       .catch(() => {});
   }, [user, token, apiBase]);
 
@@ -407,9 +422,14 @@ function App() {
   const [connectingId, setConnectingId] = useState(null);
   const refreshTopbarStatus = useCallback(() => {
     const base = apiBase || 'https://api.wintaibot.com';
-    fetch(`${base}/api/social/status`, { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${base}/api/social/accounts`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d?.connected) setConnectedPlatforms(d.connected); })
+      .then(d => {
+        if (!d) return;
+        const pool = d.accounts || {};
+        setAccountsByPlatform(pool);
+        setConnectedPlatforms(Object.entries(pool).filter(([, l]) => (l || []).length > 0).map(([p]) => p));
+      })
       .catch(() => {});
   }, [apiBase, token]);
 
@@ -749,6 +769,12 @@ function App() {
                   const isOn = connectedPlatforms.includes(p.id);
                   const isBusy = disconnectingId === p.id || connectingId === p.id;
                   const isConnecting = connectingId === p.id;
+                  // Show the real connected-account photo when exactly one account
+                  // is linked for this platform. With 0 or 2+ accounts the generic
+                  // platform icon is clearer (the button represents the platform,
+                  // not one particular account).
+                  const pAccounts = accountsByPlatform[p.id] || [];
+                  const singleAccount = isOn && pAccounts.length === 1 ? pAccounts[0] : null;
                   return (
                     <div key={p.id} style={{ position: 'relative' }}>
                       <button
@@ -792,7 +818,9 @@ function App() {
                       >
                         {isConnecting
                           ? <span style={{ fontSize: 10, animation: 'spin 1s linear infinite', display: 'inline-block' }}>⟳</span>
-                          : <PlatformIcon platform={p} size={15} />
+                          : singleAccount
+                            ? <ProfileAvatar imageUrl={singleAccount.profileImageUrl} platform={p} size={26} ringWidth={0} />
+                            : <PlatformIcon platform={p} size={15} />
                         }
                       </button>
                       {/* Green dot = connected */}

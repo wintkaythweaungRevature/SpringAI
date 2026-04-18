@@ -5,6 +5,30 @@ import PlatformIcon from './PlatformIcon';
 
 const API_BASE = process.env.REACT_APP_API_URL || 'https://api.wintaibot.com';
 
+/**
+ * Circular initial-avatar for commenters (people outside the WintAi user base).
+ * Platform comment APIs either don't return profile photos or gate them behind
+ * scopes we haven't requested yet, so we render a colored initial circle tinted
+ * by the platform instead. Gives scannable visual anchor per row.
+ */
+function AuthorInitialAvatar({ name, platform, size = 24 }) {
+  const clean = String(name || '').replace(/^@+/, '').trim();
+  const initial = (clean || '?').charAt(0).toUpperCase();
+  const color = platform?.color || '#6366f1';
+  return (
+    <span style={{
+      width: size, height: size, borderRadius: '50%', flexShrink: 0,
+      background: `linear-gradient(135deg, ${color}35, ${color}70)`,
+      border: `1.5px solid ${color}55`,
+      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+      fontSize: Math.round(size * 0.44), fontWeight: 700,
+      color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,0.25)',
+    }}>
+      {initial}
+    </span>
+  );
+}
+
 const PLATFORMS = filterEnabledPlatforms([
   { id: 'instagram', label: 'Instagram', color: '#E1306C', emoji: '📸', logo: 'instagram',
     note: 'Replies to comments on your Instagram posts.' },
@@ -626,7 +650,20 @@ export default function AutoReplySettings() {
                             <PlatformIcon platform={resolvePlatformMeta(l.platform)} size={22} />
                             <span style={s.logPlatformLabel}>{platformLabel(l.platform)}</span>
                           </span>
-                          <span style={s.logColAuthor}>@{l.authorUsername || '—'}</span>
+                          <span style={{ ...s.logColAuthor, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                            {/* Commenter avatar — platform APIs don't include profile
+                                photos in the comment list (would need per-user lookups
+                                with scope-gated permissions), so we render a colored
+                                initial circle keyed to the platform. */}
+                            <AuthorInitialAvatar
+                              name={l.authorUsername || '?'}
+                              platform={resolvePlatformMeta(l.platform)}
+                              size={24}
+                            />
+                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              @{l.authorUsername || '—'}
+                            </span>
+                          </span>
                           <span style={s.logCellWrap}>{l.commentText || '—'}</span>
                           <span style={s.logCellWrap}>{l.replyText || '—'}</span>
                           <span style={s.logColTime}>{formatTime(l.repliedAt)}</span>

@@ -430,6 +430,14 @@ export default function PostDetailModal({ post, onClose, platform, onSaved, feed
           } catch {
             fireToast({ kind: 'warning', message: 'Saved, but network error on resubmit.' });
           }
+        } else {
+          // Earlier bug: when approverEmail was missing we'd silently skip the resubmit so
+          // the user thought "Save & Resubmit" had re-sent the email — it hadn't. Surface it
+          // instead so they know to send for approval manually from the post's menu.
+          fireToast({
+            kind: 'warning',
+            message: 'Saved, but the original approver is unknown. Open "Send for Approval" from the post menu to resubmit.',
+          });
         }
       } else {
         setSuccessMsg(publishNow ? '🚀 Post sent for immediate publishing!' : '✅ Changes saved successfully!');

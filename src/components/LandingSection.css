@@ -441,6 +441,16 @@
   margin-top: 0.08em;
 }
 
+/* Single-line variant — shrinks slightly so "If You Can Record It, We Can Post It." fits on one row */
+.ls-hero-h1-line--wide {
+  font-size: clamp(1.8rem, 4.2vw, 3.1rem);
+  white-space: normal;
+  line-height: 1.12;
+}
+@media (max-width: 640px) {
+  .ls-hero-h1-line--wide { font-size: clamp(1.5rem, 7vw, 2.2rem); }
+}
+
 .ls-hero-inner--split .ls-hero-copy__block--tagline .ls-hero-sub {
   max-width: none;
   width: 100%;
@@ -2763,3 +2773,293 @@
     height: 170px;
   }
 }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   GLASSMORPHISM POLISH
+   Sharpens the existing dark-glass direction: vivid-gradient backdrop with
+   blurred colored blobs, stronger frosted-panel surfaces, saturated blur,
+   chunky pill buttons. Kept last so source order wins without !important.
+   To soften: drop the --ls-blur amount or reduce the blob opacities below.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+.ls-root {
+  --ls-glass:       rgba(255, 255, 255, 0.07);
+  --ls-glass-hover: rgba(255, 255, 255, 0.12);
+  --ls-border:      rgba(255, 255, 255, 0.18);
+  --ls-border-soft: rgba(255, 255, 255, 0.10);
+  --ls-blur:        saturate(180%) blur(22px);
+
+  /* Re-anchor the page on a richer backdrop so glass panels have color to catch */
+  background:
+    radial-gradient(1100px 620px at 80% -10%,  rgba(139, 92, 246, 0.38), transparent 60%),
+    radial-gradient(900px 520px at -10% 25%,  rgba(37, 99, 235, 0.30),  transparent 60%),
+    radial-gradient(1000px 680px at 60% 110%, rgba(236, 72, 153, 0.22), transparent 60%),
+    linear-gradient(165deg, #050816 0%, #0a1226 40%, #0b1835 70%, #0a1020 100%);
+  background-attachment: fixed;
+}
+
+/* Frosted panel surfaces — cards, pricing, features, use-cases, testimonials, FAQ */
+.ls-seo-card,
+.ls-feature-card,
+.ls-price-card,
+.ls-use-case-card,
+.ls-test-card,
+.ls-faq-item,
+.ls-gallery-item,
+.ls-hero,
+.ls-hero-visual,
+.ls-hero-visual--nested,
+.ls-hero-orch,
+.ls-vp-showcase {
+  background: linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+  border: 1px solid var(--ls-border);
+  backdrop-filter: var(--ls-blur);
+  -webkit-backdrop-filter: var(--ls-blur);
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  border-radius: 22px;
+}
+
+.ls-seo-card:hover,
+.ls-feature-card:hover,
+.ls-price-card:hover,
+.ls-use-case-card:hover,
+.ls-test-card:hover,
+.ls-gallery-item:hover {
+  transform: translateY(-3px);
+  background: linear-gradient(145deg, rgba(255,255,255,0.12), rgba(255,255,255,0.05));
+  border-color: rgba(255, 255, 255, 0.28);
+  box-shadow:
+    0 28px 60px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(139, 92, 246, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+/* Hero — biggest, most dramatic frosted panel on the page */
+.ls-hero {
+  border-radius: 32px;
+  padding-inline: clamp(20px, 3vw, 40px);
+}
+
+/* Hero badges / kicker / chips — small frosted pills */
+.ls-hero-badge,
+.ls-hero-chips > *,
+.ls-hero-kicker {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+}
+
+/* Primary buttons — violet gradient, saturated, with inner light rim */
+.ls-btn-primary,
+.ls-btn-lg {
+  background: linear-gradient(135deg, #7c3aed 0%, #4338ca 100%);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 14px;
+  box-shadow:
+    0 10px 28px rgba(124, 58, 237, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+.ls-btn-primary:hover,
+.ls-btn-lg:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 14px 34px rgba(124, 58, 237, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+/* Outline / ghost buttons — lighter frosted pill */
+.ls-btn-outline,
+.ls-btn-ghost {
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: var(--ls-text);
+  border-radius: 14px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  font-weight: 700;
+}
+.ls-btn-outline:hover,
+.ls-btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.12);
+  transform: translateY(-1px);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+/* Inputs — frosted with inner glow */
+.ls-root input[type="text"],
+.ls-root input[type="email"],
+.ls-root input[type="tel"],
+.ls-root textarea,
+.ls-root select {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  color: var(--ls-text);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  padding: 12px 14px;
+  outline: none;
+  transition: border-color 0.15s, background 0.15s;
+}
+.ls-root input:focus,
+.ls-root textarea:focus,
+.ls-root select:focus {
+  border-color: rgba(139, 92, 246, 0.6);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* FAQ open state — subtle highlight */
+.ls-faq-item[open] {
+  background: linear-gradient(145deg, rgba(255,255,255,0.13), rgba(255,255,255,0.06));
+  border-color: rgba(255, 255, 255, 0.24);
+}
+
+/* Featured pricing card — violet-tinted frost */
+.ls-price-card--featured {
+  background: linear-gradient(145deg, rgba(124, 58, 237, 0.22), rgba(255, 255, 255, 0.05));
+  border-color: rgba(139, 92, 246, 0.4);
+  box-shadow:
+    0 24px 60px rgba(124, 58, 237, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+/* Platform chips on hero/showcase — small frosted pills */
+.ls-hero-chips span,
+.ls-vp-showcase__chip {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: var(--ls-text);
+}
+
+/* Links — violet accent */
+.ls-root a       { color: #a78bfa; }
+.ls-root a:hover { color: #c4b5fd; }
+
+/* Performance guard: browsers without backdrop-filter support fall back
+   to a slightly more opaque panel so text stays readable. */
+@supports not ((backdrop-filter: blur(10px)) or (-webkit-backdrop-filter: blur(10px))) {
+  .ls-seo-card, .ls-feature-card, .ls-price-card, .ls-use-case-card,
+  .ls-test-card, .ls-faq-item, .ls-gallery-item, .ls-hero,
+  .ls-hero-visual, .ls-hero-visual--nested, .ls-hero-orch, .ls-vp-showcase,
+  .ls-btn-outline, .ls-btn-ghost, .ls-hero-badge, .ls-hero-chips > *,
+  .ls-hero-kicker, .ls-vp-showcase__chip, .ls-root input, .ls-root textarea {
+    background: rgba(15, 23, 42, 0.85);
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   FAQ REDESIGN
+   Kills the heavy full-width blue bars. Clean 2-col grid of compact frosted
+   cards. Animated chevron rotation on open. Subtle indigo left-accent when
+   expanded. Small hover lift via brightness — no transform to avoid grid
+   reflow when cards with different answer lengths expand.
+   ════════════════════════════════════════════════════════════════════════════ */
+.ls-faq {
+  /* Override the earlier box-shadow glow from .ls-faq-item in the glass block */
+}
+.ls-faq > .ls-faq-item:first-of-type,
+.ls-faq > .ls-faq-item {
+  margin: 0;
+}
+
+.ls-faq > .ls-faq-item ~ .ls-faq-item,
+.ls-faq > .ls-faq-item {
+  /* Container for all items flips into a responsive grid */
+}
+
+/* Wrap all FAQ items into a 2-column grid. Target direct children of .ls-faq. */
+.ls-faq {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+@media (max-width: 720px) {
+  .ls-faq { grid-template-columns: 1fr; }
+}
+
+/* FAQ heading sits above the grid — span both columns */
+.ls-faq > h2,
+.ls-faq > .ls-section-sub {
+  grid-column: 1 / -1;
+}
+
+/* Compact card per question */
+.ls-faq-item {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 14px;
+  box-shadow: none;
+  padding: 0 18px;
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  transition: background 0.15s, border-color 0.15s;
+  align-self: start;
+}
+.ls-faq-item:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.18);
+  transform: none;
+}
+
+/* Question row — tighter padding, rotating chevron */
+.ls-faq-item > summary,
+.ls-faq-question {
+  padding: 16px 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #f1f5f9;
+  list-style: none;
+}
+.ls-faq-item > summary::-webkit-details-marker { display: none; }
+
+/* Replace the "+" icon with a chevron that rotates on open */
+.ls-faq-icon {
+  font-size: 0;
+  width: 22px;
+  height: 22px;
+  position: relative;
+  transition: transform 0.2s ease;
+  color: transparent;
+}
+.ls-faq-icon::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 9px;
+  height: 9px;
+  border-right: 2px solid #a5b4fc;
+  border-bottom: 2px solid #a5b4fc;
+  transform: translate(-50%, -70%) rotate(45deg);
+  transition: transform 0.25s ease;
+}
+.ls-faq-item[open] .ls-faq-icon::before {
+  transform: translate(-50%, -20%) rotate(-135deg);
+}
+
+/* Open state — indigo left accent + slightly brighter bg (no huge glow) */
+.ls-faq-item[open] {
+  background: rgba(124, 58, 237, 0.08);
+  border-color: rgba(139, 92, 246, 0.32);
+  box-shadow: inset 3px 0 0 #8b5cf6;
+}
+
+.ls-faq-answer {
+  font-size: 0.9rem;
+  color: #cbd5e1;
+  line-height: 1.7;
+  padding: 0 0 18px;
+  margin: 0;
+}
+

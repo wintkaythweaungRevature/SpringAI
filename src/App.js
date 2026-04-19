@@ -40,6 +40,8 @@ import PricingPage from './components/PricingPage';
 import AutoReplySettings from './components/AutoReplySettings';
 import ProGate from './components/ProGate';
 import ContentCalendar from './components/ContentCalendar';
+import NotificationBell from './components/NotificationBell';
+import { ToastHost } from './components/Toast';
 import TeamSettings from './components/TeamSettings';
 import BrandKitSettings from './components/BrandKitSettings';
 import OrganizationSettings from './components/OrganizationSettings';
@@ -658,6 +660,9 @@ function App() {
   return (
     <div style={s.shell}>
 
+      {/* Toast host — renders at top-right z-index: 100000, fired from anywhere via fireToast() */}
+      <ToastHost />
+
       {/* Marketing Nav — fixed at top for logged-out visitors, above everything */}
       {!user && <MarketingNav go={go} onLogin={openLogin} onSignup={openSignup} />}
 
@@ -1043,6 +1048,14 @@ function App() {
                       >
                         🔥
                       </button>
+                      <NotificationBell
+                        onOpenPost={(postId) => {
+                          // Open Content Calendar and hand off the post id via a window event
+                          // so ContentCalendar can pop the feedback modal for that post.
+                          go('calendar');
+                          window.dispatchEvent(new CustomEvent('wintaibot:open-post', { detail: { postId } }));
+                        }}
+                      />
                       <span style={s.topEmail} title={user.email}>{user.email}</span>
                     </span>
                   )}

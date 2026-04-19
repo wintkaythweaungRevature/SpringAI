@@ -749,6 +749,26 @@ export default function AnalyticsDashboard() {
   const [loadMonthly,     setLoadMonthly]     = useState(false);
   const [monthlyFrom,     setMonthlyFrom]     = useState('');
   const [monthlyTo,       setMonthlyTo]       = useState('');
+  // Posts where an approver requested changes or rejected — the widget shows count + row cards.
+  const [needsAttention, setNeedsAttention] = useState([]);
+
+  useEffect(() => {
+    if (!token) return undefined;
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const res = await fetch(`${base}/api/social/post/needs-attention`, { headers: authHeaders() });
+        if (!res.ok) return;
+        const list = await res.json();
+        if (!cancelled) setNeedsAttention(Array.isArray(list) ? list : []);
+      } catch { /* ignore */ }
+    };
+    load();
+    // Refresh when the user switches workspaces (different set of posts).
+    // Also refresh every 2 minutes so resolved posts disappear and new ones surface.
+    const iv = setInterval(load, 120_000);
+    return () => { cancelled = true; clearInterval(iv); };
+  }, [token, base, authHeaders, activeWorkspaceId]);
 
   useEffect(() => {
     if (user?.id != null) {
@@ -1287,6 +1307,92 @@ export default function AnalyticsDashboard() {
                   </div>
                 )}
               </div>
+
+              {/* Action needed — approver requested changes or rejected one of the user's posts.
+                  Clicking Open dispatches wintaibot:open-post + navigates to calendar where
+                  ContentCalendar's listener pops the feedback modal with banner + resubmit / duplicate. */}
+              {needsAttention.length > 0 && (
+                <div style={{
+                  background: 'linear-gradient(145deg, rgba(245,158,11,0.12), rgba(245,158,11,0.04))',
+                  border: '1px solid rgba(245,158,11,0.35)',
+                  borderRadius: 12,
+                  padding: '14px 18px',
+                  marginTop: 22,
+                }}>
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    color: '#fbbf24', fontWeight: 800, fontSize: 14, marginBottom: 12,
+                  }}>
+                    <span style={{ fontSize: 16 }}>⚠️</span>
+                    Action needed
+                    <span style={{
+                      marginLeft: 4, fontSize: 11, fontWeight: 700,
+                      background: 'rgba(245,158,11,0.2)', color: '#fbbf24',
+                      padding: '2px 8px', borderRadius: 999,
+                    }}>{needsAttention.length}</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 240, overflowY: 'auto' }}>
+                    {needsAttention.map(np => {
+                      const st = String(np.status || '').toUpperCase();
+                      const isReject = st === 'REJECTED';
+                      const emoji = isReject ? '❌' : '📝';
+                      const tintBg = isReject ? 'rgba(239,68,68,0.07)' : 'rgba(245,158,11,0.07)';
+                      const tintBorder = isReject ? 'rgba(239,68,68,0.28)' : 'rgba(245,158,11,0.28)';
+                      const plat = PLATFORMS.find(x => x.id === String(np.platform || '').toLowerCase());
+                      const caption = (np.caption || '').trim();
+                      const captionPreview = caption
+                        ? (caption.length > 80 ? caption.slice(0, 80) + '…' : caption)
+                        : '(no caption)';
+                      return (
+                        <div key={np.id} style={{
+                          display: 'flex', alignItems: 'flex-start', gap: 10,
+                          background: tintBg,
+                          border: `1px solid ${tintBorder}`,
+                          borderRadius: 10,
+                          padding: '10px 12px',
+                        }}>
+                          <span style={{ fontSize: 18, lineHeight: 1, flexShrink: 0, marginTop: 2 }}>{emoji}</span>
+                          {plat && <div style={{ flexShrink: 0, marginTop: 1 }}><PlatformIcon platform={plat} size={16} /></div>}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 12, fontWeight: 700, color: '#f1f5f9' }}>
+                              {isReject ? 'Rejected' : 'Changes requested'}
+                              {' · '}
+                              <span style={{ fontWeight: 500, color: '#94a3b8', textTransform: 'capitalize' }}>
+                                {np.platform || ''}
+                              </span>
+                            </div>
+                            <div style={{ fontSize: 12, color: '#cbd5e1', marginTop: 3, lineHeight: 1.45,
+                                          overflow: 'hidden', display: '-webkit-box',
+                                          WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' }}>
+                              {np.approvalComment ? `"${np.approvalComment}"` : captionPreview}
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              window.dispatchEvent(new CustomEvent('wintaibot:go', { detail: 'calendar' }));
+                              // Small delay so ContentCalendar mounts and registers its listener first.
+                              setTimeout(() => {
+                                window.dispatchEvent(new CustomEvent('wintaibot:open-post', { detail: { postId: np.id } }));
+                              }, 120);
+                            }}
+                            style={{
+                              flexShrink: 0,
+                              padding: '6px 12px', borderRadius: 8,
+                              background: 'rgba(255,255,255,0.1)',
+                              border: '1px solid rgba(255,255,255,0.18)',
+                              color: '#f1f5f9', fontSize: 11, fontWeight: 700,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            Open
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {/* Recent activity */}
               {recentVisible.length > 0 && (

@@ -223,7 +223,7 @@ export default function SEOPublicLayout({ onGetStarted, onOpenVideoPublisher }) 
           {/* ── Tutorial tab selector ── */}
           <TutorialTabs />
           <footer style={{ textAlign: 'center', padding: '40px 20px', color: '#94a3b8', fontSize: 13, borderTop: '1px solid #1e293b', background: '#0f172a' }}>
-            <p style={{ margin: 0 }}>© {new Date().getFullYear()} W!ntAi · Built by <a href="https://github.com/wintkaythweaungRevature" target="_blank" rel="noopener noreferrer" style={{ color: '#818cf8' }}>Wint Kay Thwe Aung</a></p>
+            <p style={{ margin: 0 }}>© {new Date().getFullYear()} W!ntAi · Built by Wint Kay Thwe Aung</p>
           </footer>
         </main>
       ) : (

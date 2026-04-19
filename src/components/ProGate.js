@@ -85,7 +85,11 @@ export function UpgradeWall({ featureName, currentPlan }) {
     <div style={{
       minHeight: '100%', display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
-      background: 'linear-gradient(180deg,#0c1222 0%,#0f172a 100%)',
+      // Glassmorphism backdrop — radial blobs over navy so frosted cards catch color
+      background:
+        'radial-gradient(800px 500px at 80% -10%, rgba(139,92,246,0.35), transparent 60%),' +
+        'radial-gradient(700px 460px at -10% 30%, rgba(37,99,235,0.28), transparent 60%),' +
+        'linear-gradient(180deg,#080c1a 0%,#0c1222 55%,#0f172a 100%)',
       padding: '40px 20px',
     }}>
       {/* Lock icon + title */}
@@ -109,8 +113,14 @@ export function UpgradeWall({ featureName, currentPlan }) {
         {(currentPlan === 'STARTER' ? plans : plans.slice(1)).map(p => (
           <div key={p.name} style={{
             flex: '1 1 260px', maxWidth: 290,
-            background: '#111827', borderRadius: 18,
-            border: '1px solid #1e293b', overflow: 'hidden',
+            // Frosted glass card
+            background: 'linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03))',
+            backdropFilter: 'saturate(180%) blur(22px)',
+            WebkitBackdropFilter: 'saturate(180%) blur(22px)',
+            borderRadius: 18,
+            border: '1px solid rgba(255,255,255,0.18)',
+            boxShadow: '0 20px 50px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.12)',
+            overflow: 'hidden',
             display: 'flex', flexDirection: 'column',
           }}>
             {/* Card header */}

@@ -688,19 +688,20 @@ function FeatureShowcase({ features, onOpenVideoPublisher }) {
       aria-labelledby="features-heading"
       style={{
         padding: '80px 24px',
-        background: '#f8fafc',
+        // Transparent so the page's radial-blob gradient shows through; no more bright white gap
+        background: 'transparent',
         position: 'relative',
         zIndex: 1,
       }}
     >
-      <h2 id="features-heading" style={{ textAlign: 'center', fontSize: '2.25rem', fontWeight: 800, color: '#0f172a', marginBottom: 10, letterSpacing: '-0.02em' }}>
+      <h2 id="features-heading" style={{ textAlign: 'center', fontSize: '2.25rem', fontWeight: 800, color: '#f1f5f9', marginBottom: 10, letterSpacing: '-0.02em' }}>
         Everything you need. One platform.
       </h2>
-      <p style={{ textAlign: 'center', color: '#64748b', fontSize: 16, maxWidth: 540, margin: '0 auto 40px', lineHeight: 1.6 }}>
+      <p style={{ textAlign: 'center', color: '#cbd5e1', fontSize: 16, maxWidth: 540, margin: '0 auto 40px', lineHeight: 1.6 }}>
         Choose your path — whether you create content, grow a brand, or boost productivity.
       </p>
 
-      {/* Tabs — light pill style */}
+      {/* Tabs — frosted pill style */}
       <div style={{ display: 'flex', justifyContent: 'center', gap: 10, marginBottom: 40, flexWrap: 'wrap' }}>
         {FEATURE_TABS.map(t => (
           <button
@@ -709,10 +710,12 @@ function FeatureShowcase({ features, onOpenVideoPublisher }) {
             style={{
               padding: '11px 24px', borderRadius: 12, cursor: 'pointer',
               fontSize: 14, fontWeight: 700, transition: 'all 0.2s',
-              background: activeTab === t.id ? '#ffffff' : 'transparent',
-              color: activeTab === t.id ? '#0f172a' : '#64748b',
-              border: activeTab === t.id ? '1px solid #e2e8f0' : '1px solid transparent',
-              boxShadow: activeTab === t.id ? '0 4px 14px rgba(15,23,42,0.08)' : 'none',
+              background: activeTab === t.id ? 'rgba(255,255,255,0.12)' : 'transparent',
+              backdropFilter: activeTab === t.id ? 'blur(14px) saturate(160%)' : 'none',
+              WebkitBackdropFilter: activeTab === t.id ? 'blur(14px) saturate(160%)' : 'none',
+              color: activeTab === t.id ? '#f1f5f9' : '#94a3b8',
+              border: activeTab === t.id ? '1px solid rgba(255,255,255,0.22)' : '1px solid transparent',
+              boxShadow: activeTab === t.id ? 'inset 0 1px 0 rgba(255,255,255,0.14), 0 8px 24px rgba(0,0,0,0.3)' : 'none',
             }}
           >
             {t.label}
@@ -720,18 +723,21 @@ function FeatureShowcase({ features, onOpenVideoPublisher }) {
         ))}
       </div>
 
-      {/* Hero feature — large white card */}
+      {/* Hero feature — large frosted-glass card */}
       <div style={{
         maxWidth: 880, margin: '0 auto 28px', padding: '32px 36px',
-        background: '#ffffff', border: '1px solid #e2e8f0',
+        background: 'linear-gradient(145deg, rgba(255,255,255,0.09), rgba(255,255,255,0.03))',
+        backdropFilter: 'saturate(180%) blur(22px)',
+        WebkitBackdropFilter: 'saturate(180%) blur(22px)',
+        border: '1px solid rgba(255,255,255,0.18)',
         borderLeft: `4px solid ${tab.hero.accent}`, borderRadius: 18,
-        boxShadow: '0 6px 24px rgba(15,23,42,0.06)',
+        boxShadow: '0 20px 50px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.12)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14 }}>
           <span style={{ fontSize: '2.4rem' }}>{tab.hero.icon}</span>
-          <h3 style={{ fontSize: 22, fontWeight: 800, color: '#0f172a', margin: 0, letterSpacing: '-0.01em' }}>{tab.hero.name}</h3>
+          <h3 style={{ fontSize: 22, fontWeight: 800, color: '#f1f5f9', margin: 0, letterSpacing: '-0.01em' }}>{tab.hero.name}</h3>
         </div>
-        <p style={{ fontSize: 15.5, color: '#475569', lineHeight: 1.7, margin: 0 }}>{tab.hero.desc}</p>
+        <p style={{ fontSize: 15.5, color: '#cbd5e1', lineHeight: 1.7, margin: 0 }}>{tab.hero.desc}</p>
         {onOpenVideoPublisher && tab.id === 'creators' && (
           <button type="button" onClick={onOpenVideoPublisher}
             style={{ marginTop: 18, padding: '11px 26px', borderRadius: 10, border: 'none',
@@ -751,27 +757,32 @@ function FeatureShowcase({ features, onOpenVideoPublisher }) {
         {tab.items.map(item => (
           <div key={item.name} style={{
             display: 'flex', alignItems: 'flex-start', gap: 12, padding: '16px 18px',
-            background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 12,
+            background: 'linear-gradient(145deg, rgba(255,255,255,0.07), rgba(255,255,255,0.02))',
+            backdropFilter: 'saturate(180%) blur(18px)',
+            WebkitBackdropFilter: 'saturate(180%) blur(18px)',
+            border: '1px solid rgba(255,255,255,0.14)',
+            borderRadius: 12,
+            boxShadow: '0 12px 30px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.1)',
             transition: 'transform 0.15s, box-shadow 0.15s, border-color 0.15s',
             cursor: 'pointer',
           }}
             onMouseEnter={e => {
-              e.currentTarget.style.boxShadow = `0 10px 28px ${item.accent || '#6366f1'}22`;
+              e.currentTarget.style.boxShadow = `0 16px 40px ${item.accent || '#6366f1'}44, inset 0 1px 0 rgba(255,255,255,0.16)`;
               e.currentTarget.style.transform = 'translateY(-3px)';
-              e.currentTarget.style.borderColor = `${item.accent || '#6366f1'}55`;
+              e.currentTarget.style.borderColor = `${item.accent || '#6366f1'}88`;
               openHover(item, e.currentTarget);
             }}
             onMouseLeave={e => {
-              e.currentTarget.style.boxShadow = 'none';
+              e.currentTarget.style.boxShadow = '0 12px 30px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.1)';
               e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.borderColor = '#e2e8f0';
+              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.14)';
               closeHover();
             }}
           >
             <span style={{ fontSize: '1.4rem', flexShrink: 0 }}>{item.icon}</span>
             <div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>{item.name}</div>
-              <div style={{ fontSize: 12, color: '#64748b', lineHeight: 1.5, marginTop: 3 }}>{item.desc}</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#f1f5f9' }}>{item.name}</div>
+              <div style={{ fontSize: 12, color: '#cbd5e1', lineHeight: 1.5, marginTop: 3 }}>{item.desc}</div>
             </div>
           </div>
         ))}
@@ -914,15 +925,20 @@ function FeatureShowcase({ features, onOpenVideoPublisher }) {
       {/* All plans include */}
       <div style={{
         maxWidth: 880, margin: '40px auto 0', padding: '22px 28px',
-        background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 14,
-        textAlign: 'center', boxShadow: '0 2px 8px rgba(15,23,42,0.04)',
+        background: 'linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03))',
+        backdropFilter: 'saturate(180%) blur(20px)',
+        WebkitBackdropFilter: 'saturate(180%) blur(20px)',
+        border: '1px solid rgba(255,255,255,0.16)',
+        borderRadius: 14,
+        textAlign: 'center',
+        boxShadow: '0 16px 40px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.12)',
       }}>
-        <div style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 14 }}>
+        <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 14 }}>
           All plans include
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px 20px', justifyContent: 'center' }}>
           {['Your Brand Voice in Every AI Output', '8 Social Platforms', 'AI Captions & Hashtags', 'Brand Profile & Key Phrases', 'Content Calendar', 'Link in Bio', 'Ask AI Chatbot', 'No Per-Channel Fees'].map(item => (
-            <span key={item} style={{ fontSize: 13, color: '#475569', display: 'flex', alignItems: 'center', gap: 7 }}>
+            <span key={item} style={{ fontSize: 13, color: '#cbd5e1', display: 'flex', alignItems: 'center', gap: 7 }}>
               <span style={{ color: '#10b981', fontWeight: 800, fontSize: 14 }}>✓</span> {item}
             </span>
           ))}
@@ -960,8 +976,9 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
                   role="heading"
                   aria-level={1}
                 >
-                  <div className="ls-hero-h1-line">If You Can Record It,</div>
-                  <div className="ls-hero-h1-line ls-hero-h1-accent">We Can Post It.</div>
+                  <div className="ls-hero-h1-line ls-hero-h1-line--wide">
+                    If You Can Record It, <span className="ls-hero-h1-accent">We Can Post It.</span>
+                  </div>
                 </div>
               </div>
               <div className="ls-hero-copy__block ls-hero-copy__block--tagline">
@@ -1020,16 +1037,9 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
       </section>
 
       {/* ── WHAT IS WINTAIBOT ───────────────────────────────── */}
-      <section className="ls-section ls-what" aria-labelledby="what-heading">
+      <section id="use-cases" className="ls-section ls-what" aria-labelledby="what-heading">
         <div className="ls-what-header">
-          <div className="ls-what-header__text">
-            <h2 id="what-heading">One workspace.<br/>Not five subscriptions.</h2>
-            <p className="ls-what-short">
-              <strong>W!ntAi</strong> combines every tool a creator needs — video publishing, scheduling, inbox, analytics, AI writing, image generation, and more — in a single login.
-            </p>
-          </div>
-
-          {/* Top 5 killer features for content creators */}
+          {/* LEFT column — 5 killer feature cards */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 8 }}>
             {[
               { emoji: '🎬', name: 'Video Publisher',  desc: 'Upload once — auto-format & publish to YouTube, Instagram, TikTok, Facebook, LinkedIn, X, Threads & Pinterest in one click.', accent: '#6366f1' },
@@ -1050,13 +1060,21 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
                 </div>
               </div>
             ))}
+          </div>
 
-            {/* Collapsed "more tools" */}
+          {/* RIGHT column — headline + description + "17+ more" */}
+          <div className="ls-what-header__text">
+            <h2 id="what-heading">One workspace.<br/>Not five subscriptions.</h2>
+            <p className="ls-what-short">
+              <strong>W!ntAi</strong> combines every tool a creator needs — video publishing, scheduling, inbox, analytics, AI writing, image generation, and more — in a single login.
+            </p>
+
+            {/* "17+ more tools" placed directly under the copy */}
             <div style={{
-              display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center',
-              padding: '16px 0 8px', borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: 4,
+              display: 'flex', flexWrap: 'wrap', gap: 8,
+              padding: '18px 0 4px', borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: 22,
             }}>
-              <div style={{ width: '100%', textAlign: 'center', marginBottom: 8 }}>
+              <div style={{ width: '100%', marginBottom: 10 }}>
                 <span style={{ fontSize: 13, fontWeight: 700, color: '#64748b', letterSpacing: '0.04em' }}>
                   And 17+ more tools included
                 </span>
@@ -1077,18 +1095,18 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
                 </span>
               ))}
             </div>
-          </div>
 
-          <div className="ls-stat-row" style={{ marginTop: 24, justifyContent: 'center' }}>
-            <div className="ls-stat"><span className="ls-stat-num">22</span><span>AI Tools</span></div>
-            <div className="ls-stat"><span className="ls-stat-num">Free</span><span>To Start</span></div>
-            <div className="ls-stat"><span className="ls-stat-num">$19+</span><span>Paid plans / mo</span></div>
+            <div className="ls-stat-row" style={{ marginTop: 24, justifyContent: 'flex-start' }}>
+              <div className="ls-stat"><span className="ls-stat-num">22</span><span>AI Tools</span></div>
+              <div className="ls-stat"><span className="ls-stat-num">Free</span><span>To Start</span></div>
+              <div className="ls-stat"><span className="ls-stat-num">$19+</span><span>Paid plans / mo</span></div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* ── ONE PLACE: SCHEDULE + INBOX + AUTO-REPLY ─────────── */}
-      <section className="ls-section ls-social-hub" aria-labelledby="social-hub-heading">
+      <section id="how-it-works" className="ls-section ls-social-hub" aria-labelledby="social-hub-heading">
         <h2 id="social-hub-heading">Schedule posts, read messages, automate replies — one login</h2>
         <p className="ls-section-sub ls-social-hub-intro">
           Creators shouldn&apos;t live in three tabs just to post, read messages, and answer fans.
@@ -1386,10 +1404,7 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
       {/* ── FOOTER ──────────────────────────────────────────── */}
       <footer className="ls-footer">
         <p>
-          © {new Date().getFullYear()} W!ntAi · Built by{" "}
-          <a href="https://github.com/wintkaythweaungRevature" target="_blank" rel="noopener noreferrer">
-            Wint Kay Thwe Aung
-          </a>
+          © {new Date().getFullYear()} W!ntAi · Built by Wint Kay Thwe Aung
           {" · "}
           <a href="mailto:contact@wintaibot.com">contact@wintaibot.com</a>
         </p>
@@ -1410,7 +1425,6 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
           </span>
           <a href="/#about">About</a>
           <a href="/#faq">FAQ</a>
-          <a href="https://github.com/wintkaythweaungRevature" target="_blank" rel="noopener noreferrer">GitHub</a>
         </nav>
       </footer>
 

@@ -824,6 +824,21 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
 
   useEffect(() => { loadPosts(); }, [loadPosts]);
 
+  // Open a post's detail / feedback modal when the notification bell asks for it.
+  // Fired from App.js via window.dispatchEvent(new CustomEvent('wintaibot:open-post', { detail: { postId } })).
+  useEffect(() => {
+    const handler = (e) => {
+      const id = e?.detail?.postId;
+      if (id == null) return;
+      // filteredPosts / allPosts refs won't be the freshest here; hit the source arrays directly.
+      const needle = String(id);
+      const match = (posts || []).find(p => String(p?.id ?? '') === needle);
+      if (match) setFeedDetailPost(match);
+    };
+    window.addEventListener('wintaibot:open-post', handler);
+    return () => window.removeEventListener('wintaibot:open-post', handler);
+  }, [posts]);
+
   const retryFailedPost = async (postId) => {
     if (!postId || !token) return;
     const sid = String(postId);
@@ -1356,6 +1371,13 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
                             const preview = getPostPreview(p);
                             const t = fmtTime(postCalendarTimestamp(p));
                             const pColor = platformColor(p.platform);
+                            // Approval-outcome tints — unmissable in the grid without expanding.
+                            const chipStatus = String(p.status || '').toUpperCase();
+                            const chipTintBg =
+                              chipStatus === 'CHANGES_REQUESTED' ? '#fef3c7'
+                              : chipStatus === 'REJECTED'        ? '#fee2e2'
+                              : chipStatus === 'PENDING_APPROVAL' ? '#fffbeb'
+                              : null;
                             return (
                               <button
                                 key={`${key}-${i}`}
@@ -1366,6 +1388,7 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
                                 style={{
                                   ...s.dayPostChip,
                                   borderLeft: `3px solid ${pColor}`,
+                                  ...(chipTintBg ? { background: chipTintBg } : {}),
                                   ...(isPostScheduled(p) ? { cursor: 'grab' } : {}),
                                 }}
                                 onMouseEnter={(e) => {
@@ -1867,14 +1890,32 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
         onPosted={() => { loadPosts(); }}
       />
 
-      {feedDetailPost && (
-        <PostDetailModal
-          post={feedDetailPost}
-          platform={PLATFORM_MAP[feedDetailPost.platform?.toLowerCase()]}
-          onClose={() => setFeedDetailPost(null)}
-          onSaved={loadPosts}
-        />
-      )}
+      {feedDetailPost && (() => {
+        // Build feedbackContext from the post status so the modal can render the amber/red
+        // approval banner and swap in the Edit & Resubmit / Duplicate-as-draft actions.
+        const st = String(feedDetailPost.status || '').toUpperCase();
+        let feedbackContext = null;
+        if (st === 'CHANGES_REQUESTED' || st === 'REJECTED') {
+          feedbackContext = {
+            kind: st,
+            note: feedDetailPost.approvalComment || '',
+            approverEmail:
+              feedDetailPost.approverEmail
+              || feedDetailPost.approverLabel
+              || feedDetailPost.lastApproverEmail
+              || null,
+          };
+        }
+        return (
+          <PostDetailModal
+            post={feedDetailPost}
+            platform={PLATFORM_MAP[feedDetailPost.platform?.toLowerCase()]}
+            onClose={() => setFeedDetailPost(null)}
+            onSaved={loadPosts}
+            feedbackContext={feedbackContext}
+          />
+        );
+      })()}
 
       {hoverPreview?.post && (() => {
         const hp = hoverPreview.post;
@@ -2053,9 +2094,11 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
 /* ─── Styles ──────────────────────────────────────────────────────────────── */
 const s = {
   page: {
-    maxWidth: 1100,
+    // Widen so the 7-day grid + sidebar both breathe. The old 1100 clipped day cells
+    // on desktop, making platform chips look oversized relative to the cell.
+    maxWidth: 1360,
     margin: '0 auto',
-    padding: '20px 16px',
+    padding: '20px 18px',
     fontFamily: 'inherit',
     color: '#0f172a',
     background: 'rgba(248,250,252,0.97)',
@@ -2078,7 +2121,9 @@ const s = {
   },
   pillActive: { background: '#6366f1', color: '#fff', borderColor: '#6366f1' },
 
-  body: { display: 'grid', gridTemplateColumns: '1fr 300px', gap: 18, alignItems: 'start' },
+  // Sidebar fixed at 300; left column flexes. `minmax(0, 1fr)` prevents the 7-col calendar
+  // grid from forcing overflow (grid tracks without min:0 expand past the column).
+  body: { display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 300px', gap: 18, alignItems: 'start' },
 
   /* Calendar */
   calCard: { background: '#fff', borderRadius: 16, padding: '20px', border: '1.5px solid #e2e8f0', boxShadow: '0 1px 6px rgba(0,0,0,0.05)' },
@@ -2114,11 +2159,11 @@ const s = {
     minHeight: 28,
     transition: 'box-shadow 0.15s, transform 0.15s',
   },
-  dayChipThumb: { width: 36, height: 36, borderRadius: 5, objectFit: 'cover', border: '1px solid #e2e8f0', flexShrink: 0 },
+  dayChipThumb: { width: 28, height: 28, borderRadius: 5, objectFit: 'cover', border: '1px solid #e2e8f0', flexShrink: 0 },
   dayChipThumbPlaceholder: {
-    width: 36, height: 36, borderRadius: 5, flexShrink: 0,
+    width: 28, height: 28, borderRadius: 5, flexShrink: 0,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    color: '#fff', fontSize: 13, fontWeight: 800,
+    color: '#fff', fontSize: 11, fontWeight: 800,
   },
   dayChipBody: { display: 'flex', flexDirection: 'column', gap: 0, minWidth: 0, flex: 1 },
   dayChipTime: { fontSize: 10, fontWeight: 700, color: '#0f172a' },

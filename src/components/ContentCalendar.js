@@ -1042,10 +1042,17 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
     } catch {}
   });
 
-  // Upcoming posts (future or recent)
-  const upcoming = [...filteredPosts]
-    .sort((a, b) => postCalendarDate(b) - postCalendarDate(a))
-    .slice(0, 20);
+  // Sidebar posts — scoped to the selected day when one is picked, otherwise falls back to
+  // the 20 most-recent posts across the workspace so the panel never goes completely empty.
+  const upcoming = (() => {
+    const base = [...filteredPosts].sort((a, b) => postCalendarDate(b) - postCalendarDate(a));
+    if (selectedDay) {
+      return base.filter(p => {
+        try { return sameDay(postCalendarDate(p), selectedDay); } catch { return false; }
+      });
+    }
+    return base.slice(0, 20);
+  })();
 
   return (
     <div style={{ ...s.page, ...(isMobile ? { padding: '12px 8px', borderRadius: 0, border: 'none' } : {}) }}>
@@ -1409,6 +1416,38 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
                                     {pInfo?.label || p.platform || ''}
                                   </div>
                                 </div>
+                                {/* Approval status badge — sits in the top-right of the chip.
+                                    Only shown for statuses that have something to communicate; SCHEDULED / PENDING render nothing. */}
+                                {(() => {
+                                  const st = (p.status || '').toUpperCase();
+                                  const badge = {
+                                    PENDING_APPROVAL:   { emoji: '⏳', bg: '#fef3c7', border: '#f59e0b', title: 'Pending approval' },
+                                    CHANGES_REQUESTED:  { emoji: '📝', bg: '#dbeafe', border: '#3b82f6', title: 'Changes requested' },
+                                    REJECTED:           { emoji: '❌', bg: '#fee2e2', border: '#ef4444', title: 'Rejected' },
+                                    SUCCESS:            { emoji: '✅', bg: '#dcfce7', border: '#10b981', title: 'Published' },
+                                    FAILED:             { emoji: '⚠️', bg: '#fee2e2', border: '#ef4444', title: 'Publish failed' },
+                                  }[st];
+                                  if (!badge) return null;
+                                  return (
+                                    <span
+                                      title={badge.title}
+                                      style={{
+                                        position: 'absolute',
+                                        top: 2,
+                                        right: 2,
+                                        fontSize: 10,
+                                        lineHeight: 1,
+                                        padding: '2px 4px',
+                                        borderRadius: 6,
+                                        background: badge.bg,
+                                        border: `1px solid ${badge.border}`,
+                                        pointerEvents: 'none',
+                                      }}
+                                    >
+                                      {badge.emoji}
+                                    </span>
+                                  );
+                                })()}
                               </button>
                             );
                           })}
@@ -1464,16 +1503,39 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
 
             </div>
 
-            {/* Upcoming posts sidebar */}
+            {/* Sidebar — posts for the selected day (or recent if nothing selected) */}
             <div style={s.sidebar}>
               <div style={s.sidebarHeader}>
-                <span style={s.sidebarTitle}>📋 Recent Posts</span>
+                <span style={s.sidebarTitle}>
+                  {selectedDay ? `📅 ${fmtDate(selectedDay)}` : '📋 Recent Posts'}
+                </span>
                 <span style={s.sidebarCount}>{upcoming.length}</span>
+                {selectedDay && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDay(null)}
+                    title="Clear selection"
+                    style={{
+                      marginLeft: 'auto',
+                      background: 'transparent',
+                      border: '1px solid rgba(255,255,255,0.18)',
+                      color: '#94a3b8',
+                      fontSize: 11,
+                      borderRadius: 6,
+                      padding: '2px 8px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Clear
+                  </button>
+                )}
               </div>
               {loading ? (
                 <div style={s.loadingState}>Loading…</div>
               ) : upcoming.length === 0 ? (
-                <div style={s.emptyState}>No posts yet</div>
+                <div style={s.emptyState}>
+                  {selectedDay ? 'No posts on this day' : 'No posts yet'}
+                </div>
               ) : (
                 <div style={s.upcomingList}>
                   {upcoming.map((p, i) => {
@@ -2033,6 +2095,7 @@ const s = {
   moreBadge: { fontSize: 9, color: '#94a3b8', fontWeight: 700 },
   dayPostList: { display: 'flex', flexDirection: 'column', gap: 5, marginTop: 4 },
   dayPostChip: {
+    position: 'relative',
     border: '1px solid #e2e8f0',
     background: '#ffffff',
     borderRadius: 7,

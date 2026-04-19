@@ -867,6 +867,7 @@ function PostHeatmap({ resolved, postsDetail = [], platformLabel = 'this platfor
             </span>
             <button onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: 16 }}>✕</button>
           </div>
+          <div style={{ maxHeight: 440, overflowY: 'auto' }}>
           {selectedPosts.map((p, i) => {
             const platColor = PLATFORM_COLORS[p.platform?.toLowerCase()] || '#6366f1';
             const rowPlat = PLATFORMS.find((x) => x.id === (p.platform || '').toLowerCase());
@@ -887,6 +888,7 @@ function PostHeatmap({ resolved, postsDetail = [], platformLabel = 'this platfor
               </div>
             );
           })}
+          </div>
         </div>
       )}
     </div>
@@ -2406,7 +2408,7 @@ function TrendsCalendar({ authHeaders }) {
                 {(schedFrom || schedUntil) ? 'No scheduled posts in this date/time range. Adjust From / Until (e.g. include the run time).' : 'No scheduled posts this month.'}
               </p>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 440, overflowY: 'auto', paddingRight: 6 }}>
                 {[...upcomingScheduledFiltered].sort((a, b) => {
                   const da = a.dateTime || a.scheduledAt || a.date || '';
                   const db = b.dateTime || b.scheduledAt || b.date || '';

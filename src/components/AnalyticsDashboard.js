@@ -1315,7 +1315,12 @@ export default function AnalyticsDashboard() {
                   <p style={{ fontSize: '11px', color: '#94a3b8', margin: '0 0 14px' }}>
                     Remove hides an entry here only; it does not delete the post on the social network.
                   </p>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{
+                    display: 'flex', flexDirection: 'column', gap: '8px',
+                    maxHeight: 420,
+                    overflowY: 'auto',
+                    paddingRight: 6,
+                  }}>
                     {recentVisible.map(post => {
                       const p = PLATFORMS.find(x => x.id === post.platform);
                       const sc = post.status === 'SUCCESS' ? '#16a34a' : post.status === 'FAILED' ? '#dc2626' : '#d97706';

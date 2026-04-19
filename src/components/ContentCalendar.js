@@ -345,8 +345,11 @@ function ResolvedPostMedia({
 
   if (!preview?.url) return null;
 
-  const asVideo = previewIsVideoMedia(preview);
-  const showPlay = playOverlay && previewIsVideoPost(post, preview);
+  // A post is rendered as <video> whenever it's a video post — even if getPostPreview
+  // returned kind='media' (e.g. only s3Key was available and mediaType='video'). Using
+  // <img> on a .webm/.mp4 fires onError and we fall back to the dash placeholder.
+  const asVideo = previewIsVideoPost(post, preview);
+  const showPlay = playOverlay && asVideo;
 
   if (!url || failed) {
     return (
@@ -2110,11 +2113,11 @@ const s = {
     minHeight: 28,
     transition: 'box-shadow 0.15s, transform 0.15s',
   },
-  dayChipThumb: { width: 24, height: 24, borderRadius: 4, objectFit: 'cover', border: '1px solid #e2e8f0', flexShrink: 0 },
+  dayChipThumb: { width: 36, height: 36, borderRadius: 5, objectFit: 'cover', border: '1px solid #e2e8f0', flexShrink: 0 },
   dayChipThumbPlaceholder: {
-    width: 24, height: 24, borderRadius: 4, flexShrink: 0,
+    width: 36, height: 36, borderRadius: 5, flexShrink: 0,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    color: '#fff', fontSize: 11, fontWeight: 800,
+    color: '#fff', fontSize: 13, fontWeight: 800,
   },
   dayChipBody: { display: 'flex', flexDirection: 'column', gap: 0, minWidth: 0, flex: 1 },
   dayChipTime: { fontSize: 10, fontWeight: 700, color: '#0f172a' },

@@ -2339,7 +2339,7 @@ function TrendsCalendar({ authHeaders }) {
                 {(pastFrom || pastUntil) ? 'No past posts in this date/time range. Try widening From / Until.' : 'No published posts this month.'}
               </p>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 440, overflowY: 'auto', paddingRight: 6 }}>
                 {[...pastPostsForList].sort((a, b) => {
                   const da = a.dateTime || a.date || '';
                   const db = b.dateTime || b.date || '';

@@ -1419,16 +1419,14 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
                                     {pInfo?.label || p.platform || ''}
                                   </div>
                                 </div>
-                                {/* Approval status badge — sits in the top-right of the chip.
-                                    Only shown for statuses that have something to communicate; SCHEDULED / PENDING render nothing. */}
+                                {/* Approval status badge — only for member-approval outcomes.
+                                    SCHEDULED / PENDING / SUCCESS / FAILED render nothing. */}
                                 {(() => {
                                   const st = (p.status || '').toUpperCase();
                                   const badge = {
                                     PENDING_APPROVAL:   { emoji: '⏳', bg: '#fef3c7', border: '#f59e0b', title: 'Pending approval' },
                                     CHANGES_REQUESTED:  { emoji: '📝', bg: '#dbeafe', border: '#3b82f6', title: 'Changes requested' },
                                     REJECTED:           { emoji: '❌', bg: '#fee2e2', border: '#ef4444', title: 'Rejected' },
-                                    SUCCESS:            { emoji: '✅', bg: '#dcfce7', border: '#10b981', title: 'Published' },
-                                    FAILED:             { emoji: '⚠️', bg: '#fee2e2', border: '#ef4444', title: 'Publish failed' },
                                   }[st];
                                   if (!badge) return null;
                                   return (
@@ -1506,7 +1504,9 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
 
             </div>
 
-            {/* Sidebar — posts for the selected day (or recent if nothing selected) */}
+            {/* Right column — sidebar + post-status legend stacked together so the legend
+                sits directly under the Recent/Selected-day card (not floating under the calendar grid). */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div style={s.sidebar}>
               <div style={s.sidebarHeader}>
                 <span style={s.sidebarTitle}>
@@ -1642,10 +1642,10 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
               )}
 
             </div>
-            {/* Post status legend — OUTSIDE the scrollable sidebar card so it's always visible */}
-            <div style={{ background: '#fff', borderRadius: 12, border: '1.5px solid #e2e8f0', padding: '12px 16px', marginTop: 10, boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+            {/* Post status legend — stacked under the sidebar card in the right column. */}
+            <div style={{ background: '#fff', borderRadius: 12, border: '1.5px solid #e2e8f0', padding: '12px 16px', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 8 }}>Post status</div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 16px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {[
                   { emoji: '🟢', label: 'Published', hint: 'already live' },
                   { emoji: '🟡', label: 'Scheduled', hint: 'posts later' },
@@ -1661,6 +1661,7 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
                   </div>
                 ))}
               </div>
+            </div>
             </div>
           </>
         )}

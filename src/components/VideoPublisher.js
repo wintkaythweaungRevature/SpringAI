@@ -2047,7 +2047,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
                   No posts yet. Publish your first post above! 🚀
                 </div>
               )}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: 420, overflowY: 'auto', paddingRight: 6 }}>
                 {dashHistory.map(post => {
                   const p = PLATFORMS.find(x => x.id === post.platform);
                   const statusColor = post.status === 'SUCCESS' ? '#16a34a' : post.status === 'FAILED' ? '#dc2626' : '#d97706';

@@ -606,7 +606,7 @@ const FEATURE_TABS = [
     label: '💼 For Business',
     hero: {
       icon: '💬', name: 'Engage Your Audience — In Your Brand Voice',
-      desc: 'Every DM, comment, and mention from all 8 platforms in one inbox. AI auto-replies use your brand personality, tone, and key phrases — so every response sounds authentically you, even at 3 AM. Your audience feels heard; you stay focused on growth.',
+      desc: 'Every DM, comment, and mention from all your social platforms in one inbox. AI auto-replies use your brand personality, tone, and key phrases — so every response sounds authentically you, even at 3 AM. Your audience feels heard; you stay focused on growth.',
       accent: '#f59e0b',
     },
     items: [
@@ -1310,7 +1310,7 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
 
             <div className="ls-plan-group">
               <div className="ls-plan-group-label">Publishing</div>
-              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Connected Platforms</span><span className="ls-pf-val">All 8</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Connected accounts</span><span className="ls-pf-val">Unlimited</span></div>
               <div className="ls-plan-feat ls-plan-feat--star"><span className="ls-pf-icon ls-pf-icon--star">★</span><span>Videos / month</span><span className="ls-pf-val ls-pf-val--star">Unlimited</span></div>
               <div className="ls-plan-feat ls-plan-feat--star"><span className="ls-pf-icon ls-pf-icon--star">★</span><span>AI-generated images</span><span className="ls-pf-val ls-pf-val--star">Unlimited</span></div>
               <div className="ls-plan-feat ls-plan-feat--star"><span className="ls-pf-icon ls-pf-icon--star">★</span><span>Scheduled posts</span><span className="ls-pf-val ls-pf-val--star">Unlimited</span></div>

@@ -13,7 +13,7 @@ const UPGRADE_PLANS = [
     badge: "⭐ Most Popular",
     gradient: "linear-gradient(135deg,#4f46e5,#7c3aed)",
     features: [
-      "All 8 social platforms",
+      "All social platforms, unlimited accounts",
       "Unlimited videos & images",
       "Deep Analytics & Trends",
       "Social AI Chat",

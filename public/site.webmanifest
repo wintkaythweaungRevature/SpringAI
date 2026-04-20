@@ -1,7 +1,7 @@
 {
   "name": "WintAi – AI Social Media Management for Creators & Agencies",
   "short_name": "WintAi",
-  "description": "Publish, schedule, and grow on 8 social platforms from one dashboard. AI captions, brand-voice adaptation, multi-account workspaces.",
+  "description": "Publish, schedule, and grow across every major social platform with unlimited accounts from one dashboard. AI captions, brand-voice adaptation, multi-account workspaces.",
   "icons": [
     { "src": "/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "/android-chrome-512x512.png", "sizes": "512x512", "type": "image/png" }

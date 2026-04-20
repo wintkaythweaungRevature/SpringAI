@@ -14,14 +14,14 @@ import './SEOPublicLayout.css';
 const ROUTE_META = {
   '/': {
     title: 'WintAi — AI Social Media Management for Creators & Agencies',
-    description: 'Publish one video to 8 platforms — YouTube, Instagram, TikTok, Facebook, LinkedIn, X, Threads, Pinterest — with AI captions in your brand voice. Start free.',
+    description: 'Publish one video to every major social platform — YouTube, Instagram, TikTok, Facebook, LinkedIn, X, Threads, Pinterest — with unlimited accounts and AI captions in your brand voice. Start free.',
     breadcrumbs: [
       { name: 'Home', item: 'https://www.wintaibot.com/' },
     ],
   },
   '/about': {
     title: 'About WintAi — What It Is & Who Uses It',
-    description: 'WintAi is an AI social media management platform for creators and agencies. Publish videos, schedule posts, and manage 8 platforms from one dashboard.',
+    description: 'WintAi is an AI social media management platform for creators and agencies. Publish videos, schedule posts, and manage unlimited accounts across every major social platform from one dashboard.',
     breadcrumbs: [
       { name: 'Home',  item: 'https://www.wintaibot.com/' },
       { name: 'About', item: 'https://www.wintaibot.com/about' },
@@ -45,7 +45,7 @@ const ROUTE_META = {
   },
   '/use-cases': {
     title: 'Who Uses WintAi — Creators, Agencies, Teams | WintAi',
-    description: 'Solo creators, marketing agencies, and teams use WintAi to publish across 8 social platforms, schedule with AI, and grow with brand-voice captions.',
+    description: 'Solo creators, marketing agencies, and teams use WintAi to publish across every major social platform with unlimited accounts, schedule with AI, and grow with brand-voice captions.',
     breadcrumbs: [
       { name: 'Home',      item: 'https://www.wintaibot.com/' },
       { name: 'Use Cases', item: 'https://www.wintaibot.com/use-cases' },

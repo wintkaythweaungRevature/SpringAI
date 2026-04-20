@@ -1,6 +1,6 @@
 # WintAi
 
-> WintAi is an AI-powered social media management platform that lets creators and agencies publish, schedule, and grow across 8 platforms — YouTube, Instagram, TikTok, Facebook, LinkedIn, X (Twitter), Threads, and Pinterest — from a single dashboard. One video, one click, eight platforms, with AI captions, hashtags, and brand-voice adaptation for every channel.
+> WintAi is an AI-powered social media management platform that lets creators and agencies publish, schedule, and grow across every major social platform — YouTube, Instagram, TikTok, Facebook, LinkedIn, X (Twitter), Threads, and Pinterest — with unlimited connected accounts, from a single dashboard. One video, one click, every platform, with AI captions, hashtags, and brand-voice adaptation for every channel.
 
 WintAi is made for solo creators who don't have time to cross-post manually, and for agencies that manage many brands from one workspace with team permissions. Pricing starts free and scales to unlimited accounts on the Growth plan.
 
@@ -31,7 +31,7 @@ The live product is at https://www.wintaibot.com.
 - **Free** — 1 account per platform, core tools.
 - **Starter** — $19/month. 3 platforms, 100 scheduled posts.
 - **Pro** — $39/month. 5 platforms, 3 accounts per platform, AI video variants, analytics.
-- **Growth** — $79/month. All 8 platforms, unlimited accounts, deep analytics, messages inbox.
+- **Growth** — $79/month. All platforms, unlimited accounts, deep analytics, messages inbox.
 
 All paid plans include a 7-day trial.
 

@@ -1685,19 +1685,41 @@ export default function MessagesInbox({ onOpenConnectedAccounts, onOpenAutoReply
                         <><strong>TikTok</strong> — Comments load from the TikTok API for your connected account. Make sure your account is reconnected and has recent videos with comments.</>
                       )}
                     </div>
-                    {typeof onOpenConnectedAccounts === 'function' && (
+                    {/* Refresh is the primary action — most empty states are just "no new data
+                        yet" and a fresh poll of the platform API brings in anything new. We make
+                        Reconnect the secondary path, shown only as a smaller muted button for
+                        cases where the issue really is missing permissions / expired token. */}
+                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
                       <button
                         type="button"
-                        onClick={onOpenConnectedAccounts}
+                        onClick={() => load(showAll)}
+                        disabled={loading}
                         style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 8,
                           padding: '9px 22px', borderRadius: 20,
                           background: '#6366f1', color: '#fff', border: 'none',
-                          fontWeight: 700, fontSize: 13, cursor: 'pointer',
+                          fontWeight: 700, fontSize: 13,
+                          cursor: loading ? 'wait' : 'pointer',
+                          opacity: loading ? 0.7 : 1,
                         }}
                       >
-                        🔗 Reconnect {PLATFORM_META[platformTab]?.label || platformTab}
+                        {loading ? '⏳ Checking…' : '🔄 Refresh now'}
                       </button>
-                    )}
+                      {typeof onOpenConnectedAccounts === 'function' && (
+                        <button
+                          type="button"
+                          onClick={onOpenConnectedAccounts}
+                          style={{
+                            padding: '9px 18px', borderRadius: 20,
+                            background: '#fff', color: '#475569',
+                            border: '1px solid #cbd5e1',
+                            fontWeight: 600, fontSize: 13, cursor: 'pointer',
+                          }}
+                        >
+                          🔗 Reconnect {PLATFORM_META[platformTab]?.label || platformTab}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 )}
                 {filteredView && hasAnyInboxData && (

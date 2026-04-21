@@ -173,6 +173,74 @@ export default function SEOPublicLayout({ onGetStarted, onOpenVideoPublisher }) 
             })}
           </script>
         )}
+
+        {/* FAQPage structured data — per route. Generative engines (ChatGPT, Claude,
+            Perplexity, Gemini) parse each Q&A as a quotable chunk. More FAQ coverage =
+            more surfaces where WintAi shows up as the authoritative answer to category
+            questions. Each page gets questions specific to its intent.
+            Google also renders these as rich results in SERP. */}
+        {(() => {
+          const faqByRoute = {
+            '/pricing': [
+              { q: 'How much does WintAi cost?',
+                a: 'WintAi offers a free tier forever. Paid plans start at $19/month (Starter), $39/month (Pro), and $79/month (Growth, with unlimited connected accounts across every major social platform). All paid plans include a 7-day free trial. Annual billing saves up to 21%.' },
+              { q: 'Can I cancel anytime?',
+                a: 'Yes. Cancel from Account Settings at any time. Your plan stays active until the end of the current billing period, then reverts to the free tier. No cancellation fee.' },
+              { q: 'Does the free plan require a credit card?',
+                a: 'No. The free plan has no card requirement and no time limit. It includes one connected account per platform and core tools.' },
+              { q: 'What are per-channel fees?',
+                a: 'WintAi has zero per-channel fees. Unlike Buffer or Hootsuite that charge per seat or per social profile, WintAi charges one flat plan price for unlimited connected accounts on the Growth tier.' },
+              { q: 'Can an agency manage multiple clients on one subscription?',
+                a: 'Yes. Pro includes 3 accounts per platform; Growth supports unlimited connected accounts. Each client lives in an isolated workspace with its own calendar, brand voice, approval flow, and permissions.' },
+              { q: 'How does the 7-day trial work?',
+                a: 'All paid plans include a 7-day free trial with no card required upfront on the free tier. Full feature access during the trial. Cancel anytime during the 7 days to avoid being charged.' },
+            ],
+            '/features': [
+              { q: 'What platforms does WintAi support?',
+                a: 'WintAi publishes to every major social platform: YouTube, Instagram, TikTok, Facebook, LinkedIn, X (Twitter), Threads, and Pinterest. One upload publishes to all of them, with per-platform video formatting and AI captions.' },
+              { q: 'Does WintAi write captions with AI?',
+                a: 'Yes. WintAi uses retrieval-augmented AI trained on your past posts to match your brand voice, emoji frequency, sentence rhythm, and preferred hashtags. Each platform gets a caption tuned to its format — Reels hooks, LinkedIn thought-leadership, TikTok short hooks, etc.' },
+              { q: 'Does WintAi auto-format video for each platform?',
+                a: 'Yes. Upload one video and WintAi transcodes per-platform variants: vertical 9:16 for Reels / TikTok / YouTube Shorts, horizontal 16:9 for YouTube main feed, square 1:1 for Facebook / LinkedIn feeds. No manual cropping required.' },
+              { q: 'Does WintAi support team and agency workflows?',
+                a: 'Yes. Workspaces isolate clients with independent social accounts, content calendars, brand voices, and team permissions. Client approval flow lets clients review posts via a public link before anything publishes.' },
+              { q: 'Can WintAi respond to comments automatically?',
+                a: 'Yes. Auto-reply generates responses in your brand voice and posts them to comments on YouTube, Facebook, Instagram, TikTok, LinkedIn, and X — with configurable keyword triggers and tone controls.' },
+              { q: 'What is Self-Healing Content?',
+                a: 'Self-Healing Content is a WintAi feature that detects underperforming posts, rewrites their captions in your current brand voice, and automatically reschedules them. Dead content gets second-chance distribution.' },
+            ],
+            '/docs': [
+              { q: 'How do I connect my social accounts to WintAi?',
+                a: 'Go to Connected Accounts → click the platform logo → complete OAuth in the popup. WintAi stores per-user access tokens and refreshes them automatically. Up to 3 accounts per platform on Pro, unlimited on Growth.' },
+              { q: 'How do I publish a video to multiple platforms?',
+                a: 'Open Video Publisher → upload your video → select which connected accounts to post to → WintAi generates per-platform variants and captions → review → click Publish or Schedule. The same video becomes a Reel, a Short, a LinkedIn post, and more in one click.' },
+              { q: 'How does the client approval flow work?',
+                a: 'When creating a post, toggle "Send for Approval" and pick a workspace member. They receive an email with a link to the approval page (no login required). They click Approve, Request Changes, or Reject. Approved posts auto-schedule; changes-requested posts pause for editing.' },
+              { q: 'What data does WintAi store?',
+                a: 'WintAi stores: your social OAuth tokens (encrypted), the videos and images you upload to S3, your scheduled and published posts, per-post analytics, and your brand voice samples. See privacy-policy for full disclosure.' },
+              { q: 'Can I delete my data?',
+                a: 'Yes. Account Settings → Delete Account removes your user data, connected social tokens, media files in S3, and all posts. GDPR / CCPA compliant; data is fully purged within 30 days.' },
+            ],
+          };
+          const faqs = faqByRoute[pathname];
+          if (!faqs) return null;
+          return (
+            <script type="application/ld+json">
+              {JSON.stringify({
+                '@context': 'https://schema.org',
+                '@type': 'FAQPage',
+                mainEntity: faqs.map(item => ({
+                  '@type': 'Question',
+                  name: item.q,
+                  acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: item.a,
+                  },
+                })),
+              })}
+            </script>
+          );
+        })()}
       </Helmet>
 
       <header className="seo-nav" role="banner">

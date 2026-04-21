@@ -1,4 +1,4 @@
-g/**
+/**
  * Client-side checks and copy for video/image publishing.
  * Limits are practical guardrails for this app; platforms may change API rules.
  */

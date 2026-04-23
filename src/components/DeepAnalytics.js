@@ -87,13 +87,20 @@ function PlatformScopeMenu({ value, onChange }) {
       if (!opt) return;
       // Close the dropdown first — let React commit that unmount cleanly.
       setOpen(false);
-      // Defer the parent state change to a second commit so the heavy chart
-      // re-render below doesn't overlap with the dropdown's DOM cleanup.
-      // This is what fixes the "removeChild: not a child of this node" crash.
-      setTimeout(() => {
+      // Defer the parent state until after the menu paint so the listbox
+      // DOM is fully torn down (setTimeout(0) alone can still interleave
+      // with the Growth Planner chart commit and trigger removeChild).
+      const run = () => {
         onChange(opt.id);
         triggerRef.current?.focus();
-      }, 0);
+      };
+      if (typeof requestAnimationFrame === 'function') {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(run);
+        });
+      } else {
+        setTimeout(run, 0);
+      }
     },
     [onChange, options],
   );
@@ -437,6 +444,8 @@ function brandTowerTrackBg(platformHex) {
 
 /* ── SVG Line Chart ─────────────────────────────────────────── */
 function LineChart({ data, color = '#6366f1', width = 500, height = 160 }) {
+  const gradId = useId().replace(/:/g, '');
+
   if (!data || data.length === 0) {
     return (
       <div style={{ height, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
@@ -497,7 +506,7 @@ function LineChart({ data, color = '#6366f1', width = 500, height = 160 }) {
   return (
     <svg width="100%" viewBox={`0 0 ${width} ${height}`} style={{ overflow: 'visible' }}>
       <defs>
-        <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id={`${gradId}-areaGrad`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor={color} stopOpacity="0.25" />
           <stop offset="100%" stopColor={color} stopOpacity="0.03" />
         </linearGradient>
@@ -512,7 +521,7 @@ function LineChart({ data, color = '#6366f1', width = 500, height = 160 }) {
           </text>
         </g>
       ))}
-      <polygon points={area} fill="url(#areaGrad)" />
+      <polygon points={area} fill={`url(#${gradId}-areaGrad)`} />
       <polyline points={points} fill="none" stroke={color} strokeWidth="2.5" strokeLinejoin="round" />
       {data.length <= 15 && data.map((d, i) => (
         <circle key={i} cx={x(i)} cy={y(d.followers)} r="3.5" fill={color} />
@@ -2811,7 +2820,7 @@ export default function DeepAnalytics() {
   }, [bestTime]);
 
   return (
-    <div style={s.wrap}>
+    <div style={s.wrap} translate="no">
 
       {/* ── Jump links (all sections below on one page) ── */}
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16, alignItems: 'center' }}>
@@ -2872,7 +2881,13 @@ export default function DeepAnalytics() {
           ) : (
             <>
               <div style={s.chartStretch}>
-                <LineChart data={history?.dataPoints || []} color={platformConfig.color} width={960} height={200} />
+                <LineChart
+                  key={`followers-chart-${platform}`}
+                  data={history?.dataPoints || []}
+                  color={platformConfig.color}
+                  width={960}
+                  height={200}
+                />
               </div>
               {history?.dataPoints?.length > 0 && (
                 <div style={s.statRow}>
@@ -2914,11 +2929,11 @@ export default function DeepAnalytics() {
             // the "removeChild: not a child of this node" reconciliation crash
             // when these two shape-incompatible branches swap during a
             // platform-change re-render.
-            <div key="bt-empty">
+            <div key={`${platform}-bt-empty`}>
               <BestTimeEmptyGuide platformLabel={platformConfig.label} platformColor={platformConfig.color} />
             </div>
           ) : (
-            <div key="bt-resolved">
+            <div key={`${platform}-bt-resolved`}>
               <BestTimeGuidancePanel
                 resolved={bestTimeResolved}
                 platformLabel={platformConfig.label}
@@ -2926,6 +2941,7 @@ export default function DeepAnalytics() {
               />
               <PlatformBestTimeCards bestTime={bestTime} />
               <PostHeatmap
+                key={`${platform}-heatmap`}
                 resolved={bestTimeResolved}
                 postsDetail={bestTime.postsDetail || []}
                 platformLabel={platformConfig.label}
@@ -2944,7 +2960,11 @@ export default function DeepAnalytics() {
           ) : postPerf && Object.keys(postPerf.byType || {}).length > 0 ? (
             <div style={s.perfRow}>
               <div style={{ flex: '1 1 300px', minWidth: 0 }}>
-                <TypeTowersChart postPerf={postPerf} platformColor={platformConfig.color} />
+                <TypeTowersChart
+                  key={`towers-${platform}`}
+                  postPerf={postPerf}
+                  platformColor={platformConfig.color}
+                />
               </div>
               <div style={{ flex: '2 1 360px', minWidth: 0 }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 /** Official LinkedIn "in" logo */
 export function LinkedInLogo({ size = 24, color = '#0A66C2', style = {} }) {
@@ -78,17 +78,25 @@ const INLINE_LOGOS = {
 
 /** Platform logo — uses inline SVG for known platforms, CDN fallback for others */
 export default function PlatformIcon({ platform, size = 24, style = {} }) {
+  const [cdnFailed, setCdnFailed] = useState(false);
+
   if (!platform) return null;
 
   const id = (platform.id || '').toLowerCase();
   const color = platform.color || '#64748b';
 
-  // Use inline SVG if available (zero CDN dependency)
   if (INLINE_LOGOS[id]) {
     return INLINE_LOGOS[id](size, color, style);
   }
 
-  // CDN fallback for other platforms
+  if (cdnFailed) {
+    return (
+      <span aria-hidden style={{ fontSize: size, lineHeight: '1', display: 'block', ...style }}>
+        {platform.emoji || ''}
+      </span>
+    );
+  }
+
   const logo = platform.logo || id;
   const cdnUrl = `https://cdn.simpleicons.org/${logo}/${color.replace('#', '')}`;
   return (
@@ -97,14 +105,7 @@ export default function PlatformIcon({ platform, size = 24, style = {} }) {
       alt=""
       aria-hidden
       style={{ width: size, height: size, minWidth: size, minHeight: size, objectFit: 'contain', display: 'block', ...style }}
-      onError={e => {
-        // Final fallback: emoji
-        const span = document.createElement('span');
-        span.textContent = platform.emoji || '';
-        span.style.fontSize = size + 'px';
-        span.style.lineHeight = '1';
-        e.target.parentNode?.replaceChild(span, e.target);
-      }}
+      onError={() => setCdnFailed(true)}
     />
   );
 }

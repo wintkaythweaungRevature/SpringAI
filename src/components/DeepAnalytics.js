@@ -78,16 +78,22 @@ function PlatformScopeMenu({ value, onChange }) {
 
   const close = useCallback(() => {
     setOpen(false);
-    triggerRef.current?.focus();
+    setTimeout(() => triggerRef.current?.focus(), 0);
   }, []);
 
   const selectByIndex = useCallback(
     (idx) => {
       const opt = options[idx];
       if (!opt) return;
-      onChange(opt.id);
+      // Close the dropdown first — let React commit that unmount cleanly.
       setOpen(false);
-      triggerRef.current?.focus();
+      // Defer the parent state change to a second commit so the heavy chart
+      // re-render below doesn't overlap with the dropdown's DOM cleanup.
+      // This is what fixes the "removeChild: not a child of this node" crash.
+      setTimeout(() => {
+        onChange(opt.id);
+        triggerRef.current?.focus();
+      }, 0);
     },
     [onChange, options],
   );
@@ -2734,11 +2740,15 @@ export default function DeepAnalytics() {
   const [snapMsg,      setSnapMsg]      = useState('');
   const platformForApi = platform === 'all' ? 'instagram' : platform;
 
+  // Only accept 2xx JSON — 4xx/5xx error bodies were being stored as state and
+  // breaking downstream renders (blank-page React crash when switching platform).
+  const safeJson = (r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)));
+
   const fetchHistory = useCallback(() => {
     setLoadHistory(true);
     fetch(`${API}/api/analytics/history?platform=${platformForApi}&days=${days}`, { headers: authHeaders() })
-      .then(r => r.json())
-      .then(setHistory)
+      .then(safeJson)
+      .then((data) => setHistory(data && typeof data === 'object' ? data : null))
       .catch(() => setHistory(null))
       .finally(() => setLoadHistory(false));
   }, [platformForApi, days, authHeaders]);
@@ -2747,8 +2757,8 @@ export default function DeepAnalytics() {
     setLoadBestTime(true);
     const q = new URLSearchParams({ platform: platformForApi });
     fetch(`${API}/api/analytics/best-time?${q}`, { headers: authHeaders() })
-      .then(r => r.json())
-      .then(setBestTime)
+      .then(safeJson)
+      .then((data) => setBestTime(data && typeof data === 'object' ? data : null))
       .catch(() => setBestTime(null))
       .finally(() => setLoadBestTime(false));
   }, [platformForApi, authHeaders]);
@@ -2757,8 +2767,8 @@ export default function DeepAnalytics() {
     setLoadPerf(true);
     const q = new URLSearchParams({ platform: platformForApi });
     fetch(`${API}/api/analytics/post-performance?${q}`, { headers: authHeaders() })
-      .then((r) => r.json())
-      .then(setPostPerf)
+      .then(safeJson)
+      .then((data) => setPostPerf(data && typeof data === 'object' ? data : null))
       .catch(() => setPostPerf(null))
       .finally(() => setLoadPerf(false));
   }, [platformForApi, authHeaders]);
@@ -2899,9 +2909,16 @@ export default function DeepAnalytics() {
           ) : !bestTime ? (
             <p style={{ color: '#94a3b8', fontSize: 13 }}>Could not load best time data.</p>
           ) : !bestTimeResolved ? (
-            <BestTimeEmptyGuide platformLabel={platformConfig.label} platformColor={platformConfig.color} />
+            // Wrapped with a stable key so React cleanly unmounts the empty-guide
+            // tree when switching to the resolved tree (and vice versa). Prevents
+            // the "removeChild: not a child of this node" reconciliation crash
+            // when these two shape-incompatible branches swap during a
+            // platform-change re-render.
+            <div key="bt-empty">
+              <BestTimeEmptyGuide platformLabel={platformConfig.label} platformColor={platformConfig.color} />
+            </div>
           ) : (
-            <>
+            <div key="bt-resolved">
               <BestTimeGuidancePanel
                 resolved={bestTimeResolved}
                 platformLabel={platformConfig.label}
@@ -2913,7 +2930,7 @@ export default function DeepAnalytics() {
                 postsDetail={bestTime.postsDetail || []}
                 platformLabel={platformConfig.label}
               />
-            </>
+            </div>
           )}
         </div>
       </section>
@@ -2960,7 +2977,9 @@ export default function DeepAnalytics() {
       <section id="trends-competitor" style={{ scrollMarginTop: 12 }}>
         <div style={s.card}>
           <h3 style={s.cardTitle}>🔍 YouTube Competitor Analysis</h3>
-          <CompetitorTab authHeaders={authHeaders} />
+          {/* key forces clean remount on platform change — avoids internal-state
+              staleness and sidesteps reconciliation for this big subtree. */}
+          <CompetitorTab key={`competitor-${platform}`} authHeaders={authHeaders} />
         </div>
       </section>
 
@@ -2971,7 +2990,7 @@ export default function DeepAnalytics() {
           <p style={{ fontSize: 12, color: '#94a3b8', marginBottom: 16 }}>
             View all your published and scheduled posts by month. The <strong>Best Time</strong> section above shows which days and hours you post most often.
           </p>
-          <TrendsCalendar authHeaders={authHeaders} />
+          <TrendsCalendar key={`calendar-${platform}`} authHeaders={authHeaders} />
         </div>
       </section>
 

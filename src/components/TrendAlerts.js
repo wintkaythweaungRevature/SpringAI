@@ -9,7 +9,9 @@ const SOURCE_COLORS = {
   general: { bg: '#f5f3ff', border: '#ddd6fe', text: '#5b21b6', label: '🌐 Trending' },
 };
 
-const CATEGORY_FILTERS = ['All', 'Marketing', 'Business', 'Tech'];
+// 'Business' hidden until Reddit r/entrepreneur source is replaced — Reddit
+// now blocks unauthenticated bots with 403, so that tab was always empty.
+const CATEGORY_FILTERS = ['All', 'Marketing', 'Tech'];
 
 function TrendCard({ trend, onGenerate }) {
   const src = SOURCE_COLORS[trend.source] || SOURCE_COLORS.general;

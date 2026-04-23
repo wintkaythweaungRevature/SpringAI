@@ -283,6 +283,33 @@ export default function AutoReplySettings() {
     setRules(r => ({ ...r, [platform]: { ...r[platform], [field]: value } }));
   };
 
+  // ─── Poll now (manual trigger) ───────────────────────────────────────────
+  const [polling, setPolling] = useState({});
+  const [pollMsg, setPollMsg] = useState('');
+  const pollNow = async (platform) => {
+    setPolling(p => ({ ...p, [platform]: true }));
+    setPollMsg('');
+    setGlobalError('');
+    try {
+      const res = await fetch(`${API_BASE}/api/auto-reply/poll-now/${platform}`, {
+        method: 'POST',
+        headers: authHeaders(),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        setGlobalError(d.error || `Poll failed for ${platform}.`);
+      } else {
+        setPollMsg(`✅ Poll triggered for ${platform}. Replies will appear in the log below as they post.`);
+        setTimeout(() => setPollMsg(''), 6000);
+        setTimeout(() => loadLogs(), 3000);
+      }
+    } catch {
+      setGlobalError('Network error while polling.');
+    } finally {
+      setPolling(p => ({ ...p, [platform]: false }));
+    }
+  };
+
   // ─── Test reply ───────────────────────────────────────────────────────────
   const runTest = async () => {
     if (!testComment.trim()) return;
@@ -346,6 +373,11 @@ export default function AutoReplySettings() {
       </div>
 
       {globalError && <div style={s.errorBanner}>{globalError}</div>}
+      {pollMsg && (
+        <div style={{ ...s.errorBanner, background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534' }}>
+          {pollMsg}
+        </div>
+      )}
 
       {/* Platform cards */}
       <div style={s.cards}>
@@ -375,6 +407,17 @@ export default function AutoReplySettings() {
                   >
                     <div style={{ ...s.toggleThumb, transform: rule.enabled ? 'translateX(20px)' : 'translateX(2px)' }} />
                   </button>
+                  {/* Poll now — only if enabled */}
+                  {rule.enabled && (
+                    <button
+                      style={s.settingsToggle}
+                      onClick={() => pollNow(p.id)}
+                      disabled={polling[p.id]}
+                      title="Check for new comments and reply immediately"
+                    >
+                      {polling[p.id] ? '⏳ Polling…' : '🔄 Poll Now'}
+                    </button>
+                  )}
                   {/* Expand settings */}
                   <button style={s.settingsToggle} onClick={() => setExpanded(isExpanded ? null : p.id)}>
                     {isExpanded ? '▲ Less' : '⚙ Settings'}

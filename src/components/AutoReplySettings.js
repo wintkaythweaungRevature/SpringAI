@@ -295,13 +295,24 @@ export default function AutoReplySettings() {
         method: 'POST',
         headers: authHeaders(),
       });
+      const d = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const d = await res.json().catch(() => ({}));
         setGlobalError(d.error || `Poll failed for ${platform}.`);
       } else {
-        setPollMsg(`✅ Poll triggered for ${platform}. Replies will appear in the log below as they post.`);
-        setTimeout(() => setPollMsg(''), 6000);
-        setTimeout(() => loadLogs(), 3000);
+        const fetched = d.fetched ?? 0;
+        const replied = d.replied ?? 0;
+        const outcomes = d.outcomes || {};
+        const parts = [`📥 Fetched ${fetched} comment${fetched === 1 ? '' : 's'}`];
+        if (replied > 0) parts.push(`✅ replied to ${replied}`);
+        Object.entries(outcomes).forEach(([k, v]) => {
+          if (k === 'replied') return;
+          parts.push(`${k.replace('skip:', '↪ ').replace('error:', '❌ ')} ×${v}`);
+        });
+        if (d.status && d.status !== 'ok') parts.push(`⚠ ${d.status}`);
+        if (d.message) parts.push(`— ${d.message}`);
+        setPollMsg(parts.join(' · '));
+        setTimeout(() => setPollMsg(''), 12000);
+        setTimeout(() => loadLogs(), 1500);
       }
     } catch {
       setGlobalError('Network error while polling.');

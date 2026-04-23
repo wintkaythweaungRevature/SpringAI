@@ -215,7 +215,7 @@ function PlatformScopeMenu({ value, onChange }) {
       : '0 1px 2px rgba(15, 23, 42, 0.05)',
     cursor: 'pointer',
     fontFamily: "'Inter', -apple-system, sans-serif",
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: 600,
     color: '#0f172a',
     letterSpacing: '-0.01em',
@@ -262,7 +262,6 @@ function PlatformScopeMenu({ value, onChange }) {
           aria-haspopup="listbox"
           aria-expanded={open}
           aria-controls={listboxId}
-          aria-labelledby={`${listboxId}-trigger`}
           aria-label="Filter by platform"
           style={triggerBase}
         >
@@ -283,8 +282,8 @@ function PlatformScopeMenu({ value, onChange }) {
             {current.label}
           </span>
           <svg
-            width="16"
-            height="16"
+            width="14"
+            height="14"
             viewBox="0 0 24 24"
             fill="none"
             aria-hidden
@@ -302,7 +301,7 @@ function PlatformScopeMenu({ value, onChange }) {
           <div
             id={listboxId}
             role="listbox"
-            aria-labelledby={`${listboxId}-label`}
+            aria-label="Platform"
             style={menuSurface}
           >
             <div
@@ -528,10 +527,11 @@ function LineChart({ data, color = '#6366f1', width = 500, height = 160 }) {
       ))}
       {xLabels.map((d) => {
         const idx = data.indexOf(d);
+        const dateStr = typeof d?.date === 'string' ? d.date : '';
         return (
-          <text key={d.date} x={x(idx)} y={height - 4}
+          <text key={dateStr || idx} x={x(idx)} y={height - 4}
                 textAnchor="middle" fontSize="9" fill="#94a3b8">
-            {d.date.slice(5)}
+            {dateStr.slice(5)}
           </text>
         );
       })}
@@ -2733,6 +2733,41 @@ function CompetitorTab({ authHeaders }) {
   );
 }
 
+/* ── Section Error Boundary ──────────────────────────────────── */
+class SectionErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+  componentDidCatch(error, info) {
+    // eslint-disable-next-line no-console
+    console.error('Growth Planner section crashed:', error, info);
+  }
+  componentDidUpdate(prevProps) {
+    if (prevProps.resetKey !== this.props.resetKey && this.state.error) {
+      this.setState({ error: null });
+    }
+  }
+  render() {
+    if (this.state.error) {
+      return (
+        <div style={{
+          background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 12,
+          padding: '16px 20px', color: '#991b1b', fontSize: 13, lineHeight: 1.5,
+          marginBottom: 16,
+        }}>
+          <strong>This section couldn't render for the selected platform.</strong>{' '}
+          Try a different platform or refresh. Other sections below should still work.
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 /* ── Main Component ──────────────────────────────────────────── */
 export default function DeepAnalytics() {
   const { authHeaders } = useAuth();
@@ -2878,6 +2913,7 @@ export default function DeepAnalytics() {
       </div>
 
       {/* ── FOLLOWER GROWTH ── */}
+      <SectionErrorBoundary resetKey={`growth-${platform}`}>
       <section id="trends-growth" style={{ scrollMarginTop: 12 }}>
         <div style={s.card}>
           <div style={s.cardHeader}>
@@ -2945,8 +2981,10 @@ export default function DeepAnalytics() {
           )}
         </div>
       </section>
+      </SectionErrorBoundary>
 
       {/* ── BEST TIME ── */}
+      <SectionErrorBoundary resetKey={`besttime-${platform}`}>
       <section id="trends-besttime" style={{ scrollMarginTop: 12 }}>
         <div style={s.card}>
           <h3 style={s.cardTitle}>⏰ Your posting times — {platformConfig.label}</h3>
@@ -2981,8 +3019,10 @@ export default function DeepAnalytics() {
           )}
         </div>
       </section>
+      </SectionErrorBoundary>
 
       {/* ── POST TYPE BREAKDOWN ── */}
+      <SectionErrorBoundary resetKey={`breakdown-${platform}`}>
       <section id="trends-breakdown" style={{ scrollMarginTop: 12 }}>
         <div style={s.card}>
           <h3 style={s.cardTitle}>📊 Post Type Breakdown</h3>
@@ -3023,8 +3063,10 @@ export default function DeepAnalytics() {
           )}
         </div>
       </section>
+      </SectionErrorBoundary>
 
       {/* ── COMPETITOR ── */}
+      <SectionErrorBoundary resetKey={`competitor-${platform}`}>
       <section id="trends-competitor" style={{ scrollMarginTop: 12 }}>
         <div style={s.card}>
           <h3 style={s.cardTitle}>🔍 YouTube Competitor Analysis</h3>
@@ -3033,8 +3075,10 @@ export default function DeepAnalytics() {
           <CompetitorTab key={`competitor-${platform}`} authHeaders={authHeaders} />
         </div>
       </section>
+      </SectionErrorBoundary>
 
       {/* ── CALENDAR ── */}
+      <SectionErrorBoundary resetKey={`calendar-${platform}`}>
       <section id="trends-calendar" style={{ scrollMarginTop: 12 }}>
         <div style={s.card}>
           <h3 style={s.cardTitle}>📅 Posts Calendar</h3>
@@ -3044,6 +3088,7 @@ export default function DeepAnalytics() {
           <TrendsCalendar key={`calendar-${platform}`} authHeaders={authHeaders} />
         </div>
       </section>
+      </SectionErrorBoundary>
 
     </div>
   );

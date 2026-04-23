@@ -24,8 +24,6 @@ const PLANS = [
       { text: 'Viral Hook Generator', included: true },
       { text: 'DocuWizard & Resume tools', included: true },
       { text: '1 seat (solo)', included: true },
-      { text: 'Organization & Workspaces', included: false },
-      { text: 'Team member seats', included: false },
     ],
   },
   {
@@ -70,7 +68,7 @@ const PLANS = [
     tagline: 'Maximum power for teams',
     seats: 5,
     features: [
-      { text: 'All 8 social platforms', included: true },
+      { text: 'Unlimited connected accounts', included: true },
       { text: 'Unlimited videos', included: true },
       { text: 'Unlimited AI-generated images', included: true },
       { text: 'Unlimited scheduled posts', included: true },
@@ -94,7 +92,7 @@ const PLANS = [
 
 /* ─── Comparison table rows ─────────────────────────────────────────── */
 const COMPARE_ROWS = [
-  { label: 'Social platforms',                  starter: '3',          pro: '5',          growth: 'All 8' },
+  { label: 'Connected accounts',                 starter: '3',          pro: '5',          growth: 'Unlimited' },
   { label: 'Videos to post / month',            starter: '100',        pro: 'Unlimited',  growth: 'Unlimited' },
   { label: 'Images to post / month',            starter: '1,000',      pro: 'Unlimited',  growth: 'Unlimited' },
   { label: 'AI-generated images / mo',          starter: '—',          pro: '100',        growth: 'Unlimited' },
@@ -253,20 +251,15 @@ export default function PricingPage({ onClose }) {
 
                 {/* Feature list */}
                 <ul style={s.featureList}>
-                  {plan.features.map(f => (
-                    <li key={f.text} style={{
-                      ...s.featureItem,
-                      opacity: f.included ? 1 : 0.35,
-                    }}>
+                  {plan.features.filter(f => f.included).map(f => (
+                    <li key={f.text} style={s.featureItem}>
                       <span style={{
-                        color: f.included ? '#22c55e' : '#94a3b8',
+                        color: '#22c55e',
                         marginRight: 8, flexShrink: 0, fontWeight: 700, fontSize: 14,
                       }}>
-                        {f.included ? '✓' : '✗'}
+                        ✓
                       </span>
-                      <span style={{ textDecoration: f.included ? 'none' : 'line-through' }}>
-                        {f.text}
-                      </span>
+                      <span>{f.text}</span>
                     </li>
                   ))}
                 </ul>

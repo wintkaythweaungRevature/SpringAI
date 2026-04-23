@@ -1,4 +1,87 @@
+# WintAi — robots.txt
+# Purpose: allow every search-engine and LLM crawler to index the public site.
+# Explicit per-agent rules below because some LLM crawlers default to "disallow"
+# when the bot's user-agent isn't named — a generic "User-agent: *" is not enough.
+
+# Default: all crawlers welcome
 User-agent: *
 Allow: /
 
+# ── Search engines ──────────────────────────────────────────────────────────
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: DuckDuckBot
+Allow: /
+
+User-agent: Slurp
+Allow: /
+
+User-agent: Baiduspider
+Allow: /
+
+User-agent: YandexBot
+Allow: /
+
+# ── AI / LLM training + retrieval crawlers ──────────────────────────────────
+# Google Gemini's training crawler (separate from Googlebot)
+User-agent: Google-Extended
+Allow: /
+
+# OpenAI's ChatGPT training + search crawlers
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+# Anthropic's Claude training + retrieval
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+# Perplexity AI (retrieval engine — feeds answers live)
+User-agent: PerplexityBot
+Allow: /
+
+# Common Crawl — bulk dataset used by many LLM trainers
+User-agent: CCBot
+Allow: /
+
+# Apple's Applebot and Amazon's Amazonbot
+User-agent: Applebot
+Allow: /
+
+User-agent: Amazonbot
+Allow: /
+
+# Meta's AI crawler
+User-agent: Meta-ExternalAgent
+Allow: /
+
+User-agent: FacebookBot
+Allow: /
+
+# Mistral, You.com, Diffbot, and smaller LLM retrievers
+User-agent: MistralAI-User
+Allow: /
+
+User-agent: YouBot
+Allow: /
+
+User-agent: Diffbot
+Allow: /
+
+# ── Sitemap ─────────────────────────────────────────────────────────────────
 Sitemap: https://www.wintaibot.com/sitemap.xml

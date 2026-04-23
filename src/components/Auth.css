@@ -3,6 +3,17 @@
   display: flex;
   justify-content: center;
   padding: 24px 20px;
+
+  /* Self-contained light-theme palette — the wrap can be rendered inside either
+     the dark app shell OR a standalone light-bg page (e.g. /reset-password).
+     Without this override the wrap inherits the dark-theme variables from :root
+     and text becomes unreadable on light backgrounds. */
+  --color-text:        #0f172a;
+  --color-text-muted:  #475569;
+  --color-surface-alt: #ffffff;
+  --color-border:      #cbd5e1;
+  --color-primary:     #2563eb;
+  color: #0f172a;
 }
 
 .auth-form-card {
@@ -78,12 +89,16 @@
 
 .auth-input {
   padding: 11px 14px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border, #cbd5e1);
+  border-radius: var(--radius-md, 10px);
   font-family: inherit;
   font-size: 0.9rem;
-  color: var(--color-text);
-  background: var(--color-surface-alt);
+  /* Explicit fallbacks so the field stays readable even if a parent
+     page doesn't define the CSS variables. Prevents light-on-light invisibility
+     on the /reset-password standalone route. */
+  color: var(--color-text, #0f172a);
+  background: var(--color-surface-alt, #ffffff);
+  caret-color: var(--color-primary, #2563eb);
   transition: border-color 0.2s, box-shadow 0.2s;
   width: 100%;
   box-sizing: border-box;

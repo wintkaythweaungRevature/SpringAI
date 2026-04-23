@@ -146,7 +146,18 @@ function postCalendarTimestamp(post) {
 }
 
 function postCalendarDate(post) {
-  return new Date(postCalendarTimestamp(post));
+  const ts = postCalendarTimestamp(post);
+  if (!ts) return new Date(NaN);
+  const str = String(ts);
+  // Backend stores dates as LocalDateTime (no timezone suffix) in UTC.
+  // Without "Z", JavaScript interprets bare ISO strings as local time,
+  // causing posts created at e.g. 9 PM EDT (= 1 AM UTC next day) to
+  // appear on tomorrow's calendar instead of today. Appending "Z" tells
+  // the browser the timestamp is UTC, so it converts to local date correctly.
+  if (/^\d{4}-\d{2}-\d{2}T/.test(str) && !str.includes('Z') && !str.includes('+') && !/T.*-/.test(str)) {
+    return new Date(str + 'Z');
+  }
+  return new Date(str);
 }
 
 /** True when the post is still scheduled / not yet published (for day-cell border). */
@@ -169,12 +180,14 @@ const POST_STATUS_UI = {
   failed:           { label: 'Failed',          emoji: '🔴', pillBg: '#fef2f2', pillFg: '#b91c1c', solid: '#dc2626' },
   pending_approval: { label: 'Pending Approval',emoji: '🔶', pillBg: '#fef3c7', pillFg: '#92400e', solid: '#f59e0b' },
   changes_requested:{ label: 'Changes Requested',emoji: '⛔',pillBg: '#fee2e2', pillFg: '#991b1b', solid: '#ef4444' },
+  rejected:         { label: 'Rejected',          emoji: '❌', pillBg: '#fee2e2', pillFg: '#dc2626', solid: '#dc2626' },
 };
 
 function getPostStatusCategory(post) {
   const s = String(post?.status || '').toUpperCase();
   if (s === 'PENDING_APPROVAL') return 'pending_approval';
   if (s === 'CHANGES_REQUESTED') return 'changes_requested';
+  if (s === 'REJECTED') return 'rejected';
   if (s === 'FAILED') return 'failed';
   if (s === 'DRAFT' || s === 'UNSCHEDULED') return 'draft';
   if (s === 'SUCCESS' || s === 'PUBLISHED' || s === 'COMPLETED') return 'published';
@@ -258,6 +271,7 @@ function getPostPreview(post) {
     post?.videoUrl,
     post?.fileUrl,
     post?.assetUrl,
+    post?.s3Key,
     post?.url,
   );
   const thumbUrl = pickFirstUrl(
@@ -331,8 +345,11 @@ function ResolvedPostMedia({
 
   if (!preview?.url) return null;
 
-  const asVideo = previewIsVideoMedia(preview);
-  const showPlay = playOverlay && previewIsVideoPost(post, preview);
+  // A post is rendered as <video> whenever it's a video post — even if getPostPreview
+  // returned kind='media' (e.g. only s3Key was available and mediaType='video'). Using
+  // <img> on a .webm/.mp4 fires onError and we fall back to the dash placeholder.
+  const asVideo = previewIsVideoPost(post, preview);
+  const showPlay = playOverlay && asVideo;
 
   if (!url || failed) {
     return (
@@ -741,6 +758,12 @@ const ms = {
 /* ─────────────────────────────────────────────────────────────────────────── */
 export default function ContentCalendar({ onOpenVideoPublisher }) {
   const { apiBase, token, myOrgRole, activeWorkspaceId, authHeaders } = useAuth();
+  // Calendar shows all posts for the workspace — do NOT filter by brand
+  const wsHeaders = () => {
+    const h = { Authorization: `Bearer ${token}` };
+    if (activeWorkspaceId) h['X-Workspace-Id'] = String(activeWorkspaceId);
+    return h;
+  };
   const base = apiBase || 'https://api.wintaibot.com';
   const isMobile = useMediaQuery('(max-width: 768px)');
 
@@ -769,6 +792,11 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
   const [changesComment,       setChangesComment]       = useState('');
   const [approvalActionIds,    setApprovalActionIds]    = useState({}); // postId → true while loading
 
+  // ── Right-click duplicate state ─────────────────────────────────────────────
+  const [contextMenu,    setContextMenu]    = useState(null);  // { post, x, y } | null
+  const [duplicateTarget, setDuplicateTarget] = useState(null); // post | null
+  const [duplicateDate,  setDuplicateDate]  = useState('');    // datetime-local value
+
   const loadPosts = useCallback(async () => {
     if (!token) return;
     setLoading(true);
@@ -795,6 +823,21 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
   }, [base, token, activeWorkspaceId]);
 
   useEffect(() => { loadPosts(); }, [loadPosts]);
+
+  // Open a post's detail / feedback modal when the notification bell asks for it.
+  // Fired from App.js via window.dispatchEvent(new CustomEvent('wintaibot:open-post', { detail: { postId } })).
+  useEffect(() => {
+    const handler = (e) => {
+      const id = e?.detail?.postId;
+      if (id == null) return;
+      // filteredPosts / allPosts refs won't be the freshest here; hit the source arrays directly.
+      const needle = String(id);
+      const match = (posts || []).find(p => String(p?.id ?? '') === needle);
+      if (match) setFeedDetailPost(match);
+    };
+    window.addEventListener('wintaibot:open-post', handler);
+    return () => window.removeEventListener('wintaibot:open-post', handler);
+  }, [posts]);
 
   const retryFailedPost = async (postId) => {
     if (!postId || !token) return;
@@ -851,13 +894,21 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
     }
   };
 
+  // Convert datetime-local value (local time) to UTC ISO string (no Z) for the backend.
+  // The calendar appends "Z" when reading stored dates back, so storing UTC keeps the
+  // displayed day consistent for users in any timezone.
+  const toUtcIso = (dtLocal) => {
+    const d = new Date(String(dtLocal));
+    return Number.isNaN(d.getTime()) ? String(dtLocal) : d.toISOString().slice(0, 19);
+  };
+
   const rescheduleJob = async (jobId, dt) => {
     if (!jobId || !dt || !token) return;
     try {
       const res = await fetch(`${base}/api/analytics/job/${jobId}/reschedule`, {
         method: 'POST',
         headers: { ...authHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ newDateTime: dt }),
+        body: JSON.stringify({ newDateTime: toUtcIso(dt) }),
       });
       if (!res.ok) throw new Error('Reschedule failed');
       setActionMsg('Post rescheduled.');
@@ -876,7 +927,7 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
       const res = await fetch(`${base}/api/analytics/post/${postId}/reschedule`, {
         method: 'POST',
         headers: { ...authHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ newDateTime: dt }),
+        body: JSON.stringify({ newDateTime: toUtcIso(dt) }),
       });
       if (!res.ok) throw new Error('Reschedule failed');
       setActionMsg('Post rescheduled.');
@@ -885,6 +936,37 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
       setActionMsg('Could not reschedule this post.');
     } finally {
       setTimeout(() => setActionMsg(''), 3000);
+    }
+  };
+
+  // Dismiss context menu on any outside click
+  useEffect(() => {
+    if (!contextMenu) return;
+    const dismiss = () => setContextMenu(null);
+    window.addEventListener('click', dismiss);
+    return () => window.removeEventListener('click', dismiss);
+  }, [contextMenu]);
+
+  const handleDuplicate = async () => {
+    if (!duplicateTarget || !duplicateDate) return;
+    try {
+      const utcIso = toUtcIso(duplicateDate);
+      const res = await fetch(
+        `${base}/api/social/post/${duplicateTarget.id}/duplicate`,
+        {
+          method: 'POST',
+          headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+          body: JSON.stringify({ scheduledAt: utcIso }),
+        }
+      );
+      if (!res.ok) throw new Error('Duplicate failed');
+      setDuplicateTarget(null);
+      setActionMsg('✅ Post duplicated!');
+      await loadPosts();
+    } catch {
+      setActionMsg('Could not duplicate post.');
+    } finally {
+      setTimeout(() => setActionMsg(''), 4000);
     }
   };
 
@@ -978,10 +1060,17 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
     } catch {}
   });
 
-  // Upcoming posts (future or recent)
-  const upcoming = [...filteredPosts]
-    .sort((a, b) => postCalendarDate(b) - postCalendarDate(a))
-    .slice(0, 20);
+  // Sidebar posts — scoped to the selected day when one is picked, otherwise falls back to
+  // the 20 most-recent posts across the workspace so the panel never goes completely empty.
+  const upcoming = (() => {
+    const base = [...filteredPosts].sort((a, b) => postCalendarDate(b) - postCalendarDate(a));
+    if (selectedDay) {
+      return base.filter(p => {
+        try { return sameDay(postCalendarDate(p), selectedDay); } catch { return false; }
+      });
+    }
+    return base.slice(0, 20);
+  })();
 
   return (
     <div style={{ ...s.page, ...(isMobile ? { padding: '12px 8px', borderRadius: 0, border: 'none' } : {}) }}>
@@ -1095,6 +1184,28 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
 
       <div style={s.pageHeader}>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginLeft: 'auto' }}>
+          {typeof onOpenVideoPublisher === 'function' && (
+            <button
+              type="button"
+              onClick={() => onOpenVideoPublisher()}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '8px 14px',
+                background: 'linear-gradient(135deg, #2563eb, #1e3a8a)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 8,
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: 'pointer',
+                boxShadow: '0 2px 8px rgba(37,99,235,0.28)',
+              }}
+              title="Create a new post"
+            >
+              <span style={{ fontSize: 15, lineHeight: 1 }}>＋</span>
+              <span>Add Post</span>
+            </button>
+          )}
           <div style={s.viewToggle}>
             <button style={{ ...s.viewBtn, ...(view === 'calendar' ? s.viewBtnActive : {}) }} onClick={() => setView('calendar')}>
               🗓 Calendar
@@ -1236,15 +1347,15 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
                               title={h.name}
                               style={{
                                 fontSize: 10,
-                                background: HOLIDAY_COLORS[h.type] + '22',
-                                border: `1px solid ${HOLIDAY_COLORS[h.type]}55`,
-                                borderRadius: 6,
-                                padding: '1px 4px',
+                                background: 'transparent',
+                                border: 'none',
+                                padding: 0,
                                 color: HOLIDAY_COLORS[h.type],
-                                fontWeight: 700,
+                                fontWeight: 500,
                                 cursor: 'default',
                                 whiteSpace: 'nowrap',
                                 lineHeight: 1.4,
+                                opacity: 0.75,
                               }}
                             >
                               {h.emoji} {h.name.length > 12 ? h.name.slice(0, 12) + '…' : h.name}
@@ -1259,6 +1370,14 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
                             const pInfo = PLATFORM_MAP[p.platform?.toLowerCase()];
                             const preview = getPostPreview(p);
                             const t = fmtTime(postCalendarTimestamp(p));
+                            const pColor = platformColor(p.platform);
+                            // Approval-outcome tints — unmissable in the grid without expanding.
+                            const chipStatus = String(p.status || '').toUpperCase();
+                            const chipTintBg =
+                              chipStatus === 'CHANGES_REQUESTED' ? '#fef3c7'
+                              : chipStatus === 'REJECTED'        ? '#fee2e2'
+                              : chipStatus === 'PENDING_APPROVAL' ? '#fffbeb'
+                              : null;
                             return (
                               <button
                                 key={`${key}-${i}`}
@@ -1266,8 +1385,15 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
                                 draggable={isPostScheduled(p) && (p.jobId != null || p.id != null)}
                                 onDragStart={(e) => { e.stopPropagation(); setDragPost(p); }}
                                 onDragEnd={() => { setDragPost(null); setDragOverKey(null); }}
-                                style={{ ...s.dayPostChip, ...(isPostScheduled(p) ? { cursor: 'grab' } : {}) }}
+                                style={{
+                                  ...s.dayPostChip,
+                                  borderLeft: `3px solid ${pColor}`,
+                                  ...(chipTintBg ? { background: chipTintBg } : {}),
+                                  ...(isPostScheduled(p) ? { cursor: 'grab' } : {}),
+                                }}
                                 onMouseEnter={(e) => {
+                                  e.currentTarget.style.boxShadow = `0 4px 14px ${pColor}30`;
+                                  e.currentTarget.style.transform = 'translateY(-1px)';
                                   const rect = e.currentTarget.getBoundingClientRect();
                                   setHoverPreview({
                                     post: p,
@@ -1275,26 +1401,77 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
                                     y: rect.top - 8,
                                   });
                                 }}
-                                onMouseLeave={() => setHoverPreview(null)}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.boxShadow = 'none';
+                                  e.currentTarget.style.transform = 'translateY(0)';
+                                  setHoverPreview(null);
+                                }}
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setFeedDetailPost(p);
                                 }}
-                                title="View post details"
+                                onContextMenu={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setHoverPreview(null);
+                                  setContextMenu({ post: p, x: e.clientX, y: e.clientY });
+                                }}
                               >
-                                <span style={{ display: 'inline-flex', alignItems: 'center' }}>
-                                  {pInfo ? <PlatformIcon platform={pInfo} size={12} /> : '•'}
-                                </span>
-                                <span>{t || 'Post'}</span>
-                                {preview?.url && (
+                                {preview?.url ? (
                                   <ResolvedPostMedia
                                     post={p}
-                                    playOverlay={false}
-                                    wrapperStyle={{ width: 18, height: 18, borderRadius: 4, overflow: 'hidden', marginLeft: 'auto', flexShrink: 0, border: '1px solid #e2e8f0' }}
+                                    playOverlay={previewIsVideoPost(p, preview)}
+                                    wrapperStyle={{ ...s.dayChipThumb, overflow: 'hidden' }}
                                     imgStyle={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                     videoStyle={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                    playOverlayStyle={{ fontSize: 10 }}
                                   />
+                                ) : (
+                                  <div
+                                    style={{
+                                      ...s.dayChipThumbPlaceholder,
+                                      background: `linear-gradient(135deg, ${pColor}, ${pColor}cc)`,
+                                    }}
+                                  >
+                                    {pInfo ? <PlatformIcon platform={pInfo} size={12} /> : '•'}
+                                  </div>
                                 )}
+                                <div style={s.dayChipBody}>
+                                  <div style={s.dayChipTime}>{t || 'Post'}</div>
+                                  <div style={s.dayChipMeta}>
+                                    {pInfo?.label || p.platform || ''}
+                                  </div>
+                                </div>
+                                {/* Approval status badge — only for member-approval outcomes.
+                                    SCHEDULED / PENDING / SUCCESS / FAILED render nothing. */}
+                                {(() => {
+                                  const st = (p.status || '').toUpperCase();
+                                  const badge = {
+                                    PENDING_APPROVAL:   { emoji: '⏳', bg: '#fef3c7', border: '#f59e0b', title: 'Pending approval' },
+                                    CHANGES_REQUESTED:  { emoji: '📝', bg: '#dbeafe', border: '#3b82f6', title: 'Changes requested' },
+                                    REJECTED:           { emoji: '❌', bg: '#fee2e2', border: '#ef4444', title: 'Rejected' },
+                                  }[st];
+                                  if (!badge) return null;
+                                  return (
+                                    <span
+                                      title={badge.title}
+                                      style={{
+                                        position: 'absolute',
+                                        top: 2,
+                                        right: 2,
+                                        fontSize: 10,
+                                        lineHeight: 1,
+                                        padding: '2px 4px',
+                                        borderRadius: 6,
+                                        background: badge.bg,
+                                        border: `1px solid ${badge.border}`,
+                                        pointerEvents: 'none',
+                                      }}
+                                    >
+                                      {badge.emoji}
+                                    </span>
+                                  );
+                                })()}
                               </button>
                             );
                           })}
@@ -1323,7 +1500,7 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
                 })}
               </div>
 
-              {/* Legend */}
+              {/* Platform + Calendar marker legends — under the calendar grid */}
               <div style={s.legend}>
                 {PLATFORMS.filter(p => monthPosts.some(m => m.platform?.toLowerCase() === p.id)).map(p => (
                   <div key={p.id} style={s.legendItem}>
@@ -1332,7 +1509,6 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
                   </div>
                 ))}
               </div>
-              {/* Holiday legend */}
               <div style={{ marginTop: 8, paddingTop: 10, borderTop: '1px dashed #e2e8f0' }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 6 }}>Calendar markers</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 12px' }}>
@@ -1349,37 +1525,43 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
                 </div>
               </div>
 
-              <div style={{ marginTop: 6, paddingTop: 12, borderTop: '1px dashed #e2e8f0' }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 8 }}>Post status</div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px 14px' }}>
-                  {[
-                    { emoji: '🟢', label: 'Published', hint: 'already live' },
-                    { emoji: '🟡', label: 'Scheduled', hint: 'posts later' },
-                    { emoji: '🔵', label: 'Draft', hint: 'not scheduled yet' },
-                    { emoji: '🔴', label: 'Failed', hint: 'posting error' },
-                  ].map((row) => (
-                    <div key={row.label} style={s.legendItem} title={`${row.label}: ${row.hint}`}>
-                      <span style={{ fontSize: 11, lineHeight: 1 }}>{row.emoji}</span>
-                      <span style={{ fontSize: 12, color: '#475569' }}>
-                        <strong>{row.label}</strong>
-                        <span style={{ color: '#94a3b8', fontWeight: 400 }}> — {row.hint}</span>
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
             </div>
 
-            {/* Upcoming posts sidebar */}
+            {/* Right column — sidebar + post-status legend stacked together so the legend
+                sits directly under the Recent/Selected-day card (not floating under the calendar grid). */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div style={s.sidebar}>
               <div style={s.sidebarHeader}>
-                <span style={s.sidebarTitle}>📋 Recent Posts</span>
+                <span style={s.sidebarTitle}>
+                  {selectedDay ? `📅 ${fmtDate(selectedDay)}` : '📋 Recent Posts'}
+                </span>
                 <span style={s.sidebarCount}>{upcoming.length}</span>
+                {selectedDay && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDay(null)}
+                    title="Clear selection"
+                    style={{
+                      marginLeft: 'auto',
+                      background: 'transparent',
+                      border: '1px solid rgba(255,255,255,0.18)',
+                      color: '#94a3b8',
+                      fontSize: 11,
+                      borderRadius: 6,
+                      padding: '2px 8px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Clear
+                  </button>
+                )}
               </div>
               {loading ? (
                 <div style={s.loadingState}>Loading…</div>
               ) : upcoming.length === 0 ? (
-                <div style={s.emptyState}>No posts yet</div>
+                <div style={s.emptyState}>
+                  {selectedDay ? 'No posts on this day' : 'No posts yet'}
+                </div>
               ) : (
                 <div style={s.upcomingList}>
                   {upcoming.map((p, i) => {
@@ -1481,6 +1663,28 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
                   })}
                 </div>
               )}
+
+            </div>
+            {/* Post status legend — stacked under the sidebar card in the right column. */}
+            <div style={{ background: '#fff', borderRadius: 12, border: '1.5px solid #e2e8f0', padding: '12px 16px', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 8 }}>Post status</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {[
+                  { emoji: '🟢', label: 'Published', hint: 'already live' },
+                  { emoji: '🟡', label: 'Scheduled', hint: 'posts later' },
+                  { emoji: '🔵', label: 'Draft', hint: 'not scheduled yet' },
+                  { emoji: '🔴', label: 'Failed', hint: 'posting error' },
+                ].map((row) => (
+                  <div key={row.label} style={s.legendItem} title={`${row.label}: ${row.hint}`}>
+                    <span style={{ fontSize: 11, lineHeight: 1 }}>{row.emoji}</span>
+                    <span style={{ fontSize: 12, color: '#475569' }}>
+                      <strong>{row.label}</strong>
+                      <span style={{ color: '#94a3b8', fontWeight: 400 }}> — {row.hint}</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
             </div>
           </>
         )}
@@ -1686,14 +1890,32 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
         onPosted={() => { loadPosts(); }}
       />
 
-      {feedDetailPost && (
-        <PostDetailModal
-          post={feedDetailPost}
-          platform={PLATFORM_MAP[feedDetailPost.platform?.toLowerCase()]}
-          onClose={() => setFeedDetailPost(null)}
-          onSaved={loadPosts}
-        />
-      )}
+      {feedDetailPost && (() => {
+        // Build feedbackContext from the post status so the modal can render the amber/red
+        // approval banner and swap in the Edit & Resubmit / Duplicate-as-draft actions.
+        const st = String(feedDetailPost.status || '').toUpperCase();
+        let feedbackContext = null;
+        if (st === 'CHANGES_REQUESTED' || st === 'REJECTED') {
+          feedbackContext = {
+            kind: st,
+            note: feedDetailPost.approvalComment || '',
+            approverEmail:
+              feedDetailPost.approverEmail
+              || feedDetailPost.approverLabel
+              || feedDetailPost.lastApproverEmail
+              || null,
+          };
+        }
+        return (
+          <PostDetailModal
+            post={feedDetailPost}
+            platform={PLATFORM_MAP[feedDetailPost.platform?.toLowerCase()]}
+            onClose={() => setFeedDetailPost(null)}
+            onSaved={loadPosts}
+            feedbackContext={feedbackContext}
+          />
+        );
+      })()}
 
       {hoverPreview?.post && (() => {
         const hp = hoverPreview.post;
@@ -1747,6 +1969,124 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
           </div>
         );
       })()}
+
+      {/* ── Right-click context menu ─────────────────────────────────────── */}
+      {contextMenu && (
+        <div
+          style={{
+            position: 'fixed',
+            left: contextMenu.x,
+            top: contextMenu.y,
+            zIndex: 2500,
+            background: '#fff',
+            border: '1px solid #e2e8f0',
+            borderRadius: 10,
+            boxShadow: '0 8px 30px rgba(15,23,42,0.18)',
+            minWidth: 160,
+            overflow: 'hidden',
+          }}
+          onClick={e => e.stopPropagation()}
+        >
+          <button
+            style={{
+              display: 'block',
+              width: '100%',
+              padding: '10px 16px',
+              background: 'none',
+              border: 'none',
+              textAlign: 'left',
+              fontSize: 13,
+              fontWeight: 600,
+              color: '#1e293b',
+              cursor: 'pointer',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#f8fafc'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
+            onClick={() => {
+              const base = contextMenu.post.scheduledAt
+                ? new Date(contextMenu.post.scheduledAt + (contextMenu.post.scheduledAt.endsWith('Z') ? '' : 'Z'))
+                : new Date();
+              base.setDate(base.getDate() + 7);
+              // datetime-local format: YYYY-MM-DDTHH:MM (in local time)
+              const pad = n => String(n).padStart(2, '0');
+              const localStr = `${base.getFullYear()}-${pad(base.getMonth()+1)}-${pad(base.getDate())}T${pad(base.getHours())}:${pad(base.getMinutes())}`;
+              setDuplicateDate(localStr);
+              setDuplicateTarget(contextMenu.post);
+              setContextMenu(null);
+            }}
+          >
+            📋 Duplicate
+          </button>
+        </div>
+      )}
+
+      {/* ── Duplicate post modal ─────────────────────────────────────────── */}
+      {duplicateTarget && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.45)',
+            zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+          onClick={() => setDuplicateTarget(null)}
+        >
+          <div
+            style={{
+              background: '#fff', borderRadius: 14, padding: '24px 28px',
+              width: 360, maxWidth: '92vw', boxShadow: '0 20px 60px rgba(15,23,42,0.25)',
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4, color: '#0f172a' }}>
+              📋 Duplicate Post
+            </div>
+            <div style={{ fontSize: 12, color: '#64748b', marginBottom: 16 }}>
+              <span style={{ textTransform: 'capitalize', fontWeight: 600, color: platformColor(duplicateTarget.platform) }}>
+                {duplicateTarget.platform}
+              </span>
+              {' · '}
+              {(safeDecodeCaption(duplicateTarget.caption) || '').slice(0, 60)}
+              {(safeDecodeCaption(duplicateTarget.caption) || '').length > 60 ? '…' : ''}
+            </div>
+            <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 6 }}>
+              Schedule for
+            </label>
+            <input
+              type="datetime-local"
+              value={duplicateDate}
+              onChange={e => setDuplicateDate(e.target.value)}
+              style={{
+                display: 'block', width: '100%', marginBottom: 20,
+                padding: '8px 10px', borderRadius: 8,
+                border: '1px solid #cbd5e1', fontSize: 13, color: '#0f172a',
+                boxSizing: 'border-box',
+              }}
+            />
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setDuplicateTarget(null)}
+                style={{
+                  padding: '8px 18px', borderRadius: 8, border: '1px solid #cbd5e1',
+                  background: '#f8fafc', color: '#475569', fontSize: 13, fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDuplicate}
+                style={{
+                  padding: '8px 18px', borderRadius: 8, border: 'none',
+                  background: '#6366f1', color: '#fff', fontSize: 13, fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                Duplicate →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
@@ -1754,9 +2094,11 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
 /* ─── Styles ──────────────────────────────────────────────────────────────── */
 const s = {
   page: {
-    maxWidth: 1100,
+    // Widen so the 7-day grid + sidebar both breathe. The old 1100 clipped day cells
+    // on desktop, making platform chips look oversized relative to the cell.
+    maxWidth: 1360,
     margin: '0 auto',
-    padding: '20px 16px',
+    padding: '20px 18px',
     fontFamily: 'inherit',
     color: '#0f172a',
     background: 'rgba(248,250,252,0.97)',
@@ -1779,7 +2121,9 @@ const s = {
   },
   pillActive: { background: '#6366f1', color: '#fff', borderColor: '#6366f1' },
 
-  body: { display: 'grid', gridTemplateColumns: '1fr 300px', gap: 18, alignItems: 'start' },
+  // Sidebar fixed at 300; left column flexes. `minmax(0, 1fr)` prevents the 7-col calendar
+  // grid from forcing overflow (grid tracks without min:0 expand past the column).
+  body: { display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 300px', gap: 18, alignItems: 'start' },
 
   /* Calendar */
   calCard: { background: '#fff', borderRadius: 16, padding: '20px', border: '1.5px solid #e2e8f0', boxShadow: '0 1px 6px rgba(0,0,0,0.05)' },
@@ -1798,21 +2142,32 @@ const s = {
   dotRow: { display: 'flex', gap: 3, flexWrap: 'wrap', marginTop: 4 },
   dot: { width: 8, height: 8, borderRadius: '50%', flexShrink: 0 },
   moreBadge: { fontSize: 9, color: '#94a3b8', fontWeight: 700 },
-  dayPostList: { display: 'flex', flexDirection: 'column', gap: 4, marginTop: 4 },
+  dayPostList: { display: 'flex', flexDirection: 'column', gap: 5, marginTop: 4 },
   dayPostChip: {
+    position: 'relative',
     border: '1px solid #e2e8f0',
-    background: '#f8fafc',
-    borderRadius: 8,
-    fontSize: 11,
+    background: '#ffffff',
+    borderRadius: 7,
+    fontSize: 10,
     color: '#334155',
-    padding: '3px 6px',
+    padding: 2,
     display: 'flex',
     alignItems: 'center',
-    gap: 6,
+    gap: 5,
     cursor: 'pointer',
     textAlign: 'left',
+    minHeight: 28,
+    transition: 'box-shadow 0.15s, transform 0.15s',
   },
-  dayChipThumb: { width: 18, height: 18, borderRadius: 4, marginLeft: 'auto', objectFit: 'cover', border: '1px solid #e2e8f0' },
+  dayChipThumb: { width: 28, height: 28, borderRadius: 5, objectFit: 'cover', border: '1px solid #e2e8f0', flexShrink: 0 },
+  dayChipThumbPlaceholder: {
+    width: 28, height: 28, borderRadius: 5, flexShrink: 0,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    color: '#fff', fontSize: 11, fontWeight: 800,
+  },
+  dayChipBody: { display: 'flex', flexDirection: 'column', gap: 0, minWidth: 0, flex: 1 },
+  dayChipTime: { fontSize: 10, fontWeight: 700, color: '#0f172a' },
+  dayChipMeta: { fontSize: 9, color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
   dayMoreBtn: {
     border: 'none',
     background: 'transparent',

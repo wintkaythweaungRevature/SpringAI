@@ -11,6 +11,7 @@ import { HiChatBubbleOvalLeft, HiArrowTrendingUp, HiLink } from 'react-icons/hi2
 import { HiDocumentMagnifyingGlass, HiRectangleGroup, HiFilm, HiArrowPath, HiShieldCheck } from 'react-icons/hi2';
 import { HiCog6Tooth, HiCreditCard, HiQuestionMarkCircle } from 'react-icons/hi2';
 import PlatformIcon from './components/PlatformIcon';
+import ProfileAvatar from './components/ProfileAvatar';
 import HelpPanel from './components/HelpPanel';
 import ImageGenerator from './components/ImageGenerator';
 import ChatComponent from './components/ChatComponent';
@@ -39,6 +40,8 @@ import PricingPage from './components/PricingPage';
 import AutoReplySettings from './components/AutoReplySettings';
 import ProGate from './components/ProGate';
 import ContentCalendar from './components/ContentCalendar';
+import NotificationBell from './components/NotificationBell';
+import { ToastHost } from './components/Toast';
 import TeamSettings from './components/TeamSettings';
 import BrandKitSettings from './components/BrandKitSettings';
 import OrganizationSettings from './components/OrganizationSettings';
@@ -165,7 +168,7 @@ function MarketingNav({ go, onLogin, onSignup }) {
       >
         <img src={BRAND_LOGO_SRC} alt="W!ntAi logo" width={32} height={32} style={{ display: 'block', flexShrink: 0, borderRadius: '8px' }} />
         <span style={{ color: '#f1f5f9', fontWeight: 800, fontSize: isMobile ? '15px' : '17px', letterSpacing: '-0.02em' }}>
-          <span style={{ color: '#818cf8' }}>W!</span>ntAi
+          <span style={{ color: '#ffffff' }}>W!</span>ntAi
         </span>
       </div>
 
@@ -303,7 +306,12 @@ function MarketingNav({ go, onLogin, onSignup }) {
 
 /* ─── App ─────────────────────────────────────────────────── */
 function App() {
-  const [activeTab, setActiveTab] = useState(null);
+  // Restore activeTab from URL hash on load (e.g. #inbox → 'inbox')
+  // so F5 refresh stays on the current page instead of resetting to Dashboard.
+  const [activeTab, setActiveTab] = useState(() => {
+    const hash = window.location.hash.replace('#', '').trim();
+    return hash || null;
+  });
   const [showAuthModal, setShowAuthModal] = useState(false);
   // authMode: 'login' | 'signup' | 'forgot-password'
   const [authMode, setAuthMode] = useState('login');
@@ -314,6 +322,10 @@ function App() {
   const topNavRef = useRef(null);
   const [aiDockOpen, setAiDockOpen] = useState(false);
   const [connectedPlatforms, setConnectedPlatforms] = useState([]);
+  // Full account pool grouped by platform — used to show real profile avatars in
+  // the top-bar icons. Populated alongside connectedPlatforms from /social/accounts.
+  // Shape: { youtube: [{id, username, profileImageUrl, ...}, ...], facebook: [], ... }
+  const [accountsByPlatform, setAccountsByPlatform] = useState({});
   const [pendingInviteToken, setPendingInviteToken] = useState(null);
   const [pendingOrgInviteToken, setPendingOrgInviteToken] = useState(null);
   const [orgInviteHint, setOrgInviteHint] = useState(null); // { email, orgName } or null
@@ -344,25 +356,51 @@ function App() {
       }
       return tab;
     });
+    // Push a real browser history entry so the back arrow navigates
+    // between tabs: Inbox → Templates → [back] → Inbox.
+    // F5 also works because the URL hash reflects the active tab.
+    const newHash = tab ? `#${tab}` : window.location.pathname;
+    if (window.location.hash !== (tab ? `#${tab}` : '')) {
+      window.history.pushState({ tab }, '', newHash);
+    }
+  }, []);
+
+  // Browser back/forward: read the hash and switch to that tab
+  useEffect(() => {
+    const onPopState = () => {
+      const hash = window.location.hash.replace('#', '').trim();
+      setActiveTab(hash || null);
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
   }, []);
 
   const goBack = useCallback(() => {
-    const stack = navStackRef.current;
-    if (stack.length > 0) {
-      const prev = stack.pop();
-      setActiveTab(prev ?? null);
+    // Use the browser's native back — popstate handler will update activeTab
+    if (navStackRef.current.length > 0) {
+      window.history.back();
     } else {
       setActiveTab(null);
     }
   }, []);
 
-  // Fetch connected social platforms for topbar icons
+  // Fetch connected social accounts for topbar icons.
+  // /accounts returns the full pool — derives both the connected-platforms list
+  // (for button enabled/disabled state) AND the per-account profile avatars.
   useEffect(() => {
-    if (!user || !token) { setConnectedPlatforms([]); return; }
+    if (!user || !token) { setConnectedPlatforms([]); setAccountsByPlatform({}); return; }
     const base = apiBase || 'https://api.wintaibot.com';
-    fetch(`${base}/api/social/status`, { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${base}/api/social/accounts`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.ok ? r.json() : null)
-      .then(data => { if (data?.connected) setConnectedPlatforms(data.connected); })
+      .then(data => {
+        if (!data) return;
+        const pool = data.accounts || {};
+        setAccountsByPlatform(pool);
+        const connected = Object.entries(pool)
+          .filter(([, list]) => (list || []).length > 0)
+          .map(([p]) => p);
+        setConnectedPlatforms(connected);
+      })
       .catch(() => {});
   }, [user, token, apiBase]);
 
@@ -386,9 +424,14 @@ function App() {
   const [connectingId, setConnectingId] = useState(null);
   const refreshTopbarStatus = useCallback(() => {
     const base = apiBase || 'https://api.wintaibot.com';
-    fetch(`${base}/api/social/status`, { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${base}/api/social/accounts`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d?.connected) setConnectedPlatforms(d.connected); })
+      .then(d => {
+        if (!d) return;
+        const pool = d.accounts || {};
+        setAccountsByPlatform(pool);
+        setConnectedPlatforms(Object.entries(pool).filter(([, l]) => (l || []).length > 0).map(([p]) => p));
+      })
       .catch(() => {});
   }, [apiBase, token]);
 
@@ -617,6 +660,9 @@ function App() {
   return (
     <div style={s.shell}>
 
+      {/* Toast host — renders at top-right z-index: 100000, fired from anywhere via fireToast() */}
+      <ToastHost />
+
       {/* Marketing Nav — fixed at top for logged-out visitors, above everything */}
       {!user && <MarketingNav go={go} onLogin={openLogin} onSignup={openSignup} />}
 
@@ -708,7 +754,7 @@ function App() {
 
         {/* Top Bar — only shown when logged in (MarketingNav handles logged-out state) */}
         {user && (
-          <header style={{ ...s.topBar, position: 'relative', overflow: 'visible' }}>
+          <header style={{ ...s.topBar, position: 'relative', overflow: 'visible', zIndex: 1100 }}>
             <button style={s.menuBtn} onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>
 
             {/* Platform bar — left of back button (in document order) */}
@@ -728,6 +774,12 @@ function App() {
                   const isOn = connectedPlatforms.includes(p.id);
                   const isBusy = disconnectingId === p.id || connectingId === p.id;
                   const isConnecting = connectingId === p.id;
+                  // Show the real connected-account photo when exactly one account
+                  // is linked for this platform. With 0 or 2+ accounts the generic
+                  // platform icon is clearer (the button represents the platform,
+                  // not one particular account).
+                  const pAccounts = accountsByPlatform[p.id] || [];
+                  const singleAccount = isOn && pAccounts.length === 1 ? pAccounts[0] : null;
                   return (
                     <div key={p.id} style={{ position: 'relative' }}>
                       <button
@@ -771,7 +823,9 @@ function App() {
                       >
                         {isConnecting
                           ? <span style={{ fontSize: 10, animation: 'spin 1s linear infinite', display: 'inline-block' }}>⟳</span>
-                          : <PlatformIcon platform={p} size={15} />
+                          : singleAccount
+                            ? <ProfileAvatar imageUrl={singleAccount.profileImageUrl} platform={p} size={26} ringWidth={0} />
+                            : <PlatformIcon platform={p} size={15} />
                         }
                       </button>
                       {/* Green dot = connected */}
@@ -818,8 +872,10 @@ function App() {
               </div>
             )}
 
-            {/* ── App Launcher ── */}
-            <div ref={topNavRef} style={{ position: 'absolute', bottom: -18, left: 'calc(50% - 28px)', zIndex: 1250 }}>
+            {/* ── App Launcher ──
+                Fixed to viewport (not the topbar) so it can't be clipped or covered
+                by stacking-context boundaries from page content rendered below. */}
+            <div ref={topNavRef} style={{ position: 'fixed', top: isMobile ? 50 : 56, left: 'calc(50% - 28px)', zIndex: 1250 }}>
               <button
                 type="button"
                 onClick={() => setShowTopNav(v => !v)}
@@ -992,6 +1048,14 @@ function App() {
                       >
                         🔥
                       </button>
+                      <NotificationBell
+                        onOpenPost={(postId) => {
+                          // Open Content Calendar and hand off the post id via a window event
+                          // so ContentCalendar can pop the feedback modal for that post.
+                          go('calendar');
+                          window.dispatchEvent(new CustomEvent('wintaibot:open-post', { detail: { postId } }));
+                        }}
+                      />
                       <span style={s.topEmail} title={user.email}>{user.email}</span>
                     </span>
                   )}
@@ -1067,7 +1131,7 @@ function App() {
           {activeTab === 'self-heal'        && <MemberGate featureName="Self-Healing Content"><ProGate featureName="Self-Healing Content"><SelfHealDashboard /></ProGate></MemberGate>}
           {activeTab === 'brand-guardian'   && <MemberGate featureName="Brand Guardian"><ProGate featureName="Brand Guardian"><BrandGuardian /></ProGate></MemberGate>}
           {activeTab === 'asset-library'    && <MemberGate featureName="Asset Library"><ProGate featureName="Asset Library"><MediaLibrary /></ProGate></MemberGate>}
-          {activeTab === 'ai-workspace'     && <MemberGate featureName="AI Workspace"><ProGate featureName="AI Workspace"><AiWorkspace /></ProGate></MemberGate>}
+          {activeTab === 'ai-workspace'     && <MemberGate featureName="AI Workspace"><ProGate featureName="AI Workspace"><AiWorkspace onCaptionApproved={(text) => { setTemplateCaption(text); go('video-publisher'); }} /></ProGate></MemberGate>}
           {activeTab === 'account'          && <AskAIGate  featureName="Account"><AccountSettings /></AskAIGate>}
           {activeTab === 'video-publisher'  && <MemberGate featureName="Video Publisher"><WorkspaceGate permKey="videoPublisher"><VideoPublisher onNavigateToSocialConnect={() => go('social-connect')} templateCaption={templateCaption} onTemplateCaptionUsed={() => setTemplateCaption(null)} /></WorkspaceGate></MemberGate>}
           {activeTab === 'caption-templates' && <MemberGate featureName="Templates"><WorkspaceGate permKey="templates"><CaptionTemplates onBack={() => go('video-publisher')} onUseTemplate={(text) => { setTemplateCaption(text); go('video-publisher'); }} /></WorkspaceGate></MemberGate>}

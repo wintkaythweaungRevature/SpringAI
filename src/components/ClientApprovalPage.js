@@ -90,10 +90,10 @@ export default function ClientApprovalPage({ token }) {
       <div style={styles.card}>
         <div style={{ textAlign: 'center', padding: 40 }}>
           <div style={{ fontSize: 48, marginBottom: 16 }}>
-            {done.action === 'APPROVE' ? '✅' : '✏️'}
+            {done.action === 'APPROVE' ? '✅' : done.action === 'REJECT' ? '❌' : '✏️'}
           </div>
           <div style={{ fontSize: 18, fontWeight: 800, color: '#1e293b', marginBottom: 8 }}>
-            {done.action === 'APPROVE' ? 'Post Approved!' : 'Changes Requested'}
+            {done.action === 'APPROVE' ? 'Post Approved!' : done.action === 'REJECT' ? 'Post Rejected' : 'Changes Requested'}
           </div>
           <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.6 }}>{done.message}</div>
         </div>
@@ -183,29 +183,44 @@ export default function ClientApprovalPage({ token }) {
           </div>
 
           {/* Action buttons */}
-          <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
-            <button
-              onClick={() => submit('REQUEST_CHANGES')}
-              disabled={submitting}
-              style={{
-                flex: 1, padding: '12px', borderRadius: 10,
-                border: '1.5px solid #e2e8f0', background: '#fff',
-                color: '#475569', fontSize: 14, fontWeight: 700, cursor: submitting ? 'wait' : 'pointer',
-              }}
-            >
-              ✏️ Request Changes
-            </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+            {/* Approve — primary action */}
             <button
               onClick={() => submit('APPROVE')}
               disabled={submitting}
               style={{
-                flex: 1, padding: '12px', borderRadius: 10, border: 'none',
+                width: '100%', padding: '13px', borderRadius: 10, border: 'none',
                 background: 'linear-gradient(135deg,#16a34a,#15803d)',
                 color: '#fff', fontSize: 14, fontWeight: 700, cursor: submitting ? 'wait' : 'pointer',
               }}
             >
               {submitting ? 'Submitting…' : '✅ Approve Post'}
             </button>
+            {/* Secondary row: request changes + reject */}
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                onClick={() => submit('REQUEST_CHANGES')}
+                disabled={submitting}
+                style={{
+                  flex: 1, padding: '11px', borderRadius: 10,
+                  border: '1.5px solid #e2e8f0', background: '#fff',
+                  color: '#475569', fontSize: 13, fontWeight: 700, cursor: submitting ? 'wait' : 'pointer',
+                }}
+              >
+                ✏️ Request Changes
+              </button>
+              <button
+                onClick={() => submit('REJECT')}
+                disabled={submitting}
+                style={{
+                  flex: 1, padding: '11px', borderRadius: 10,
+                  border: '1.5px solid #fca5a5', background: '#fff',
+                  color: '#dc2626', fontSize: 13, fontWeight: 700, cursor: submitting ? 'wait' : 'pointer',
+                }}
+              >
+                ❌ Reject
+              </button>
+            </div>
           </div>
 
           {error && (

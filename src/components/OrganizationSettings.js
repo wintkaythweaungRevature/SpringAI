@@ -87,6 +87,9 @@ export default function OrganizationSettings() {
   const [permsLoading, setPermsLoading] = useState(false);
   const [permsSaving, setPermsSaving] = useState(false);
   const [permsMsg, setPermsMsg] = useState(null);
+  // Set of permission keys the workspace owner's plan allows them to grant.
+  // Toggles outside this set are hidden from the UI.
+  const [availablePerms, setAvailablePerms] = useState(null);
 
   const authH = useCallback(() => ({
     Authorization: `Bearer ${token}`,
@@ -215,6 +218,41 @@ export default function OrganizationSettings() {
     } finally { setWsLoading(false); }
   };
 
+  // ── Toggle visibility (owner-only) ─────────────────────────────────────────
+  const handleToggleWsVisibility = async (ws) => {
+    const currentlyVisible = ws.visible !== false;
+    try {
+      const res = await fetch(`${apiBase}/api/workspace/${ws.id}/visibility`, {
+        method: "PUT", headers: authH(),
+        body: JSON.stringify({ visible: !currentlyVisible }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Failed to update visibility");
+      setWsMsg({ type: "ok", text: currentlyVisible
+        ? `"${ws.name}" is now hidden from the workspace picker.`
+        : `"${ws.name}" is visible again in the workspace picker.` });
+      fetchWorkspaces();
+    } catch (err) {
+      setWsMsg({ type: "err", text: err.message });
+    }
+  };
+
+  // ── Delete workspace (owner-only; only when empty) ─────────────────────────
+  const handleDeleteWs = async (ws) => {
+    if (!window.confirm(`Delete workspace "${ws.name}"?\n\nThis only works if the workspace has no posts or scheduled jobs. If the workspace still has content, you'll be asked to move it first.`)) return;
+    try {
+      const res = await fetch(`${apiBase}/api/workspace/${ws.id}`, {
+        method: "DELETE", headers: authH(),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Failed to delete workspace");
+      setWsMsg({ type: "ok", text: `Workspace "${ws.name}" deleted.` });
+      fetchWorkspaces();
+    } catch (err) {
+      setWsMsg({ type: "err", text: err.message });
+    }
+  };
+
   // ── Workspace members ─────────────────────────────────────────────────────
   const loadWsMembers = async (wsId) => {
     setWsMembersLoading((p) => ({ ...p, [wsId]: true }));
@@ -282,7 +320,27 @@ export default function OrganizationSettings() {
     finally { setPermsLoading(false); }
   };
 
-  const handleSelectWs = (wsId) => { setSelectedWsId(wsId); loadPermWsMembers(wsId); };
+  const handleSelectWs = (wsId) => {
+    setSelectedWsId(wsId);
+    loadPermWsMembers(wsId);
+    loadAvailablePerms(wsId);
+  };
+
+  // Fetch the list of permission keys the workspace owner's plan can grant.
+  // Toggles outside this set are hidden so admins/owners can't grant features
+  // their own plan doesn't include.
+  const loadAvailablePerms = async (wsId) => {
+    if (!wsId) { setAvailablePerms(null); return; }
+    try {
+      const res = await fetch(`${apiBase}/api/workspace/${wsId}/available-permissions`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) { setAvailablePerms(null); return; }
+      const data = await res.json().catch(() => null);
+      const list = Array.isArray(data?.availablePermissions) ? data.availablePermissions : null;
+      setAvailablePerms(list ? new Set(list) : null);
+    } catch { setAvailablePerms(null); }
+  };
 
   const handleSelectMember = (userId) => {
     setSelectedMemberId(userId);
@@ -348,6 +406,11 @@ export default function OrganizationSettings() {
   const btnDanger = {
     padding: "5px 12px", borderRadius: 6, border: "none", cursor: "pointer",
     background: "rgba(239,68,68,0.15)", color: "#f87171", fontSize: 12, fontWeight: 600,
+  };
+
+  const btnGhost = {
+    padding: "5px 12px", borderRadius: 6, border: "1px solid rgba(148,163,184,0.25)",
+    cursor: "pointer", background: "transparent", color: "#cbd5e1", fontSize: 12, fontWeight: 600,
   };
 
   const msgBox = (m) => m ? (
@@ -637,8 +700,37 @@ export default function OrganizationSettings() {
                     <span style={{
                       width: 14, height: 14, borderRadius: "50%", background: ws.color || "#6366f1",
                       display: "inline-block", flexShrink: 0,
+                      opacity: ws.visible === false ? 0.4 : 1,
                     }} />
-                    <span style={{ color: "#e0e0e0", fontSize: 14, fontWeight: 600, flex: 1 }}>{ws.name}</span>
+                    <span style={{
+                      color: ws.visible === false ? "#888" : "#e0e0e0",
+                      fontSize: 14, fontWeight: 600, flex: 1,
+                      fontStyle: ws.visible === false ? "italic" : "normal",
+                    }}>
+                      {ws.name}
+                      {ws.visible === false && (
+                        <span style={{ marginLeft: 8, fontSize: 10, fontWeight: 700, color: "#94a3b8", background: "rgba(148,163,184,0.15)", padding: "2px 6px", borderRadius: 4, textTransform: "uppercase", letterSpacing: "0.04em" }}>hidden</span>
+                      )}
+                    </span>
+                    {/* Owner-only: show/hide + delete controls */}
+                    {isOrgOwner && (
+                      <>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleToggleWsVisibility(ws); }}
+                          title={ws.visible === false ? "Show in picker" : "Hide from picker"}
+                          style={btnGhost}
+                        >
+                          {ws.visible === false ? "👁 Show" : "👁‍🗨 Hide"}
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleDeleteWs(ws); }}
+                          title="Delete workspace (only if empty)"
+                          style={btnDanger}
+                        >
+                          🗑 Delete
+                        </button>
+                      </>
+                    )}
                     <span style={{ color: "#666", fontSize: 12 }}>
                       {wsMembersLoading[ws.id] ? "…" : isExpanded ? `${membersInWs.length} member${membersInWs.length !== 1 ? "s" : ""} ▲` : "Manage Members ▼"}
                     </span>
@@ -905,7 +997,13 @@ export default function OrganizationSettings() {
           {selectedMemberId && (
             <>
               <div style={{ marginBottom: 8 }}>
-                <button onClick={() => setPerms({ ...ALL_TRUE })} style={{ ...btnSmall, marginRight: 8 }}>Enable All</button>
+                <button onClick={() => {
+                  const next = {};
+                  PERMISSION_KEYS.forEach(({ key }) => {
+                    next[key] = !availablePerms || availablePerms.has(key);
+                  });
+                  setPerms(next);
+                }} style={{ ...btnSmall, marginRight: 8 }}>Enable All</button>
                 <button onClick={() => setPerms(Object.fromEntries(PERMISSION_KEYS.map(({ key }) => [key, false])))}
                   style={{ ...btnSmall, background: "rgba(239,68,68,0.15)", color: "#f87171" }}>Disable All</button>
               </div>
@@ -913,7 +1011,9 @@ export default function OrganizationSettings() {
               <div style={{
                 display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 10, marginBottom: 16,
               }}>
-                {PERMISSION_KEYS.map(({ key, label }) => (
+                {PERMISSION_KEYS
+                  .filter(({ key }) => !availablePerms || availablePerms.has(key))
+                  .map(({ key, label }) => (
                   <label key={key} style={{
                     display: "flex", alignItems: "center", gap: 10, cursor: "pointer",
                     background: "rgba(255,255,255,0.03)", borderRadius: 8, padding: "10px 12px",

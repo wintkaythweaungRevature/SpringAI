@@ -31,6 +31,7 @@ export function rawMediaRefForCalendarPost(post) {
     post?.imageUrl,
     post?.fileUrl,
     post?.assetUrl,
+    post?.s3Key,
     post?.previewUrl,
     post?.coverUrl,
     post?.url,

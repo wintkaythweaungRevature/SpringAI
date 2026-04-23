@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { filterEnabledPlatforms } from '../config/disabledPlatforms';
 import PlatformIcon from './PlatformIcon';
+import ProfileAvatar from './ProfileAvatar';
 import UpgradeModal from './UpgradeModal';
 
 const PLATFORMS = filterEnabledPlatforms([
@@ -20,25 +21,34 @@ export default function SocialConnect({ onConnectionChange }) {
   const base = apiBase || 'https://api.wintaibot.com';
   const [upgradeModal, setUpgradeModal] = useState(null); // { reason, suggestPlan }
 
-  const [connected, setConnected]       = useState([]);
-  const [loading, setLoading]           = useState(true);
-  const [connecting, setConnecting]     = useState(null);
-  const [disconnecting, setDisconnecting] = useState(null);
-  const [message, setMessage]           = useState(null);
+  // Account-pool model: instead of `connected = ['youtube', 'facebook']`, we keep
+  // a map { youtube: [{id, username, ...}, ...], facebook: [], ... } so the UI can
+  // render one card per connected account + empty slots for "Add another account".
+  const [accountsByPlatform, setAccountsByPlatform] = useState({}); // { youtube: [...], facebook: [...], ... }
+  const [limitPerPlatform, setLimitPerPlatform] = useState(1);      // 1 / 3 / -1 (unlimited)
+  const [planName, setPlanName]                 = useState('FREE');
+  const [loading, setLoading]                   = useState(true);
+  const [connecting, setConnecting]             = useState(null);
+  const [disconnectingId, setDisconnectingId]   = useState(null);
+  const [message, setMessage]                   = useState(null);
 
   const fetchStatus = useCallback(async () => {
     try {
-      const res = await fetch(`${base}/api/social/status`, {
+      const res = await fetch(`${base}/api/social/accounts`, {
         headers: authHeaders(),
       });
       if (res.ok) {
         const data = await res.json();
-        const list = data.connected || [];
-        setConnected(list);
-        if (onConnectionChange) onConnectionChange(list);
+        const pool = data.accounts || {};
+        setAccountsByPlatform(pool);
+        setLimitPerPlatform(typeof data.limitPerPlatform === 'number' ? data.limitPerPlatform : 1);
+        setPlanName(data.planName || 'FREE');
+        // Back-compat: onConnectionChange still wants a list of platforms-with-at-least-one-account.
+        const connectedPlatforms = Object.keys(pool).filter(p => (pool[p] || []).length > 0);
+        if (onConnectionChange) onConnectionChange(connectedPlatforms);
       }
     } catch (e) {
-      console.error('Failed to fetch social status', e);
+      console.error('Failed to fetch social accounts', e);
     } finally {
       setLoading(false);
     }
@@ -144,30 +154,37 @@ export default function SocialConnect({ onConnectionChange }) {
     }
   };
 
-  const handleDisconnect = async (platformId) => {
-    setDisconnecting(platformId);
+  /**
+   * Account-pool disconnect: the UI knows the specific token id, so we pass it
+   * as a query param. The backend deletes only that one row, leaving the user's
+   * other accounts on the same platform intact.
+   */
+  const handleDisconnect = async (platformId, tokenId, label) => {
+    if (!tokenId) return;
+    setDisconnectingId(tokenId);
     try {
-      const res = await fetch(`${base}/api/social/disconnect/${platformId}`, {
+      const res = await fetch(`${base}/api/social/disconnect/${platformId}?tokenId=${tokenId}`, {
         method: 'DELETE',
         headers: authHeaders(),
       });
       if (res.ok) {
-        setConnected(prev => {
-          const updated = prev.filter(p => p !== platformId);
-          if (onConnectionChange) onConnectionChange(updated);
-          return updated;
-        });
-        setMessage({ type: 'success', text: `Disconnected from ${platformId}` });
+        // Re-fetch the pool so limits, counts, and per-workspace membership all refresh.
+        await fetchStatus();
+        setMessage({ type: 'success', text: `Disconnected ${label || platformId}` });
         setTimeout(() => setMessage(null), 3000);
       }
     } catch (e) {
       setMessage({ type: 'error', text: `Failed to disconnect ${platformId}` });
     } finally {
-      setDisconnecting(null);
+      setDisconnectingId(null);
     }
   };
 
-  const connectedCount = connected.length;
+  // Effective per-platform cap for rendering. -1 means unlimited; we still cap visual
+  // slots at 6 for a sane layout (users on Growth can scroll horizontally if they really
+  // have more than 6 on one platform — rare in practice).
+  const effectiveCap = limitPerPlatform === -1 ? 6 : Math.max(1, limitPerPlatform);
+  const totalConnected = Object.values(accountsByPlatform).reduce((sum, a) => sum + (a?.length || 0), 0);
 
   return (
     <div style={s.page}>
@@ -186,15 +203,12 @@ export default function SocialConnect({ onConnectionChange }) {
           <div>
             <div style={s.headerTitle}>Connected Accounts</div>
             <div style={s.headerSub}>
-              {connectedCount} of {PLATFORMS.length} connected
+              {totalConnected} account{totalConnected === 1 ? '' : 's'} connected
+              {' · '}
+              {limitPerPlatform === -1 ? 'Unlimited per platform' : `${limitPerPlatform} per platform on ${planName}`}
             </div>
           </div>
-          <div style={s.headerBadge}>
-            {connectedCount}/{PLATFORMS.length}
-          </div>
-        </div>
-        <div style={s.progressBar}>
-          <div style={{ ...s.progressFill, width: `${(connectedCount / PLATFORMS.length) * 100}%` }} />
+          <div style={s.headerBadge}>{totalConnected}</div>
         </div>
       </div>
 
@@ -213,67 +227,135 @@ export default function SocialConnect({ onConnectionChange }) {
           <div style={{ fontSize: '14px', color: '#64748b' }}>Loading connected accounts...</div>
         </div>
       ) : (
-        <div style={s.grid}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           {PLATFORMS.map(p => {
-            const isConnected = connected.includes(p.id);
+            const pAccounts = accountsByPlatform[p.id] || [];
             const isConnecting = connecting === p.id;
-            const isDisconnecting = disconnecting === p.id;
+            const canAddMore  = limitPerPlatform === -1 || pAccounts.length < limitPerPlatform;
+            // Tease the Pro upgrade by always reserving 3 slots per platform on FREE/STARTER
+            // (1 usable + 2 locked). Users see the multi-account capability even before
+            // they've connected their first account. Pro/Growth don't need the tease.
+            const isLimitedPlan = planName === 'FREE' || planName === 'STARTER';
+            const targetSlotCount = isLimitedPlan ? 3 : Math.max(pAccounts.length + 1, effectiveCap);
+            const usedSlots = pAccounts.length + (canAddMore ? 1 : 0);
+            const lockedSlotsToShow = isLimitedPlan ? Math.max(0, targetSlotCount - usedSlots) : 0;
+
             return (
-              <div key={p.id} style={{ ...s.card, ...(isConnected ? { ...s.cardConnected, borderColor: p.color + '40' } : {}) }}>
-                {/* Platform header */}
-                <div style={s.cardHeader}>
-                  <div style={{ ...s.platformIcon, background: p.color + '15' }}>
-                    <PlatformIcon platform={p} size={28} />
+              <div key={p.id} style={s.platformGroup}>
+                {/* Platform title strip */}
+                <div style={s.platformStrip}>
+                  <div style={{ ...s.platformIcon, background: p.color + '15', width: 36, height: 36 }}>
+                    <PlatformIcon platform={p} size={22} />
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={s.platformName}>{p.label}</div>
-                    <div style={s.platformDesc}>{p.desc}</div>
+                    <div style={s.platformDesc}>
+                      {pAccounts.length} of {limitPerPlatform === -1 ? '∞' : limitPerPlatform} connected
+                    </div>
                   </div>
-                  <div style={{ ...s.statusDot, background: isConnected ? '#22c55e' : '#e2e8f0' }} />
                 </div>
 
-                {/* Status */}
-                <div style={{ ...s.statusBadge, background: isConnected ? '#f0fdf4' : '#f8fafc',
-                  color: isConnected ? '#15803d' : '#64748b',
-                  border: `1px solid ${isConnected ? '#bbf7d0' : '#e2e8f0'}` }}>
-                  {isConnected ? '✓ Connected' : 'Not connected'}
-                </div>
+                {/* Account slot grid */}
+                <div style={s.grid}>
+                  {pAccounts.map(acct => {
+                    const isDisc = disconnectingId === acct.id;
+                    return (
+                      <div key={acct.id}
+                           style={{ ...s.card, ...s.cardConnected, borderColor: p.color + '40' }}>
+                        <div style={s.cardHeader}>
+                          {/* Avatar — real profile image fetched from the platform, falls back
+                              to the platform icon if the image URL is missing or failed to load. */}
+                          <ProfileAvatar
+                            imageUrl={acct.profileImageUrl}
+                            platform={p}
+                            size={40}
+                          />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ ...s.platformName, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {acct.username || p.label}
+                            </div>
+                            <div style={s.platformDesc}>{p.label}</div>
+                          </div>
+                          <div style={{ ...s.statusDot, background: '#22c55e' }} />
+                        </div>
+                        <div style={{ ...s.statusBadge, background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0' }}>
+                          ✓ Connected
+                        </div>
+                        <button
+                          style={{ ...s.disconnectBtn, opacity: isDisc ? 0.6 : 1 }}
+                          onClick={() => handleDisconnect(p.id, acct.id, acct.username || p.label)}
+                          disabled={isDisc}
+                        >
+                          {isDisc ? 'Disconnecting…' : 'Disconnect'}
+                        </button>
+                      </div>
+                    );
+                  })}
 
-                {/* Action button */}
-                {isConnected ? (
-                  <button
-                    style={{ ...s.disconnectBtn, opacity: isDisconnecting ? 0.6 : 1 }}
-                    onClick={() => handleDisconnect(p.id)}
-                    disabled={isDisconnecting}
-                  >
-                    {isDisconnecting ? 'Disconnecting...' : 'Disconnect'}
-                  </button>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    <button
-                      style={{ ...s.connectBtn, borderColor: p.color, color: p.color,
-                        opacity: isConnecting ? 0.6 : 1 }}
-                      onClick={() => handleConnect(p.id)}
-                      disabled={isConnecting}
-                    >
-                      {isConnecting ? 'Opening...' : `Connect ${p.label}`}
-                    </button>
-                    {p.id === 'tiktok' && (
+                  {/* "+ Add" slot — renders only when user has headroom in their plan */}
+                  {canAddMore && (
+                    <div style={{ ...s.card, ...s.cardAdd, borderColor: p.color + '55' }}>
+                      <div style={s.cardHeader}>
+                        <div style={{ ...s.platformIcon, background: p.color + '15' }}>
+                          <PlatformIcon platform={p} size={28} />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={s.platformName}>{p.label}</div>
+                          <div style={s.platformDesc}>
+                            {pAccounts.length === 0 ? 'Not connected' : 'Add another account'}
+                          </div>
+                        </div>
+                        <div style={{ ...s.statusDot, background: '#e2e8f0' }} />
+                      </div>
+                      <div style={{ ...s.statusBadge, background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}>
+                        {pAccounts.length === 0 ? 'Not connected' : '+ Additional account'}
+                      </div>
                       <button
-                        style={{ fontSize: 10, background: 'none', border: '1px dashed #cbd5e1', borderRadius: 6, padding: '3px 8px', color: '#94a3b8', cursor: 'pointer' }}
-                        onClick={debugTikTokUrl}
+                        style={{ ...s.connectBtn, borderColor: p.color, color: p.color, opacity: isConnecting ? 0.6 : 1 }}
+                        onClick={() => handleConnect(p.id)}
+                        disabled={isConnecting}
                       >
-                        🔍 Debug TikTok URL
+                        {isConnecting ? 'Opening…' : (pAccounts.length === 0 ? `Connect ${p.label}` : `+ Add ${p.label}`)}
                       </button>
-                    )}
-                  </div>
-                )}
+                    </div>
+                  )}
+
+                  {/* Locked slots — upsell tease for FREE/STARTER plans.
+                      Always rendered (not gated on hitting the cap) so users see the
+                      "3 possible slots, 2 locked behind Pro" visual from the start. */}
+                  {Array.from({ length: lockedSlotsToShow }).map((_, idx) => (
+                    <div key={`lock-${p.id}-${idx}`}
+                         style={{ ...s.card, ...s.cardLocked }}
+                         title="Upgrade to Pro to connect up to 3 accounts per platform"
+                         onClick={() => setUpgradeModal({
+                           reason: `Connect up to 3 ${p.label} accounts`,
+                           suggestPlan: 'PRO',
+                         })}>
+                      <div style={s.cardHeader}>
+                        <div style={{ ...s.platformIcon, background: '#f1f5f9' }}>
+                          <span style={{ fontSize: 22 }}>🔒</span>
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ ...s.platformName, color: '#94a3b8' }}>Pro only</div>
+                          <div style={s.platformDesc}>Connect more {p.label} accounts</div>
+                        </div>
+                      </div>
+                      <div style={{ ...s.statusBadge, background: '#f8fafc', color: '#94a3b8', border: '1px dashed #cbd5e1' }}>
+                        🔒 Unlock with Pro
+                      </div>
+                      <button
+                        style={{ ...s.connectBtn, borderColor: '#cbd5e1', color: '#94a3b8' }}
+                      >
+                        Upgrade to unlock
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
             );
           })}
         </div>
       )}
-
     </div>
   );
 }
@@ -289,9 +371,13 @@ const s = {
   progressFill:{ height: '100%', background: '#fff', borderRadius: '3px', transition: 'width 0.4s ease' },
   toast:       { borderRadius: '10px', border: '1px solid', padding: '12px 16px', fontSize: '13px', fontWeight: 600, marginBottom: '16px' },
   loadingCard: { background: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '40px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' },
-  grid:        { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '16px', marginBottom: '20px' },
-  card:        { background: '#fff', borderRadius: '16px', border: '1.5px solid #e2e8f0', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', gap: '12px', transition: 'all 0.2s' },
+  grid:        { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '14px' },
+  platformGroup:{ background: 'rgba(255,255,255,0.03)', borderRadius: '16px', padding: '14px 16px 16px', border: '1px solid rgba(255,255,255,0.06)' },
+  platformStrip:{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px', padding: '2px 4px' },
+  card:        { background: '#fff', borderRadius: '16px', border: '1.5px solid #e2e8f0', padding: '18px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', gap: '10px', transition: 'all 0.2s' },
   cardConnected:{ boxShadow: '0 4px 16px rgba(34,197,94,0.1)' },
+  cardAdd:     { borderStyle: 'dashed', background: '#fafbff' },
+  cardLocked:  { opacity: 0.55, cursor: 'help', background: '#f8fafc' },
   cardHeader:  { display: 'flex', alignItems: 'center', gap: '10px' },
   platformIcon:{ width: '44px', height: '44px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   platformName:{ fontWeight: 700, fontSize: '14px', color: '#1e293b' },

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { filterEnabledPlatforms, isPlatformDisabled } from '../config/disabledPlatforms';
 import {
@@ -17,6 +17,7 @@ import {
 } from '../config/videoPlatformRequirements';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import PlatformIcon from './PlatformIcon';
+import ProfileAvatar from './ProfileAvatar';
 import VideoTrimmer from './VideoTrimmer';
 import PostDetailModal from './PostDetailModal';
 import CaptionIdeasPanel from './CaptionIdeasPanel';
@@ -205,21 +206,17 @@ async function normalizeImageForPlatformPublish(file, platformId, publishType) {
 }
 
 /**
- * Keep the exact wall-clock time selected in the browser for schedule APIs.
- * We intentionally avoid UTC offset conversion here because it shifts the
- * selected local time when server/app timezones differ.
+ * Convert the browser-local datetime to a UTC ISO string (no "Z" suffix) for
+ * schedule APIs. The calendar treats stored bare ISO strings as UTC (appends "Z"),
+ * so sending UTC here ensures the post appears on the correct calendar day for
+ * users in any timezone (including negative UTC offsets like UTC-5 / UTC-7).
  */
 function formatScheduledAtForScheduleApi(input) {
   const d = new Date(String(input));
   if (Number.isNaN(d.getTime())) return String(input);
-  const pad = n => String(n).padStart(2, '0');
-  const y = d.getFullYear();
-  const m = pad(d.getMonth() + 1);
-  const day = pad(d.getDate());
-  const h = pad(d.getHours());
-  const min = pad(d.getMinutes());
-  const s = pad(d.getSeconds());
-  return `${y}-${m}-${day}T${h}:${min}:${s}`;
+  // toISOString() is always UTC; strip the trailing "Z" so the backend receives
+  // a bare LocalDateTime string it can parse without timezone handling.
+  return d.toISOString().slice(0, 19);
 }
 
 /* ── Video Frame Scrubber ─────────────────────────────────────────────────── */
@@ -371,14 +368,13 @@ function validateImage(file) {
 
 /* ─── Component ─────────────────────────────────────────────── */
 export default function VideoPublisher({ onNavigateToSocialConnect, templateCaption, onTemplateCaptionUsed }) {
-  const { apiBase, token, logout, user, authHeaders } = useAuth();
+  const { apiBase, token, logout, user, authHeaders, activeWorkspaceId } = useAuth();
   const isGrowth = user?.membershipType === 'GROWTH';
   const base = apiBase || 'https://api.wintaibot.com';
   const isMobile = useMediaQuery('(max-width: 768px)');
 
   const [step, setStep]                 = useState('upload');
   const [video, setVideo]               = useState(null);
-  const [selectedPlatforms, setSelected] = useState(['youtube', 'instagram', 'linkedin']);
   const [dragOver, setDragOver]         = useState(false);
   const [processing, setProcessing]     = useState(false);
   const [processLog, setProcessLog]     = useState([]);
@@ -387,6 +383,84 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
   const [activeVariant, setActiveVariant] = useState(null);
   const [scheduledTimes, setScheduledTimes] = useState({}); // { [platformId]: ISO datetime or null }
   const [connectedAccounts, setConnectedAccounts] = useState({});
+
+  // Account-pool model: full list of accounts per platform (from /api/social/accounts).
+  // Populated on mount alongside connectedAccounts; consumed by the "Post to" chip row.
+  // Shape: { youtube: [{id, username, profileImageUrl, ...}, ...], facebook: [], ... }
+  const [accountsByPlatform, setAccountsByPlatform] = useState({});
+
+  // Master source of truth for which connected accounts this post will publish to.
+  // A Set of social_tokens.id values. Persisted to localStorage per user so the
+  // next post remembers their picks; cleared when they tick/untick chips.
+  const LS_PICKED = 'wint_publisher_selected_tokens';
+  const [selectedTokenIds, setSelectedTokenIdsRaw] = useState(() => {
+    try {
+      const raw = localStorage.getItem(LS_PICKED);
+      if (!raw) return new Set();
+      const arr = JSON.parse(raw);
+      return new Set(Array.isArray(arr) ? arr.map(Number).filter(Number.isFinite) : []);
+    } catch { return new Set(); }
+  });
+  const setSelectedTokenIds = useCallback((updater) => {
+    setSelectedTokenIdsRaw(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      try { localStorage.setItem(LS_PICKED, JSON.stringify(Array.from(next))); } catch {}
+      return next;
+    });
+  }, []);
+  const toggleTokenId = useCallback((id) => {
+    setSelectedTokenIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, [setSelectedTokenIds]);
+
+  // Derived: a platform is "selected" when at least one of its accounts is ticked.
+  // Downstream code continues to read `selectedPlatforms` unchanged, so variant
+  // generators, review cards, and AI content runners cascade automatically.
+  const selectedPlatforms = useMemo(() => {
+    const plats = [];
+    for (const [p, list] of Object.entries(accountsByPlatform)) {
+      if ((list || []).some(a => selectedTokenIds.has(a.id))) plats.push(p);
+    }
+    return plats;
+  }, [accountsByPlatform, selectedTokenIds]);
+  // Bridge legacy platform-level `setSelected` calls into the account-pool model.
+  // Accepts the same API as useState's setter (either a new array or an updater fn
+  // that receives the current selectedPlatforms), and translates to adds/removes on
+  // `selectedTokenIds`. Adding a platform ticks EVERY account on that platform;
+  // removing unticks them all. Used by `togglePlatform` and `switchPostType`.
+  const setSelected = useCallback((updater) => {
+    setSelectedTokenIdsRaw(prev => {
+      // Derive current selected platforms from the incoming token set
+      const currentPlatforms = [];
+      for (const [p, list] of Object.entries(accountsByPlatform)) {
+        if ((list || []).some(a => prev.has(a.id))) currentPlatforms.push(p);
+      }
+      const nextPlatforms = typeof updater === 'function' ? updater(currentPlatforms) : updater;
+      const added   = (nextPlatforms || []).filter(p => !currentPlatforms.includes(p));
+      const removed = currentPlatforms.filter(p => !(nextPlatforms || []).includes(p));
+      const next = new Set(prev);
+      added.forEach(p => (accountsByPlatform[p] || []).forEach(a => next.add(a.id)));
+      removed.forEach(p => (accountsByPlatform[p] || []).forEach(a => next.delete(a.id)));
+      try { localStorage.setItem(LS_PICKED, JSON.stringify(Array.from(next))); } catch {}
+      return next;
+    });
+  }, [accountsByPlatform]);
+
+  // Expand-state for the "Select Platforms" card grid — when a card is clicked,
+  // that platform's accounts pop open inside the card for tick/untick. Only one
+  // card can be expanded at a time; null means all collapsed.
+  const [expandedPlatform, setExpandedPlatform] = useState(null);
+
+  // One-shot toast used when auto-un-ticking accounts after a postType switch.
+  const [platformSyncToast, setPlatformSyncToast] = useState(null);
+  useEffect(() => {
+    if (!platformSyncToast) return;
+    const t = setTimeout(() => setPlatformSyncToast(null), 4000);
+    return () => clearTimeout(t);
+  }, [platformSyncToast]);
   const [connectLoading, setConnectLoading] = useState(null);
   const [connectMessage, setConnectMessage] = useState('');
   const [canSkipProcessing, setCanSkipProcessing] = useState(false);
@@ -401,6 +475,10 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
   const [imageFile, setImageFile]     = useState(null);
   const [textCaption, setTextCaption] = useState('');
   const [dashStats, setDashStats]     = useState(null);
+  // ── Send for Approval ───────────────────────────────────────────────────────
+  const [approvalMode,      setApprovalMode]      = useState(false);
+  const [approvalMembers,   setApprovalMembers]   = useState([]); // workspace members list
+  const [selectedApprover,  setSelectedApprover]  = useState(null); // { userId, email, firstName, lastName }
   const [dashHistory, setDashHistory] = useState([]);
   const [dashLoading, setDashLoading] = useState(false);
   const [retryingId, setRetryingId]   = useState(null);
@@ -437,15 +515,30 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
 
   useEffect(() => {
     if (!token) return;
-    fetch(socialApi('/status'), { headers: authHeaders() })
+    // /accounts returns both the distinct-platforms list AND the full pool, so one
+    // round-trip fills connectedAccounts (for the yes/no indicator) and the new
+    // accountsByPlatform map (for the "Post as" picker).
+    fetch(socialApi('/accounts'), { headers: authHeaders() })
       .then(res => res.ok ? res.json() : null)
       .then(data => {
-        const list = data?.connected;
-        if (Array.isArray(list)) {
-          const map = {};
-          list.forEach(p => { map[p] = true; });
-          setConnectedAccounts(map);
-        }
+        const pool = data?.accounts || {};
+        setAccountsByPlatform(pool);
+        // Flat {platform: true} map for legacy "is this platform connected?" checks
+        const map = {};
+        Object.keys(pool).forEach(p => { if ((pool[p] || []).length > 0) map[p] = true; });
+        setConnectedAccounts(map);
+        // Account-pool: if the user has never ticked anything (fresh localStorage), default
+        // to ticking every connected account so the first post "just works" — otherwise we'd
+        // show an empty picker and force them to click every chip. Users can untick anything
+        // they don't want; their manual selections then persist to localStorage and take over.
+        setSelectedTokenIdsRaw(prev => {
+          if (prev.size > 0) return prev;
+          const allIds = [];
+          Object.values(pool).forEach(list => {
+            (list || []).forEach(a => { if (a?.id != null) allIds.push(a.id); });
+          });
+          return new Set(allIds);
+        });
       })
       .catch(() => {});
   }, [base, token]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -732,11 +825,40 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
     setVariants({});
     setPublished([]);
     setStep('upload');
-    // Keep only platforms that support the new type
-    setSelected(prev => prev.filter(id => {
-      const p = PLATFORMS.find(x => x.id === id);
-      return p && p.supports.includes(type);
-    }));
+    // Keep only accounts whose platform supports the new post type. Direct set
+    // manipulation (vs setSelected bridge) so we can count how many got pruned
+    // and surface that in a toast — otherwise users silently lose YouTube ticks
+    // when switching to Image and wonder why their publish doesn't include YT.
+    setSelectedTokenIdsRaw(prev => {
+      const next = new Set();
+      let removedCount = 0;
+      const removedPlatforms = new Set();
+      for (const id of prev) {
+        let platform = null;
+        for (const [p, list] of Object.entries(accountsByPlatform)) {
+          if ((list || []).some(a => a.id === id)) { platform = p; break; }
+        }
+        const pMeta = PLATFORMS.find(x => x.id === platform);
+        if (pMeta && pMeta.supports.includes(type)) {
+          next.add(id);
+        } else {
+          removedCount++;
+          if (platform) removedPlatforms.add(platform);
+        }
+      }
+      try { localStorage.setItem(LS_PICKED, JSON.stringify(Array.from(next))); } catch {}
+      if (removedCount > 0) {
+        const platformLabels = Array.from(removedPlatforms)
+          .map(p => PLATFORMS.find(x => x.id === p)?.label || p)
+          .join(', ');
+        setPlatformSyncToast(
+          `Unticked ${removedCount} account${removedCount === 1 ? '' : 's'} — ${platformLabels} doesn't support ${type} posts.`
+        );
+      }
+      return next;
+    });
+    // Collapse any expanded card on type change — its relevance just flipped.
+    setExpandedPlatform(null);
   };
 
   const handleDrop = (e) => {
@@ -1070,7 +1192,21 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
     } catch (_) {}
   };
 
-  const scheduleSocialPost = async ({ platform, scheduledAt, variant }) => {
+  // Load workspace members for approval picker whenever approval mode is toggled on
+  useEffect(() => {
+    if (!approvalMode || !activeWorkspaceId) return;
+    (async () => {
+      try {
+        const res = await fetch(`${base}/api/workspace/${activeWorkspaceId}/members`,
+          { headers: authHeaders() });
+        if (!res.ok) return;
+        const data = await res.json().catch(() => []);
+        setApprovalMembers(Array.isArray(data) ? data : []);
+      } catch { /* silent — approval mode is optional */ }
+    })();
+  }, [approvalMode, activeWorkspaceId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const scheduleSocialPost = async ({ platform, scheduledAt, variant, socialTokenId }) => {
     if (!platform || !scheduledAt) return { ok: false, error: 'Missing schedule fields' };
     try {
       const atMs = new Date(String(scheduledAt)).getTime();
@@ -1087,6 +1223,8 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
             publishType: publishType || 'reels',
             caption: variant?.caption || '',
             hashtags: variant?.hashtags?.join ? variant.hashtags.join(' ') : (variant?.hashtags || ''),
+            // Account-pool: bind the scheduled job to this specific connected account.
+            socialTokenId: socialTokenId ?? null,
           }),
         });
         const data = await res.json().catch(() => ({}));
@@ -1103,21 +1241,21 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
         return { ok: true, data };
       }
 
-      if (postType === 'video' && !variant?.variantId) {
-        return {
-          ok: false,
-          error:
-            'Cannot schedule video without a processed variant. Run Generate Content and wait for variants, or publish immediately after processing.',
-        };
-      }
+      // Video without a processed variant — fall through to legacy multipart scheduler
+      // and include the raw video file so the backend uploads it to S3 and stores s3Key.
 
-      // Image / text-only → legacy social multipart scheduler (no large video body).
+      // Image / text-only, or video without variant → legacy social multipart scheduler.
       const fd = new FormData();
       const scheduledIso = formatScheduledAtForScheduleApi(scheduledAt);
       fd.append('scheduledAt', scheduledIso);
       fd.append('caption', variant?.caption || '');
       fd.append('hashtags', variant?.hashtags?.join ? variant.hashtags.join(' ') : (variant?.hashtags || ''));
       fd.append('postType', postType || 'video');
+      // Account-pool: bind the scheduled job to this specific connected account.
+      if (socialTokenId != null) fd.append('socialTokenId', String(socialTokenId));
+      // Attach the video/image file so the backend can upload it to S3
+      if (video) fd.append('file', video, video.name || 'media.mp4');
+      else if (imageFile) fd.append('file', imageFile, imageFile.name || 'image.jpg');
 
       const res = await fetch(`${base}/api/social/post/schedule/${platform}`, {
         method: 'POST',
@@ -1183,34 +1321,57 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
         return;
       }
     }
-    const toPublish = selectedPlatforms.filter(pid => variants[pid]);
+    // Account-pool publish plan: one entry per (platform, account) pair.
+    // { tokenId, pid, acct, variant } — tokenId doubles as our status tracking key.
+    const toPublish = [];
+    selectedPlatforms.forEach(pid => {
+      const variant = variants[pid];
+      if (!variant) return;
+      const tickedOnPlatform = (accountsByPlatform[pid] || []).filter(a => selectedTokenIds.has(a.id));
+      tickedOnPlatform.forEach(acct => toPublish.push({ tokenId: acct.id, pid, acct, variant }));
+    });
+
+    if (toPublish.length === 0) {
+      setPublishError({
+        message: 'Tap a platform in "Select Platforms" and tick at least one account before publishing.',
+        platforms: [],
+        requiresReconnect: false,
+        requiresReLogin: false,
+      });
+      return;
+    }
+
     publishErrorsRef.current = {};
 
-    // Init per-platform status and go to publishing step immediately
+    // Init per-account status (keyed by tokenId, not platform, so 2 YouTube channels
+    // get independent rows on the Publishing screen).
     const initStatus = {};
-    toPublish.forEach(pid => { initStatus[pid] = { state: 'queued', error: null }; });
+    toPublish.forEach(({ tokenId }) => { initStatus[tokenId] = { state: 'queued', error: null }; });
     setPublishingStatus(initStatus);
     setStep('publishing');
 
     const successPlatforms = [];
+    const scheduledPostIds = []; // collect postIds for approval emails
 
-    for (const pid of toPublish) {
-      const variant = variants[pid];
+    for (const { tokenId, pid, acct, variant } of toPublish) {
       const scheduledAt = scheduledTimes[pid];
       const hasSchedule = scheduledAt && String(scheduledAt).trim() !== '';
       const hashtags = variant.hashtags?.join ? variant.hashtags.join(' ') : (variant.hashtags || '');
 
-      setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'publishing', error: null } }));
+      setPublishingStatus(prev => ({ ...prev, [tokenId]: { state: 'publishing', error: null } }));
 
       try {
         if (hasSchedule) {
           // ── Schedule for later via social post scheduler ──
-          const result = await scheduleSocialPost({ platform: pid, scheduledAt, variant });
+          const result = await scheduleSocialPost({ platform: pid, scheduledAt, variant, socialTokenId: acct.id });
           if (result.ok) {
             successPlatforms.push(pid);
-            setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'done', error: null } }));
+            // Collect postId for send-for-approval (legacy scheduler returns { id: ... })
+            const postId = result.data?.id ?? result.data?.postId;
+            if (postId) scheduledPostIds.push(postId);
+            setPublishingStatus(prev => ({ ...prev, [tokenId]: { state: 'done', error: null } }));
           } else {
-            setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'failed', error: result.error || 'Schedule failed' } }));
+            setPublishingStatus(prev => ({ ...prev, [tokenId]: { state: 'failed', error: result.error || 'Schedule failed' } }));
           }
         } else if (variant.variantId) {
           // ── Async publish via variant (202 + poll) ──
@@ -1218,14 +1379,21 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
           const res = await fetch(api(`/publish/${pid}/variant`), {
             method: 'POST',
             headers: { ...authHeaders(), 'Content-Type': 'application/json' },
-            body: JSON.stringify({ variantId: variant.variantId, caption: variant.caption, hashtags, publishType: platformPublishType }),
+            body: JSON.stringify({
+              variantId: variant.variantId,
+              caption: variant.caption,
+              hashtags,
+              publishType: platformPublishType,
+              // Account-pool: tells the backend exactly which social account to publish with.
+              socialTokenId: acct.id,
+            }),
           });
           const data = await res.json().catch(() => ({}));
 
           if (res.status === 413) {
             setPublishingStatus(prev => ({
               ...prev,
-              [pid]: { state: 'failed', error: 'Upload too large (HTTP 413). Compress or trim the video and try again.' },
+              [tokenId]: { state: 'failed', error: 'Upload too large (HTTP 413). Compress or trim the video and try again.' },
             }));
             continue;
           }
@@ -1235,40 +1403,40 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
             const result = await pollPublishStatus(variant.variantId, pid);
             if (result === 'PUBLISHED') {
               successPlatforms.push(pid);
-              setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'done', error: null } }));
+              setPublishingStatus(prev => ({ ...prev, [tokenId]: { state: 'done', error: null } }));
             } else {
               const platformLabel = pid.charAt(0).toUpperCase() + pid.slice(1);
               const err = publishErrorsRef.current[variant.variantId] || (result === 'TIMEOUT' ? `Timed out waiting for ${platformLabel}` : 'Publish failed');
-              setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'failed', error: err } }));
+              setPublishingStatus(prev => ({ ...prev, [tokenId]: { state: 'failed', error: err } }));
             }
           } else if (res.status === 409 && data.status === 'PUBLISHED') {
             successPlatforms.push(pid);
-            setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'done', error: null } }));
+            setPublishingStatus(prev => ({ ...prev, [tokenId]: { state: 'done', error: null } }));
           } else if (res.status === 409 && data.status === 'PUBLISHING') {
             // Already in-flight from a previous click — poll it
             const result = await pollPublishStatus(variant.variantId, pid);
             if (result === 'PUBLISHED') {
               successPlatforms.push(pid);
-              setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'done', error: null } }));
+              setPublishingStatus(prev => ({ ...prev, [tokenId]: { state: 'done', error: null } }));
             } else {
               const err = publishErrorsRef.current[variant.variantId] || 'Still publishing — check back later';
-              setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'failed', error: err } }));
+              setPublishingStatus(prev => ({ ...prev, [tokenId]: { state: 'failed', error: err } }));
             }
           } else if (res.status === 401) {
-            setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'failed', error: 'Session expired — log out and in again' } }));
+            setPublishingStatus(prev => ({ ...prev, [tokenId]: { state: 'failed', error: 'Session expired — log out and in again' } }));
           } else if (data.requiresConnect) {
-            setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'failed', error: `Connect your ${pid} account in Connected Accounts` } }));
+            setPublishingStatus(prev => ({ ...prev, [tokenId]: { state: 'failed', error: `Connect your ${pid} account in Connected Accounts` } }));
           } else {
-            setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'failed', error: data.error || 'Publish failed' } }));
+            setPublishingStatus(prev => ({ ...prev, [tokenId]: { state: 'failed', error: data.error || 'Publish failed' } }));
           }
         } else if (postType === 'video') {
           // ── Video without variantId: multipart to video-content only (never /api/social/post — nginx 413) ──
           if (!video) {
-            setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'failed', error: 'Video file missing — re-upload or run Generate Content for variants.' } }));
+            setPublishingStatus(prev => ({ ...prev, [tokenId]: { state: 'failed', error: 'Video file missing — re-upload or run Generate Content for variants.' } }));
           } else if (video.size > SAFE_DIRECT_UPLOAD_MAX_BYTES) {
             setPublishingStatus(prev => ({
               ...prev,
-              [pid]: {
+              [tokenId]: {
                 state: 'failed',
                 error:
                   `File too large for direct upload (HTTP 413). Wait for AI variants, compress under ~${Math.round(SAFE_DIRECT_UPLOAD_MAX_BYTES / 1024 / 1024)} MB, or ask your host to raise nginx client_max_body_size.`,
@@ -1281,6 +1449,8 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
             fd.append('hashtags', hashtags);
             const platformPublishType = effectivePublishTypeForPlatform(pid, postType, publishType);
             fd.append('postType', platformPublishType);
+            // Account-pool: the specific connected-account id for this publish pass.
+            fd.append('socialTokenId', String(acct.id));
             const res = await fetch(api(`/publish/${pid}`), {
               method: 'POST',
               headers: authHeaders(),
@@ -1290,7 +1460,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
             if (res.status === 413) {
               setPublishingStatus(prev => ({
                 ...prev,
-                [pid]: {
+                [tokenId]: {
                   state: 'failed',
                   error:
                     'HTTP 413: gateway rejected the upload. Finish processing so a variant exists, use a smaller file, or increase client_max_body_size on the API proxy.',
@@ -1298,9 +1468,9 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
               }));
             } else if (res.ok) {
               successPlatforms.push(pid);
-              setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'done', error: null } }));
+              setPublishingStatus(prev => ({ ...prev, [tokenId]: { state: 'done', error: null } }));
             } else {
-              setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'failed', error: data.error || 'Publish failed' } }));
+              setPublishingStatus(prev => ({ ...prev, [tokenId]: { state: 'failed', error: data.error || 'Publish failed' } }));
             }
           }
         } else if (postType === 'image' || postType === 'text') {
@@ -1318,7 +1488,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
             } catch (normErr) {
               setPublishingStatus(prev => ({
                 ...prev,
-                [pid]: { state: 'failed', error: `Image preparation failed: ${normErr.message || 'unknown error'}` },
+                [tokenId]: { state: 'failed', error: `Image preparation failed: ${normErr.message || 'unknown error'}` },
               }));
               continue;
             }
@@ -1328,6 +1498,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
           if (postType === 'image') {
             fd.append('publishType', platformPublishType);
           }
+          fd.append('socialTokenId', String(acct.id));
           const res = await fetch(`${base}/api/social/post/${pid}`, {
             method: 'POST',
             headers: authHeaders(),
@@ -1337,18 +1508,18 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
           if (res.status === 413) {
             setPublishingStatus(prev => ({
               ...prev,
-              [pid]: { state: 'failed', error: 'HTTP 413: attachment too large for the API gateway. Use a smaller image or raise client_max_body_size.' },
+              [tokenId]: { state: 'failed', error: 'HTTP 413: attachment too large for the API gateway. Use a smaller image or raise client_max_body_size.' },
             }));
           } else if (res.ok) {
             successPlatforms.push(pid);
-            setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'done', error: null } }));
+            setPublishingStatus(prev => ({ ...prev, [tokenId]: { state: 'done', error: null } }));
           } else {
-            setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'failed', error: data.error || 'Publish failed' } }));
+            setPublishingStatus(prev => ({ ...prev, [tokenId]: { state: 'failed', error: data.error || 'Publish failed' } }));
           }
         } else {
           // Unknown postType — treat as video fallback
           if (!video) {
-            setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'failed', error: 'No media file — re-upload.' } }));
+            setPublishingStatus(prev => ({ ...prev, [tokenId]: { state: 'failed', error: 'No media file — re-upload.' } }));
             continue;
           }
           const fd = new FormData();
@@ -1356,6 +1527,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
           fd.append('caption', variant.caption || '');
           fd.append('hashtags', hashtags);
           fd.append('postType', publishType);
+          fd.append('socialTokenId', String(acct.id));
           const res = await fetch(api(`/publish/${pid}`), {
             method: 'POST',
             headers: authHeaders(),
@@ -1365,22 +1537,38 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
           if (res.status === 413) {
             setPublishingStatus(prev => ({
               ...prev,
-              [pid]: { state: 'failed', error: 'File too large for the server (HTTP 413). Ensure processing created a variant or use a smaller file.' },
+              [tokenId]: { state: 'failed', error: 'File too large for the server (HTTP 413). Ensure processing created a variant or use a smaller file.' },
             }));
           } else if (res.ok) {
             successPlatforms.push(pid);
-            setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'done', error: null } }));
+            setPublishingStatus(prev => ({ ...prev, [tokenId]: { state: 'done', error: null } }));
           } else {
-            setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'failed', error: data.error || 'Publish failed' } }));
+            setPublishingStatus(prev => ({ ...prev, [tokenId]: { state: 'failed', error: data.error || 'Publish failed' } }));
           }
         }
       } catch (e) {
-        setPublishingStatus(prev => ({ ...prev, [pid]: { state: 'failed', error: `Network error: ${e.message}` } }));
+        setPublishingStatus(prev => ({ ...prev, [tokenId]: { state: 'failed', error: `Network error: ${e.message}` } }));
       }
     }
 
     setPublished(successPlatforms);
     if (successPlatforms.length > 0) loadDashboard();
+
+    // ── Send approval emails if approval mode is on ──
+    if (approvalMode && selectedApprover && scheduledPostIds.length > 0) {
+      const memberName = selectedApprover.firstName
+        ? `${selectedApprover.firstName} ${selectedApprover.lastName || ''}`.trim()
+        : selectedApprover.email;
+      for (const postId of scheduledPostIds) {
+        try {
+          await fetch(`${base}/api/approve/send/${postId}`, {
+            method: 'POST',
+            headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+            body: JSON.stringify({ memberEmail: selectedApprover.email, memberName }),
+          });
+        } catch { /* silent — schedule already succeeded */ }
+      }
+    }
   };
 
   /* ── render sections ── */
@@ -1859,7 +2047,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
                   No posts yet. Publish your first post above! 🚀
                 </div>
               )}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: 420, overflowY: 'auto', paddingRight: 6 }}>
                 {dashHistory.map(post => {
                   const p = PLATFORMS.find(x => x.id === post.platform);
                   const statusColor = post.status === 'SUCCESS' ? '#16a34a' : post.status === 'FAILED' ? '#dc2626' : '#d97706';
@@ -1944,33 +2132,214 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
           <div style={s.right}>
             <div style={s.card}>
               <div style={s.sectionTitle}>📡 Select Platforms</div>
+
+              {/* Auto-cleanup toast: appears briefly after a postType change
+                  removes incompatible-platform tickings from the selection set. */}
+              {platformSyncToast && (
+                <div
+                  role="status"
+                  style={{
+                    marginBottom: 10, padding: '8px 12px', borderRadius: 8,
+                    background: '#fef3c7', border: '1px solid #fcd34d',
+                    color: '#78350f', fontSize: 12, fontWeight: 600,
+                  }}
+                >
+                  ⚠️ {platformSyncToast}
+                </div>
+              )}
+
               <div style={{ ...s.platformGrid, ...(isMobile ? { gridTemplateColumns: 'repeat(2, 1fr)' } : {}) }}>
                 {PLATFORMS.map(p => {
-                  const supported = p.supports.includes(postType);
+                  const supported   = p.supports.includes(postType);
+                  const pAccounts   = accountsByPlatform[p.id] || [];
+                  const anyTicked   = pAccounts.some(a => selectedTokenIds.has(a.id));
+                  const isExpanded  = expandedPlatform === p.id && supported;
+                  const allTicked   = pAccounts.length > 0 && pAccounts.every(a => selectedTokenIds.has(a.id));
+
                   return (
-                  <button
-                    key={p.id}
-                    title={!supported ? `${p.label} does not support ${postType} posts` : ''}
-                    style={{
+                    <div key={p.id} style={{
                       ...s.platformBtn,
-                      ...(selectedPlatforms.includes(p.id) && supported ? { ...s.platformBtnActive, borderColor: p.color } : {}),
+                      // Account-pool card: takes full width when expanded so the
+                      // account list has room to breathe instead of clipping.
+                      gridColumn: isExpanded ? '1 / -1' : 'auto',
+                      ...(anyTicked && supported ? { ...s.platformBtnActive, borderColor: p.color } : {}),
                       ...((!supported) ? { opacity: 0.35, cursor: 'not-allowed', filter: 'grayscale(1)' } : {}),
-                    }}
-                    onClick={() => supported && togglePlatform(p.id)}
-                    disabled={!supported}
-                  >
-                    <PlatformIcon platform={p} size={28} />
-                    <span style={{ fontSize: '12px', fontWeight: 600 }}>{p.label}</span>
-                    {!supported && <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 400 }}>Not available</span>}
-                    {selectedPlatforms.includes(p.id) && supported && (
-                      <span style={{ ...s.platformCheck, background: p.color }}>✓</span>
-                    )}
-                  </button>
+                      padding: isExpanded ? 0 : s.platformBtn.padding, // expanded cards control their own padding
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'stretch',
+                      overflow: 'hidden',
+                      transition: 'all 0.2s',
+                    }}>
+                      {/* Card head — clickable. Toggles the expand state. */}
+                      <button
+                        type="button"
+                        title={!supported ? `${p.label} does not support ${postType} posts` : ''}
+                        disabled={!supported}
+                        onClick={() => {
+                          if (!supported) return;
+                          setExpandedPlatform(prev => prev === p.id ? null : p.id);
+                        }}
+                        style={{
+                          display: 'flex', flexDirection: 'column', alignItems: 'center',
+                          gap: 6, padding: '14px 10px', background: 'transparent',
+                          border: 'none', cursor: supported ? 'pointer' : 'not-allowed',
+                          color: 'inherit', width: '100%', position: 'relative',
+                        }}
+                      >
+                        <PlatformIcon platform={p} size={28} />
+                        <span style={{ fontSize: '12px', fontWeight: 600 }}>{p.label}</span>
+                        {!supported && (
+                          <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 400 }}>
+                            Not available
+                          </span>
+                        )}
+                        {supported && pAccounts.length > 0 && (
+                          <span style={{
+                            fontSize: 10, color: anyTicked ? p.color : '#94a3b8',
+                            fontWeight: 700,
+                          }}>
+                            {pAccounts.filter(a => selectedTokenIds.has(a.id)).length}/{pAccounts.length} account{pAccounts.length === 1 ? '' : 's'}
+                          </span>
+                        )}
+                        {supported && pAccounts.length === 0 && (
+                          <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 400 }}>
+                            Not connected
+                          </span>
+                        )}
+                        {anyTicked && supported && (
+                          <span style={{ ...s.platformCheck, background: p.color }}>✓</span>
+                        )}
+                        {supported && (
+                          <span aria-hidden="true" style={{
+                            position: 'absolute', right: 10, top: 10,
+                            fontSize: 14, color: '#94a3b8',
+                            transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                            transition: 'transform 0.2s',
+                          }}>
+                            ▾
+                          </span>
+                        )}
+                      </button>
+
+                      {/* Expanded body — accounts list, or "connect first" CTA */}
+                      {isExpanded && (
+                        <div style={{
+                          padding: '12px 14px 14px',
+                          borderTop: `1px solid ${p.color}22`,
+                          background: '#ffffff',
+                        }}>
+                          {pAccounts.length === 0 ? (
+                            <div style={{ textAlign: 'center', padding: '8px 0' }}>
+                              <div style={{ fontSize: 13, color: '#64748b', marginBottom: 10 }}>
+                                No {p.label} account connected yet.
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setExpandedPlatform(null);
+                                  if (typeof onNavigateToSocialConnect === 'function') onNavigateToSocialConnect();
+                                }}
+                                style={{
+                                  padding: '8px 14px', borderRadius: 8,
+                                  border: `1px solid ${p.color}`, background: '#fff',
+                                  color: p.color, fontSize: 12, fontWeight: 700,
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                Connect {p.label} →
+                              </button>
+                            </div>
+                          ) : (
+                            <>
+                              <div style={{
+                                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                marginBottom: 8,
+                              }}>
+                                <span style={{ fontSize: 11, fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                                  Pick accounts
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    // Toggle all — if all currently ticked, untick all; else tick all
+                                    setSelectedTokenIds(prev => {
+                                      const next = new Set(prev);
+                                      if (allTicked) pAccounts.forEach(a => next.delete(a.id));
+                                      else pAccounts.forEach(a => next.add(a.id));
+                                      return next;
+                                    });
+                                  }}
+                                  style={{
+                                    padding: '3px 8px', borderRadius: 6,
+                                    border: '1px solid #cbd5e1', background: '#f8fafc',
+                                    color: '#475569', fontSize: 10, fontWeight: 600,
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  {allTicked ? 'Untick all' : 'Tick all'}
+                                </button>
+                              </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                {pAccounts.map(acct => {
+                                  const ticked = selectedTokenIds.has(acct.id);
+                                  return (
+                                    <button
+                                      key={acct.id}
+                                      type="button"
+                                      onClick={() => toggleTokenId(acct.id)}
+                                      style={{
+                                        display: 'flex', alignItems: 'center', gap: 10,
+                                        padding: '8px 10px', borderRadius: 8,
+                                        background: ticked ? `${p.color}14` : '#fafbff',
+                                        border: `1.5px solid ${ticked ? p.color : '#e2e8f0'}`,
+                                        cursor: 'pointer', textAlign: 'left',
+                                        transition: 'all 0.15s',
+                                      }}
+                                    >
+                                      <ProfileAvatar
+                                        imageUrl={acct.profileImageUrl}
+                                        platform={p}
+                                        size={28}
+                                        ringWidth={1}
+                                      />
+                                      <span style={{
+                                        flex: 1, minWidth: 0,
+                                        fontSize: 13, fontWeight: ticked ? 700 : 500,
+                                        color: ticked ? '#0f172a' : '#334155',
+                                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                                      }}>
+                                        {acct.username || `Account ${acct.id}`}
+                                      </span>
+                                      <span style={{
+                                        width: 18, height: 18, borderRadius: 4,
+                                        border: `1.5px solid ${ticked ? p.color : '#cbd5e1'}`,
+                                        background: ticked ? p.color : 'transparent',
+                                        color: '#fff', fontSize: 12, fontWeight: 800,
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        flexShrink: 0,
+                                      }}>
+                                        {ticked ? '✓' : ''}
+                                      </span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
               </div>
               <div style={s.platformCount}>
                 {selectedPlatforms.length} platform{selectedPlatforms.length !== 1 ? 's' : ''} selected
+                {selectedTokenIds.size > 0 && (
+                  <span style={{ color: '#64748b', fontWeight: 400 }}>
+                    {' · '}{selectedTokenIds.size} account{selectedTokenIds.size === 1 ? '' : 's'} total
+                  </span>
+                )}
               </div>
             </div>
 
@@ -2052,7 +2421,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
               ]).map(([icon, title]) => (
                 <div key={title} style={s.aiFeatureRow}>
                   <span style={{ fontSize: '20px' }}>{icon}</span>
-                  <div style={{ fontWeight: 600, fontSize: '13px' }}>{title}</div>
+                  <div style={{ fontWeight: 600, fontSize: '13px', color: '#1e293b' }}>{title}</div>
                 </div>
               ))}
             </div>
@@ -2269,14 +2638,18 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
                 {[
                   { label: 'Morning (9 AM)', hour: 9 },
-                  { label: 'Evening (7 PM)', hour: 19 },
                   { label: 'Lunch (12 PM)', hour: 12 },
+                  { label: 'Afternoon (3 PM)', hour: 15 },
+                  { label: 'Evening (7 PM)', hour: 19 },
                 ].map(({ label, hour }) => {
+                  // Use today if that hour is still in the future; otherwise tomorrow
+                  const now = new Date();
                   const d = new Date();
-                  d.setDate(d.getDate() + 1);
+                  if (now.getHours() >= hour) d.setDate(d.getDate() + 1);
                   d.setHours(hour, 0, 0, 0);
                   const pad = (n) => String(n).padStart(2, '0');
                   const iso = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+                  const isToday = d.toDateString() === now.toDateString();
                   return (
                     <button
                       key={label}
@@ -2288,7 +2661,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
                       }}
                       style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '11px', fontWeight: 600, color: '#475569', cursor: 'pointer' }}
                     >
-                      {label}
+                      {label} {isToday ? '(today)' : '(tomorrow)'}
                     </button>
                   );
                 })}
@@ -2302,9 +2675,15 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
                     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
                   };
                   const defaultScheduleStart = () => {
+                    const now = new Date();
                     const d = new Date();
-                    d.setDate(d.getDate() + 1);
-                    d.setHours(9, 0, 0, 0);
+                    // Default to next whole hour if still today, otherwise tomorrow 9 AM
+                    if (now.getHours() < 22) {
+                      d.setHours(now.getHours() + 1, 0, 0, 0);
+                    } else {
+                      d.setDate(d.getDate() + 1);
+                      d.setHours(9, 0, 0, 0);
+                    }
                     return localDatetimeLocal(d);
                   };
                   return (
@@ -2343,6 +2722,64 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
               </div>
             </div>
 
+            {/* ── Send for Approval ─────────────────────────────────── */}
+            <div style={{
+              marginTop: '14px', padding: '12px 14px', borderRadius: 10,
+              border: `1.5px solid ${approvalMode ? '#a5b4fc' : '#e2e8f0'}`,
+              background: approvalMode ? '#eef2ff' : '#f8fafc',
+              transition: 'border-color .2s, background .2s',
+            }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none' }}>
+                <input
+                  type="checkbox"
+                  checked={approvalMode}
+                  onChange={e => { setApprovalMode(e.target.checked); if (!e.target.checked) setSelectedApprover(null); }}
+                  style={{ width: 15, height: 15, accentColor: '#6366f1', cursor: 'pointer' }}
+                />
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#1e293b' }}>
+                  👤 Send for Approval before publishing
+                </span>
+              </label>
+              {approvalMode && (
+                <div style={{ marginTop: 10 }}>
+                  <label style={{ fontSize: 11, fontWeight: 600, color: '#64748b', display: 'block', marginBottom: 5 }}>
+                    Select workspace member to review:
+                  </label>
+                  {approvalMembers.length === 0 ? (
+                    <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>
+                      No members found in this workspace.
+                    </p>
+                  ) : (
+                    <select
+                      value={selectedApprover ? String(selectedApprover.userId) : ''}
+                      onChange={e => {
+                        const m = approvalMembers.find(x => String(x.userId) === e.target.value);
+                        setSelectedApprover(m || null);
+                      }}
+                      style={{
+                        width: '100%', padding: '7px 10px', borderRadius: 8,
+                        border: '1.5px solid #c7d2fe', fontSize: 12, color: '#1e293b',
+                        background: '#fff', cursor: 'pointer',
+                      }}
+                    >
+                      <option value="">— choose a member —</option>
+                      {approvalMembers.map(m => (
+                        <option key={m.userId} value={m.userId}>
+                          {m.firstName ? `${m.firstName} ${m.lastName || ''}`.trim() : m.email}
+                          {m.email ? ` (${m.email})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  {selectedApprover && (
+                    <p style={{ fontSize: 11, color: '#6366f1', marginTop: 6, marginBottom: 0, fontWeight: 600 }}>
+                      ✉️ Approval email will be sent to {selectedApprover.email}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+
             <div style={{ marginTop: '16px' }}>
               <button
                 type="button"
@@ -2350,7 +2787,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
                 onClick={scheduleAndPublishAll}
                 disabled={publishBlockedByVideoRules || publishBlockedByImageRules}
               >
-                🚀 Schedule & Publish
+                {approvalMode && selectedApprover ? '📤 Schedule & Send for Approval' : '🚀 Schedule & Publish'}
               </button>
               <p style={{ fontSize: '11px', color: '#64748b', marginTop: '8px', marginBottom: 0 }}>
                 Platforms with a date set will be scheduled; others publish now.
@@ -2381,6 +2818,18 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
                     </div>
                   </div>
 
+                  {/* Account selection happens in the "Post to" chip row at the top
+                      of the page (account-pool model). The editor below is per-platform;
+                      captions are shared across all ticked accounts on this platform. */}
+                  {(accountsByPlatform[pid] || []).length === 0 && (
+                    <div style={{
+                      marginBottom: 12, padding: '10px 12px', borderRadius: 8,
+                      background: '#fef2f2', border: '1px solid #fecaca',
+                      fontSize: 12, color: '#991b1b',
+                    }}>
+                      ⚠️ No {p.label} account connected. Go to <strong>Connected Accounts</strong> to connect one before publishing.
+                    </div>
+                  )}
 
                   {!isImageStoryEditor ? (
                     <>
@@ -2672,9 +3121,22 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
 
       {/* ── STEP: PUBLISHING ── */}
       {step === 'publishing' && (() => {
-        const allDone = selectedPlatforms.filter(pid => variants[pid])
-          .every(pid => publishingStatus[pid]?.state === 'done' || publishingStatus[pid]?.state === 'failed');
-        const anyFailed = Object.values(publishingStatus).some(s => s?.state === 'failed');
+        // Build one row per ticked (platform, account) pair — mirrors the publish loop.
+        const rows = [];
+        selectedPlatforms.forEach(pid => {
+          if (!variants[pid]) return;
+          const p = PLATFORMS.find(x => x.id === pid);
+          (accountsByPlatform[pid] || []).forEach(acct => {
+            if (selectedTokenIds.has(acct.id)) {
+              rows.push({ tokenId: acct.id, pid, acct, platform: p });
+            }
+          });
+        });
+        const statusKeys = rows.map(r => r.tokenId);
+        const allDone = statusKeys.every(k =>
+          publishingStatus[k]?.state === 'done' || publishingStatus[k]?.state === 'failed');
+        const anyFailed = statusKeys.some(k => publishingStatus[k]?.state === 'failed');
+        const doneCount = statusKeys.filter(k => publishingStatus[k]?.state === 'done').length;
         return (
           <div style={{ ...s.centerCard, maxWidth: '540px' }}>
             <div style={{ fontSize: '40px', marginBottom: '12px' }}>🚀</div>
@@ -2683,15 +3145,14 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
             </div>
             <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '24px' }}>
               {allDone
-                ? `${published.length} of ${Object.keys(publishingStatus).length} platforms succeeded`
+                ? `${doneCount} of ${rows.length} account${rows.length === 1 ? '' : 's'} succeeded`
                 : 'Do not close this tab. Some platforms can take up to 3 minutes.'}
             </div>
 
-            {/* Per-platform rows */}
+            {/* Per-account rows */}
             <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
-              {selectedPlatforms.filter(pid => variants[pid]).map(pid => {
-                const p = PLATFORMS.find(x => x.id === pid);
-                const ps = publishingStatus[pid];
+              {rows.map(({ tokenId, pid, acct, platform: p }) => {
+                const ps = publishingStatus[tokenId];
                 const state = ps?.state || 'queued';
                 const stateIcon = state === 'done' ? '✅' : state === 'failed' ? '❌' : state === 'publishing' ? '⏳' : '⌛';
                 const stateColor = state === 'done' ? '#16a34a' : state === 'failed' ? '#dc2626' : '#64748b';
@@ -2703,9 +3164,14 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
                   ? (pid === 'instagram' ? 'Meta is processing video…' : 'Publishing…')
                   : 'Queued';
                 return (
-                  <div key={pid} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderRadius: '10px', border: `1.5px solid ${state === 'done' ? '#bbf7d0' : state === 'failed' ? '#fecaca' : '#e2e8f0'}`, background: state === 'done' ? '#f0fdf4' : state === 'failed' ? '#fef2f2' : '#f8fafc' }}>
-                    <PlatformIcon platform={p} size={24} />
-                    <span style={{ fontWeight: 600, fontSize: '13px', flex: 1 }}>{p.label}</span>
+                  <div key={tokenId} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderRadius: '10px', border: `1.5px solid ${state === 'done' ? '#bbf7d0' : state === 'failed' ? '#fecaca' : '#e2e8f0'}`, background: state === 'done' ? '#f0fdf4' : state === 'failed' ? '#fef2f2' : '#f8fafc' }}>
+                    <ProfileAvatar imageUrl={acct.profileImageUrl} platform={p} size={32} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, fontSize: '13px', color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {acct.username || p.label}
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#64748b' }}>{p.label}</div>
+                    </div>
                     <span style={{ fontSize: '12px', color: stateColor, fontWeight: 500, textAlign: 'right', maxWidth: '200px' }}>
                       {stateIcon} {stateLabel}
                     </span>

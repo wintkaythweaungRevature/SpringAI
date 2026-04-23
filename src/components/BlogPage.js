@@ -1,10 +1,75 @@
 import React, { useState } from 'react';
+import { Helmet } from 'react-helmet';
 
 /* ─── Brand ──────────────────────────────────────────────────── */
 const BRAND   = 'WintAI';
 const WEBSITE = 'www.wintaibot.com';
 const AUTHOR  = 'Wint Kay Thwe Aung';
 const DATE    = 'April 12, 2026';
+// ISO date used in JSON-LD datePublished (Google + LLM-friendly).
+const DATE_ISO = '2026-04-12';
+
+/**
+ * Estimate word count from a blog's section body text — used in BlogPosting schema
+ * so Google / LLMs know how substantive the article is. Heuristic is fine; it's
+ * a ranking signal, not a legal declaration.
+ */
+function estimateWordCount(blog) {
+  try {
+    return (blog.sections || [])
+      .reduce((sum, sec) => sum + String(sec.body || '').split(/\s+/).length, 0);
+  } catch { return 0; }
+}
+
+/** Build a ld+json script payload for one blog post. */
+function blogPostingJsonLd(blog) {
+  const url = `https://${WEBSITE}/blog/${blog.slug}`;
+  const description = blog.excerpt || '';
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: blog.title,
+    description,
+    image: `https://${WEBSITE}/android-chrome-512x512.png`,
+    author: { '@type': 'Person', name: AUTHOR, url: `https://${WEBSITE}/about` },
+    publisher: {
+      '@type': 'Organization',
+      name: BRAND,
+      logo: { '@type': 'ImageObject', url: `https://${WEBSITE}/android-chrome-512x512.png` },
+    },
+    datePublished: DATE_ISO,
+    dateModified:  DATE_ISO,
+    mainEntityOfPage: { '@type': 'WebPage', '@id': url },
+    url,
+    wordCount: estimateWordCount(blog),
+    articleSection: blog.category || 'Blog',
+    keywords: [blog.category, 'social media', 'WintAi', 'AI content'].filter(Boolean).join(', '),
+    inLanguage: 'en-US',
+  };
+}
+
+/** Build a ld+json script payload for the blog index page. */
+function blogListingJsonLd() {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Blog',
+    name: `${BRAND} Blog — Insights, Tips & Guides`,
+    url: `https://${WEBSITE}/blog`,
+    description: `Grow your social media presence with expert strategies from the ${BRAND} team.`,
+    publisher: {
+      '@type': 'Organization',
+      name: BRAND,
+      logo: { '@type': 'ImageObject', url: `https://${WEBSITE}/android-chrome-512x512.png` },
+    },
+    blogPost: BLOGS.map(b => ({
+      '@type': 'BlogPosting',
+      headline: b.title,
+      url: `https://${WEBSITE}/blog/${b.slug}`,
+      datePublished: DATE_ISO,
+      author: { '@type': 'Person', name: AUTHOR },
+    })),
+  };
+}
 
 /* ─── Blog data ──────────────────────────────────────────────── */
 const BLOGS = [
@@ -209,6 +274,21 @@ export default function BlogPage() {
 
   return (
     <div style={s.page}>
+      {/* Blog index SEO — title, description, canonical, and a Blog schema
+          listing every post so Google can surface the right article for a query. */}
+      <Helmet>
+        <title>Blog — Social Media Tips, AI Content Guides | WintAi</title>
+        <meta name="description" content="Expert guides on AI-powered social media: content calendars, cross-platform publishing, brand voice, and growth strategies for creators and agencies." />
+        <link rel="canonical" href={`https://${WEBSITE}/blog`} />
+        <meta property="og:title" content="WintAi Blog — Social Media Tips & AI Content Guides" />
+        <meta property="og:description" content="Expert guides on AI social media management, brand voice, and multi-platform publishing." />
+        <meta property="og:url" content={`https://${WEBSITE}/blog`} />
+        <meta property="og:type" content="website" />
+        <script type="application/ld+json">
+          {JSON.stringify(blogListingJsonLd())}
+        </script>
+      </Helmet>
+
       {/* Hero */}
       <div style={s.hero}>
         <div style={s.heroBadge}>📝 Blog</div>
@@ -276,8 +356,45 @@ export default function BlogPage() {
 
 /* ─── Single Blog Post View ──────────────────────────────────── */
 function BlogPost({ blog, onBack }) {
+  const postUrl = `https://${WEBSITE}/blog/${blog.slug}`;
   return (
     <div style={s.page}>
+      {/* Per-post SEO:
+          - Unique title + description per post (Google ranks pages, not sites)
+          - Canonical URL points at the slug-specific path for clean indexing
+          - BlogPosting JSON-LD gives the author / date / word count LLMs cite
+          - BreadcrumbList helps Google show rich snippets with "Home → Blog → Post" */}
+      <Helmet>
+        <title>{`${blog.title} | WintAi Blog`}</title>
+        <meta name="description" content={blog.excerpt} />
+        <link rel="canonical" href={postUrl} />
+        <meta property="og:type" content="article" />
+        <meta property="og:title" content={blog.title} />
+        <meta property="og:description" content={blog.excerpt} />
+        <meta property="og:url" content={postUrl} />
+        <meta property="og:image" content={`https://${WEBSITE}/android-chrome-512x512.png`} />
+        <meta property="article:published_time" content={DATE_ISO} />
+        <meta property="article:author" content={AUTHOR} />
+        <meta property="article:section" content={blog.category} />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={blog.title} />
+        <meta name="twitter:description" content={blog.excerpt} />
+        <script type="application/ld+json">
+          {JSON.stringify(blogPostingJsonLd(blog))}
+        </script>
+        <script type="application/ld+json">
+          {JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'BreadcrumbList',
+            itemListElement: [
+              { '@type': 'ListItem', position: 1, name: 'Home', item: `https://${WEBSITE}/` },
+              { '@type': 'ListItem', position: 2, name: 'Blog', item: `https://${WEBSITE}/blog` },
+              { '@type': 'ListItem', position: 3, name: blog.title, item: postUrl },
+            ],
+          })}
+        </script>
+      </Helmet>
+
       {/* Back */}
       <button onClick={onBack} style={s.backBtn}>← Back to Blog</button>
 

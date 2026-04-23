@@ -6,6 +6,21 @@ import ComposePostModal from './ComposePostModal';
 
 const API = process.env.REACT_APP_API_URL || 'https://api.wintaibot.com';
 
+/**
+ * Backend stores dates as Java LocalDateTime in UTC without a timezone suffix.
+ * JavaScript's `new Date("2026-04-16T01:00:00")` treats bare ISO strings as
+ * LOCAL time, which shifts the date by the user's UTC offset. Appending "Z"
+ * tells the browser the timestamp is UTC so it converts to local correctly.
+ */
+function parseUtcDate(raw) {
+  if (!raw) return new Date(NaN);
+  const s = String(raw);
+  if (/^\d{4}-\d{2}-\d{2}T/.test(s) && !s.includes('Z') && !s.includes('+') && !/T.*-/.test(s)) {
+    return new Date(s + 'Z');
+  }
+  return new Date(s);
+}
+
 const PLATFORMS = filterEnabledPlatforms([
   { id: 'instagram', label: 'Instagram', color: '#E1306C', emoji: '📸', logo: 'instagram' },
   { id: 'facebook',  label: 'Facebook',  color: '#1877F2', emoji: '👍', logo: 'facebook'  },
@@ -63,16 +78,22 @@ function PlatformScopeMenu({ value, onChange }) {
 
   const close = useCallback(() => {
     setOpen(false);
-    triggerRef.current?.focus();
+    setTimeout(() => triggerRef.current?.focus(), 0);
   }, []);
 
   const selectByIndex = useCallback(
     (idx) => {
       const opt = options[idx];
       if (!opt) return;
-      onChange(opt.id);
+      // Close the dropdown first — let React commit that unmount cleanly.
       setOpen(false);
-      triggerRef.current?.focus();
+      // Defer the parent state change to a second commit so the heavy chart
+      // re-render below doesn't overlap with the dropdown's DOM cleanup.
+      // This is what fixes the "removeChild: not a child of this node" crash.
+      setTimeout(() => {
+        onChange(opt.id);
+        triggerRef.current?.focus();
+      }, 0);
     },
     [onChange, options],
   );
@@ -176,7 +197,7 @@ function PlatformScopeMenu({ value, onChange }) {
     display: 'inline-flex',
     alignItems: 'center',
     gap: 6,
-    minHeight: 30,
+    minHeight: 32,
     paddingLeft: 8,
     paddingRight: 8,
     borderRadius: 8,
@@ -234,7 +255,7 @@ function PlatformScopeMenu({ value, onChange }) {
           aria-haspopup="listbox"
           aria-expanded={open}
           aria-controls={listboxId}
-          aria-label="Platform"
+          aria-label="Filter by platform"
           style={triggerBase}
         >
           <span
@@ -242,15 +263,15 @@ function PlatformScopeMenu({ value, onChange }) {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: 18,
-              height: 18,
+              width: 20,
+              height: 20,
               borderRadius: 6,
               background: '#f1f5f9',
             }}
           >
             <PlatformIcon platform={current} size={14} />
           </span>
-          <span style={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <span style={{ maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 12 }}>
             {current.label}
           </span>
           <svg
@@ -541,7 +562,13 @@ function buildHeatmapFromPostsDetail(postsDetail) {
     if (d == null || h == null) {
       const raw = p.createdAt || p.publishedAt || p.dateTime;
       if (!raw) return;
-      const dt = new Date(raw);
+      // Backend stores dates in UTC without timezone suffix. Append "Z" so
+      // JavaScript converts to local time — otherwise getHours() returns the
+      // UTC hour (e.g. 1 AM UTC instead of 9 PM local), skewing the heatmap.
+      const str = String(raw);
+      const utcAware = (/^\d{4}-\d{2}-\d{2}T/.test(str) && !str.includes('Z') && !str.includes('+') && !/T.*-/.test(str))
+        ? str + 'Z' : str;
+      const dt = new Date(utcAware);
       if (Number.isNaN(dt.getTime())) return;
       d = (dt.getDay() + 6) % 7;
       h = dt.getHours();
@@ -788,7 +815,7 @@ function PostHeatmap({ resolved, postsDetail = [], platformLabel = 'this platfor
                     .filter(Boolean)
                     .map((raw) => {
                       try {
-                        return new Date(raw).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+                        return parseUtcDate(raw).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
                       } catch {
                         return String(raw);
                       }
@@ -846,10 +873,11 @@ function PostHeatmap({ resolved, postsDetail = [], platformLabel = 'this platfor
             </span>
             <button onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: 16 }}>✕</button>
           </div>
+          <div style={{ maxHeight: 440, overflowY: 'auto' }}>
           {selectedPosts.map((p, i) => {
             const platColor = PLATFORM_COLORS[p.platform?.toLowerCase()] || '#6366f1';
             const rowPlat = PLATFORMS.find((x) => x.id === (p.platform || '').toLowerCase());
-            const date = p.createdAt ? new Date(p.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+            const date = p.createdAt ? parseUtcDate(p.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
             return (
               <div key={i} style={{ padding: '14px 16px', borderBottom: i < selectedPosts.length - 1 ? '1px solid #f1f5f9' : 'none', background: '#fff' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
@@ -866,6 +894,7 @@ function PostHeatmap({ resolved, postsDetail = [], platformLabel = 'this platfor
               </div>
             );
           })}
+          </div>
         </div>
       )}
     </div>
@@ -2213,7 +2242,7 @@ function TrendsCalendar({ authHeaders }) {
                   </p>
                   {item.dateTime && (
                     <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 4 }}>
-                      {new Date(item.dateTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                      {parseUtcDate(item.dateTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
                     </div>
                   )}
                 </div>
@@ -2316,7 +2345,7 @@ function TrendsCalendar({ authHeaders }) {
                 {(pastFrom || pastUntil) ? 'No past posts in this date/time range. Try widening From / Until.' : 'No published posts this month.'}
               </p>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 440, overflowY: 'auto', paddingRight: 6 }}>
                 {[...pastPostsForList].sort((a, b) => {
                   const da = a.dateTime || a.date || '';
                   const db = b.dateTime || b.date || '';
@@ -2336,7 +2365,7 @@ function TrendsCalendar({ authHeaders }) {
                         </span>
                         {(p.dateTime || p.date) && (
                           <span style={{ marginLeft: 'auto', fontSize: 10, color: '#94a3b8' }}>
-                            {p.dateTime ? new Date(p.dateTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : p.date}
+                            {p.dateTime ? parseUtcDate(p.dateTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : p.date}
                           </span>
                         )}
                       </div>
@@ -2385,7 +2414,7 @@ function TrendsCalendar({ authHeaders }) {
                 {(schedFrom || schedUntil) ? 'No scheduled posts in this date/time range. Adjust From / Until (e.g. include the run time).' : 'No scheduled posts this month.'}
               </p>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 440, overflowY: 'auto', paddingRight: 6 }}>
                 {[...upcomingScheduledFiltered].sort((a, b) => {
                   const da = a.dateTime || a.scheduledAt || a.date || '';
                   const db = b.dateTime || b.scheduledAt || b.date || '';
@@ -2408,7 +2437,7 @@ function TrendsCalendar({ authHeaders }) {
                         {(j.dateTime || j.scheduledAt || j.date) && (
                           <span style={{ marginLeft: 'auto', fontSize: 10, color: '#94a3b8' }}>
                             {j.dateTime
-                              ? new Date(j.dateTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+                              ? parseUtcDate(j.dateTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
                               : j.date}
                           </span>
                         )}
@@ -2467,7 +2496,7 @@ function TrendsCalendar({ authHeaders }) {
           {(calTip.item.dateTime || calTip.item.date) && (
             <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 6 }}>
               {calTip.item.dateTime
-                ? new Date(calTip.item.dateTime).toLocaleString()
+                ? parseUtcDate(calTip.item.dateTime).toLocaleString()
                 : calTip.item.date}
             </div>
           )}
@@ -2684,7 +2713,7 @@ function CompetitorTab({ authHeaders }) {
                       </div>
                     </div>
                     <div style={{ fontSize: 11, color: '#94a3b8', flexShrink: 0 }}>
-                      {v.publishedAt ? new Date(v.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}
+                      {v.publishedAt ? parseUtcDate(v.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}
                     </div>
                   </div>
                 ))}
@@ -2746,11 +2775,15 @@ export default function DeepAnalytics() {
   const [snapMsg,      setSnapMsg]      = useState('');
   const platformForApi = platform === 'all' ? 'instagram' : platform;
 
+  // Only accept 2xx JSON — 4xx/5xx error bodies were being stored as state and
+  // breaking downstream renders (blank-page React crash when switching platform).
+  const safeJson = (r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)));
+
   const fetchHistory = useCallback(() => {
     setLoadHistory(true);
     fetch(`${API}/api/analytics/history?platform=${platformForApi}&days=${days}`, { headers: authHeaders() })
-      .then(r => r.json())
-      .then(setHistory)
+      .then(safeJson)
+      .then((data) => setHistory(data && typeof data === 'object' ? data : null))
       .catch(() => setHistory(null))
       .finally(() => setLoadHistory(false));
   }, [platformForApi, days, authHeaders]);
@@ -2759,8 +2792,8 @@ export default function DeepAnalytics() {
     setLoadBestTime(true);
     const q = new URLSearchParams({ platform: platformForApi });
     fetch(`${API}/api/analytics/best-time?${q}`, { headers: authHeaders() })
-      .then(r => r.json())
-      .then(setBestTime)
+      .then(safeJson)
+      .then((data) => setBestTime(data && typeof data === 'object' ? data : null))
       .catch(() => setBestTime(null))
       .finally(() => setLoadBestTime(false));
   }, [platformForApi, authHeaders]);
@@ -2769,8 +2802,8 @@ export default function DeepAnalytics() {
     setLoadPerf(true);
     const q = new URLSearchParams({ platform: platformForApi });
     fetch(`${API}/api/analytics/post-performance?${q}`, { headers: authHeaders() })
-      .then((r) => r.json())
-      .then(setPostPerf)
+      .then(safeJson)
+      .then((data) => setPostPerf(data && typeof data === 'object' ? data : null))
       .catch(() => setPostPerf(null))
       .finally(() => setLoadPerf(false));
   }, [platformForApi, authHeaders]);
@@ -2914,9 +2947,16 @@ export default function DeepAnalytics() {
           ) : !bestTime ? (
             <p style={{ color: '#94a3b8', fontSize: 13 }}>Could not load best time data.</p>
           ) : !bestTimeResolved ? (
-            <BestTimeEmptyGuide platformLabel={platformConfig.label} platformColor={platformConfig.color} />
+            // Wrapped with a stable key so React cleanly unmounts the empty-guide
+            // tree when switching to the resolved tree (and vice versa). Prevents
+            // the "removeChild: not a child of this node" reconciliation crash
+            // when these two shape-incompatible branches swap during a
+            // platform-change re-render.
+            <div key="bt-empty">
+              <BestTimeEmptyGuide platformLabel={platformConfig.label} platformColor={platformConfig.color} />
+            </div>
           ) : (
-            <>
+            <div key="bt-resolved">
               <BestTimeGuidancePanel
                 resolved={bestTimeResolved}
                 platformLabel={platformConfig.label}
@@ -2928,7 +2968,7 @@ export default function DeepAnalytics() {
                 postsDetail={bestTime.postsDetail || []}
                 platformLabel={platformConfig.label}
               />
-            </>
+            </div>
           )}
         </div>
       </section>
@@ -2979,7 +3019,9 @@ export default function DeepAnalytics() {
       <section id="trends-competitor" style={{ scrollMarginTop: 12 }}>
         <div style={s.card}>
           <h3 style={s.cardTitle}>🔍 YouTube Competitor Analysis</h3>
-          <CompetitorTab authHeaders={authHeaders} />
+          {/* key forces clean remount on platform change — avoids internal-state
+              staleness and sidesteps reconciliation for this big subtree. */}
+          <CompetitorTab key={`competitor-${platform}`} authHeaders={authHeaders} />
         </div>
       </section>
       </SectionErrorBoundary>
@@ -2992,7 +3034,7 @@ export default function DeepAnalytics() {
           <p style={{ fontSize: 12, color: '#94a3b8', marginBottom: 16 }}>
             View all your published and scheduled posts by month. The <strong>Best Time</strong> section above shows which days and hours you post most often.
           </p>
-          <TrendsCalendar authHeaders={authHeaders} />
+          <TrendsCalendar key={`calendar-${platform}`} authHeaders={authHeaders} />
         </div>
       </section>
       </SectionErrorBoundary>
@@ -3005,7 +3047,8 @@ export default function DeepAnalytics() {
 const s = {
   wrap: {
     width: '100%', maxWidth: '100%', margin: 0,
-    padding: '8px 4px 24px', boxSizing: 'border-box',
+    // Top padding raised to clear the App Launcher (22px tall, hangs 18px below topbar).
+    padding: '28px 4px 24px', boxSizing: 'border-box',
     fontFamily: "'Inter', -apple-system, sans-serif",
   },
   chartStretch: { width: '100%', minHeight: 200 },

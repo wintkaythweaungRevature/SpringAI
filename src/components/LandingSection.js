@@ -333,6 +333,7 @@ function HeroPlatformsUnderNote() {
 /* ─── Data ─────────────────────────────────────────────────── */
 
 const features = [
+  // ── Free Tools ──
   {
     icon: "🤖",
     title: "Ask AI – Instant Answers",
@@ -349,61 +350,188 @@ const features = [
     badge: "Free",
     slug: "recipe-generator",
   },
+  // ── Publishing & Scheduling ──
+  {
+    icon: "🎬",
+    title: "Video Publisher – One Video, Every Platform",
+    description:
+      "One upload — right format, framing, and AI captions per network. Thumbnail picker, schedule or publish instantly to YouTube, Instagram, TikTok, Facebook, LinkedIn, X, Threads & Pinterest.",
+    badge: "Starter",
+    slug: "video-publisher",
+  },
+  {
+    icon: "📅",
+    title: "Content Calendar – Visual Schedule",
+    description:
+      "See your entire month at a glance. Drag-and-drop scheduling, holiday markers, post status tracking (Published, Scheduled, Draft, Failed), and a feed grid view for published content.",
+    badge: "Starter",
+    slug: "content-calendar",
+  },
+  {
+    icon: "🎨",
+    title: "Design Templates – 84 Ready-Made Designs",
+    description:
+      "Professional social media designs with customizable themes. Preview, fill in your brand details, download as PNG/JPG/PDF, or send the caption straight to Video Publisher.",
+    badge: "Starter",
+    slug: "caption-templates",
+  },
+  // ── Analytics & Growth ──
+  {
+    icon: "📊",
+    title: "Analytics Dashboard",
+    description:
+      "Real-time follower counts, engagement rates, content performance, and month-by-month growth trends across all connected platforms in one unified view.",
+    badge: "Starter",
+    slug: "analytics",
+  },
+  {
+    icon: "📈",
+    title: "Growth Planner – Deep Analytics",
+    description:
+      "AI-powered best-time-to-post forecasts, engagement heatmaps by day and hour, platform comparison charts, YouTube competitor analysis, and a posts calendar with scheduling insights.",
+    badge: "Pro",
+    slug: "growth-planner",
+  },
+  // ── AI-Powered Creation ──
+  {
+    icon: "🖼️",
+    title: "AI Image Generator",
+    description:
+      "Turn text prompts into stunning images for posts, ads, and thumbnails. Choose between creative (DALL-E 3) and photorealistic (Stability AI) styles.",
+    badge: "Starter",
+    slug: "image-generator",
+  },
+  {
+    icon: "🧠",
+    title: "AI Workspace – Your Content Team",
+    description:
+      "Three AI agents work for you daily: a Strategist suggests optimal post times, a Writer drafts on-brand captions, and an Analyst delivers weekly performance insights. Approve drafts and they go straight to Video Publisher.",
+    badge: "Pro",
+    slug: "ai-workspace",
+  },
+  {
+    icon: "🔥",
+    title: "Viral Hooks Generator",
+    description:
+      "Enter your topic and get scroll-stopping hooks for every platform. AI analyzes what makes content go viral and generates attention-grabbing openers tailored to your brand voice.",
+    badge: "Starter",
+    slug: "viral-hooks",
+  },
+  // ── Communication & Engagement ──
+  {
+    icon: "💬",
+    title: "Unified Inbox – All Messages in One Place",
+    description:
+      "DMs, comments, and mentions from Instagram, Facebook, YouTube, TikTok, LinkedIn, and X — all in a single conversation view. Reply without switching apps.",
+    badge: "Pro",
+    slug: "messages",
+  },
+  {
+    icon: "⚡",
+    title: "Auto-Reply – 24/7 AI Engagement",
+    description:
+      "Set up AI-powered auto-replies for comments across all platforms. Custom prompt templates, keyword filters, daily limits, and test mode — your audience gets replies even while you sleep.",
+    badge: "Pro",
+    slug: "auto-reply",
+  },
+  // ── Content Optimization ──
+  {
+    icon: "🔗",
+    title: "URL Repurposer – Article to Social Posts",
+    description:
+      "Paste any article URL and get platform-optimized social posts in seconds. AI extracts key points, generates captions with hashtags, and adapts tone per platform.",
+    badge: "Pro",
+    slug: "url-repurpose",
+  },
+  {
+    icon: "♻️",
+    title: "Video Recycler – Repurpose Long-Form Content",
+    description:
+      "Turn YouTube videos and long-form content into short-form clips for TikTok, Reels, and Shorts. Auto-transcription, subtitle overlays, and platform-specific formatting.",
+    badge: "Pro",
+    slug: "video-recycler",
+  },
+  {
+    icon: "🔮",
+    title: "Trend Hijacker – Ride Viral Waves",
+    description:
+      "Real-time trending topics across platforms with AI-suggested post ideas. Get ahead of trends before they peak — with viral score predictions and content angle suggestions.",
+    badge: "Pro",
+    slug: "trends-live",
+  },
+  {
+    icon: "🩺",
+    title: "Self-Healing Content",
+    description:
+      "AI monitors your published posts and suggests improvements: rewording, hashtag swaps, timing adjustments, and creative refreshes for underperforming content.",
+    badge: "Pro",
+    slug: "self-heal",
+  },
+  {
+    icon: "🛡️",
+    title: "Brand Guardian – Reputation Monitor",
+    description:
+      "Track brand mentions across Reddit, X, Instagram, LinkedIn, and news. Real-time sentiment analysis, crisis alerts, and AI-generated response templates to protect your reputation.",
+    badge: "Pro",
+    slug: "brand-guardian",
+  },
+  // ── Document & Productivity Tools ──
   {
     icon: "📄",
     title: "DocuWizard – PDF & Document AI",
     description:
-      "Upload PDF, Excel, or Word files and extract structured data in seconds. Summarize reports, convert PDF tables to Excel, and analyze invoices with AI.",
-    badge: "Member",
+      "Upload PDF, Excel, or Word files and extract structured data in seconds. Summarize reports, convert PDF tables to Excel, and ask questions about your documents.",
+    badge: "Starter",
     slug: "docuwizard",
   },
   {
     icon: "🎤",
     title: "EchoScribe – Voice Transcription",
     description:
-      "Convert audio recordings and live speech to accurate text. Transcribe meetings, lectures, and interviews — then summarize or translate the output.",
-    badge: "Member",
+      "Convert audio recordings to accurate text with speaker identification, timestamps, and multi-language support. Then summarize, translate, or extract action items.",
+    badge: "Pro",
     slug: "echoscribe",
-  },
-  {
-    icon: "🖼️",
-    title: "AI Image Generator",
-    description:
-      "Turn text prompts into images for posts, ads, and channel art. For each video upload, Video Publisher also includes a thumbnail picker: scrub any frame or use AI-suggested stills before you publish.",
-    badge: "Member",
-    slug: "image-generator",
   },
   {
     icon: "✉️",
     title: "Reply Enchanter – AI Email Writer",
     description:
       "Paste any email and get a polished AI-drafted reply instantly. Choose your tone — professional, friendly, casual, or urgent — and send with confidence.",
-    badge: "Member",
+    badge: "Starter",
     slug: "reply-enchanter",
   },
   {
     icon: "📝",
-    title: "Resume Warlock – Interview Prep AI",
+    title: "Career Alchemist – Interview Prep AI",
     description:
-      "Upload your resume and receive AI-generated interview questions tailored to your experience. Practice answers, sharpen weak areas, and land your next role.",
-    badge: "Member",
+      "Upload your resume and receive AI-generated interview questions tailored to your experience. Practice answers, identify weak areas, and ace your next interview.",
+    badge: "Starter",
     slug: "resume-warlock",
   },
+  // ── Asset & Team Management ──
   {
-    icon: "🎬",
-    title: "Video Publisher – One Video, Every Platform",
+    icon: "📁",
+    title: "Asset Library – Organized Media Hub",
     description:
-      "One upload — right format, framing, and captions per network. Thumbnail picker, AI frames, schedule or publish.",
-    badge: "Member",
-    slug: "video-publisher",
+      "Upload, organize, and reuse media across all your posts. Folder-based organization, batch upload, and performance analytics per asset.",
+    badge: "Pro",
+    slug: "asset-library",
   },
   {
-    icon: "🚀",
-    title: "Creator Suite – Grow, Automate & Analyze",
+    icon: "🔗",
+    title: "Link in Bio – Your Landing Page",
     description:
-      "Everything to grow your audience in one place: follower growth charts, best-time forecasts, AI content ideas from your data, auto-reply to comments, link-in-bio page, and a full analytics dashboard.",
-    badge: "Member",
-    slug: "creator-suite",
+      "A customizable landing page with unlimited links, click tracking, theme colors, and analytics. Share one link that showcases everything — no coding required.",
+    badge: "Starter",
+    slug: "link-in-bio",
+  },
+  {
+    icon: "👥",
+    title: "Workspaces & Teams",
+    description:
+      "Create isolated workspaces for different clients or projects. Invite team members with role-based permissions (Owner, Admin, Member, Client), manage who can publish, and keep content separate.",
+    badge: "Pro",
+    slug: "workspaces",
   },
 ];
 
@@ -437,6 +565,389 @@ const landingGallery = [
   "c__Users_wintk_AppData_Roaming_Cursor_User_workspaceStorage_69bc542c894986623db97e4396cf2017_images_image-0efb6809-0160-4e90-b47a-6c7def0d94e7.png",
 ];
 
+/* ─── Feature Showcase (tabbed by use case) ──────────────────── */
+
+const FEATURE_TABS = [
+  {
+    id: 'creators',
+    label: '🎬 For Creators',
+    hero: {
+      icon: '🎬', name: 'Publish Everywhere — In Your Brand Voice',
+      desc: 'Upload one video and publish to YouTube, Instagram Reels, TikTok, Facebook, LinkedIn, X, Threads & Pinterest. AI generates captions, hashtags, and content ideas that match YOUR brand voice, tone, and key phrases — not generic filler. Every piece of content sounds like you wrote it.',
+      accent: '#6366f1',
+    },
+    items: [
+      { icon: '📅', name: 'Content Calendar',    desc: 'Drag-and-drop scheduling with month view', accent: '#0ea5e9',
+        preview: '/features/content-calendar.png',
+        long: 'A bird’s-eye view of every post across every channel. Drag a post to reschedule, click to preview, and filter by platform with one tap.',
+        bullets: ['Month + feed grid views', 'Drag & drop reschedule', 'Per-platform colored chips', 'Holiday & awareness-day markers'] },
+      { icon: '🧠', name: 'AI Workspace',         desc: 'Writer, Strategist & Analyst draft in your brand voice daily', accent: '#7c3aed',
+        long: 'Three AI agents run every morning. Strategist picks the topic, Writer drafts the caption in your tone, Analyst reports what worked yesterday.',
+        bullets: ['Daily brand-voice drafts', 'One-click approve → publish', 'Performance reports every AM', 'Learns from your feedback'] },
+      { icon: '🔥', name: 'Viral Hooks',          desc: 'On-brand scroll-stopping openers', accent: '#ef4444',
+        long: 'Never start a post with “Hey guys” again. Get 10 hook options tuned to your niche, voice, and platform — in seconds.',
+        bullets: ['10 hooks per generation', 'Tuned to your niche', 'Platform-specific formats', 'Saves to your library'] },
+      { icon: '🎨', name: 'Design Templates',     desc: '84 designs with your brand colors & style', accent: '#ec4899',
+        long: '84 ready-to-edit templates that auto-apply your brand palette, fonts, and logo. Built for Reels, carousels, stories, and thumbnails.',
+        bullets: ['84 hand-picked designs', 'Auto brand colors & fonts', 'Export for every platform', 'Unlimited edits'] },
+      { icon: '🖼️', name: 'Image Generator',     desc: 'AI art that matches your visual identity', accent: '#f59e0b',
+        long: 'Describe what you need; get imagery that respects your brand palette and mood. No more off-brand stock photos.',
+        bullets: ['Brand-palette aware', 'HD downloads', 'Consistent style across posts', 'Unlimited on paid plans'] },
+      { icon: '♻️', name: 'Video Recycler',       desc: 'Repurpose in your voice for Reels/Shorts', accent: '#14b8a6',
+        long: 'Feed it a long video; get a pack of short-form cuts with captions rewritten in your voice — ready for Reels, TikTok, and Shorts.',
+        bullets: ['Auto-cut highlights', 'Captions in your voice', 'Aspect-ratio resize', 'One-click publish'] },
+      { icon: '🔗', name: 'URL Repurposer',       desc: 'Articles → on-brand social posts', accent: '#6366f1',
+        long: 'Paste any blog URL. Out comes a set of social posts — LinkedIn long-form, X thread, Facebook share, Instagram carousel — all in your tone.',
+        bullets: ['Blog → 4 post formats', 'Tone-matched to your brand', 'Auto-schedule all at once', 'Works on any public URL'] },
+    ],
+  },
+  {
+    id: 'business',
+    label: '💼 For Business',
+    hero: {
+      icon: '💬', name: 'Engage Your Audience — In Your Brand Voice',
+      desc: 'Every DM, comment, and mention from all your social platforms in one inbox. AI auto-replies use your brand personality, tone, and key phrases — so every response sounds authentically you, even at 3 AM. Your audience feels heard; you stay focused on growth.',
+      accent: '#f59e0b',
+    },
+    items: [
+      { icon: '📊', name: 'Analytics Dashboard',  desc: 'Track what resonates with your audience', accent: '#3b82f6',
+        long: 'See impressions, clicks, follows, and engagement rolled up per workspace — with AI commentary explaining *why* a post took off.',
+        bullets: ['Per-workspace roll-ups', 'AI "why it worked" summary', 'Top 10 posts leaderboard', 'Export CSV / PDF'] },
+      { icon: '📈', name: 'Growth Planner',        desc: 'Best-time forecasts tuned to your niche', accent: '#10b981',
+        long: 'Ask it when to post. It answers based on YOUR followers’ active hours and past engagement — not generic "Tuesday 10am" advice.',
+        bullets: ['Per-platform best times', 'Weekly growth forecast', 'Follower chart by workspace', 'Auto-fill scheduler'] },
+      { icon: '🛡️', name: 'Brand Guardian',       desc: 'Protect your brand reputation in real-time', accent: '#ef4444',
+        long: 'Track up to 10 keywords across Reddit and X. Sentiment-tagged mentions stream in live — respond before a complaint turns into a crisis.',
+        bullets: ['Reddit + X live scan', 'Positive / neutral / negative tags', 'AI draft-response button', 'No history bloat (live only)'] },
+      { icon: '🔮', name: 'Trend Hijacker',        desc: 'Jump on trends with on-brand content ideas', accent: '#a855f7',
+        long: 'Surfaces trending topics in your industry and drafts post ideas that tie the trend to your brand — so you ride waves without sounding off-brand.',
+        bullets: ['Daily trending topics', 'Brand-aware post ideas', 'One-click to AI Workspace', 'Filter by platform'] },
+      { icon: '🩺', name: 'Self-Healing Content',  desc: 'AI rewrites underperformers in your voice', accent: '#f97316',
+        long: 'Old posts flatlining? Self-Healing finds them, rewrites captions in your current voice, and reschedules for your best time slot.',
+        bullets: ['Auto-detects low performers', 'Rewrite in current voice', 'Auto-reschedule', 'A/B-tracks the rewrite'] },
+      { icon: '👥', name: 'Workspaces & Teams',    desc: 'Each client gets their own brand environment', accent: '#6366f1',
+        long: 'Agency-ready. Every workspace has its own brand voice, assets, posts, analytics, and team permissions — fully isolated from the others.',
+        bullets: ['Unlimited workspaces (paid)', 'Per-workspace brand voice', 'Granular team permissions', 'Strict data isolation'] },
+      { icon: '🔗', name: 'Link in Bio',           desc: 'Branded landing page with your colors', accent: '#ec4899',
+        long: 'A single URL for your bio that carries your brand colors, logo, and every link you care about. Click-tracked, mobile-first.',
+        bullets: ['Auto-branded theme', 'Unlimited links', 'Click analytics', 'Custom slug'] },
+    ],
+  },
+  {
+    id: 'productivity',
+    label: '⚡ Productivity',
+    hero: {
+      icon: '📄', name: 'AI That Knows Your Context',
+      desc: 'Upload documents, transcribe meetings, or ask anything — and the AI responds with your brand context in mind. DocuWizard summarizes with your terminology, EchoScribe transcribes with your team names, and Ask AI brainstorms ideas aligned with your brand direction.',
+      accent: '#14b8a6',
+    },
+    items: [
+      { icon: '🤖', name: 'Ask AI',               desc: 'Brand-aware brainstorming & answers 24/7', accent: '#14b8a6',
+        long: 'A chat that already knows your brand voice, audience, and goals — so the first answer is usable, not a generic template.',
+        bullets: ['Loaded with your brand DNA', 'Unlimited chats (paid)', 'File & URL context', 'Export answers to posts'] },
+      { icon: '✉️', name: 'Reply Enchanter',      desc: 'Email replies that match your professional voice', accent: '#0ea5e9',
+        long: 'Paste a tough email. Get three reply drafts — friendly, firm, and formal — all in your professional tone. Pick, tweak, send.',
+        bullets: ['3 tone variants every draft', 'Matches your written style', 'Pastes back in one click', 'Saves your common phrases'] },
+      { icon: '📝', name: 'Career Alchemist',      desc: 'Interview prep tailored to your experience', accent: '#8b5cf6',
+        long: 'Upload your resume and the JD. Get likely interview questions plus answers that use your actual experience — not generic STAR templates.',
+        bullets: ['JD + resume aware', '20+ mock questions', 'Personalized STAR answers', 'Practice mode with timer'] },
+      { icon: '🍳', name: 'Recipe Generator',      desc: 'Ingredients in → recipes out (free forever)', accent: '#f59e0b',
+        long: 'Type what’s in your fridge. Get a recipe back. Free forever. Because sometimes you just need dinner and a smile.',
+        bullets: ['Free on every plan', 'Uses what you already have', 'Dietary filters', 'One-click save'] },
+      { icon: '📁', name: 'Asset Library',         desc: 'Your media organized with brand tags', accent: '#64748b',
+        long: 'Every image, video, and clip you’ve uploaded — auto-tagged with brand categories so you can find the exact asset in seconds.',
+        bullets: ['Auto brand-tagging', 'Search by mood / color', 'One-click re-use in posts', 'Cloud sync'] },
+    ],
+  },
+];
+
+function FeatureShowcase({ features, onOpenVideoPublisher }) {
+  const [activeTab, setActiveTab] = useState('creators');
+  // Hover popup state: { item, x, y, flipBelow }
+  const [hover, setHover] = useState(null);
+  const tab = FEATURE_TABS.find(t => t.id === activeTab) || FEATURE_TABS[0];
+
+  // Compute popup position relative to the hovered card. Flips below the card
+  // if there isn't enough space above.
+  const openHover = (item, el) => {
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const flipBelow = rect.top < 260; // not enough room above — show under instead
+    setHover({
+      item,
+      x: rect.left + rect.width / 2,
+      y: flipBelow ? rect.bottom + 10 : rect.top - 10,
+      flipBelow,
+    });
+  };
+  const closeHover = () => setHover(null);
+
+  return (
+    <section
+      id="features"
+      aria-labelledby="features-heading"
+      style={{
+        padding: '80px 24px',
+        // Transparent so the page's radial-blob gradient shows through; no more bright white gap
+        background: 'transparent',
+        position: 'relative',
+        zIndex: 1,
+      }}
+    >
+      <h2 id="features-heading" style={{ textAlign: 'center', fontSize: '2.25rem', fontWeight: 800, color: '#f1f5f9', marginBottom: 10, letterSpacing: '-0.02em' }}>
+        Everything you need. One platform.
+      </h2>
+      <p style={{ textAlign: 'center', color: '#cbd5e1', fontSize: 16, maxWidth: 540, margin: '0 auto 40px', lineHeight: 1.6 }}>
+        Choose your path — whether you create content, grow a brand, or boost productivity.
+      </p>
+
+      {/* Tabs — frosted pill style */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 10, marginBottom: 40, flexWrap: 'wrap' }}>
+        {FEATURE_TABS.map(t => (
+          <button
+            key={t.id}
+            onClick={() => setActiveTab(t.id)}
+            style={{
+              padding: '11px 24px', borderRadius: 12, cursor: 'pointer',
+              fontSize: 14, fontWeight: 700, transition: 'all 0.2s',
+              background: activeTab === t.id ? 'rgba(255,255,255,0.12)' : 'transparent',
+              backdropFilter: activeTab === t.id ? 'blur(14px) saturate(160%)' : 'none',
+              WebkitBackdropFilter: activeTab === t.id ? 'blur(14px) saturate(160%)' : 'none',
+              color: activeTab === t.id ? '#f1f5f9' : '#94a3b8',
+              border: activeTab === t.id ? '1px solid rgba(255,255,255,0.22)' : '1px solid transparent',
+              boxShadow: activeTab === t.id ? 'inset 0 1px 0 rgba(255,255,255,0.14), 0 8px 24px rgba(0,0,0,0.3)' : 'none',
+            }}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Hero feature — large frosted-glass card */}
+      <div style={{
+        maxWidth: 880, margin: '0 auto 28px', padding: '32px 36px',
+        background: 'linear-gradient(145deg, rgba(255,255,255,0.09), rgba(255,255,255,0.03))',
+        backdropFilter: 'saturate(180%) blur(22px)',
+        WebkitBackdropFilter: 'saturate(180%) blur(22px)',
+        border: '1px solid rgba(255,255,255,0.18)',
+        borderLeft: `4px solid ${tab.hero.accent}`, borderRadius: 18,
+        boxShadow: '0 20px 50px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.12)',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14 }}>
+          <span style={{ fontSize: '2.4rem' }}>{tab.hero.icon}</span>
+          <h3 style={{ fontSize: 22, fontWeight: 800, color: '#f1f5f9', margin: 0, letterSpacing: '-0.01em' }}>{tab.hero.name}</h3>
+        </div>
+        <p style={{ fontSize: 15.5, color: '#cbd5e1', lineHeight: 1.7, margin: 0 }}>{tab.hero.desc}</p>
+        {onOpenVideoPublisher && tab.id === 'creators' && (
+          <button type="button" onClick={onOpenVideoPublisher}
+            style={{ marginTop: 18, padding: '11px 26px', borderRadius: 10, border: 'none',
+              background: 'linear-gradient(135deg, #ec4899, #f43f5e)',
+              color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer',
+              boxShadow: '0 4px 14px rgba(236,72,153,0.35)' }}>
+            Try Video Publisher →
+          </button>
+        )}
+      </div>
+
+      {/* Secondary features — light card grid */}
+      <div style={{
+        maxWidth: 880, margin: '0 auto',
+        display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 14,
+      }}>
+        {tab.items.map(item => (
+          <div key={item.name} style={{
+            display: 'flex', alignItems: 'flex-start', gap: 12, padding: '16px 18px',
+            background: 'linear-gradient(145deg, rgba(255,255,255,0.07), rgba(255,255,255,0.02))',
+            backdropFilter: 'saturate(180%) blur(18px)',
+            WebkitBackdropFilter: 'saturate(180%) blur(18px)',
+            border: '1px solid rgba(255,255,255,0.14)',
+            borderRadius: 12,
+            boxShadow: '0 12px 30px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.1)',
+            transition: 'transform 0.15s, box-shadow 0.15s, border-color 0.15s',
+            cursor: 'pointer',
+          }}
+            onMouseEnter={e => {
+              e.currentTarget.style.boxShadow = `0 16px 40px ${item.accent || '#6366f1'}44, inset 0 1px 0 rgba(255,255,255,0.16)`;
+              e.currentTarget.style.transform = 'translateY(-3px)';
+              e.currentTarget.style.borderColor = `${item.accent || '#6366f1'}88`;
+              openHover(item, e.currentTarget);
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.boxShadow = '0 12px 30px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.1)';
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.14)';
+              closeHover();
+            }}
+          >
+            <span style={{ fontSize: '1.4rem', flexShrink: 0 }}>{item.icon}</span>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#f1f5f9' }}>{item.name}</div>
+              <div style={{ fontSize: 12, color: '#cbd5e1', lineHeight: 1.5, marginTop: 3 }}>{item.desc}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Hover popup — rich preview card matching landing page style */}
+      {hover?.item && (() => {
+        const a = hover.item.accent || '#6366f1';
+        return (
+        <div
+          role="tooltip"
+          onMouseEnter={() => setHover(hover)}
+          onMouseLeave={closeHover}
+          style={{
+            position: 'fixed',
+            left: hover.x,
+            top: hover.y,
+            transform: hover.flipBelow ? 'translate(-50%, 0)' : 'translate(-50%, -100%)',
+            width: 340,
+            background: '#ffffff',
+            border: '1px solid #e2e8f0',
+            borderRadius: 16,
+            boxShadow: `0 24px 60px ${a}33, 0 8px 24px rgba(15,23,42,0.12)`,
+            overflow: 'hidden',
+            zIndex: 2000,
+            animation: 'wintFeaturePopIn 0.18s ease-out',
+            pointerEvents: 'auto',
+          }}
+        >
+          {/* Visual preview banner — real screenshot if provided, else colored gradient + emoji */}
+          {hover.item.preview ? (
+            <div style={{
+              position: 'relative',
+              height: 180,
+              background: `linear-gradient(135deg, ${a}18, ${a}08)`,
+              overflow: 'hidden',
+              borderBottom: `1px solid ${a}22`,
+            }}>
+              <img
+                src={hover.item.preview}
+                alt={`${hover.item.name} preview`}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  objectPosition: 'top center',
+                  display: 'block',
+                }}
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+              />
+              {/* Feature-name badge bottom-left */}
+              <div style={{
+                position: 'absolute',
+                bottom: 10, left: 12,
+                padding: '4px 10px',
+                background: 'rgba(255,255,255,0.95)',
+                borderRadius: 20,
+                fontSize: 10, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase',
+                color: a,
+                boxShadow: '0 2px 8px rgba(15,23,42,0.12)',
+              }}>
+                {hover.item.icon} {hover.item.name}
+              </div>
+            </div>
+          ) : (
+            <div style={{
+              position: 'relative',
+              height: 110,
+              background: `linear-gradient(135deg, ${a}, ${a}cc 60%, ${a}88)`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              overflow: 'hidden',
+            }}>
+              {/* Subtle dot grid pattern */}
+              <div style={{
+                position: 'absolute', inset: 0,
+                backgroundImage: 'radial-gradient(rgba(255,255,255,0.25) 1px, transparent 1px)',
+                backgroundSize: '14px 14px',
+                opacity: 0.6,
+              }} />
+              {/* Soft glow behind emoji */}
+              <div style={{
+                position: 'absolute',
+                width: 180, height: 180,
+                background: 'radial-gradient(closest-side, rgba(255,255,255,0.35), transparent)',
+                borderRadius: '50%',
+                filter: 'blur(2px)',
+              }} />
+              {/* Big emoji */}
+              <span style={{
+                position: 'relative',
+                fontSize: '3.6rem',
+                filter: 'drop-shadow(0 6px 14px rgba(0,0,0,0.18))',
+              }}>{hover.item.icon}</span>
+              {/* Feature-name badge bottom-left */}
+              <div style={{
+                position: 'absolute',
+                bottom: 10, left: 12,
+                padding: '4px 10px',
+                background: 'rgba(255,255,255,0.9)',
+                borderRadius: 20,
+                fontSize: 10, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase',
+                color: a,
+              }}>
+                {hover.item.name}
+              </div>
+            </div>
+          )}
+
+          {/* Body */}
+          <div style={{ padding: '16px 20px 18px' }}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: '#0f172a', letterSpacing: '-0.01em', marginBottom: 8 }}>
+              {hover.item.name}
+            </div>
+            <p style={{ fontSize: 13, color: '#475569', lineHeight: 1.6, margin: '0 0 12px' }}>
+              {hover.item.long || hover.item.desc}
+            </p>
+            {hover.item.bullets && (
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {hover.item.bullets.map(b => (
+                  <li key={b} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 12.5, color: '#334155' }}>
+                    <span style={{ color: a, fontWeight: 800, flexShrink: 0 }}>✓</span>
+                    <span>{b}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+        );
+      })()}
+      <style>{`
+        @keyframes wintFeaturePopIn {
+          from { opacity: 0; transform: translate(-50%, -100%) translateY(6px); }
+          to   { opacity: 1; transform: translate(-50%, -100%) translateY(0); }
+        }
+      `}</style>
+
+      {/* All plans include */}
+      <div style={{
+        maxWidth: 880, margin: '40px auto 0', padding: '22px 28px',
+        background: 'linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03))',
+        backdropFilter: 'saturate(180%) blur(20px)',
+        WebkitBackdropFilter: 'saturate(180%) blur(20px)',
+        border: '1px solid rgba(255,255,255,0.16)',
+        borderRadius: 14,
+        textAlign: 'center',
+        boxShadow: '0 16px 40px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.12)',
+      }}>
+        <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 14 }}>
+          All plans include
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px 20px', justifyContent: 'center' }}>
+          {['Your Brand Voice in Every AI Output', '8 Social Platforms', 'AI Captions & Hashtags', 'Brand Profile & Key Phrases', 'Content Calendar', 'Link in Bio', 'Ask AI Chatbot', 'No Per-Channel Fees'].map(item => (
+            <span key={item} style={{ fontSize: 13, color: '#cbd5e1', display: 'flex', alignItems: 'center', gap: 7 }}>
+              <span style={{ color: '#10b981', fontWeight: 800, fontSize: 14 }}>✓</span> {item}
+            </span>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 /* ─── Component ─────────────────────────────────────────────── */
 
 export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideoPublisher }) {
@@ -465,8 +976,9 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
                   role="heading"
                   aria-level={1}
                 >
-                  <div className="ls-hero-h1-line">If You Can Record It,</div>
-                  <div className="ls-hero-h1-line ls-hero-h1-accent">We Can Post It.</div>
+                  <div className="ls-hero-h1-line ls-hero-h1-line--wide">
+                    If You Can Record It, <span className="ls-hero-h1-accent">We Can Post It.</span>
+                  </div>
                 </div>
               </div>
               <div className="ls-hero-copy__block ls-hero-copy__block--tagline">
@@ -503,63 +1015,7 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
         </div>
       </section>
 
-      {/* ── WHAT IS WINTAIBOT ───────────────────────────────── */}
-      <section className="ls-section ls-what" aria-labelledby="what-heading">
-        <div className="ls-what-header">
-          <div className="ls-what-header__text">
-            <h2 id="what-heading">One workspace.<br/>Not five subscriptions.</h2>
-            <p className="ls-what-short">
-              <strong>W!ntAi</strong> combines every tool a creator needs — video publishing, scheduling, inbox, analytics, AI writing, image generation, and more — in a single login.
-            </p>
-            <div className="ls-stat-row">
-              <div className="ls-stat"><span className="ls-stat-num">8</span><span>AI Tools</span></div>
-              <div className="ls-stat"><span className="ls-stat-num">Free</span><span>To Start</span></div>
-              <div className="ls-stat"><span className="ls-stat-num">$19+</span><span>Paid plans / mo</span></div>
-              <div className="ls-stat"><span className="ls-stat-num">0</span><span>Installs Required</span></div>
-            </div>
-          </div>
-
-          {/* Tool cards grid — visually distinct from hero */}
-          <div className="ls-tool-grid" aria-label="All tools in W!ntAi">
-            {[
-              { emoji: '🎬', name: 'Video Publisher',   desc: 'Upload once, post everywhere',      accent: '#6366f1' },
-              { emoji: '📅', name: 'Content Calendar',  desc: 'Schedule & track posts',            accent: '#0ea5e9' },
-              { emoji: '📊', name: 'Analytics',         desc: 'Growth & engagement data',          accent: '#10b981' },
-              { emoji: '💬', name: 'Messages Inbox',    desc: 'DMs & comments in one place',       accent: '#f59e0b' },
-              { emoji: '🤖', name: 'Auto Reply',        desc: 'AI-powered smart responses',        accent: '#8b5cf6' },
-              { emoji: '🖼️', name: 'Image Generator',  desc: 'AI art for posts & thumbnails',     accent: '#ec4899' },
-              { emoji: '🎤', name: 'EchoScribe',        desc: 'Audio & video transcription',       accent: '#14b8a6' },
-              { emoji: '📄', name: 'DocuWizard',        desc: 'Summarize & analyze documents',     accent: '#f97316' },
-            ].map(({ emoji, name, desc, accent }) => (
-              <div key={name} className="ls-tool-card" style={{ '--tool-accent': accent }}>
-                <span className="ls-tool-card__icon">{emoji}</span>
-                <div>
-                  <div className="ls-tool-card__name">{name}</div>
-                  <div className="ls-tool-card__desc">{desc}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── ONE PLACE: SCHEDULE + INBOX + AUTO-REPLY ─────────── */}
-      <section className="ls-section ls-social-hub" aria-labelledby="social-hub-heading">
-        <h2 id="social-hub-heading">Schedule posts, read messages, automate replies — one login</h2>
-        <p className="ls-section-sub ls-social-hub-intro">
-          Creators shouldn&apos;t live in three tabs just to post, read messages, and answer fans.
-          In W!ntAi you <strong>schedule posts</strong> per platform, open <strong>Messages</strong> for DMs and comments,
-          and configure <strong>Auto Reply</strong> with <strong>AI on or off</strong> — your rules, your tone, your choice to automate or stay hands-on.
-          Pair that with <strong>Analytics</strong>, <strong>Trends</strong>, and <strong>Social AI</strong> to generate ideas and analyze what actually worked.
-        </p>
-        <p className="ls-social-hub-direct">
-          <strong>Direct publishing — we don&apos;t run your day on notifications.</strong>{" "}
-          Some apps feel like a full-time job of unlocking steps on your phone: wait for the buzz, tap through prompts, repeat.
-          W!ntAi is built the other way: <strong>you choose platforms and timing; we publish straight through</strong> when your content is ready.
-          The goal is clarity — fewer interruptions, less &ldquo;notification anxiety,&rdquo; more time creating — not a workflow designed to ping you all day.
-        </p>
-      </section>
-
+      {/* ── SHOWCASE ──────────────────────────────────────────── */}
       <section className="ls-section ls-gallery" aria-labelledby="gallery-heading">
         <h2 id="gallery-heading">Showcase</h2>
         <p className="ls-section-sub ls-section-sub--tight">
@@ -578,6 +1034,92 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
             ))}
           </div>
         </div>
+      </section>
+
+      {/* ── WHAT IS WINTAIBOT ───────────────────────────────── */}
+      <section id="use-cases" className="ls-section ls-what" aria-labelledby="what-heading">
+        <div className="ls-what-header">
+          {/* LEFT column — 5 killer feature cards */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 8 }}>
+            {[
+              { emoji: '🎬', name: 'Video Publisher',  desc: 'Upload once — auto-format & publish to YouTube, Instagram, TikTok, Facebook, LinkedIn, X, Threads & Pinterest in one click.', accent: '#6366f1' },
+              { emoji: '📅', name: 'Content Calendar', desc: 'Drag-and-drop scheduling, month view, post status tracking, holiday markers — see your entire content plan at a glance.', accent: '#0ea5e9' },
+              { emoji: '🧠', name: 'AI Workspace',     desc: 'Three AI agents draft captions, suggest post times, and analyze performance daily — approve and it goes straight to publish.', accent: '#7c3aed' },
+              { emoji: '📊', name: 'Analytics & Growth Planner', desc: 'Real-time follower counts, engagement heatmaps, best-time-to-post forecasts, and platform comparison — all in one dashboard.', accent: '#10b981' },
+              { emoji: '💬', name: 'Inbox & Auto-Reply', desc: 'Every DM, comment, and mention from all platforms in a single inbox. Set up AI auto-replies with your brand voice — engage 24/7.', accent: '#f59e0b' },
+            ].map(({ emoji, name, desc, accent }) => (
+              <div key={name} style={{
+                display: 'flex', alignItems: 'flex-start', gap: 14, padding: '16px 18px',
+                background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+                borderLeft: `3px solid ${accent}`, borderRadius: 12,
+              }}>
+                <span style={{ fontSize: '1.6rem', lineHeight: 1, flexShrink: 0, marginTop: 2 }}>{emoji}</span>
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: '#f1f5f9', marginBottom: 4 }}>{name}</div>
+                  <div style={{ fontSize: 13, color: '#94a3b8', lineHeight: 1.5 }}>{desc}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* RIGHT column — headline + description + "17+ more" */}
+          <div className="ls-what-header__text">
+            <h2 id="what-heading">One workspace.<br/>Not five subscriptions.</h2>
+            <p className="ls-what-short">
+              <strong>W!ntAi</strong> combines every tool a creator needs — video publishing, scheduling, inbox, analytics, AI writing, image generation, and more — in a single login.
+            </p>
+
+            {/* "17+ more tools" placed directly under the copy */}
+            <div style={{
+              display: 'flex', flexWrap: 'wrap', gap: 8,
+              padding: '18px 0 4px', borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: 22,
+            }}>
+              <div style={{ width: '100%', marginBottom: 10 }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#64748b', letterSpacing: '0.04em' }}>
+                  And 17+ more tools included
+                </span>
+              </div>
+              {[
+                '🔥 Viral Hooks', '🎨 Design Templates', '🖼️ Image Generator', '🔮 Trend Hijacker',
+                '🛡️ Brand Guardian', '♻️ Video Recycler', '🔗 URL Repurposer', '🩺 Self-Healing',
+                '📁 Asset Library', '🔗 Link in Bio', '👥 Workspaces & Teams',
+                '🎤 EchoScribe', '📄 DocuWizard', '✉️ Reply Enchanter', '📝 Career Alchemist',
+                '🤖 Ask AI', '🍳 Recipe Generator',
+              ].map(tool => (
+                <span key={tool} style={{
+                  fontSize: 11, fontWeight: 600, color: '#94a3b8',
+                  padding: '5px 12px', borderRadius: 20,
+                  background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+                }}>
+                  {tool}
+                </span>
+              ))}
+            </div>
+
+            <div className="ls-stat-row" style={{ marginTop: 24, justifyContent: 'flex-start' }}>
+              <div className="ls-stat"><span className="ls-stat-num">22</span><span>AI Tools</span></div>
+              <div className="ls-stat"><span className="ls-stat-num">Free</span><span>To Start</span></div>
+              <div className="ls-stat"><span className="ls-stat-num">$19+</span><span>Paid plans / mo</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── ONE PLACE: SCHEDULE + INBOX + AUTO-REPLY ─────────── */}
+      <section id="how-it-works" className="ls-section ls-social-hub" aria-labelledby="social-hub-heading">
+        <h2 id="social-hub-heading">Schedule posts, read messages, automate replies — one login</h2>
+        <p className="ls-section-sub ls-social-hub-intro">
+          Creators shouldn&apos;t live in three tabs just to post, read messages, and answer fans.
+          In W!ntAi you <strong>schedule posts</strong> per platform, open <strong>Messages</strong> for DMs and comments,
+          and configure <strong>Auto Reply</strong> with <strong>AI on or off</strong> — your rules, your tone, your choice to automate or stay hands-on.
+          Pair that with <strong>Analytics</strong>, <strong>Trends</strong>, and <strong>Social AI</strong> to generate ideas and analyze what actually worked.
+        </p>
+        <p className="ls-social-hub-direct">
+          <strong>Direct publishing — we don&apos;t run your day on notifications.</strong>{" "}
+          Some apps feel like a full-time job of unlocking steps on your phone: wait for the buzz, tap through prompts, repeat.
+          W!ntAi is built the other way: <strong>you choose platforms and timing; we publish straight through</strong> when your content is ready.
+          The goal is clarity — fewer interruptions, less &ldquo;notification anxiety,&rdquo; more time creating — not a workflow designed to ping you all day.
+        </p>
       </section>
 
       <section className="ls-section ls-seo-spotlight" aria-labelledby="seo-spotlight-heading">
@@ -655,110 +1197,8 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
         </ul>
       </section>
 
-      {/* ── FEATURES ────────────────────────────────────────── */}
-      <section className="ls-section" id="features" aria-labelledby="features-heading">
-        <h2 id="features-heading">Product showcase</h2>
-        <p className="ls-section-sub ls-section-sub--tight">
-          Video, documents, voice, and AI tools — <strong>one subscription</strong>, fewer tabs.
-        </p>
-        <div className="ls-features-grid" role="list">
-          {features.map((f) => (
-            <Link
-              key={f.title}
-              to={`/tools/${f.slug}`}
-              style={{ textDecoration: 'none', color: 'inherit', display: 'contents' }}
-            >
-              <article className="ls-feature-card ls-feature-card--linked" role="listitem">
-                <FeatureCardMotionGraphic slug={f.slug} />
-                <div className="ls-feature-top">
-                  <span className="ls-feature-icon" aria-hidden="true">{f.icon}</span>
-                  <span className={`ls-badge ls-badge--${f.badge.toLowerCase()}`}>{f.badge}</span>
-                </div>
-                <h3 className="ls-feature-title">{f.title}</h3>
-                <p className="ls-feature-desc">{f.description}</p>
-                {onOpenVideoPublisher && f.title.startsWith("Video Publisher") && (
-                  <button type="button" className="ls-btn-outline ls-feature-cta" onClick={(e) => { e.preventDefault(); onOpenVideoPublisher(); }}>
-                    Try Video Publisher →
-                  </button>
-                )}
-                <span className="ls-feature-learn">Learn more →</span>
-              </article>
-            </Link>
-          ))}
-        </div>
-        <p className="ls-features-note">
-          <strong>Try free trial</strong> — Ask AI and Recipe Generator are available immediately after signup.{" "}
-          <strong>Premium</strong> tools (docs, transcription, images, email, interview prep, video publisher) unlock on{" "}
-          <strong>Starter</strong>, <strong>Pro</strong>, or <strong>Growth</strong> — see pricing for limits.
-        </p>
-      </section>
-
-      {/* ── HOW IT WORKS ────────────────────────────────────── */}
-      <section className="ls-section ls-how" id="how-it-works" aria-labelledby="how-heading">
-        <h2 id="how-heading">How It Works</h2>
-        <p className="ls-section-sub">Start getting results in under 30 seconds.</p>
-        <div className="ls-steps">
-          {steps.map((s) => (
-            <div className="ls-step" key={s.num}>
-              <div className="ls-step-num" aria-hidden="true">{s.num}</div>
-              <h3 className="ls-step-title">{s.title}</h3>
-              <p className="ls-step-desc">{s.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── USE CASES ───────────────────────────────────────── */}
-      <section className="ls-section" id="use-cases" aria-labelledby="usecases-heading">
-        <h2 id="usecases-heading">Who Uses W!ntAi?</h2>
-        <div className="ls-usecase-grid">
-          <div className="ls-usecase ls-usecase--featured">
-            <h3>Social media managers &amp; video creators</h3>
-            <p>
-              <strong>If you can record it, we can post it:</strong> use <strong>Video Publisher</strong> to upload once, <strong>pick your platforms</strong>, and let W!ntAi <strong>adapt format for each network</strong> — then refine <strong>AI captions and hashtags</strong>, <strong>schedule</strong> or publish directly, and use <strong>Analytics</strong>, <strong>Trends</strong>, and <strong>Social AI</strong> for ideas. <strong>AI Image Generator</strong> and <strong>Ask AI</strong> help with thumbnails and scripts.
-            </p>
-          </div>
-          <div className="ls-usecase">
-            <h3>Job Seekers</h3>
-            <p>
-              Upload your resume to <strong>Resume Warlock</strong> and receive
-              AI-tailored interview questions. Practice answers, identify gaps in your
-              experience, and walk into every interview prepared and confident.
-            </p>
-          </div>
-          <div className="ls-usecase">
-            <h3>Business Professionals</h3>
-            <p>
-              Extract key data from invoices and reports with <strong>DocuWizard</strong>,
-              draft polished email responses in seconds with <strong>Reply Enchanter</strong>,
-              and transcribe client calls with <strong>EchoScribe</strong>.
-            </p>
-          </div>
-          <div className="ls-usecase">
-            <h3>Students &amp; Researchers</h3>
-            <p>
-              Transcribe lectures and podcasts with <strong>EchoScribe</strong>, then
-              paste the text into <strong>Ask AI</strong> for instant summaries, study notes,
-              and explanations of complex topics.
-            </p>
-          </div>
-          <div className="ls-usecase">
-            <h3>Home Cooks</h3>
-            <p>
-              Open your fridge, list what you have, and let the <strong>Recipe Generator</strong>
-              suggest delicious meals with full instructions. Reduce food waste and
-              discover new cuisines every week.
-            </p>
-          </div>
-          <div className="ls-usecase">
-            <h3>Teams &amp; Small Businesses</h3>
-            <p>
-              Speed up document processing, automate repetitive email replies, and give
-              every team member access to AI tools without expensive per-seat pricing.
-            </p>
-          </div>
-        </div>
-      </section>
+      {/* ── FEATURES — tabbed by use case ────────────────────── */}
+      <FeatureShowcase features={features} onOpenVideoPublisher={onOpenVideoPublisher} />
 
       {/* ── PRICING ─────────────────────────────────────────── */}
       <section className="ls-section ls-pricing" id="pricing" aria-labelledby="pricing-heading">
@@ -870,7 +1310,7 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
 
             <div className="ls-plan-group">
               <div className="ls-plan-group-label">Publishing</div>
-              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Connected Platforms</span><span className="ls-pf-val">All 8</span></div>
+              <div className="ls-plan-feat ls-plan-feat--yes"><span className="ls-pf-icon">✓</span><span>Connected accounts</span><span className="ls-pf-val">Unlimited</span></div>
               <div className="ls-plan-feat ls-plan-feat--star"><span className="ls-pf-icon ls-pf-icon--star">★</span><span>Videos / month</span><span className="ls-pf-val ls-pf-val--star">Unlimited</span></div>
               <div className="ls-plan-feat ls-plan-feat--star"><span className="ls-pf-icon ls-pf-icon--star">★</span><span>AI-generated images</span><span className="ls-pf-val ls-pf-val--star">Unlimited</span></div>
               <div className="ls-plan-feat ls-plan-feat--star"><span className="ls-pf-icon ls-pf-icon--star">★</span><span>Scheduled posts</span><span className="ls-pf-val ls-pf-val--star">Unlimited</span></div>
@@ -964,10 +1404,7 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
       {/* ── FOOTER ──────────────────────────────────────────── */}
       <footer className="ls-footer">
         <p>
-          © {new Date().getFullYear()} W!ntAi · Built by{" "}
-          <a href="https://github.com/wintkaythweaungRevature" target="_blank" rel="noopener noreferrer">
-            Wint Kay Thwe Aung
-          </a>
+          © {new Date().getFullYear()} W!ntAi · Built by Wint Kay Thwe Aung
           {" · "}
           <a href="mailto:contact@wintaibot.com">contact@wintaibot.com</a>
         </p>
@@ -988,7 +1425,6 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
           </span>
           <a href="/#about">About</a>
           <a href="/#faq">FAQ</a>
-          <a href="https://github.com/wintkaythweaungRevature" target="_blank" rel="noopener noreferrer">GitHub</a>
         </nav>
       </footer>
 

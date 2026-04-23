@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { isPlatformDisabled } from '../config/disabledPlatforms';
 import PlatformIcon from './PlatformIcon';
+import ProfileAvatar from './ProfileAvatar';
 
 const PLATFORM_META = {
   instagram: { id: 'instagram', label: 'Instagram', color: '#E1306C', logo: 'instagram' },
@@ -1026,29 +1027,43 @@ export default function MessagesInbox({ onOpenConnectedAccounts, onOpenAutoReply
   const [showAll, setShowAll] = useState(false); // true = ignore lastSeen, fetch full history
   /** `null` = loading or failed to load status; `Set` = loaded — sidebar lists only connected IDs. */
   const [connectedPlatformIds, setConnectedPlatformIds] = useState(null);
+  // Full account pool from /api/social/accounts — used to render real profile
+  // avatars in the sidebar instead of generic platform logos when a platform has
+  // a single connected account. Shape: { youtube: [{id, username, profileImageUrl}], ... }
+  const [accountsByPlatform, setAccountsByPlatform] = useState({});
 
   useEffect(() => {
     if (!token) {
       setConnectedPlatformIds(null);
+      setAccountsByPlatform({});
       return;
     }
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(`${base}/api/social/status`, {
+        // /accounts returns the full account pool AND the distinct-platforms list;
+        // one round-trip populates both the sidebar filter state and the avatar data.
+        const res = await fetch(`${base}/api/social/accounts`, {
           headers: authHeaders(),
         });
-        if (!res.ok) throw new Error('social status');
+        if (!res.ok) throw new Error('social accounts');
         const j = await res.json();
-        const raw = Array.isArray(j.connected) ? j.connected : [];
-        const next = new Set();
-        for (const x of raw) {
-          const id = normalizeSocialStatusPlatformId(x);
-          if (id) next.add(id);
+        const pool = j?.accounts || {};
+        if (!cancelled) {
+          setAccountsByPlatform(pool);
+          const next = new Set();
+          for (const rawPlat of Object.keys(pool)) {
+            if ((pool[rawPlat] || []).length === 0) continue;
+            const id = normalizeSocialStatusPlatformId(rawPlat);
+            if (id) next.add(id);
+          }
+          setConnectedPlatformIds(next);
         }
-        if (!cancelled) setConnectedPlatformIds(next);
       } catch {
-        if (!cancelled) setConnectedPlatformIds(null);
+        if (!cancelled) {
+          setConnectedPlatformIds(null);
+          setAccountsByPlatform({});
+        }
       }
     })();
     return () => { cancelled = true; };
@@ -1404,17 +1419,35 @@ export default function MessagesInbox({ onOpenConnectedAccounts, onOpenAutoReply
                           : p.id === 'tiktok'
                             ? ttComments.length
                             : xComments.length;
+                // Prefer the real connected-account avatar when the user has EXACTLY
+                // ONE account on this platform (unambiguous "this button = that account").
+                // With 0 or 2+ accounts, fall back to the platform logo so we don't
+                // misrepresent which account this filter chip maps to.
+                const pAccounts = accountsByPlatform[p.id] || [];
+                const singleAccount = pAccounts.length === 1 ? pAccounts[0] : null;
+                const title = singleAccount?.username
+                  ? `${p.label} — ${singleAccount.username}`
+                  : p.label;
                 return (
                   <SidebarPlatformButton
                     key={p.id}
                     active={platformTab === p.id}
                     onClick={() => handlePlatformTab(p.id)}
-                    title={p.label}
+                    title={title}
                     accent={p.color}
                     unreadBadge={unread}
                     countBadge={unread > 0 ? undefined : cnt}
                   >
-                    <PlatformIcon platform={p} size={22} />
+                    {singleAccount ? (
+                      <ProfileAvatar
+                        imageUrl={singleAccount.profileImageUrl}
+                        platform={p}
+                        size={26}
+                        ringWidth={0}
+                      />
+                    ) : (
+                      <PlatformIcon platform={p} size={22} />
+                    )}
                   </SidebarPlatformButton>
                 );
               })}
@@ -1652,19 +1685,41 @@ export default function MessagesInbox({ onOpenConnectedAccounts, onOpenAutoReply
                         <><strong>TikTok</strong> — Comments load from the TikTok API for your connected account. Make sure your account is reconnected and has recent videos with comments.</>
                       )}
                     </div>
-                    {typeof onOpenConnectedAccounts === 'function' && (
+                    {/* Refresh is the primary action — most empty states are just "no new data
+                        yet" and a fresh poll of the platform API brings in anything new. We make
+                        Reconnect the secondary path, shown only as a smaller muted button for
+                        cases where the issue really is missing permissions / expired token. */}
+                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
                       <button
                         type="button"
-                        onClick={onOpenConnectedAccounts}
+                        onClick={() => load(showAll)}
+                        disabled={loading}
                         style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 8,
                           padding: '9px 22px', borderRadius: 20,
                           background: '#6366f1', color: '#fff', border: 'none',
-                          fontWeight: 700, fontSize: 13, cursor: 'pointer',
+                          fontWeight: 700, fontSize: 13,
+                          cursor: loading ? 'wait' : 'pointer',
+                          opacity: loading ? 0.7 : 1,
                         }}
                       >
-                        🔗 Reconnect {PLATFORM_META[platformTab]?.label || platformTab}
+                        {loading ? '⏳ Checking…' : '🔄 Refresh now'}
                       </button>
-                    )}
+                      {typeof onOpenConnectedAccounts === 'function' && (
+                        <button
+                          type="button"
+                          onClick={onOpenConnectedAccounts}
+                          style={{
+                            padding: '9px 18px', borderRadius: 20,
+                            background: '#fff', color: '#475569',
+                            border: '1px solid #cbd5e1',
+                            fontWeight: 600, fontSize: 13, cursor: 'pointer',
+                          }}
+                        >
+                          🔗 Reconnect {PLATFORM_META[platformTab]?.label || platformTab}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 )}
                 {filteredView && hasAnyInboxData && (

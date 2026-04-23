@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import PlatformIcon from './PlatformIcon';
+import { fireToast } from './Toast';
 
 function firstNonEmptyStr(...vals) {
   for (const v of vals) {
@@ -131,8 +132,17 @@ function rawPreviewRef(post, mediaUrlEdit) {
 
 /**
  * Post detail + edit modal: caption, hashtags, schedule, media; DELETE / PATCH to API.
+ *
+ * feedbackContext (optional) — specializes the modal for approval outcomes:
+ *   { kind: 'CHANGES_REQUESTED', note, approverEmail }
+ *     → amber banner showing the approver's note, save button becomes "Save & Resubmit for Approval".
+ *       On save, the modal PATCHes the post then POSTs to /api/approve/send/{postId} with the
+ *       original approver email, re-triggering the approval flow.
+ *   { kind: 'REJECTED', note, approverEmail }
+ *     → red banner with rejection note; body fields become read-only.
+ *       Primary action is "Duplicate as draft" (clones via POST /api/social/post/{id}/duplicate).
  */
-export default function PostDetailModal({ post, onClose, platform, onSaved }) {
+export default function PostDetailModal({ post, onClose, platform, onSaved, feedbackContext = null }) {
   const { token, apiBase } = useAuth();
   const base =
     (apiBase || (typeof process !== 'undefined' && process.env?.REACT_APP_API_BASE) || '').replace(/\/$/, '') ||
@@ -153,6 +163,7 @@ export default function PostDetailModal({ post, onClose, platform, onSaved }) {
   const [previewHint, setPreviewHint] = useState('');
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
   const [errMsg, setErrMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
@@ -398,13 +409,73 @@ export default function PostDetailModal({ post, onClose, platform, onSaved }) {
         setErrMsg(data.error || data.message || `Update failed (${res.status}). Please try again.`);
         return;
       }
-      setSuccessMsg(publishNow ? '🚀 Post sent for immediate publishing!' : '✅ Changes saved successfully!');
+
+      // CHANGES_REQUESTED flow: after saving edits, immediately re-fire the approval email
+      // to the same approver so the post goes back to PENDING_APPROVAL. Best-effort — the save
+      // already succeeded, so any resubmit failure shows as a warning toast but doesn't block.
+      if (feedbackContext?.kind === 'CHANGES_REQUESTED') {
+        const approver = feedbackContext.approverEmail;
+        if (approver && post?.id != null) {
+          try {
+            const resRes = await fetch(`${base}/api/approve/send/${post.id}`, {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ memberEmail: approver, memberName: approver }),
+            });
+            if (resRes.ok) {
+              fireToast({ kind: 'success', message: `Resubmitted to ${approver}` });
+            } else {
+              fireToast({ kind: 'warning', message: `Saved, but resubmit to ${approver} failed — open the post and try again.` });
+            }
+          } catch {
+            fireToast({ kind: 'warning', message: 'Saved, but network error on resubmit.' });
+          }
+        } else {
+          // Earlier bug: when approverEmail was missing we'd silently skip the resubmit so
+          // the user thought "Save & Resubmit" had re-sent the email — it hadn't. Surface it
+          // instead so they know to send for approval manually from the post's menu.
+          fireToast({
+            kind: 'warning',
+            message: 'Saved, but the original approver is unknown. Open "Send for Approval" from the post menu to resubmit.',
+          });
+        }
+      } else {
+        setSuccessMsg(publishNow ? '🚀 Post sent for immediate publishing!' : '✅ Changes saved successfully!');
+      }
+
       if (typeof onSaved === 'function') onSaved();
       setTimeout(() => onClose(), 1200);
     } catch (e) {
       setErrMsg((e && e.message) || 'Network error — check your connection and try again.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  /** Clone this post into a brand-new PENDING draft. Used by the REJECTED feedback modal. */
+  const handleDuplicate = async () => {
+    if (!post?.id || duplicating) return;
+    setDuplicating(true);
+    try {
+      const body = {};
+      if (post.scheduledAt) body.scheduledAt = post.scheduledAt;
+      const res = await fetch(`${base}/api/social/post/${post.id}/duplicate`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        fireToast({ kind: 'error', message: data.error || `Duplicate failed (${res.status})` });
+        return;
+      }
+      fireToast({ kind: 'success', message: 'Post duplicated as a fresh draft — edit and resubmit when ready.' });
+      if (typeof onSaved === 'function') onSaved();
+      onClose();
+    } catch {
+      fireToast({ kind: 'error', message: 'Network error — duplicate failed.' });
+    } finally {
+      setDuplicating(false);
     }
   };
 
@@ -525,6 +596,60 @@ export default function PostDetailModal({ post, onClose, platform, onSaved }) {
             </button>
           </div>
         </div>
+
+        {/* ── Approval feedback banner (only when feedbackContext is set) ── */}
+        {feedbackContext?.kind === 'CHANGES_REQUESTED' && (
+          <div style={{
+            marginBottom: 14,
+            background: '#fffbeb',
+            border: '1.5px solid #fcd34d',
+            borderLeft: '4px solid #f59e0b',
+            borderRadius: 12,
+            padding: '14px 16px',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+              <span style={{ fontSize: 16 }}>📝</span>
+              <span style={{ fontSize: 13, fontWeight: 800, color: '#92400e' }}>
+                Changes requested
+                {feedbackContext.approverEmail ? ` by ${feedbackContext.approverEmail}` : ''}
+              </span>
+            </div>
+            <div style={{ fontSize: 13, color: '#78350f', lineHeight: 1.6, fontStyle: feedbackContext.note ? 'normal' : 'italic' }}>
+              {feedbackContext.note
+                ? `"${feedbackContext.note}"`
+                : 'No note provided. Edit the post and resubmit for approval.'}
+            </div>
+            <div style={{ marginTop: 8, fontSize: 11.5, color: '#92400e' }}>
+              Edit below and click <strong>Save & Resubmit</strong> — the approver will get a fresh link.
+            </div>
+          </div>
+        )}
+        {feedbackContext?.kind === 'REJECTED' && (
+          <div style={{
+            marginBottom: 14,
+            background: '#fef2f2',
+            border: '1.5px solid #fca5a5',
+            borderLeft: '4px solid #ef4444',
+            borderRadius: 12,
+            padding: '14px 16px',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+              <span style={{ fontSize: 16 }}>❌</span>
+              <span style={{ fontSize: 13, fontWeight: 800, color: '#991b1b' }}>
+                Rejected
+                {feedbackContext.approverEmail ? ` by ${feedbackContext.approverEmail}` : ''}
+              </span>
+            </div>
+            <div style={{ fontSize: 13, color: '#7f1d1d', lineHeight: 1.6, fontStyle: feedbackContext.note ? 'normal' : 'italic' }}>
+              {feedbackContext.note
+                ? `"${feedbackContext.note}"`
+                : 'No reason provided.'}
+            </div>
+            <div style={{ marginTop: 8, fontSize: 11.5, color: '#991b1b' }}>
+              This post won't publish. Use <strong>Duplicate as draft</strong> to keep the work or <strong>Delete</strong> to remove it.
+            </div>
+          </div>
+        )}
 
         {/* ── Banners ── */}
         {!canMutate && !readOnly && (
@@ -938,7 +1063,7 @@ export default function PostDetailModal({ post, onClose, platform, onSaved }) {
             <button
               type="button"
               onClick={handleDelete}
-              disabled={deleting || saving}
+              disabled={deleting || saving || duplicating}
               style={{
                 padding: '10px 18px',
                 borderRadius: 10,
@@ -952,23 +1077,47 @@ export default function PostDetailModal({ post, onClose, platform, onSaved }) {
             >
               {deleting ? 'Deleting…' : 'Delete'}
             </button>
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={saving || deleting}
-              style={{
-                padding: '10px 20px',
-                borderRadius: 10,
-                border: 'none',
-                background: saving ? '#93c5fd' : publishNow ? '#7c3aed' : '#2563eb',
-                fontWeight: 700,
-                fontSize: 14,
-                cursor: saving ? 'wait' : 'pointer',
-                color: '#fff',
-              }}
-            >
-              {saving ? 'Saving…' : publishNow ? '⚡ Publish Now' : 'Save changes'}
-            </button>
+            {feedbackContext?.kind === 'REJECTED' ? (
+              <button
+                type="button"
+                onClick={handleDuplicate}
+                disabled={duplicating || deleting}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: 10,
+                  border: 'none',
+                  background: duplicating ? '#93c5fd' : 'linear-gradient(135deg, #2563eb, #7c3aed)',
+                  fontWeight: 700,
+                  fontSize: 14,
+                  cursor: duplicating ? 'wait' : 'pointer',
+                  color: '#fff',
+                }}
+              >
+                {duplicating ? 'Duplicating…' : '📋 Duplicate as draft'}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={saving || deleting}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: 10,
+                  border: 'none',
+                  background: saving ? '#93c5fd' : publishNow ? '#7c3aed' : '#2563eb',
+                  fontWeight: 700,
+                  fontSize: 14,
+                  cursor: saving ? 'wait' : 'pointer',
+                  color: '#fff',
+                }}
+              >
+                {saving
+                  ? 'Saving…'
+                  : feedbackContext?.kind === 'CHANGES_REQUESTED'
+                    ? '📤 Save & Resubmit for Approval'
+                    : publishNow ? '⚡ Publish Now' : 'Save changes'}
+              </button>
+            )}
           </div>
         )}
       </div>

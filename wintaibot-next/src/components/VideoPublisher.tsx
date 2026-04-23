@@ -1324,16 +1324,18 @@ export default function VideoPublisher() {
             {/* Next content ideas */}
             <div style={s.card}>
               <div style={s.sectionTitle}>💡 Next Content Ideas (AI Generated)</div>
-              {[
-                '🎬 "5 AI tools that replace your whole team" — trending format',
-                '📱 Behind-the-scenes: How you built W!ntAi',
-                '🔥 React vs Vue debate — high engagement topic this week',
-              ].map((idea, i) => (
-                <div key={i} style={s.ideaRow}>
-                  <span style={{ fontSize: '13px' }}>{idea}</span>
-                  <button type="button" style={s.useIdeaBtn} onClick={() => applyIdeaForNextVideo(idea)}>Use →</button>
-                </div>
-              ))}
+              <div style={{ maxHeight: 'min(40vh, 320px)', overflowY: 'auto', WebkitOverflowScrolling: 'touch', paddingRight: 4 }}>
+                {[
+                  '🎬 "5 AI tools that replace your whole team" — trending format',
+                  '📱 Behind-the-scenes: How you built W!ntAi',
+                  '🔥 React vs Vue debate — high engagement topic this week',
+                ].map((idea, i) => (
+                  <div key={i} style={s.ideaRow}>
+                    <span style={{ fontSize: '13px' }}>{idea}</span>
+                    <button type="button" style={s.useIdeaBtn} onClick={() => applyIdeaForNextVideo(idea)}>Use →</button>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>

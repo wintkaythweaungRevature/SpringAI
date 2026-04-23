@@ -61,18 +61,19 @@ function fmtDateTime(iso) {
 // ─── Inline style tokens ──────────────────────────────────────────────────────
 
 const C = {
-  bg:      '#0f172a',
-  card:    '#1e293b',
-  card2:   '#273447',
-  border:  '#334155',
+  // Light-theme palette — mirrors the Account Settings / Content Calendar surface.
+  bg:      '#f8fafc',   // page background
+  card:    '#ffffff',   // primary card surface
+  card2:   '#f1f5f9',   // sunken / alt surface (e.g. inline insight panel)
+  border:  '#e2e8f0',
   accent:  '#6366f1',
   accentH: '#818cf8',
-  text:    '#f1f5f9',
-  muted:   '#94a3b8',
-  green:   '#22c55e',
-  red:     '#ef4444',
-  greenBg: 'rgba(34,197,94,0.12)',
-  redBg:   'rgba(239,68,68,0.12)',
+  text:    '#0f172a',   // primary text
+  muted:   '#64748b',   // secondary text
+  green:   '#16a34a',
+  red:     '#dc2626',
+  greenBg: 'rgba(22,163,74,0.10)',
+  redBg:   'rgba(220,38,38,0.10)',
 };
 
 const s = {
@@ -355,8 +356,8 @@ function TaskOutputRenderer({ task }) {
                       )}
                     </div>
                     {/* Caption */}
-                    <div style={{ fontSize: 13, color: '#e2e8f0', lineHeight: 1.6 }}>
-                      {s.caption || s.topic || '(no caption)'}
+                    <div style={{ fontSize: 13, color: '#e2e8f0', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+                      {(s.caption || s.topic || '(no caption)').replace(/\\n/g, '\n')}
                     </div>
                   </div>
                 );
@@ -370,10 +371,12 @@ function TaskOutputRenderer({ task }) {
     }
   }
 
-  // Default: plain pre-wrapped text
+  // Default: plain pre-wrapped text — replace literal \n sequences with real newlines
+  const rawText = task.taskOutput || task.taskInput || '(no output)';
+  const displayText = rawText.replace(/\\n/g, '\n');
   return (
     <div style={{ fontSize: 14, color: '#cbd5e1', lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-      {task.taskOutput || task.taskInput || '(no output)'}
+      {displayText}
     </div>
   );
 }
@@ -636,7 +639,7 @@ function AddAgentModal({ onClose, onCreate }) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function AiWorkspace() {
+export default function AiWorkspace({ onCaptionApproved } = {}) {
   const { apiBase, authHeaders } = useAuth();
 
   // ── State ──────────────────────────────────────────────────────────────────
@@ -815,6 +818,10 @@ export default function AiWorkspace() {
     setProcessingTaskId(taskId);
     setApproveMsg('');
     try {
+      // Find the task before removing it — we need the caption text for the pre-fill
+      const approvedTask = tasks.find(t => t.id === taskId);
+      const captionText = approvedTask?.taskOutput || approvedTask?.output || '';
+
       const res = await fetch(`${apiBase}/api/ai-agents/tasks/${taskId}/approve`, {
         method: 'POST',
         headers: authHeaders(),
@@ -823,6 +830,14 @@ export default function AiWorkspace() {
         const data = await res.json();
         setTasks(prev => prev.filter(t => t.id !== taskId));
         setPendingCount(prev => Math.max(0, prev - 1));
+
+        // If the task is a caption draft AND we have a callback, send it to Video Publisher
+        const isCaptionDraft = approvedTask?.taskType === 'DRAFT_CAPTION' || approvedTask?.taskType === 'SUGGEST_POST_TIME';
+        if (isCaptionDraft && captionText && onCaptionApproved) {
+          onCaptionApproved(captionText);
+          return; // Navigation happens via the callback — skip the toast
+        }
+
         if (data.postsCreated > 0) {
           setApproveMsg(`✅ ${data.postsCreated} post${data.postsCreated > 1 ? 's' : ''} scheduled to your Content Calendar!`);
           setTimeout(() => setApproveMsg(''), 6000);
@@ -1016,6 +1031,30 @@ export default function AiWorkspace() {
           {/* History */}
           {taskSubTab === 'history' && (
             <>
+              {!loadingHistory && historyTasks.length > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
+                  <button
+                    style={{ padding: '6px 14px', borderRadius: 8, border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.08)', color: '#f87171', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+                    onClick={async () => {
+                      if (!window.confirm('Delete all approved/rejected task history? This cannot be undone.')) return;
+                      try {
+                        const res = await fetch(`${apiBase}/api/ai-agents/tasks/history`, {
+                          method: 'DELETE',
+                          headers: authHeaders(),
+                        });
+                        if (res.ok) {
+                          const data = await res.json();
+                          setHistoryTasks([]);
+                          setApproveMsg(`🗑 Cleared ${data.deleted} history item${data.deleted !== 1 ? 's' : ''}.`);
+                          setTimeout(() => setApproveMsg(''), 4000);
+                        }
+                      } catch { setError('Failed to clear history.'); }
+                    }}
+                  >
+                    🗑 Clear All History
+                  </button>
+                </div>
+              )}
               {loadingHistory ? (
                 <div style={{ color: C.muted, fontSize: '14px', padding: '40px 0', textAlign: 'center' }}>Loading history...</div>
               ) : historyTasks.length === 0 ? (

@@ -1,6 +1,4 @@
-import React, { useEffect, useState } from 'react';
-import { HiGlobeAlt } from 'react-icons/hi2';
-import { SiPinterest, SiThreads } from 'react-icons/si';
+import React, { useState } from 'react';
 
 /** Official LinkedIn "in" logo */
 export function LinkedInLogo({ size = 24, color = '#0A66C2', style = {} }) {
@@ -67,22 +65,8 @@ function XLogo({ size = 24, color = '#000000', style = {} }) {
   );
 }
 
-const iconWrap = (size, style) => ({
-  minWidth: size,
-  minHeight: size,
-  display: 'block',
-  flexShrink: 0,
-  ...style,
-});
-
-/** Map of id / logo slug → inline icon (same set as Video Publisher; no CDN for these) */
+/** Map of id → inline SVG component (no CDN needed) */
 const INLINE_LOGOS = {
-  all: (size, color, style) => (
-    <HiGlobeAlt size={size} color={color} aria-hidden style={iconWrap(size, style)} />
-  ),
-  globe: (size, color, style) => (
-    <HiGlobeAlt size={size} color={color} aria-hidden style={iconWrap(size, style)} />
-  ),
   linkedin:  (size, color, style) => <LinkedInLogo  size={size} color={color} style={style} />,
   instagram: (size, _color, style) => <InstagramLogo size={size} style={style} />,
   facebook:  (size, color, style) => <FacebookLogo  size={size} color={color} style={style} />,
@@ -90,63 +74,40 @@ const INLINE_LOGOS = {
   tiktok:    (size, _color, style) => <TikTokLogo   size={size} style={style} />,
   x:         (size, color, style) => <XLogo         size={size} color={color} style={style} />,
   twitter:   (size, color, style) => <XLogo         size={size} color={color} style={style} />,
-  threads:   (size, color, style) => (
-    <SiThreads size={size} color={color} aria-hidden style={iconWrap(size, style)} />
-  ),
-  pinterest: (size, color, style) => (
-    <SiPinterest size={size} color={color} aria-hidden style={iconWrap(size, style)} />
-  ),
 };
 
-/**
- * Map `platform.logo` (e.g. from VideoPublisher PLATFORMS) to the same key as `id` when
- * the logo slug is an alias.
- */
-function resolveInlineKey(platform) {
-  const id = (platform.id || '').toLowerCase();
-  const logo = (platform.logo || '').toLowerCase();
-  if (INLINE_LOGOS[id]) return id;
-  if (logo && INLINE_LOGOS[logo]) return logo;
-  return id;
-}
-
-/** Platform logo — inline SVG / react-icons for all first-party platforms; optional CDN as last resort */
+/** Platform logo — uses inline SVG for known platforms, CDN fallback for others */
 export default function PlatformIcon({ platform, size = 24, style = {} }) {
   const [cdnFailed, setCdnFailed] = useState(false);
-  const id = (platform?.id || '').toLowerCase();
-  const inlineKey = platform ? resolveInlineKey(platform) : '';
-  const color = platform?.color || '#64748b';
-
-  useEffect(() => {
-    setCdnFailed(false);
-  }, [inlineKey, id, platform?.logo, size]);
 
   if (!platform) return null;
 
-  if (INLINE_LOGOS[inlineKey]) {
-    return INLINE_LOGOS[inlineKey](size, color, style);
+  const id = (platform.id || '').toLowerCase();
+  const color = platform.color || '#64748b';
+
+  if (INLINE_LOGOS[id]) {
+    return INLINE_LOGOS[id](size, color, style);
   }
 
-  if (cdnFailed) {
+  const logo = platform.logo || id;
+  const hasValidCdnTarget = logo && logo !== 'all' && logo !== 'globe' && logo.length > 1;
+
+  if (cdnFailed || !hasValidCdnTarget) {
     return (
-      <span
-        aria-hidden
-        style={{ fontSize: size, lineHeight: 1, display: 'inline-block', userSelect: 'none', ...style }}
-      >
-        {platform.emoji || '•'}
+      <span aria-hidden style={{ fontSize: size, lineHeight: '1', display: 'block', ...style }}>
+        {platform.emoji || ''}
       </span>
     );
   }
 
-  const logo = platform.logo || id;
-  const cdnUrl = `https://cdn.simpleicons.org/${logo}/${String(color).replace('#', '')}`;
+  const cdnUrl = `https://cdn.simpleicons.org/${logo}/${color.replace('#', '')}`;
   return (
     <img
       src={cdnUrl}
       alt=""
       aria-hidden
-      onError={() => setCdnFailed(true)}
       style={{ width: size, height: size, minWidth: size, minHeight: size, objectFit: 'contain', display: 'block', ...style }}
+      onError={() => setCdnFailed(true)}
     />
   );
 }

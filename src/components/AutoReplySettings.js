@@ -283,6 +283,44 @@ export default function AutoReplySettings() {
     setRules(r => ({ ...r, [platform]: { ...r[platform], [field]: value } }));
   };
 
+  // ─── Poll now (manual trigger) ───────────────────────────────────────────
+  const [polling, setPolling] = useState({});
+  const [pollMsg, setPollMsg] = useState('');
+  const pollNow = async (platform) => {
+    setPolling(p => ({ ...p, [platform]: true }));
+    setPollMsg('');
+    setGlobalError('');
+    try {
+      const res = await fetch(`${API_BASE}/api/auto-reply/poll-now/${platform}`, {
+        method: 'POST',
+        headers: authHeaders(),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setGlobalError(d.error || `Poll failed for ${platform}.`);
+      } else {
+        const fetched = d.fetched ?? 0;
+        const replied = d.replied ?? 0;
+        const outcomes = d.outcomes || {};
+        const parts = [`📥 Fetched ${fetched} comment${fetched === 1 ? '' : 's'}`];
+        if (replied > 0) parts.push(`✅ replied to ${replied}`);
+        Object.entries(outcomes).forEach(([k, v]) => {
+          if (k === 'replied') return;
+          parts.push(`${k.replace('skip:', '↪ ').replace('error:', '❌ ')} ×${v}`);
+        });
+        if (d.status && d.status !== 'ok') parts.push(`⚠ ${d.status}`);
+        if (d.message) parts.push(`— ${d.message}`);
+        setPollMsg(parts.join(' · '));
+        setTimeout(() => setPollMsg(''), 12000);
+        setTimeout(() => loadLogs(), 1500);
+      }
+    } catch {
+      setGlobalError('Network error while polling.');
+    } finally {
+      setPolling(p => ({ ...p, [platform]: false }));
+    }
+  };
+
   // ─── Test reply ───────────────────────────────────────────────────────────
   const runTest = async () => {
     if (!testComment.trim()) return;
@@ -346,6 +384,11 @@ export default function AutoReplySettings() {
       </div>
 
       {globalError && <div style={s.errorBanner}>{globalError}</div>}
+      {pollMsg && (
+        <div style={{ ...s.errorBanner, background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534' }}>
+          {pollMsg}
+        </div>
+      )}
 
       {/* Platform cards */}
       <div style={s.cards}>
@@ -375,6 +418,17 @@ export default function AutoReplySettings() {
                   >
                     <div style={{ ...s.toggleThumb, transform: rule.enabled ? 'translateX(20px)' : 'translateX(2px)' }} />
                   </button>
+                  {/* Poll now — only if enabled */}
+                  {rule.enabled && (
+                    <button
+                      style={s.settingsToggle}
+                      onClick={() => pollNow(p.id)}
+                      disabled={polling[p.id]}
+                      title="Check for new comments and reply immediately"
+                    >
+                      {polling[p.id] ? '⏳ Polling…' : '🔄 Poll Now'}
+                    </button>
+                  )}
                   {/* Expand settings */}
                   <button style={s.settingsToggle} onClick={() => setExpanded(isExpanded ? null : p.id)}>
                     {isExpanded ? '▲ Less' : '⚙ Settings'}

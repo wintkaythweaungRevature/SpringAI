@@ -89,7 +89,10 @@ export default function PlatformIcon({ platform, size = 24, style = {} }) {
     return INLINE_LOGOS[id](size, color, style);
   }
 
-  if (cdnFailed) {
+  const logo = platform.logo || id;
+  const hasValidCdnTarget = logo && logo !== 'all' && logo !== 'globe' && logo.length > 1;
+
+  if (cdnFailed || !hasValidCdnTarget) {
     return (
       <span aria-hidden style={{ fontSize: size, lineHeight: '1', display: 'block', ...style }}>
         {platform.emoji || ''}
@@ -97,7 +100,6 @@ export default function PlatformIcon({ platform, size = 24, style = {} }) {
     );
   }
 
-  const logo = platform.logo || id;
   const cdnUrl = `https://cdn.simpleicons.org/${logo}/${color.replace('#', '')}`;
   return (
     <img

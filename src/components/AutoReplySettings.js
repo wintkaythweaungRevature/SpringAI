@@ -50,6 +50,27 @@ const PLATFORMS = filterEnabledPlatforms([
     note: 'Replies to comments on your Pinterest pins.' },
 ]);
 
+// Human-readable labels + tooltips for the `skipReason` values the backend writes
+// to AutoReplyLog when an enabled auto-reply rule decides NOT to send a reply.
+const SKIP_REASON_LABELS = {
+  daily_cap:      'Daily cap reached',
+  keyword_filter: 'No keyword match',
+  first_only:     'First-reply-only mode',
+  no_token:       'Platform not connected',
+  fetch_failed:   'Could not load comments',
+  fetched_zero:   'No new comments returned',
+};
+const SKIP_REASON_HELP = {
+  daily_cap:      'You hit the per-day reply limit on this rule. Raise "Max replies per day" to send more.',
+  keyword_filter: 'The comment text didn\'t contain any of the keywords listed in this rule. Clear or expand the keyword filter to reply to more comments.',
+  first_only:     'This rule only replies to the first comment per post — and a reply already exists on that post.',
+  no_token:       'The access token for this platform is missing or expired. Reconnect the account under Settings → Connections.',
+  fetch_failed:   'The platform API rejected the request to fetch comments. Reconnect the account or try again later.',
+  fetched_zero:   'The poll ran but the platform API returned 0 new comments since the last poll. Instagram and Facebook usually take 1–5 minutes to expose a brand-new comment via the Graph API. Wait a few minutes and click Poll Now again.',
+};
+function skipReasonLabel(r) { return SKIP_REASON_LABELS[r] || r || 'Skipped'; }
+function skipReasonHelp(r)  { return SKIP_REASON_HELP[r]   || ''; }
+
 const DEFAULT_PROMPT =
   "You are a friendly social media manager. Reply to the following comment in 1-2 short, human sentences. " +
   "Be warm, helpful, and on-brand. Do NOT use hashtags or emojis unless the comment uses them.";
@@ -640,14 +661,25 @@ export default function AutoReplySettings() {
                         {latest ? (
                           <div style={s.recentPlatformSnippet}>
                             <div style={s.recentSnippetLine}>
-                              <span style={{ color: latest.success ? '#16a34a' : '#dc2626', fontWeight: 700 }}>
-                                {latest.success ? '✓' : '✗'}
+                              <span style={{
+                                color: latest.success ? '#16a34a' : (latest.skipReason ? '#d97706' : '#dc2626'),
+                                fontWeight: 700,
+                              }}>
+                                {latest.success ? '✓' : (latest.skipReason ? '⤼' : '✗')}
                               </span>
                               <span style={{ color: '#94a3b8' }}>{formatTime(latest.repliedAt)}</span>
                             </div>
-                            <div style={s.recentSnippetText} title={latest.commentText || ''}>
-                              {(latest.commentText || '—').slice(0, 72)}
-                              {(latest.commentText || '').length > 72 ? '…' : ''}
+                            <div style={s.recentSnippetText} title={latest.commentText || skipReasonHelp(latest.skipReason)}>
+                              {latest.skipReason && !latest.success ? (
+                                <span style={{ color: '#92400e' }}>
+                                  Skipped: {skipReasonLabel(latest.skipReason)}
+                                </span>
+                              ) : (
+                                <>
+                                  {(latest.commentText || '—').slice(0, 72)}
+                                  {(latest.commentText || '').length > 72 ? '…' : ''}
+                                </>
+                              )}
                             </div>
                           </div>
                         ) : (
@@ -725,14 +757,36 @@ export default function AutoReplySettings() {
                           <span style={s.logCellWrap} title={l.commentText || ''}>{l.commentText || '—'}</span>
                           <span
                             style={s.logCellWrap}
-                            title={l.replyText && String(l.replyText).trim() ? l.replyText : '(no reply text stored)'}
+                            title={
+                              l.replyText && String(l.replyText).trim()
+                                ? l.replyText
+                                : l.skipReason
+                                  ? skipReasonHelp(l.skipReason)
+                                  : '(no reply text stored)'
+                            }
                           >
-                            {l.replyText && String(l.replyText).trim() ? l.replyText : '—'}
+                            {l.replyText && String(l.replyText).trim()
+                              ? l.replyText
+                              : l.skipReason
+                                ? <em style={{ color: '#94a3b8' }}>
+                                    No reply sent — {skipReasonLabel(l.skipReason)}
+                                    {l.errorMsg ? ` (${l.errorMsg})` : ''}
+                                  </em>
+                                : '—'}
                           </span>
                           <span style={s.logColTime}>{formatTime(l.repliedAt)}</span>
-                          <span style={{ ...s.logColStatus, color: l.success ? '#22c55e' : '#ef4444' }}>
-                            {l.success ? '✓ Sent' : '✗ Failed'}
-                          </span>
+                          {(() => {
+                            const status = l.success
+                              ? { label: '✓ Sent',    color: '#22c55e', tip: '' }
+                              : l.skipReason
+                                ? { label: '⤼ Skipped: ' + skipReasonLabel(l.skipReason), color: '#f59e0b', tip: skipReasonHelp(l.skipReason) }
+                                : { label: '✗ Failed', color: '#ef4444', tip: l.errorMsg || '' };
+                            return (
+                              <span style={{ ...s.logColStatus, color: status.color }} title={status.tip}>
+                                {status.label}
+                              </span>
+                            );
+                          })()}
                         </button>
                       );
                     })}
@@ -766,8 +820,24 @@ export default function AutoReplySettings() {
               </span>
               <span style={{ color: '#6366f1' }}>@{logDetail.authorUsername || '—'}</span>
               <span style={{ color: '#94a3b8' }}>{formatTime(logDetail.repliedAt)}</span>
-              <span style={{ color: logDetail.success ? '#22c55e' : '#ef4444', fontWeight: 600 }}>
-                {logDetail.success ? '✓ Sent' : '✗ Failed'}
+              <span
+                style={{
+                  color: logDetail.success ? '#22c55e' : (logDetail.skipReason ? '#f59e0b' : '#ef4444'),
+                  fontWeight: 600,
+                }}
+                title={
+                  logDetail.success
+                    ? ''
+                    : logDetail.skipReason
+                      ? skipReasonHelp(logDetail.skipReason)
+                      : (logDetail.errorMsg || '')
+                }
+              >
+                {logDetail.success
+                  ? '✓ Sent'
+                  : logDetail.skipReason
+                    ? '⤼ Skipped: ' + skipReasonLabel(logDetail.skipReason)
+                    : '✗ Failed'}
               </span>
             </div>
             <div style={s.modalBlock}>
@@ -776,7 +846,17 @@ export default function AutoReplySettings() {
             </div>
             <div style={s.modalBlock}>
               <div style={s.modalLabel}>Your AI reply</div>
-              <div style={s.modalBody}>{logDetail.replyText || '—'}</div>
+              <div style={s.modalBody}>
+                {logDetail.replyText
+                  ? logDetail.replyText
+                  : logDetail.skipReason
+                    ? <em style={{ color: '#92400e' }}>
+                        No reply sent — {skipReasonLabel(logDetail.skipReason)}.
+                        {' '}{skipReasonHelp(logDetail.skipReason)}
+                        {logDetail.errorMsg ? <><br/><span style={{ color: '#94a3b8', fontSize: 13 }}>Detail: {logDetail.errorMsg}</span></> : null}
+                      </em>
+                    : '—'}
+              </div>
             </div>
           </div>
         </div>

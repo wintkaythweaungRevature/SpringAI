@@ -93,7 +93,7 @@ export default function AutoReplySettings() {
         map[r.platform] = {
           enabled: r.enabled,
           promptTemplate: r.promptTemplate || DEFAULT_PROMPT,
-          maxRepliesPerDay: r.maxRepliesPerDay ?? 50,
+          maxRepliesPerDay: r.maxRepliesPerDay ?? 200,
           replyToFirstOnly: r.replyToFirstOnly ?? false,
           keywordFilter: r.keywordFilter || '',
         };
@@ -104,7 +104,7 @@ export default function AutoReplySettings() {
           map[p.id] = {
             enabled: false,
             promptTemplate: DEFAULT_PROMPT,
-            maxRepliesPerDay: 50,
+            maxRepliesPerDay: 200,
             replyToFirstOnly: false,
             keywordFilter: '',
           };
@@ -125,7 +125,7 @@ export default function AutoReplySettings() {
       return {
         enabled: false,
         promptTemplate: DEFAULT_PROMPT,
-        maxRepliesPerDay: 50,
+        maxRepliesPerDay: 200,
         replyToFirstOnly: false,
         keywordFilter: '',
       };
@@ -158,7 +158,7 @@ export default function AutoReplySettings() {
             const base = prev[p.id] ?? {
               enabled: false,
               promptTemplate: DEFAULT_PROMPT,
-              maxRepliesPerDay: 50,
+              maxRepliesPerDay: 200,
               replyToFirstOnly: false,
               keywordFilter: '',
             };
@@ -404,9 +404,9 @@ export default function AutoReplySettings() {
                       <input
                         type="number"
                         style={s.input}
-                        min={1} max={200}
-                        value={rule.maxRepliesPerDay ?? 50}
-                        onChange={e => setField(p.id, 'maxRepliesPerDay', parseInt(e.target.value) || 50)}
+                        min={1} max={1000}
+                        value={rule.maxRepliesPerDay ?? 200}
+                        onChange={e => setField(p.id, 'maxRepliesPerDay', parseInt(e.target.value) || 200)}
                       />
                     </div>
                     <div style={s.fieldGroup}>
@@ -487,10 +487,11 @@ export default function AutoReplySettings() {
       <div style={s.sectionLog}>
         <div style={s.logHeader}>
           <div>
-            <h3 style={s.sectionTitle}>Activity Log</h3>
+            <h3 style={s.sectionTitle}>Activity Log — replies you (or the AI) sent</h3>
             <p style={s.logHint}>
-              Recent activity for every platform is summarized below, then listed newest first. Facebook = Page posts.
-              Click a row for a larger view.
+              <strong>Does not list new comments from fans.</strong> It only shows rows we saved after a reply was sent
+              (auto or manual from Messages). <strong>To see new comments,</strong> open <strong>Messages</strong> and use the
+              <strong>Comments</strong> tab. Facebook here = Page post comments. Click a table row for the full text.
             </p>
           </div>
           <div style={s.logHeaderBtns}>
@@ -518,8 +519,10 @@ export default function AutoReplySettings() {
               <div style={s.recentByPlatformWrap}>
                 <h4 style={s.recentByPlatformTitle}>Recent by platform</h4>
                 <p style={s.recentByPlatformSub}>
-                  Each card is the latest auto-reply we have in this log for that network ({logs.length} total loaded).
-                  Click a card to filter the table; use All to show every platform again.
+                  Counts are <strong>outgoing replies logged</strong> ({logs.length} rows from the server, max 100 per refresh), not
+                  your unread comment list. A <strong>new comment</strong> will only create a new row <strong>after</strong> the
+                  system or you sends a reply and it is saved. The Messages inbox is where new comments show up first.
+                  Click a card to filter; use All to clear the filter.
                 </p>
                 <div style={s.platformFilterChips}>
                   <button
@@ -576,7 +579,7 @@ export default function AutoReplySettings() {
                           <div style={s.recentPlatformCardHead}>
                             <span style={s.recentPlatformName}>{p.label}</span>
                             <span style={s.recentPlatformCount}>
-                              {count} {count === 1 ? 'reply' : 'replies'} in loaded history
+                              {count} auto-{count === 1 ? 'reply' : 'replies'} logged
                             </span>
                           </div>
                         </div>
@@ -594,7 +597,9 @@ export default function AutoReplySettings() {
                             </div>
                           </div>
                         ) : (
-                          <div style={s.recentPlatformEmpty}>No entries in this log yet</div>
+                          <div style={s.recentPlatformEmpty}>
+                            No auto-reply logged yet (inbox comments are separate)
+                          </div>
                         )}
                       </button>
                     );
@@ -604,8 +609,7 @@ export default function AutoReplySettings() {
 
               {logs.length === 0 ? (
                 <p style={{ color: '#94a3b8', fontSize: 16 }}>
-                  No logged replies yet. After auto-reply runs, entries show here for every platform. Use Refresh if you
-                  expected new rows.
+                  No auto-reply activity in the database yet. Turn on rules above, wait for the next poll (up to ~5 minutes), or reply manually from Inbox — then press Refresh. Seeing comments in Messages does not fill this log by itself.
                 </p>
               ) : displayLogs.length === 0 ? (
                 <p style={{ color: '#94a3b8', fontSize: 16 }}>
@@ -622,7 +626,7 @@ export default function AutoReplySettings() {
                       </button>
                     </div>
                   )}
-                  <h4 style={s.allRecentTitle}>All recent replies (newest first)</h4>
+                  <h4 style={s.allRecentTitle}>All recent sent replies (newest first)</h4>
                   <div style={s.logTable}>
                     <div style={s.logHead}>
                       <span>Platform</span>
@@ -664,8 +668,13 @@ export default function AutoReplySettings() {
                               @{l.authorUsername || '—'}
                             </span>
                           </span>
-                          <span style={s.logCellWrap}>{l.commentText || '—'}</span>
-                          <span style={s.logCellWrap}>{l.replyText || '—'}</span>
+                          <span style={s.logCellWrap} title={l.commentText || ''}>{l.commentText || '—'}</span>
+                          <span
+                            style={s.logCellWrap}
+                            title={l.replyText && String(l.replyText).trim() ? l.replyText : '(no reply text stored)'}
+                          >
+                            {l.replyText && String(l.replyText).trim() ? l.replyText : '—'}
+                          </span>
                           <span style={s.logColTime}>{formatTime(l.repliedAt)}</span>
                           <span style={{ ...s.logColStatus, color: l.success ? '#22c55e' : '#ef4444' }}>
                             {l.success ? '✓ Sent' : '✗ Failed'}

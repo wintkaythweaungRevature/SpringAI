@@ -54,7 +54,7 @@ const SECTION_TABS = [
   { id: 'calendar',   serial: '5', label: '📅 Calendar' },
 ];
 
-const ALL_PLATFORM_SCOPE = { id: 'all', label: 'All platforms', color: '#6366f1', emoji: '🌐' };
+const ALL_PLATFORM_SCOPE = { id: 'all', label: 'All platforms', color: '#6366f1', emoji: '🌐', logo: 'globe' };
 
 /** Figma-style platform scope: labeled control, floating menu, icons, keyboard + mouse parity */
 function PlatformScopeMenu({ value, onChange }) {
@@ -2822,28 +2822,59 @@ export default function DeepAnalytics() {
   return (
     <div style={s.wrap} translate="no">
 
-      {/* ── Jump links (all sections below on one page) ── */}
-      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16, alignItems: 'center' }}>
-        <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', marginRight: 4 }}>Jump to</span>
+      {/* ── Jump links (all sections below on one page) — hashes are normalized in App.js to tab "trends" */}
+      <div
+        role="navigation"
+        aria-label="Section shortcuts"
+        style={{
+          display: 'flex',
+          gap: 10,
+          rowGap: 8,
+          flexWrap: 'wrap',
+          marginBottom: 16,
+          alignItems: 'center',
+          width: '100%',
+          minWidth: 0,
+          boxSizing: 'border-box',
+        }}
+      >
+        <span
+          style={{
+            fontSize: 11,
+            fontWeight: 700,
+            color: '#94a3b8',
+            marginRight: 4,
+            flexShrink: 0,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          Jump to
+        </span>
         {SECTION_TABS.map(tab => (
           <a
             key={tab.id}
             href={`#trends-${tab.id}`}
             style={{
+              display: 'inline-flex',
+              alignItems: 'center',
               fontSize: 12,
               fontWeight: 600,
               color: '#6366f1',
               textDecoration: 'none',
-              padding: '4px 10px',
+              padding: '6px 12px',
               borderRadius: 999,
               border: '1px solid #e0e7ff',
               background: '#f5f3ff',
+              flexShrink: 0,
+              cursor: 'pointer',
             }}
           >
             <span style={{ opacity: 0.85 }}>{tab.serial}.</span> {tab.label}
           </a>
         ))}
-        <PlatformScopeMenu value={platform} onChange={setPlatform} />
+        <div style={{ flexShrink: 0, marginLeft: 'auto' }}>
+          <PlatformScopeMenu value={platform} onChange={setPlatform} />
+        </div>
       </div>
 
       {/* ── FOLLOWER GROWTH ── */}
@@ -3023,7 +3054,7 @@ const s = {
   wrap: {
     width: '100%', maxWidth: '100%', margin: 0,
     // Top padding raised to clear the App Launcher (22px tall, hangs 18px below topbar).
-    padding: '28px 4px 24px', boxSizing: 'border-box',
+    padding: '28px 12px 24px', boxSizing: 'border-box',
     fontFamily: "'Inter', -apple-system, sans-serif",
   },
   chartStretch: { width: '100%', minHeight: 200 },

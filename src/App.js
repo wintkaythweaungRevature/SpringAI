@@ -60,6 +60,28 @@ import AiWorkspace from './components/AiWorkspace';
 
 const BRAND_LOGO_SRC = '/android-chrome-192x192.png';
 
+/**
+ * Growth Planner uses in-page links (#trends-growth, #trends-besttime, …).
+ * The app maps URL hash → activeTab, so the full string must not replace the
+ * `trends` tab id, or the main panel unmounts. These hashes all mean tab "trends".
+ * (Do not use a blind `startsWith("trends-")` — e.g. `trends-live` is a different tab.)
+ */
+const GROWTH_PLANNER_ANCHOR_HASHES = new Set([
+  'trends',
+  'trends-growth',
+  'trends-besttime',
+  'trends-breakdown',
+  'trends-competitor',
+  'trends-calendar',
+]);
+
+function parseAppTabFromHash() {
+  const raw = (window.location.hash || '').replace('#', '').trim().split('?')[0];
+  if (!raw) return null;
+  if (GROWTH_PLANNER_ANCHOR_HASHES.has(raw)) return 'trends';
+  return raw;
+}
+
 /** Short document titles for social / publishing tabs (cleaner browser tab label). */
 const PUBLISHING_TAB_SEO = {
   'video-publisher': { title: 'Publish', description: 'Upload and publish to connected social accounts.' },
@@ -308,10 +330,7 @@ function MarketingNav({ go, onLogin, onSignup }) {
 function App() {
   // Restore activeTab from URL hash on load (e.g. #inbox → 'inbox')
   // so F5 refresh stays on the current page instead of resetting to Dashboard.
-  const [activeTab, setActiveTab] = useState(() => {
-    const hash = window.location.hash.replace('#', '').trim();
-    return hash || null;
-  });
+  const [activeTab, setActiveTab] = useState(() => parseAppTabFromHash());
   const [showAuthModal, setShowAuthModal] = useState(false);
   // authMode: 'login' | 'signup' | 'forgot-password'
   const [authMode, setAuthMode] = useState('login');
@@ -365,14 +384,16 @@ function App() {
     }
   }, []);
 
-  // Browser back/forward: read the hash and switch to that tab
+  // Browser back/forward + in-page #anchors: keep the tab id in sync with the hash
+  // (e.g. #trends-growth must still mean Growth Planner, not a bogus tab name).
   useEffect(() => {
-    const onPopState = () => {
-      const hash = window.location.hash.replace('#', '').trim();
-      setActiveTab(hash || null);
+    const syncFromHash = () => setActiveTab(parseAppTabFromHash());
+    window.addEventListener('popstate', syncFromHash);
+    window.addEventListener('hashchange', syncFromHash);
+    return () => {
+      window.removeEventListener('popstate', syncFromHash);
+      window.removeEventListener('hashchange', syncFromHash);
     };
-    window.addEventListener('popstate', onPopState);
-    return () => window.removeEventListener('popstate', onPopState);
   }, []);
 
   const goBack = useCallback(() => {

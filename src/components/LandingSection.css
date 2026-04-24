@@ -20,13 +20,28 @@
 }
 
 
+/* Apply the hero's "dark glass panel" treatment to every section so the entire
+   landing page reads as a stack of floating cards, not a flat scroll.
+   `isolation: isolate` creates a fresh stacking context so the radial-spokes
+   background layer (z-index: -1) sits behind the section content but doesn't
+   escape into other sections. */
 .ls-section {
-  padding: clamp(88px, 11vw, 128px) 0;
-  border-bottom: 1px solid var(--ls-border-soft);
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: linear-gradient(145deg, rgba(12, 18, 34, 0.92) 0%, rgba(21, 42, 82, 0.88) 42%, rgba(29, 78, 216, 0.55) 100%);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 22px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  max-width: 1200px;
+  margin: 0 auto 28px;
+  padding: clamp(48px, 7vw, 96px) clamp(20px, 4vw, 56px);
 }
 
 .ls-section:last-child {
-  border-bottom: none;
+  margin-bottom: 0;
 }
 
 .ls-section h2 {

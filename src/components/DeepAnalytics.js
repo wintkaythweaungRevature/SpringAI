@@ -2070,7 +2070,7 @@ function TrendsCalendar({ authHeaders }) {
                           const pcDot = PLATFORMS.find((x) => x.id === (p.platform || '').toLowerCase());
                           const media = (p.mediaType || p.postType || 'post').toString();
                           return (
-                            <div
+                            <span
                               key={i}
                               role="presentation"
                               onMouseEnter={(e) => {
@@ -2086,21 +2086,24 @@ function TrendsCalendar({ authHeaders }) {
                               }}
                               onMouseLeave={() => setCalTip(null)}
                               style={{
-                                width: 9,
-                                height: 9,
-                                borderRadius: '50%',
-                                background: PLATFORM_COLORS[p.platform] || '#10b981',
-                                border: `1px solid ${(PLATFORM_COLORS[p.platform] || '#10b981')}99`,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                lineHeight: 0,
                                 cursor: 'default',
                               }}
-                            />
+                            >
+                              {pcDot
+                                ? <PlatformIcon platform={pcDot} size={12} />
+                                : <span style={{ width: 9, height: 9, borderRadius: '50%', background: '#10b981' }} />}
+                            </span>
                           );
                         })}
                         {sched.slice(0, 3).map((j, i) => {
                           const pcDot = PLATFORMS.find((x) => x.id === (j.platform || '').toLowerCase());
                           const media = (j.mediaType || j.postType || 'post').toString();
                           return (
-                            <div
+                            <span
                               key={`s${i}`}
                               role="presentation"
                               onMouseEnter={(e) => {
@@ -2116,14 +2119,23 @@ function TrendsCalendar({ authHeaders }) {
                               }}
                               onMouseLeave={() => setCalTip(null)}
                               style={{
-                                width: 9,
-                                height: 9,
-                                borderRadius: 2,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                lineHeight: 0,
+                                width: 14,
+                                height: 14,
+                                borderRadius: 3,
+                                // Amber/orange backdrop preserves the "scheduled" visual semantic
+                                // from the legend so users can still tell a scheduled logo from a
+                                // published one at a glance.
                                 background: isSel ? SCHEDULED_SELECTED_ORANGE : SCHEDULED_YELLOW,
                                 border: `1px solid ${isSel ? SCHEDULED_SELECTED_ORANGE_BORDER : SCHEDULED_YELLOW_BORDER}`,
                                 cursor: 'default',
                               }}
-                            />
+                            >
+                              {pcDot && <PlatformIcon platform={pcDot} size={10} />}
+                            </span>
                           );
                         })}
                         {(posts.length + sched.length) > 7 && (
@@ -2149,12 +2161,16 @@ function TrendsCalendar({ authHeaders }) {
               <div style={{ marginTop: 12 }}>
                 <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#64748b' }}>
-                    <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#6366f1' }} />
-                    Published — <strong>round</strong> dots (one per post, color = platform)
+                    <span style={{ display: 'inline-flex', lineHeight: 0 }}>
+                      <PlatformIcon platform={PLATFORMS.find(p => p.id === 'youtube') || PLATFORMS[0]} size={12} />
+                    </span>
+                    Published — <strong>platform logo</strong> (one per post)
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#64748b' }}>
-                    <div style={{ width: 10, height: 10, borderRadius: 2, background: SCHEDULED_YELLOW, border: `1px solid ${SCHEDULED_YELLOW_BORDER}` }} />
-                    Scheduled / pending — <strong>square</strong> (so you can tell them apart from published)
+                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 14, height: 14, borderRadius: 3, background: SCHEDULED_YELLOW, border: `1px solid ${SCHEDULED_YELLOW_BORDER}` }}>
+                      <PlatformIcon platform={PLATFORMS.find(p => p.id === 'youtube') || PLATFORMS[0]} size={10} />
+                    </span>
+                    Scheduled / pending — <strong>logo on amber square</strong> (so you can tell them apart from published)
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#64748b' }}>
                     <div style={{ width: 14, height: 10, borderRadius: 4, border: `1.5px solid ${DAY_BORDER_HAS_SCHEDULED}`, background: '#fffef8' }} />

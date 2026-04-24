@@ -551,7 +551,11 @@ const s = {
   card: {
     background: "#ffffff",
     borderRadius: "12px",
-    border: "1px solid #e2e8f0",
+    // Longhand instead of shorthand `border` so child styles that imperatively
+    // change `borderColor`/`borderTop` don't trigger React's shorthand-vs-longhand warning.
+    borderWidth: "1px",
+    borderStyle: "solid",
+    borderColor: "#e2e8f0",
     padding: "28px 32px",
     maxWidth: "560px",
     width: "100%",
@@ -561,7 +565,10 @@ const s = {
   cardTitle: { margin: "0 0 6px", color: "#0f172a", fontSize: "20px", fontWeight: "700" },
   cardEmail: { margin: "0 0 20px", color: "#64748b", fontSize: "14px" },
   toast: {
-    padding: "10px 14px", borderRadius: "8px", border: "1px solid",
+    padding: "10px 14px", borderRadius: "8px",
+    // Longhand so the inline `borderColor` set by the toast renderer doesn't
+    // collide with the `border` shorthand on the same element.
+    borderWidth: "1px", borderStyle: "solid",
     marginBottom: "16px", fontSize: "14px", fontWeight: "500",
   },
   section: { borderTop: "1px solid #f1f5f9", paddingTop: "20px", marginTop: "20px" },

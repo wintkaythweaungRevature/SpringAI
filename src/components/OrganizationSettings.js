@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../context/AuthContext";
+import FallingPlatformsAnimation from "./FallingPlatformsAnimation";
 
 const PERMISSION_KEYS = [
   { key: "contentCalendar",  label: "Content Calendar" },
@@ -423,7 +424,14 @@ export default function OrganizationSettings() {
   ) : null;
 
   return (
-    <div style={{ maxWidth: 760, margin: "0 auto", padding: "24px 16px", fontFamily: "inherit" }}>
+    <div style={{
+      maxWidth: 760, margin: "0 auto", padding: "32px 24px", fontFamily: "inherit",
+      position: "relative", isolation: "isolate", overflow: "hidden",
+      background: 'linear-gradient(160deg, #060a14 0%, #0f172a 35%, #1e1b4b 70%, #0a1020 100%)',
+      borderRadius: 18,
+      minHeight: '70vh',
+    }}>
+      <FallingPlatformsAnimation mode="background" />
       <h2 style={{ color: "#e0e0e0", marginBottom: 4, fontSize: 22, fontWeight: 700 }}>
         🏢 Organization
       </h2>

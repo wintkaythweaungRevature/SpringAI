@@ -346,6 +346,10 @@ function PerformanceInsightsGrid({ platform, data, analyticsData, monthlyStats }
   const isOverview = platform === 'overview';
   const pMeta = isOverview ? null : PLATFORMS.find((x) => x.id === platform);
 
+  // Cross-chart synchronized hover: when the user moves the cursor over any one of the
+  // four charts, all four show the tooltip at the same horizontal (date) position.
+  const [sharedHoverFrac, setSharedHoverFrac] = useState(null);
+
   const customizeBtn = (
     <button
       type="button"
@@ -430,6 +434,8 @@ function PerformanceInsightsGrid({ platform, data, analyticsData, monthlyStats }
                 color={color}
                 title={label}
                 compact
+                externalHoverFrac={sharedHoverFrac}
+                onHoverChange={setSharedHoverFrac}
               />
             </div>
           ))}

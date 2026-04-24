@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import UrlRepurposer from './UrlRepurposer';
 import VideoRecycler from './VideoRecycler';
+import FallingPlatformsAnimation from './FallingPlatformsAnimation';
 
 const TABS = [
   { id: 'url',   label: '🔗 URL Repurposer',   desc: 'Turn any article or web page into platform-optimised posts' },
@@ -11,14 +12,21 @@ export default function Repurposer() {
   const [active, setActive] = useState('url');
 
   return (
-    <div style={{ maxWidth: 820, margin: '0 auto', padding: '24px 16px', fontFamily: 'inherit' }}>
+    <div style={{
+      maxWidth: 820, margin: '0 auto', padding: '32px 24px', fontFamily: 'inherit',
+      position: 'relative', isolation: 'isolate', overflow: 'hidden',
+      background: 'linear-gradient(160deg, #060a14 0%, #0f172a 35%, #1e1b4b 70%, #0a1020 100%)',
+      borderRadius: 18,
+      minHeight: '70vh',
+    }}>
+      <FallingPlatformsAnimation mode="background" />
 
       {/* Header */}
       <div style={{ marginBottom: 20 }}>
-        <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1e293b', margin: '0 0 4px' }}>
+        <h2 style={{ fontSize: 22, fontWeight: 800, color: '#f1f5f9', margin: '0 0 4px' }}>
           ♻️ Repurposer
         </h2>
-        <p style={{ fontSize: 13, color: '#64748b', margin: 0 }}>
+        <p style={{ fontSize: 13, color: '#94a3b8', margin: 0 }}>
           Transform any content — articles or videos — into ready-to-post content for every platform.
         </p>
       </div>

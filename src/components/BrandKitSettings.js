@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import PlatformIcon from './PlatformIcon';
+import FallingPlatformsAnimation from './FallingPlatformsAnimation';
 
 const EMPTY_FORM = {
   name: '',
@@ -503,18 +504,22 @@ export default function BrandKitSettings() {
   const isActive = selectedBrand?.isActive === true;
 
   // ── RENDER ─────────────────────────────────────────────────────────────────
+  // Background + bouncing-platforms animation are now provided by the parent
+  // (BrandGuardian wraps this in its own dark gradient panel). Keeping a second
+  // panel here doubled the styling and produced an unwanted inner edge.
   return (
     <div style={{
-      maxWidth: 960, margin: '0 auto', padding: '20px 16px',
+      maxWidth: 960, margin: '0 auto', padding: '32px 24px',
       fontFamily: 'inherit', display: 'flex', flexDirection: 'column', gap: 0,
+      background: 'transparent',
     }}>
 
       {/* Page header */}
       <div style={{ marginBottom: 20 }}>
-        <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1e293b', margin: '0 0 4px' }}>
+        <h2 style={{ fontSize: 22, fontWeight: 800, color: '#f1f5f9', margin: '0 0 4px' }}>
           🎨 Brand Kit
         </h2>
-        <p style={{ fontSize: 13, color: '#64748b', margin: 0 }}>
+        <p style={{ fontSize: 13, color: '#94a3b8', margin: 0 }}>
           Manage multiple brand profiles. The active brand is used automatically in all AI features.
         </p>
       </div>

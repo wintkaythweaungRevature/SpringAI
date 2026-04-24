@@ -178,7 +178,10 @@ export default function PostDetailModal({ post, onClose, platform, onSaved, feed
   };
 
   const target = useMemo(() => resolveEditTarget(post), [post]);
-  const readOnly = isPublishedPost(post);
+  // Always editable — the modal's edit form (caption, hashtags, file upload, schedule, etc.)
+  // is shown for every post regardless of status. If a save against an already-published post
+  // is rejected by the platform's API, the existing error banner inside the modal surfaces it.
+  const readOnly = false;
   const canMutate = !!target && !readOnly;
 
   const syncFromPost = useCallback(() => {

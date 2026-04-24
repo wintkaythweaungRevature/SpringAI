@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import BrandKitSettings from './BrandKitSettings';
 import UrlRepurposer from './UrlRepurposer';
+import FallingPlatformsAnimation from './FallingPlatformsAnimation';
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -570,10 +571,16 @@ export default function BrandGuardian() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: '#0f172a',
+      // Same dark gradient as the landing-page final-CTA so the bouncing-platforms
+      // background reads consistently across all settings/feature pages.
+      background: 'linear-gradient(160deg, #060a14 0%, #0f172a 35%, #1e1b4b 70%, #0a1020 100%)',
       color: '#f1f5f9',
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+      position: 'relative',
+      isolation: 'isolate',
+      overflow: 'hidden',
     }}>
+      <FallingPlatformsAnimation mode="background" />
 
       {/* Tab bar */}
       <div style={{

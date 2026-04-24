@@ -2615,15 +2615,68 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
             {selectedPlatforms.map(pid => {
               const p = PLATFORMS.find(x => x.id === pid);
               const hasSchedule = scheduledTimes[pid] && String(scheduledTimes[pid]).trim() !== '';
+              const removePlatform = (e) => {
+                // Stop the row's onClick (which would activate the variant) from firing.
+                e.stopPropagation();
+                e.preventDefault();
+                if (!window.confirm(`Remove ${p.label} from this post? You can re-add it from the platform picker.`)) return;
+                // Untick every account on this platform via the existing setSelected bridge.
+                setSelected(prev => prev.filter(x => x !== pid));
+                // Clean up the scheduled time for the removed platform.
+                setScheduledTimes(prev => {
+                  if (!(pid in prev)) return prev;
+                  const next = { ...prev };
+                  delete next[pid];
+                  return next;
+                });
+                // If the removed platform was the active variant, hop to the next remaining one.
+                if (activeVariant === pid) {
+                  const remaining = selectedPlatforms.filter(x => x !== pid);
+                  setActiveVariant(remaining[0] || null);
+                  setViralScore(null);
+                }
+              };
               return (
-                <button key={pid}
-                  style={{ ...s.variantTab, ...(activeVariant === pid ? s.variantTabActive : {}) }}
-                  onClick={() => { setActiveVariant(pid); setViralScore(null); }}
-                >
-                  <PlatformIcon platform={p} size={22} />
-                  <span style={{ flex: 1, textAlign: 'left', fontSize: '13px', fontWeight: 600 }}>{p.label}</span>
-                  <span style={{ fontSize: '11px' }}>{hasSchedule ? '📅' : '⏱️'}</span>
-                </button>
+                <div key={pid} style={{ position: 'relative' }}>
+                  <button
+                    style={{ ...s.variantTab, ...(activeVariant === pid ? s.variantTabActive : {}), paddingRight: 36 }}
+                    onClick={() => { setActiveVariant(pid); setViralScore(null); }}
+                  >
+                    <PlatformIcon platform={p} size={22} />
+                    <span style={{ flex: 1, textAlign: 'left', fontSize: '13px', fontWeight: 600 }}>{p.label}</span>
+                    <span style={{ fontSize: '11px' }}>{hasSchedule ? '📅' : '⏱️'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={removePlatform}
+                    title={`Remove ${p.label} — don't post here`}
+                    aria-label={`Remove ${p.label}`}
+                    style={{
+                      position: 'absolute',
+                      top: '50%',
+                      right: 8,
+                      transform: 'translateY(-50%)',
+                      width: 22,
+                      height: 22,
+                      padding: 0,
+                      borderRadius: '50%',
+                      border: '1px solid rgba(148,163,184,0.35)',
+                      background: 'rgba(248,250,252,0.95)',
+                      color: '#dc2626',
+                      fontSize: 14,
+                      lineHeight: 1,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#fee2e2'; e.currentTarget.style.borderColor = '#fca5a5'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(248,250,252,0.95)'; e.currentTarget.style.borderColor = 'rgba(148,163,184,0.35)'; }}
+                  >
+                    ×
+                  </button>
+                </div>
               );
             })}
 

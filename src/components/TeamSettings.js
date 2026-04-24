@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
+import FallingPlatformsAnimation from './FallingPlatformsAnimation';
 
 /* ─── Seat limits per plan ─────────────────────────────────── */
 const SEAT_LIMITS = { FREE: 1, STARTER: 1, PRO: 3, GROWTH: 5, MEMBER: 3 };
@@ -407,11 +408,18 @@ export default function TeamSettings() {
 
   /* ─── Team dashboard ─── */
   return (
-    <div style={{ padding: '32px 24px', maxWidth: 600, margin: '0 auto' }}>
+    <div style={{
+      padding: '32px 24px', maxWidth: 600, margin: '0 auto',
+      position: 'relative', isolation: 'isolate', overflow: 'hidden',
+      background: 'linear-gradient(160deg, #060a14 0%, #0f172a 35%, #1e1b4b 70%, #0a1020 100%)',
+      borderRadius: 18,
+      minHeight: '70vh',
+    }}>
+      <FallingPlatformsAnimation mode="background" />
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 28 }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: '#0f172a' }}>
+          <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: '#f1f5f9' }}>
             👥 {team.name || 'Your Team'}
           </h2>
           {isOwner && (

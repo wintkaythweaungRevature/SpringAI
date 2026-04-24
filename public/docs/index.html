@@ -112,10 +112,6 @@
       <li><a href="#reply-enchanter">Reply Enchanter</a></li>
       <li><a href="#resume-warlock">Resume Warlock</a></li>
     </ul>
-    <div class="docs-sidebar-title" style="margin-top:24px">API</div>
-    <ul>
-      <li><a href="#api">REST API Reference</a></li>
-    </ul>
   </aside>
 
   <main class="docs-content">
@@ -238,30 +234,6 @@
         <li>Ask AI to critique your practice answers</li>
         <li>Request questions for a specific job title: "Generate questions for a Java backend developer role"</li>
       </ul>
-    </div>
-
-    <div class="doc-section" id="api">
-      <h2>REST API Reference</h2>
-      <p>W!ntAi's backend exposes a Spring Boot REST API. The full interactive API documentation is available via Swagger UI.</p>
-      <p><a href="https://api.wintaibot.com/swagger-ui.html" target="_blank" rel="noopener noreferrer">→ Open Swagger API Docs</a></p>
-      <h3>Base URL</h3>
-      <div class="api-block"><code>https://api.wintaibot.com</code></div>
-      <h3>Authentication</h3>
-      <p>Most endpoints require a Bearer token obtained via login:</p>
-      <div class="api-block">
-        <span class="api-method post">POST</span><code>/api/auth/login</code><br><br>
-        <code>Authorization: Bearer &lt;token&gt;</code>
-      </div>
-      <h3>Key Endpoints</h3>
-      <div class="api-block">
-        <span class="api-method post">POST</span><code>/api/ai/ask</code> — AI chatbot<br>
-        <span class="api-method post">POST</span><code>/api/ai/reply</code> — Email reply generator<br>
-        <span class="api-method post">POST</span><code>/api/ai/analyze</code> — Document analysis<br>
-        <span class="api-method post">POST</span><code>/api/ai/transcribe</code> — Voice transcription<br>
-        <span class="api-method post">POST</span><code>/api/ai/image</code> — Image generation<br>
-        <span class="api-method post">POST</span><code>/api/ai/resume</code> — Interview prep
-      </div>
-      <p>Built with <strong>Spring AI</strong> and <strong>Java 21</strong>. Source available on <a href="https://github.com/wintkaythweaungRevature" target="_blank" rel="noopener noreferrer">GitHub</a>.</p>
     </div>
 
   </main>

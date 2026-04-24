@@ -1,0 +1,835 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Living Type — particle effects that read the words</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0a0a0b;
+    --bg-2: #111114;
+    --ink: #ece7dd;
+    --ink-dim: #8a857c;
+    --line: #1d1d22;
+    --chip: #15151a;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  body{min-height:100vh;overflow-x:hidden}
+
+  /* ---------- page chrome ---------- */
+  .nav{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:20px 32px;z-index:50;mix-blend-mode:difference}
+  .nav .brand{font-family:'Instrument Serif',serif;font-size:22px;letter-spacing:.01em;color:#fff}
+  .nav .brand i{font-style:italic;color:#cfc8b8}
+  .nav ul{display:flex;gap:28px;list-style:none;margin:0;padding:0;font-size:13px;color:#bcb6a8}
+  .nav a{color:inherit;text-decoration:none}
+  .nav .cta{border:1px solid #fff3;padding:8px 14px;border-radius:999px;color:#fff;font-size:12px;letter-spacing:.04em;text-transform:uppercase}
+
+  /* ---------- hero ---------- */
+  .hero{position:relative;min-height:100vh;padding:96px 5vw 64px;display:flex;flex-direction:column;justify-content:center;gap:28px}
+  .eyebrow{display:flex;align-items:center;gap:12px;color:var(--ink-dim);font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+  .eyebrow .dot{width:6px;height:6px;border-radius:50%;background:#d46a3a;box-shadow:0 0 12px #d46a3a}
+  .eyebrow .sep{flex:1;height:1px;background:var(--line);max-width:120px}
+
+  .stage{position:relative;}
+  .editor{
+    width:100%;
+    border:none;outline:none;resize:none;background:transparent;color:var(--ink);
+    font-family:'Instrument Serif',serif;
+    font-weight:400;
+    font-size:clamp(48px, 9vw, 148px);
+    line-height:1.02;
+    letter-spacing:-0.02em;
+    padding:0;margin:0;
+    caret-color:#d46a3a;
+    overflow:hidden;
+    position:relative;z-index:2;
+    /* the text itself stays readable — effects render UNDER and AROUND it */
+  }
+  .editor:focus{outline:none}
+  .editor::selection{background:#d46a3a44}
+
+  /* The layer where all effects are drawn, perfectly on top of the editor */
+  .fx-layer{
+    position:absolute;inset:0;pointer-events:none;z-index:3;
+  }
+
+  /* single canvas for particle systems */
+  #particles{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:4}
+
+  /* hint chip */
+  .meta{display:flex;align-items:center;gap:18px;flex-wrap:wrap;color:var(--ink-dim);font-family:'JetBrains Mono',monospace;font-size:12px}
+  .meta .k{display:inline-flex;gap:6px;align-items:center;background:var(--chip);border:1px solid var(--line);padding:6px 10px;border-radius:8px;color:#cfc8b8}
+  .meta .k b{color:#fff;font-weight:500}
+  .meta .tag{color:#d46a3a}
+
+  /* word-legend row (below editor) */
+  .legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-top:12px}
+  .legend .w{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#6a6558;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#0d0d10;display:flex;justify-content:space-between;align-items:center;cursor:pointer;transition:.2s}
+  .legend .w:hover{border-color:#2a2a30;color:#bcb6a8}
+  .legend .w span.dot{width:8px;height:8px;border-radius:50%}
+
+  /* lower page: feature strip, footer, keep minimal */
+  .strip{border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-top:96px;padding:28px 5vw;display:grid;grid-template-columns:repeat(4,1fr);gap:40px}
+  .strip h4{font-family:'Instrument Serif',serif;font-weight:400;font-size:22px;margin:0 0 6px;color:#ece7dd}
+  .strip p{margin:0;color:#7d786e;font-size:13px;line-height:1.5}
+  .strip .n{font-family:'JetBrains Mono',monospace;font-size:10px;color:#4a4740;letter-spacing:.1em}
+
+  .sub-hero{padding:120px 5vw;display:grid;grid-template-columns:1.1fr .9fr;gap:80px;border-bottom:1px solid var(--line)}
+  .sub-hero h2{font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(36px,4.4vw,64px);line-height:1.05;letter-spacing:-.02em;margin:0 0 18px}
+  .sub-hero h2 i{color:#d46a3a}
+  .sub-hero p{color:#9a9488;font-size:16px;line-height:1.6;max-width:46ch}
+  .sub-hero .right{font-family:'JetBrains Mono',monospace;font-size:12px;color:#7d786e;line-height:1.8;align-self:end}
+  .sub-hero .right b{color:#ece7dd;font-weight:500}
+
+  footer{padding:40px 5vw 60px;color:#5b574e;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;display:flex;justify-content:space-between;border-top:1px solid var(--line)}
+
+  @media (max-width: 780px){
+    .nav ul{display:none}
+    .strip{grid-template-columns:1fr 1fr}
+    .sub-hero{grid-template-columns:1fr;gap:40px}
+  }
+</style>
+</head>
+<body>
+
+<nav class="nav" data-screen-label="nav">
+  <div class="brand">Ember <i>&amp;</i> Aether</div>
+  <ul>
+    <li><a href="#">Engine</a></li>
+    <li><a href="#">Primitives</a></li>
+    <li><a href="#">Docs</a></li>
+    <li><a href="#">Changelog</a></li>
+  </ul>
+  <a class="cta" href="#">Get access</a>
+</nav>
+
+<section class="hero" data-screen-label="01 Hero">
+  <div class="eyebrow"><span class="dot"></span><span>A typography engine that reads what you write</span><span class="sep"></span><span>v0.4 — public beta</span></div>
+
+  <div class="stage" id="stage">
+    <canvas id="particles"></canvas>
+    <div class="fx-layer" id="fxLayer"></div>
+    <textarea class="editor" id="editor" spellcheck="false" autocomplete="off" aria-label="Editable headline">Type anything. Watch words like fire, smoke, metal and wind come alive — even ice, electric, gold, rain, shadow and glow.</textarea>
+  </div>
+
+  <div class="meta">
+    <span>Try editing:</span>
+    <span class="k">type <b>fire</b></span>
+    <span class="k">type <b>smoke</b></span>
+    <span class="k">type <b>metal</b></span>
+    <span class="k">type <b>wind</b></span>
+    <span class="tag">// 10 living words supported</span>
+  </div>
+
+  <div class="legend" id="legend"></div>
+</section>
+
+<section class="sub-hero" data-screen-label="02 Pitch">
+  <div>
+    <h2>Type that knows <i>what it means.</i></h2>
+    <p>Ember &amp; Aether is a lightweight runtime that recognises semantic words inside any text field and renders matching particle, light and material effects — live, per-character, directly behind the glyphs. No shaders to write. No assets to ship.</p>
+  </div>
+  <div class="right">
+    <div><b>// install</b></div>
+    <div>npm i ember-aether</div>
+    <br/>
+    <div><b>// usage</b></div>
+    <div>import { bind } from 'ember-aether'</div>
+    <div>bind(document.querySelector('textarea'))</div>
+    <br/>
+    <div style="color:#4a4740">— 14kb gzipped · zero deps</div>
+  </div>
+</section>
+
+<section class="strip" data-screen-label="03 Features">
+  <div><div class="n">01 / ENGINE</div><h4>Per-word physics</h4><p>Each recognised token spawns an independent simulation with its own forces, palette and lifetime.</p></div>
+  <div><div class="n">02 / TYPE</div><h4>Glyph-aware</h4><p>Effects anchor to actual rendered glyph boxes — they follow resizing, wrapping and edits in real time.</p></div>
+  <div><div class="n">03 / API</div><h4>One-line binding</h4><p>Attach to any textarea, contenteditable or input. Customise the dictionary, or bring your own words.</p></div>
+  <div><div class="n">04 / PERF</div><h4>60fps by default</h4><p>A shared canvas pool caps particle counts and pauses simulations that drift off-screen.</p></div>
+</section>
+
+<footer>
+  <span>© 2026 Ember &amp; Aether Labs</span>
+  <span>Made in Brooklyn · Sounds in your head</span>
+</footer>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+//  Ember & Aether — semantic particle engine for editable text
+//  Supported words: fire, smoke, metal, wind, ice, electric, gold, shadow, glow, rain
+// ─────────────────────────────────────────────────────────────────────────────
+
+(() => {
+  const editor  = document.getElementById('editor');
+  const stage   = document.getElementById('stage');
+  const fxLayer = document.getElementById('fxLayer');
+  const canvas  = document.getElementById('particles');
+  const ctx     = canvas.getContext('2d');
+  const legend  = document.getElementById('legend');
+
+  // hidden mirror lets us measure the exact pixel rect of every matched word
+  const mirror = document.createElement('div');
+  mirror.setAttribute('aria-hidden', 'true');
+  mirror.style.cssText = `
+    position:absolute;top:0;left:0;right:0;
+    visibility:hidden;pointer-events:none;
+    white-space:pre-wrap;word-wrap:break-word;
+    z-index:0;
+  `;
+  stage.appendChild(mirror);
+
+  // -----------------------------------------------------------------
+  //  Word registry
+  // -----------------------------------------------------------------
+  const WORDS = {
+    fire:     { color: '#ff7a2b', glow: '#ffb259', dot:'#ff7a2b' },
+    smoke:    { color: '#a8a39a', glow: '#d8d4ca', dot:'#a8a39a' },
+    metal:    { color: '#dfe3ea', glow: '#ffffff', dot:'#dfe3ea' },
+    wind:     { color: '#bfe3ea', glow: '#e9f6f9', dot:'#bfe3ea' },
+    ice:      { color: '#a6d8ff', glow: '#e3f3ff', dot:'#a6d8ff' },
+    electric: { color: '#a8e0ff', glow: '#ffffff', dot:'#a8e0ff' },
+    gold:     { color: '#f2c25a', glow: '#ffe9a8', dot:'#f2c25a' },
+    shadow:   { color: '#6b6870', glow: '#1a1a20', dot:'#6b6870' },
+    glow:     { color: '#fff1b5', glow: '#ffffff', dot:'#fff1b5' },
+    rain:     { color: '#8ab4d6', glow: '#c9e1f2', dot:'#8ab4d6' },
+  };
+  const WORD_KEYS = Object.keys(WORDS);
+
+  // build legend chips
+  legend.innerHTML = WORD_KEYS.map(w =>
+    `<div class="w" data-w="${w}">
+       <span>${w}</span>
+       <span class="dot" style="background:${WORDS[w].dot};box-shadow:0 0 10px ${WORDS[w].dot}"></span>
+     </div>`
+  ).join('');
+  legend.querySelectorAll('.w').forEach(el => {
+    el.addEventListener('click', () => insertWord(el.dataset.w));
+  });
+  function insertWord(w){
+    const start = editor.selectionStart ?? editor.value.length;
+    const end   = editor.selectionEnd ?? editor.value.length;
+    const pre   = editor.value.slice(0,start);
+    const post  = editor.value.slice(end);
+    const pad1  = pre.length && !/\s$/.test(pre) ? ' ' : '';
+    const pad2  = post.length && !/^\s/.test(post) ? ' ' : '';
+    editor.value = pre + pad1 + w + pad2 + post;
+    editor.focus();
+    const caret = (pre + pad1 + w + pad2).length;
+    editor.setSelectionRange(caret, caret);
+    recomputeMatches();
+  }
+
+  // -----------------------------------------------------------------
+  //  Sizing
+  // -----------------------------------------------------------------
+  const DPR = Math.min(window.devicePixelRatio || 1, 2);
+  function resizeCanvas(){
+    // autosize textarea to its content so we can cover it
+    editor.style.height = 'auto';
+    editor.style.height = editor.scrollHeight + 'px';
+
+    const r = stage.getBoundingClientRect();
+    canvas.width  = r.width  * DPR;
+    canvas.height = r.height * DPR;
+    canvas.style.width  = r.width  + 'px';
+    canvas.style.height = r.height + 'px';
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+
+    // copy typography into mirror so char metrics match exactly
+    const cs = getComputedStyle(editor);
+    [
+      'fontFamily','fontSize','fontWeight','fontStyle','letterSpacing',
+      'lineHeight','padding','border','boxSizing','whiteSpace','wordSpacing','textTransform'
+    ].forEach(k => mirror.style[k] = cs[k]);
+    mirror.style.width = editor.clientWidth + 'px';
+  }
+
+  // -----------------------------------------------------------------
+  //  Word-box measurement using a hidden mirror with <span> wrappers
+  // -----------------------------------------------------------------
+  let matches = []; // {word, rect, key}
+
+  function recomputeMatches(){
+    const text = editor.value;
+    // tokenise, keeping whitespace so offsets align
+    const parts = text.split(/(\s+)/);
+    let html = '';
+    const wordHits = []; // {key, spanIdx}
+    parts.forEach((p, i) => {
+      if (!/\S/.test(p)) { html += escapeHtml(p); return; }
+      const clean = p.toLowerCase().replace(/[^a-z]/g,'');
+      const key = WORD_KEYS.includes(clean) ? clean : null;
+      if (key){
+        const idx = wordHits.length;
+        wordHits.push({key, i});
+        html += `<span data-fx="${idx}">${escapeHtml(p)}</span>`;
+      } else {
+        html += escapeHtml(p);
+      }
+    });
+    mirror.innerHTML = html + '&#8203;'; // zero-width to stabilise trailing space
+
+    // read back rects
+    const stageRect = stage.getBoundingClientRect();
+    matches = [];
+    wordHits.forEach(({key}, idx) => {
+      const span = mirror.querySelector(`[data-fx="${idx}"]`);
+      if (!span) return;
+      // a word can wrap; use first client rect only (good enough for landing type)
+      const rects = span.getClientRects();
+      for (const rr of rects){
+        const rect = {
+          x: rr.left - stageRect.left,
+          y: rr.top  - stageRect.top,
+          w: rr.width,
+          h: rr.height,
+        };
+        matches.push({key, rect});
+      }
+    });
+    rebalanceEmitters();
+  }
+
+  function escapeHtml(s){ return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+  // -----------------------------------------------------------------
+  //  Particle system
+  // -----------------------------------------------------------------
+  const particles = [];
+  const MAX = 1400;
+
+  function spawn(p){ if (particles.length < MAX) particles.push(p); }
+
+  // emitters are persistent anchors; each frame they may emit new particles
+  // based on current matches
+  let emitters = []; // recomputed from matches each time
+  function rebalanceEmitters(){
+    emitters = matches.map(m => ({ ...m, t: Math.random()*10 }));
+  }
+
+  // -----------------------------------------------------------------
+  //  Per-word emit & update functions
+  // -----------------------------------------------------------------
+  const rand = (a,b)=>a+Math.random()*(b-a);
+  const TAU = Math.PI*2;
+
+  const EFFECTS = {
+    fire: {
+      emit(e){
+        const {x,y,w,h} = e.rect;
+        for (let i=0;i<2;i++){
+          spawn({
+            type:'fire',
+            x: x + Math.random()*w,
+            y: y + h*0.85 + rand(-2,2),
+            vx: rand(-0.3,0.3),
+            vy: rand(-1.6,-0.7),
+            r: rand(4,11),
+            life: 0, maxLife: rand(40,80),
+          });
+        }
+        // occasional ember
+        if (Math.random()<0.25){
+          spawn({
+            type:'ember',
+            x: x + Math.random()*w,
+            y: y + rand(h*0.4, h*0.9),
+            vx: rand(-0.6,0.6),
+            vy: rand(-2.4,-1.2),
+            r: rand(1,2.2),
+            life: 0, maxLife: rand(50,120),
+          });
+        }
+      },
+      draw(p){
+        const t = p.life / p.maxLife;
+        // flame blob — orange core fading to transparent red
+        const r = p.r * (1 - t*0.3);
+        const a = (1 - t) * 0.8;
+        const g = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r*2.5);
+        g.addColorStop(0, `rgba(255,230,140,${a})`);
+        g.addColorStop(0.35, `rgba(255,140,40,${a*0.9})`);
+        g.addColorStop(1, `rgba(200,40,20,0)`);
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(p.x,p.y,r*2.5,0,TAU); ctx.fill();
+      },
+      drawEmber(p){
+        const t = p.life/p.maxLife;
+        ctx.fillStyle = `rgba(255,${180 - t*120|0},${80 - t*60|0},${1-t})`;
+        ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,TAU); ctx.fill();
+      }
+    },
+
+    smoke: {
+      emit(e){
+        const {x,y,w,h} = e.rect;
+        if (Math.random()<0.7){
+          spawn({
+            type:'smoke',
+            x: x + rand(w*0.1, w*0.9),
+            y: y + h*0.6,
+            vx: rand(-0.2,0.2),
+            vy: rand(-0.6,-0.3),
+            r: rand(10,22),
+            rot: Math.random()*TAU,
+            vr: rand(-0.01,0.01),
+            life:0, maxLife: rand(90,180),
+          });
+        }
+      },
+      draw(p){
+        const t = p.life/p.maxLife;
+        const r = p.r * (1 + t*1.6);
+        const a = Math.sin(t*Math.PI) * 0.28;
+        const g = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r);
+        g.addColorStop(0, `rgba(200,198,192,${a})`);
+        g.addColorStop(1, `rgba(120,118,112,0)`);
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(p.x,p.y,r,0,TAU); ctx.fill();
+      }
+    },
+
+    wind: {
+      emit(e){
+        const {x,y,w,h} = e.rect;
+        for (let i=0;i<2;i++){
+          spawn({
+            type:'wind',
+            x: x - rand(0,30),
+            y: y + rand(0,h),
+            vx: rand(3.5,6),
+            vy: rand(-0.1,0.1),
+            len: rand(30,90),
+            life:0, maxLife: rand(30,60),
+          });
+        }
+      },
+      draw(p){
+        const t = p.life/p.maxLife;
+        const a = Math.sin(t*Math.PI)*0.5;
+        ctx.strokeStyle = `rgba(210,235,240,${a})`;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(p.x - p.len, p.y);
+        ctx.stroke();
+      }
+    },
+
+    ice: {
+      emit(e){
+        const {x,y,w,h} = e.rect;
+        if (Math.random()<0.5){
+          spawn({
+            type:'ice',
+            x: x + Math.random()*w,
+            y: y + h + rand(0,4),
+            vx: rand(-0.15,0.15),
+            vy: rand(0.4,0.9),
+            r: rand(1.2,2.6),
+            life:0, maxLife: rand(60,120),
+          });
+        }
+      },
+      draw(p){
+        const t = p.life/p.maxLife;
+        const a = 1 - t;
+        ctx.fillStyle = `rgba(220,240,255,${a})`;
+        ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,TAU); ctx.fill();
+        // six-point crystal hint
+        ctx.strokeStyle = `rgba(180,220,255,${a*0.5})`;
+        ctx.lineWidth = 0.8;
+        for (let k=0;k<3;k++){
+          const a1 = k * Math.PI/3;
+          ctx.beginPath();
+          ctx.moveTo(p.x - Math.cos(a1)*p.r*2, p.y - Math.sin(a1)*p.r*2);
+          ctx.lineTo(p.x + Math.cos(a1)*p.r*2, p.y + Math.sin(a1)*p.r*2);
+          ctx.stroke();
+        }
+      }
+    },
+
+    electric: {
+      emit(e){
+        const {x,y,w,h} = e.rect;
+        if (Math.random()<0.22){
+          // a bolt segmented from left to right of the word
+          const pts = [];
+          const N = 8;
+          const yMid = y + h*0.5;
+          for (let i=0;i<=N;i++){
+            pts.push({
+              x: x + (w * i/N),
+              y: yMid + rand(-h*0.35, h*0.35),
+            });
+          }
+          spawn({ type:'bolt', pts, life:0, maxLife: rand(6,14) });
+        }
+        // sparks
+        if (Math.random()<0.4){
+          spawn({
+            type:'spark',
+            x: x + Math.random()*w,
+            y: y + Math.random()*h,
+            vx: rand(-2,2), vy: rand(-2,2),
+            life:0, maxLife: rand(10,22),
+          });
+        }
+      },
+      drawBolt(p){
+        const t = p.life/p.maxLife;
+        const a = 1 - t;
+        ctx.strokeStyle = `rgba(200,235,255,${a})`;
+        ctx.shadowColor = `rgba(170,210,255,${a})`;
+        ctx.shadowBlur = 10;
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        p.pts.forEach((pt,i)=>{ i?ctx.lineTo(pt.x,pt.y):ctx.moveTo(pt.x,pt.y); });
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+      },
+      drawSpark(p){
+        const t = p.life/p.maxLife;
+        ctx.fillStyle = `rgba(220,240,255,${1-t})`;
+        ctx.fillRect(p.x, p.y, 1.5, 1.5);
+      }
+    },
+
+    gold: {
+      emit(e){
+        const {x,y,w,h} = e.rect;
+        if (Math.random()<0.5){
+          spawn({
+            type:'gold',
+            x: x + Math.random()*w,
+            y: y + Math.random()*h,
+            vx: rand(-0.2,0.2),
+            vy: rand(-0.3,-0.05),
+            r: rand(1,2.2),
+            phase: Math.random()*TAU,
+            life:0, maxLife: rand(40,100),
+          });
+        }
+      },
+      draw(p){
+        const t = p.life/p.maxLife;
+        const a = Math.sin(t*Math.PI);
+        const tw = 0.5 + 0.5*Math.sin(p.phase + p.life*0.4);
+        ctx.fillStyle = `rgba(255,215,120,${a*tw})`;
+        ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,TAU); ctx.fill();
+        // sparkle cross
+        ctx.strokeStyle = `rgba(255,240,190,${a*tw*0.9})`;
+        ctx.lineWidth = 0.6;
+        const L = p.r*3;
+        ctx.beginPath(); ctx.moveTo(p.x-L,p.y); ctx.lineTo(p.x+L,p.y);
+        ctx.moveTo(p.x,p.y-L); ctx.lineTo(p.x,p.y+L); ctx.stroke();
+      }
+    },
+
+    shadow: {
+      emit(e){
+        const {x,y,w,h} = e.rect;
+        if (Math.random()<0.6){
+          spawn({
+            type:'shadow',
+            x: x + Math.random()*w,
+            y: y + h*rand(0.8,1.1),
+            vx: rand(-0.1,0.1),
+            vy: rand(0.1,0.4),
+            r: rand(6,14),
+            life:0, maxLife: rand(60,120),
+          });
+        }
+      },
+      draw(p){
+        const t = p.life/p.maxLife;
+        const a = Math.sin(t*Math.PI)*0.55;
+        const g = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r*2);
+        g.addColorStop(0, `rgba(0,0,0,${a})`);
+        g.addColorStop(1, `rgba(0,0,0,0)`);
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(p.x,p.y,p.r*2,0,TAU); ctx.fill();
+      }
+    },
+
+    glow: {
+      emit(e){
+        // glow is a halo — emit one slow pulse particle at word center
+        if (Math.random()<0.35){
+          const {x,y,w,h} = e.rect;
+          spawn({
+            type:'glow',
+            x: x + w/2, y: y + h/2,
+            r0: Math.max(w,h)*0.4,
+            life:0, maxLife: rand(60,120),
+          });
+        }
+      },
+      draw(p){
+        const t = p.life/p.maxLife;
+        const r = p.r0 * (1 + t*0.8);
+        const a = Math.sin(t*Math.PI)*0.35;
+        const g = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r);
+        g.addColorStop(0, `rgba(255,245,200,${a})`);
+        g.addColorStop(0.5, `rgba(255,220,140,${a*0.4})`);
+        g.addColorStop(1, `rgba(255,200,100,0)`);
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(p.x,p.y,r,0,TAU); ctx.fill();
+      }
+    },
+
+    rain: {
+      emit(e){
+        const {x,y,w,h} = e.rect;
+        for (let i=0;i<2;i++){
+          spawn({
+            type:'rain',
+            x: x + Math.random()*w + rand(-10,10),
+            y: y - rand(0,20),
+            vx: 0.3,
+            vy: rand(6,9),
+            len: rand(10,18),
+            life:0, maxLife: 50,
+          });
+        }
+      },
+      draw(p){
+        ctx.strokeStyle = `rgba(170,205,230,0.55)`;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(p.x,p.y);
+        ctx.lineTo(p.x+p.vx*2, p.y+p.len);
+        ctx.stroke();
+      }
+    },
+
+    metal: {
+      // metal is primarily an overlay (sheen) — drawn as post-effect, not particles
+      emit(e){
+        // occasional small glint particle
+        if (Math.random()<0.25){
+          const {x,y,w,h} = e.rect;
+          spawn({
+            type:'glint',
+            x: x + Math.random()*w,
+            y: y + h*rand(0.2,0.8),
+            life:0, maxLife: rand(20,40),
+            r: rand(1,2),
+          });
+        }
+      },
+      drawGlint(p){
+        const t = p.life/p.maxLife;
+        const a = Math.sin(t*Math.PI);
+        ctx.fillStyle = `rgba(255,255,255,${a})`;
+        ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,TAU); ctx.fill();
+      }
+    },
+  };
+
+  // -----------------------------------------------------------------
+  //  Overlays (drawn each frame on top of text within word bboxes)
+  //  - metal: moving diagonal sheen
+  //  - fire: warm wash behind text
+  //  - shadow: darkens background
+  //  - glow: warm halo behind text (in addition to particle pulse)
+  // -----------------------------------------------------------------
+  function drawOverlays(time){
+    matches.forEach(m => {
+      const {x,y,w,h} = m.rect;
+      switch (m.key){
+        case 'metal': {
+          // base silver wash
+          const g = ctx.createLinearGradient(x, y, x, y+h);
+          g.addColorStop(0, 'rgba(235,240,250,0.0)');
+          g.addColorStop(0.45, 'rgba(235,240,250,0.18)');
+          g.addColorStop(0.55, 'rgba(235,240,250,0.18)');
+          g.addColorStop(1, 'rgba(235,240,250,0.0)');
+          ctx.fillStyle = g;
+          ctx.fillRect(x, y, w, h);
+
+          // moving sheen bar
+          const period = 3000;
+          const phase = ((time % period)/period);
+          const sx = x - w*0.4 + phase * (w*1.8);
+          const grd = ctx.createLinearGradient(sx, 0, sx + w*0.25, 0);
+          grd.addColorStop(0, 'rgba(255,255,255,0)');
+          grd.addColorStop(0.5, 'rgba(255,255,255,0.55)');
+          grd.addColorStop(1, 'rgba(255,255,255,0)');
+          ctx.save();
+          ctx.beginPath(); ctx.rect(x,y,w,h); ctx.clip();
+          ctx.fillStyle = grd;
+          ctx.fillRect(x - w, y, w*3, h);
+          ctx.restore();
+          break;
+        }
+        case 'fire': {
+          const g = ctx.createRadialGradient(x + w/2, y + h*0.6, 0, x + w/2, y + h*0.6, Math.max(w,h));
+          g.addColorStop(0, 'rgba(255,160,60,0.18)');
+          g.addColorStop(1, 'rgba(255,60,20,0)');
+          ctx.fillStyle = g;
+          ctx.fillRect(x - w*0.2, y - h*0.3, w*1.4, h*1.6);
+          break;
+        }
+        case 'shadow': {
+          const g = ctx.createRadialGradient(x + w/2, y + h/2, 0, x + w/2, y + h/2, Math.max(w,h)*1.1);
+          g.addColorStop(0, 'rgba(0,0,0,0.55)');
+          g.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = g;
+          ctx.fillRect(x - w*0.3, y - h*0.3, w*1.6, h*1.6);
+          break;
+        }
+        case 'glow': {
+          const g = ctx.createRadialGradient(x + w/2, y + h/2, 0, x + w/2, y + h/2, Math.max(w,h));
+          g.addColorStop(0, 'rgba(255,240,180,0.25)');
+          g.addColorStop(1, 'rgba(255,220,140,0)');
+          ctx.fillStyle = g;
+          ctx.fillRect(x - w*0.2, y - h*0.3, w*1.4, h*1.6);
+          break;
+        }
+        case 'electric': {
+          // subtle cyan fill behind word
+          ctx.fillStyle = 'rgba(130,200,255,0.06)';
+          ctx.fillRect(x, y, w, h);
+          break;
+        }
+        case 'ice': {
+          ctx.fillStyle = 'rgba(180,220,255,0.06)';
+          ctx.fillRect(x, y, w, h);
+          break;
+        }
+      }
+    });
+  }
+
+  // -----------------------------------------------------------------
+  //  Main loop
+  // -----------------------------------------------------------------
+  let last = performance.now();
+  function frame(now){
+    const dt = Math.min(40, now - last); last = now;
+
+    // clear
+    ctx.clearRect(0,0,canvas.width/DPR, canvas.height/DPR);
+
+    // overlays first (under particles)
+    drawOverlays(now);
+
+    // emit from every emitter
+    emitters.forEach(e => {
+      const fx = EFFECTS[e.key];
+      if (fx && fx.emit) fx.emit(e);
+    });
+
+    // update + draw particles
+    ctx.globalCompositeOperation = 'source-over';
+    for (let i = particles.length - 1; i >= 0; i--){
+      const p = particles[i];
+      p.life += 1;
+
+      // per-type physics
+      switch (p.type){
+        case 'fire':
+          p.x += p.vx; p.y += p.vy;
+          p.vx += rand(-0.05,0.05);
+          p.vy -= 0.02;
+          break;
+        case 'ember':
+          p.x += p.vx; p.y += p.vy;
+          p.vy += 0.02;
+          break;
+        case 'smoke':
+          p.x += p.vx; p.y += p.vy;
+          p.vx += rand(-0.02,0.02);
+          p.rot += p.vr;
+          break;
+        case 'wind':
+          p.x += p.vx; p.y += p.vy;
+          break;
+        case 'ice':
+          p.x += p.vx; p.y += p.vy;
+          break;
+        case 'bolt':
+          // static
+          break;
+        case 'spark':
+          p.x += p.vx; p.y += p.vy;
+          p.vx *= 0.9; p.vy *= 0.9;
+          break;
+        case 'gold':
+          p.x += p.vx; p.y += p.vy;
+          break;
+        case 'shadow':
+          p.x += p.vx; p.y += p.vy;
+          break;
+        case 'glow':
+          // static pulse
+          break;
+        case 'rain':
+          p.x += p.vx; p.y += p.vy;
+          break;
+        case 'glint':
+          break;
+      }
+
+      if (p.life >= p.maxLife){
+        particles.splice(i,1);
+        continue;
+      }
+
+      // draw
+      switch (p.type){
+        case 'fire':     EFFECTS.fire.draw(p); break;
+        case 'ember':    EFFECTS.fire.drawEmber(p); break;
+        case 'smoke':    EFFECTS.smoke.draw(p); break;
+        case 'wind':     EFFECTS.wind.draw(p); break;
+        case 'ice':      EFFECTS.ice.draw(p); break;
+        case 'bolt':     EFFECTS.electric.drawBolt(p); break;
+        case 'spark':    EFFECTS.electric.drawSpark(p); break;
+        case 'gold':     EFFECTS.gold.draw(p); break;
+        case 'shadow':   EFFECTS.shadow.draw(p); break;
+        case 'glow':     EFFECTS.glow.draw(p); break;
+        case 'rain':     EFFECTS.rain.draw(p); break;
+        case 'glint':    EFFECTS.metal.drawGlint(p); break;
+      }
+    }
+
+    requestAnimationFrame(frame);
+  }
+
+  // -----------------------------------------------------------------
+  //  Wire up
+  // -----------------------------------------------------------------
+  editor.addEventListener('input', () => {
+    // autosize then remeasure
+    editor.style.height = 'auto';
+    editor.style.height = editor.scrollHeight + 'px';
+    resizeCanvas();
+    recomputeMatches();
+  });
+
+  window.addEventListener('resize', () => {
+    resizeCanvas();
+    recomputeMatches();
+  });
+
+  // init
+  function init(){
+    resizeCanvas();
+    recomputeMatches();
+    requestAnimationFrame(frame);
+  }
+  // fonts may shift metrics — re-measure once they're ready
+  if (document.fonts && document.fonts.ready){
+    document.fonts.ready.then(() => { resizeCanvas(); recomputeMatches(); });
+  }
+  init();
+})();
+
+</script>
+</body>
+</html>

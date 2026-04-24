@@ -43,11 +43,16 @@ export default function PrivacyPolicy() {
         <a href="/" style={styles.back}>← Back to home</a>
       </header>
       <main style={styles.main}>
-        <h1 style={styles.h1}>Privacy Policy</h1>
-        <p style={styles.updated}>Last updated: February 2026</p>
+        <h1 style={styles.h1}>W!ntAi Privacy Policy</h1>
+        <p style={styles.updated}>Last updated: April 2026</p>
 
         <p style={styles.p}>
-          W!ntAi ("we", "our", or "us") operates https://www.wintaibot.com (the "Site"). This page informs you of our policies regarding the collection, use, and disclosure of personal information when you use our service.
+          This Privacy Policy applies to <strong>W!ntAi</strong>, a social-media publishing
+          and AI-assisted commenting application operated by W!ntAi ("we", "our", or "us") at
+          https://www.wintaibot.com (the "Site"). It also covers the W!ntAi integrations registered with
+          third-party platforms including TikTok, Meta (Facebook and Instagram), YouTube, LinkedIn, and X (Twitter).
+          This page informs you of our policies regarding the collection, use, and disclosure of personal
+          information when you use the W!ntAi service.
         </p>
 
         <h2 style={styles.h2}>Information We Collect</h2>
@@ -75,6 +80,33 @@ export default function PrivacyPolicy() {
           <li style={styles.li}>AI providers used to power our tools (e.g., for processing prompts and generating responses), in accordance with their privacy policies</li>
           <li style={styles.li}>Law enforcement or regulators when required by law or to protect our rights and safety</li>
         </ul>
+
+        <h2 style={styles.h2}>TikTok Integration</h2>
+        <p style={styles.p}>
+          When you connect your TikTok account to W!ntAi, you authorize W!ntAi to access certain data through
+          the TikTok Login Kit and TikTok Display API on your behalf. Specifically, W!ntAi may access:
+        </p>
+        <ul style={styles.ul}>
+          <li style={styles.li}>Your basic TikTok profile information (open ID, display name, avatar URL)</li>
+          <li style={styles.li}>A list of your public videos and their metadata (caption, share URL, cover image, view/like/comment counts)</li>
+          <li style={styles.li}>Comments on your TikTok videos, so W!ntAi can display them in your inbox and allow you to reply</li>
+        </ul>
+        <p style={styles.p}>
+          W!ntAi uses TikTok data solely to provide the publishing, analytics, and AI auto-reply features you
+          have enabled inside the W!ntAi dashboard. W!ntAi does not sell, rent, or share your TikTok data with
+          unrelated third parties. You may revoke W!ntAi's access to your TikTok account at any time from your
+          TikTok account settings (Settings &amp; privacy → Security and login → Manage app permissions) or by
+          disconnecting TikTok inside the W!ntAi dashboard. W!ntAi's use and transfer of information received
+          from TikTok APIs adheres to the TikTok Developer Terms of Service and Developer Policy.
+        </p>
+
+        <h2 style={styles.h2}>Meta (Facebook and Instagram) Integration</h2>
+        <p style={styles.p}>
+          When you connect your Facebook Page or Instagram Business account to W!ntAi, W!ntAi accesses your
+          Page metadata, post and comment data, and the access tokens necessary to publish replies through the
+          Meta Graph API. W!ntAi uses this data only to power the inbox, analytics, and auto-reply features.
+          You can revoke access at any time from Facebook Settings → Business Integrations.
+        </p>
 
         <h2 style={styles.h2}>Data Retention and Security</h2>
         <p style={styles.p}>

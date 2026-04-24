@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { LinkedInLogo } from "./PlatformIcon";
+import PlatformIcon, { LinkedInLogo } from "./PlatformIcon";
+import FallingPlatformsAnimation from "./FallingPlatformsAnimation";
 import { filterEnabledPlatforms, isPlatformDisabled } from "../config/disabledPlatforms";
 import "./LandingSection.css";
 
@@ -212,6 +213,154 @@ const HERO_ORCH_SPOKES = [
   [88, 224],
   [296, 214],
 ];
+
+// FallingPlatformsAnimation moved to ./FallingPlatformsAnimation.js so it can be
+// reused from both the landing page and the Content Calendar.
+
+/**
+ * Radial-spokes background — same movement as wintai-ad-15s.html "Shot 4":
+ *   • central video-file hub, two dashed orbit rings around it
+ *   • the entire constellation rotates slowly and continuously
+ *   • beams to each platform have a staggered draw-in pulse
+ *   • platform circles + logos sit on the outer ring
+ *
+ * Pure SVG + CSS keyframes (no images, no canvas, no JS animation loop).
+ * Positioned absolutely; parent must be position:relative.
+ */
+function RadialSpokesBackground() {
+  const HUB = { x: 50, y: 50 }; // viewBox 100×100
+  const R_OUTER = 38;            // platform ring radius
+  const R_RING1 = 32;            // dashed orbit ring 1
+  const R_RING2 = 24;            // dashed orbit ring 2
+
+  const platforms = [
+    { id: 'youtube',   color: '#FF0000', logo: 'youtube',   angleDeg:  -90 },
+    { id: 'instagram', color: '#E1306C', logo: 'instagram', angleDeg:  -45 },
+    { id: 'facebook',  color: '#1877F2', logo: 'facebook',  angleDeg:    0 },
+    { id: 'linkedin',  color: '#0A66C2', logo: 'linkedin',  angleDeg:   45 },
+    { id: 'tiktok',    color: '#010101', logo: 'tiktok',    angleDeg:   90 },
+    { id: 'pinterest', color: '#E60023', logo: 'pinterest', angleDeg:  135 },
+    { id: 'x',         color: '#000000', logo: 'x',         angleDeg:  180 },
+    { id: 'threads',   color: '#101010', logo: 'threads',   angleDeg: -135 },
+  ].map(p => {
+    const rad = (p.angleDeg * Math.PI) / 180;
+    return { ...p, x: HUB.x + Math.cos(rad) * R_OUTER, y: HUB.y + Math.sin(rad) * R_OUTER };
+  });
+
+  return (
+    <div className="ls-radial-bg" aria-hidden="true">
+      <style>{`
+        .ls-radial-bg {
+          position: absolute;
+          inset: 0;
+          z-index: -1;
+          pointer-events: none;
+          opacity: 0.22;
+          overflow: hidden;
+        }
+        .ls-radial-bg__svg {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+        }
+        /* The whole constellation rotates around the hub (slow, continuous) */
+        .ls-radial-bg__rotor {
+          transform-origin: 50px 50px;
+          animation: ls-radial-spin 60s linear infinite;
+        }
+        @keyframes ls-radial-spin {
+          from { transform: rotate(0deg); }
+          to   { transform: rotate(360deg); }
+        }
+        /* Orbit rings */
+        .ls-radial-bg__ring {
+          fill: none;
+          stroke: rgba(255,255,255,0.18);
+          stroke-width: 0.18;
+        }
+        .ls-radial-bg__ring--inner { stroke-dasharray: 0.6 1.2; }
+        .ls-radial-bg__ring--outer { stroke-dasharray: 1.2 2.0; }
+        /* Beams: dashed line that travels out from hub, staggered per platform */
+        .ls-radial-bg__beam {
+          stroke-width: 0.6;
+          stroke-linecap: round;
+          fill: none;
+          stroke-dasharray: 8 60;
+          animation: ls-radial-beam 3s ease-in-out infinite;
+        }
+        @keyframes ls-radial-beam {
+          0%   { stroke-dashoffset: 60;  opacity: 0;   }
+          15%  { opacity: 0.9; }
+          50%  { stroke-dashoffset: -10; opacity: 1;   }
+          85%  { opacity: 0.4; }
+          100% { stroke-dashoffset: -60; opacity: 0;   }
+        }
+        /* Hub (video file rectangle) */
+        .ls-radial-bg__hub rect {
+          fill: rgba(255,255,255,0.06);
+          stroke: rgba(255,255,255,0.5);
+          stroke-width: 0.3;
+        }
+        .ls-radial-bg__hub text {
+          font-family: 'JetBrains Mono', ui-monospace, monospace;
+          fill: rgba(255,255,255,0.7);
+        }
+        /* Platform nodes — counter-rotate so logos stay upright while constellation spins */
+        .ls-radial-bg__node {
+          animation: ls-radial-counter 60s linear infinite;
+          transform-origin: center;
+        }
+        @keyframes ls-radial-counter {
+          from { transform: rotate(0deg); }
+          to   { transform: rotate(-360deg); }
+        }
+        .ls-radial-bg__node-ring { fill: rgba(7,9,13,0.85); }
+        @media (prefers-reduced-motion: reduce) {
+          .ls-radial-bg__rotor, .ls-radial-bg__beam, .ls-radial-bg__node {
+            animation: none;
+          }
+        }
+      `}</style>
+      <svg className="ls-radial-bg__svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
+        {/* Two dashed orbit rings (do not rotate — they're concentric) */}
+        <circle cx={HUB.x} cy={HUB.y} r={R_RING1} className="ls-radial-bg__ring ls-radial-bg__ring--inner" />
+        <circle cx={HUB.x} cy={HUB.y} r={R_RING2} className="ls-radial-bg__ring ls-radial-bg__ring--inner" />
+
+        {/* Rotating constellation: beams + platforms */}
+        <g className="ls-radial-bg__rotor">
+          {platforms.map((p, i) => (
+            <line
+              key={`beam-${p.id}`}
+              x1={HUB.x}
+              y1={HUB.y}
+              x2={p.x}
+              y2={p.y}
+              className="ls-radial-bg__beam"
+              stroke={p.color}
+              style={{ animationDelay: `${-i * 0.35}s` }}
+            />
+          ))}
+          {platforms.map(p => (
+            <g key={`node-${p.id}`} transform={`translate(${p.x} ${p.y})`}>
+              {/* counter-rotate the inner contents so the logo stays upright */}
+              <g className="ls-radial-bg__node">
+                <circle r="3.8" className="ls-radial-bg__node-ring" stroke={p.color} strokeWidth="0.4" />
+                <foreignObject x={-2.8} y={-2.8} width="5.6" height="5.6" style={{ overflow: 'visible' }}>
+                  <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center' }}>
+                    <PlatformIcon platform={p} size={18} />
+                  </div>
+                </foreignObject>
+              </g>
+            </g>
+          ))}
+        </g>
+
+        {/* Center hub intentionally removed — keep the spokes converging on an empty center */}
+      </svg>
+    </div>
+  );
+}
 
 function HeroVisualOrchestration() {
   return (
@@ -692,8 +841,12 @@ function FeatureShowcase({ features, onOpenVideoPublisher }) {
         background: 'transparent',
         position: 'relative',
         zIndex: 1,
+        overflow: 'hidden',
       }}
     >
+      {/* Ambient radial-spokes animation behind the features content */}
+      <RadialSpokesBackground />
+      <div style={{ position: 'relative', zIndex: 1 }}>
       <h2 id="features-heading" style={{ textAlign: 'center', fontSize: '2.25rem', fontWeight: 800, color: '#f1f5f9', marginBottom: 10, letterSpacing: '-0.02em' }}>
         Everything you need. One platform.
       </h2>
@@ -944,6 +1097,7 @@ function FeatureShowcase({ features, onOpenVideoPublisher }) {
           ))}
         </div>
       </div>
+      </div>
     </section>
   );
 }
@@ -957,8 +1111,10 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
     <main className="ls-root" aria-label="W!ntAi — social media video publishing and AI tools">
 
       {/* ── HERO (SEO: one H1 — video publishing + social managers) ── */}
-      <section className="ls-hero ls-hero--showcase" aria-labelledby="hero-heading">
-        <div className="ls-hero-inner ls-hero-inner--split">
+      <section className="ls-hero ls-hero--showcase" aria-labelledby="hero-heading" style={{ position: 'relative' }}>
+        {/* Ambient falling-platforms animation behind the hero copy */}
+        <FallingPlatformsAnimation mode="background" />
+        <div className="ls-hero-inner ls-hero-inner--split" style={{ position: 'relative', zIndex: 1 }}>
           <div className="ls-hero-copy">
             <div className="ls-hero-copy__head">
               <div className="ls-hero-copy__block ls-hero-copy__block--badge">
@@ -1017,6 +1173,7 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
 
       {/* ── SHOWCASE ──────────────────────────────────────────── */}
       <section className="ls-section ls-gallery" aria-labelledby="gallery-heading">
+        <RadialSpokesBackground />
         <h2 id="gallery-heading">Showcase</h2>
         <p className="ls-section-sub ls-section-sub--tight">
           Real screens — analytics, inbox, auto-reply, publish flow, calendar, and Social AI.
@@ -1038,6 +1195,7 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
 
       {/* ── WHAT IS WINTAIBOT ───────────────────────────────── */}
       <section id="use-cases" className="ls-section ls-what" aria-labelledby="what-heading">
+        <RadialSpokesBackground />
         <div className="ls-what-header">
           {/* LEFT column — 5 killer feature cards */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 8 }}>
@@ -1107,6 +1265,7 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
 
       {/* ── ONE PLACE: SCHEDULE + INBOX + AUTO-REPLY ─────────── */}
       <section id="how-it-works" className="ls-section ls-social-hub" aria-labelledby="social-hub-heading">
+        <RadialSpokesBackground />
         <h2 id="social-hub-heading">Schedule posts, read messages, automate replies — one login</h2>
         <p className="ls-section-sub ls-social-hub-intro">
           Creators shouldn&apos;t live in three tabs just to post, read messages, and answer fans.
@@ -1123,6 +1282,7 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
       </section>
 
       <section className="ls-section ls-seo-spotlight" aria-labelledby="seo-spotlight-heading">
+        <RadialSpokesBackground />
         <h2 id="seo-spotlight-heading">AI Social Media Scheduler for Video, Captions, and Analytics</h2>
         <p className="ls-section-sub">
           W!ntAi is an <strong>AI social media management platform</strong> built for creators and growing teams that want to
@@ -1163,6 +1323,7 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
 
       {/* ── THREE ADVANTAGES: FIXER · THUMBNAILS · BRAIN AI ───── */}
       <section className="ls-section ls-video-edge" aria-labelledby="video-edge-heading">
+        <RadialSpokesBackground />
         <h2 id="video-edge-heading">How we end format errors — and beat generic AI</h2>
         <p className="ls-section-sub ls-video-edge-intro">
           <strong>If you can record it, we can post it</strong> is the promise; here is how: <strong>automatic format fixes per destination</strong>,
@@ -1202,6 +1363,7 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
 
       {/* ── PRICING ─────────────────────────────────────────── */}
       <section className="ls-section ls-pricing" id="pricing" aria-labelledby="pricing-heading">
+        <RadialSpokesBackground />
         <h2 id="pricing-heading">Simple, Transparent Pricing</h2>
         <p className="ls-section-sub">Start free — upgrade when you're ready. Annual billing saves up to 21%.</p>
 
@@ -1344,8 +1506,13 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
       </section>
 
 
+
+
+
+
       {/* ── FAQ ─────────────────────────────────────────────── */}
       <section className="ls-section ls-faq" id="faq" aria-labelledby="faq-heading">
+        <RadialSpokesBackground />
         <h2 id="faq-heading">Frequently Asked Questions</h2>
         {[
           {
@@ -1391,6 +1558,7 @@ export default function LandingSection({ onGetStarted, onChoosePlan, onOpenVideo
 
       {/* ── FINAL CTA ───────────────────────────────────────── */}
       <section className="ls-section ls-final-cta" aria-label="Get started with W!ntAi">
+        <RadialSpokesBackground />
         <h2>Ready to post video everywhere — without format headaches?</h2>
         <p>
           Start with a <strong>free trial</strong>, then scale to <strong>Starter</strong> (solo), <strong>Pro</strong> (agency + workspaces), or <strong>Growth</strong> (unlimited team) for full <strong>video publishing</strong>, scheduling, and AI workflows.

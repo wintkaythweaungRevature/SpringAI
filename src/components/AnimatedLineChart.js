@@ -43,17 +43,35 @@ function interpValue(points, svgX) {
   return null;
 }
 
-export default function AnimatedLineChart({ data = [], color = '#3b82f6', title = '', compact = false }) {
+/**
+ * @param {number|null} externalHoverFrac  Optional 0–1 normalized hover position from the parent
+ *                                         (used to sync hover across multiple charts in a grid).
+ * @param {(frac: number|null) => void} onHoverChange  Optional callback fired when this chart's
+ *                                                     own mouse moves; parent uses it to broadcast.
+ */
+export default function AnimatedLineChart({
+  data = [],
+  color = '#3b82f6',
+  title = '',
+  compact = false,
+  externalHoverFrac = null,
+  onHoverChange = null,
+}) {
   const H   = compact ? 200 : 280;
   const PAD = compact ? PAD_COMPACT : PAD_NORMAL;
   const CW  = W - PAD.left - PAD.right;
   const CH  = H - PAD.top  - PAD.bottom;
 
-  const [hoverX,   setHoverX]   = useState(null);   // raw SVG x
+  const [localHoverX, setLocalHoverX] = useState(null);   // raw SVG x (fallback when no parent sync)
   const [pathLen,  setPathLen]  = useState(0);
   const [animated, setAnimated] = useState(false);
   const pathRef = useRef(null);
   const svgRef  = useRef(null);
+
+  // Effective hoverX: prefer parent's externalHoverFrac (sync mode), fall back to localHoverX.
+  const hoverX = externalHoverFrac !== null
+    ? PAD.left + Math.max(0, Math.min(1, externalHoverFrac)) * CW
+    : localHoverX;
 
   const values = data.map(d => d.value);
   const rawMax = Math.max(...values, 0);
@@ -73,15 +91,18 @@ export default function AnimatedLineChart({ data = [], color = '#3b82f6', title 
     ? `${linePath} L${points[points.length - 1].x},${PAD.top + CH} L${points[0].x},${PAD.top + CH} Z`
     : '';
 
+  // Re-measure path length + replay the draw-in animation only when the actual line shape
+  // changes. Using `data` (a new array reference each render) caused this effect to fire on
+  // every parent re-render — including every mousemove, when cross-chart hover is on — which
+  // reset the stroke-dashoffset animation and made the chart visibly stutter / feel "sticky."
   useEffect(() => {
-    if (pathRef.current) {
-      const len = pathRef.current.getTotalLength();
-      setPathLen(len);
-      setAnimated(false);
-      const id = setTimeout(() => setAnimated(true), 30);
-      return () => clearTimeout(id);
-    }
-  }, [data]);
+    if (!pathRef.current) return;
+    const len = pathRef.current.getTotalLength();
+    setPathLen(len);
+    setAnimated(false);
+    const id = setTimeout(() => setAnimated(true), 30);
+    return () => clearTimeout(id);
+  }, [linePath]);
 
   // Y-axis ticks
   const yLines = Array.from({ length: 5 }, (_, i) => {
@@ -89,22 +110,42 @@ export default function AnimatedLineChart({ data = [], color = '#3b82f6', title 
     return { y: PAD.top + CH - frac * CH, val: Math.round(minVal + frac * range) };
   });
 
-  // Mouse move — store raw SVG X, clamped to chart area
+  // Mouse move — store raw SVG X, clamped to chart area.
+  // Allow hover even with a single data point so workspaces with only one period
+  // (e.g. a brand-new SEO workspace whose only month is the current one) still
+  // surface the tooltip; we just snap to that single point instead of interpolating.
   const handleMouseMove = useCallback((e) => {
-    if (!svgRef.current || points.length < 2) return;
+    if (!svgRef.current || points.length < 1) return;
     const rect = svgRef.current.getBoundingClientRect();
     const mx   = (e.clientX - rect.left) * (W / rect.width);
-    setHoverX(Math.max(PAD.left, Math.min(PAD.left + CW, mx)));
-  }, [points, PAD.left, CW]);
+    const clamped = Math.max(PAD.left, Math.min(PAD.left + CW, mx));
+    setLocalHoverX(clamped);
+    if (onHoverChange) onHoverChange((clamped - PAD.left) / CW);
+  }, [points, PAD.left, CW, onHoverChange]);
 
-  // Compute the moving point on the actual bezier curve
-  const movingPt = (hoverX !== null && pathLen > 0 && pathRef.current)
-    ? getPointOnCurve(pathRef.current, hoverX, pathLen)
-    : null;
+  const handleMouseLeave = useCallback(() => {
+    setLocalHoverX(null);
+    if (onHoverChange) onHoverChange(null);
+  }, [onHoverChange]);
 
-  const interp = (hoverX !== null && points.length >= 2)
-    ? interpValue(points, hoverX)
-    : null;
+  // Compute the moving point on the curve.
+  // Single-point charts have no real "curve" (only one dot, so mathematically a flat line at
+  // that dot's Y value). We still want the crosshair + tooltip to GLIDE left-right as the user
+  // moves the mouse, even though the value never changes — that matches the multi-point chart's
+  // feel and makes the dashboard feel responsive instead of "stuck on one spot."
+  const movingPt = hoverX === null
+    ? null
+    : points.length === 1
+      ? { x: hoverX, y: points[0].y }   // crosshair tracks mouse X, dot at single value's Y
+      : (pathLen > 0 && pathRef.current
+          ? getPointOnCurve(pathRef.current, hoverX, pathLen)
+          : null);
+
+  const interp = hoverX === null
+    ? null
+    : points.length === 1
+      ? { value: points[0].value, label: points[0].label }
+      : (points.length >= 2 ? interpValue(points, hoverX) : null);
 
   // Tooltip clamping
   const TW = 120, TH = 52;
@@ -133,7 +174,7 @@ export default function AnimatedLineChart({ data = [], color = '#3b82f6', title 
         viewBox={`0 0 ${W} ${H}`}
         style={{ width: '100%', display: 'block', cursor: 'none' }}
         onMouseMove={handleMouseMove}
-        onMouseLeave={() => setHoverX(null)}
+        onMouseLeave={handleMouseLeave}
       >
         <defs>
           <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">

@@ -496,36 +496,7 @@ function PendingTaskCard({ task, agent, onApprove, onReject, processing }) {
   );
 }
 
-function HistoryRow({ task, agentMap, expanded, onToggle }) {
-  const agent = agentMap[task.agentId];
-  const isApproved = task.status === 'APPROVED';
-  return (
-    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: '10px', marginBottom: '8px', overflow: 'hidden' }}>
-      <div
-        style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', cursor: 'pointer', flexWrap: 'wrap' }}
-        onClick={onToggle}
-      >
-        {agent && <span style={{ fontSize: '20px' }}>{agent.avatarEmoji || '🤖'}</span>}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontWeight: 600, fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {agent ? agent.name : `Agent #${task.agentId}`}
-          </div>
-          <div style={{ fontSize: '12px', color: C.muted }}>{fmtDate(task.reviewedAt || task.createdAt)}</div>
-        </div>
-        <TaskTypeTag taskType={task.taskType} />
-        <span style={s.badge(isApproved ? C.green : C.red, isApproved ? C.greenBg : C.redBg)}>
-          {isApproved ? 'Approved' : 'Rejected'}
-        </span>
-        <span style={{ color: C.muted, fontSize: '12px' }}>{expanded ? '▲' : '▼'}</span>
-      </div>
-      {expanded && (
-        <div style={{ borderTop: `1px solid ${C.border}`, padding: '14px 16px', background: '#0d1829' }}>
-          <TaskOutputRenderer task={task} />
-        </div>
-      )}
-    </div>
-  );
-}
+// HistoryRow component removed — Tasks tab no longer has a History sub-view.
 
 function AddAgentModal({ onClose, onCreate }) {
   const [newAgent, setNewAgent] = useState({ name: '', role: '', avatarEmoji: '🤖' });
@@ -645,19 +616,16 @@ export default function AiWorkspace({ onCaptionApproved } = {}) {
   // ── State ──────────────────────────────────────────────────────────────────
   const [agents, setAgents] = useState([]);
   const [tasks, setTasks] = useState([]);          // pending tasks
-  const [historyTasks, setHistoryTasks] = useState([]);
+  // History tab removed — no historyTasks / loadingHistory / expandedHistory / taskSubTab needed.
   const [mainTab, setMainTab] = useState('agents');
-  const [taskSubTab, setTaskSubTab] = useState('pending');
   const [pendingCount, setPendingCount] = useState(0);
   const [showAddModal, setShowAddModal] = useState(false);
   const [running, setRunning] = useState(false);
   const [runMsg, setRunMsg] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [processingTaskId, setProcessingTaskId] = useState(null);
-  const [expandedHistory, setExpandedHistory] = useState({});
   const [loadingAgents, setLoadingAgents] = useState(true);
   const [loadingTasks, setLoadingTasks] = useState(true);
-  const [loadingHistory, setLoadingHistory] = useState(false);
   const [error, setError] = useState('');
   const [approveMsg, setApproveMsg] = useState('');
   const [insightActions, setInsightActions] = useState(null); // [{icon,action,type,cta}]
@@ -706,22 +674,7 @@ export default function AiWorkspace({ onCaptionApproved } = {}) {
     }
   }, [apiBase]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const fetchHistoryTasks = useCallback(async () => {
-    setLoadingHistory(true);
-    try {
-      const res = await fetch(`${apiBase}/api/ai-agents/tasks`, { headers: authHeaders() });
-      if (res.ok) {
-        const data = await res.json().catch(() => []);
-        const arr = Array.isArray(data) ? data : [];
-        // History = non-pending tasks
-        setHistoryTasks(arr.filter(t => t.status !== 'PENDING'));
-      }
-    } catch (e) {
-      setError('Failed to load history: ' + e.message);
-    } finally {
-      setLoadingHistory(false);
-    }
-  }, [apiBase]); // eslint-disable-line react-hooks/exhaustive-deps
+  // History tab + fetchHistoryTasks removed — Tasks tab now shows the Pending list only.
 
   // On mount
   useEffect(() => {
@@ -729,13 +682,6 @@ export default function AiWorkspace({ onCaptionApproved } = {}) {
     fetchPendingTasks();
     fetchPendingCount();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // When switching to history sub-tab, load history
-  useEffect(() => {
-    if (mainTab === 'tasks' && taskSubTab === 'history') {
-      fetchHistoryTasks();
-    }
-  }, [mainTab, taskSubTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Agent actions ──────────────────────────────────────────────────────────
 
@@ -980,103 +926,37 @@ export default function AiWorkspace({ onCaptionApproved } = {}) {
         </>
       )}
 
-      {/* ── TASKS TAB ── */}
+      {/* ── TASKS TAB ── (History sub-tab removed; Pending is now the only view) */}
       {mainTab === 'tasks' && (
         <>
-          {/* Sub-tabs */}
-          <div style={{ ...s.tabBar, marginBottom: '20px' }}>
-            <button style={s.tab(taskSubTab === 'pending')} onClick={() => setTaskSubTab('pending')}>
-              ⏳ Pending {pendingCount > 0 ? `(${pendingCount})` : '(0)'}
-            </button>
-            <button style={s.tab(taskSubTab === 'history')} onClick={() => setTaskSubTab('history')}>
-              ✅ History
-            </button>
-          </div>
-
-          {/* Pending tasks */}
-          {taskSubTab === 'pending' && (
-            <>
-              {loadingTasks ? (
-                <div style={{ color: C.muted, fontSize: '14px', padding: '40px 0', textAlign: 'center' }}>Loading tasks...</div>
-              ) : tasks.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '60px 0' }}>
-                  <div style={{ fontSize: '48px', marginBottom: '12px' }}>✅</div>
-                  <div style={{ fontWeight: 600, fontSize: '16px', marginBottom: '6px' }}>No pending tasks</div>
-                  <div style={{ color: C.muted, fontSize: '14px', marginBottom: '20px' }}>Run your agents to generate tasks.</div>
-                  <button
-                    style={{ ...s.btn('primary'), opacity: running ? 0.6 : 1 }}
-                    disabled={running}
-                    onClick={handleRunAll}
-                  >
-                    {running ? '⏳ Running...' : '▶ Run Agents'}
-                  </button>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  {tasks.map(task => (
-                    <PendingTaskCard
-                      key={task.id}
-                      task={task}
-                      agent={agentMap[task.agentId]}
-                      onApprove={handleApprove}
-                      onReject={handleReject}
-                      processing={processingTaskId}
-                    />
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-
-          {/* History */}
-          {taskSubTab === 'history' && (
-            <>
-              {!loadingHistory && historyTasks.length > 0 && (
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
-                  <button
-                    style={{ padding: '6px 14px', borderRadius: 8, border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.08)', color: '#f87171', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
-                    onClick={async () => {
-                      if (!window.confirm('Delete all approved/rejected task history? This cannot be undone.')) return;
-                      try {
-                        const res = await fetch(`${apiBase}/api/ai-agents/tasks/history`, {
-                          method: 'DELETE',
-                          headers: authHeaders(),
-                        });
-                        if (res.ok) {
-                          const data = await res.json();
-                          setHistoryTasks([]);
-                          setApproveMsg(`🗑 Cleared ${data.deleted} history item${data.deleted !== 1 ? 's' : ''}.`);
-                          setTimeout(() => setApproveMsg(''), 4000);
-                        }
-                      } catch { setError('Failed to clear history.'); }
-                    }}
-                  >
-                    🗑 Clear All History
-                  </button>
-                </div>
-              )}
-              {loadingHistory ? (
-                <div style={{ color: C.muted, fontSize: '14px', padding: '40px 0', textAlign: 'center' }}>Loading history...</div>
-              ) : historyTasks.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '60px 0' }}>
-                  <div style={{ fontSize: '48px', marginBottom: '12px' }}>📭</div>
-                  <div style={{ fontWeight: 600, fontSize: '16px', marginBottom: '6px' }}>No history yet</div>
-                  <div style={{ color: C.muted, fontSize: '14px' }}>Approved and rejected tasks will appear here.</div>
-                </div>
-              ) : (
-                <div>
-                  {historyTasks.map(task => (
-                    <HistoryRow
-                      key={task.id}
-                      task={task}
-                      agentMap={agentMap}
-                      expanded={!!expandedHistory[task.id]}
-                      onToggle={() => setExpandedHistory(prev => ({ ...prev, [task.id]: !prev[task.id] }))}
-                    />
-                  ))}
-                </div>
-              )}
-            </>
+          {loadingTasks ? (
+            <div style={{ color: C.muted, fontSize: '14px', padding: '40px 0', textAlign: 'center' }}>Loading tasks...</div>
+          ) : tasks.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '60px 0' }}>
+              <div style={{ fontSize: '48px', marginBottom: '12px' }}>✅</div>
+              <div style={{ fontWeight: 600, fontSize: '16px', marginBottom: '6px' }}>No pending tasks</div>
+              <div style={{ color: C.muted, fontSize: '14px', marginBottom: '20px' }}>Run your agents to generate tasks.</div>
+              <button
+                style={{ ...s.btn('primary'), opacity: running ? 0.6 : 1 }}
+                disabled={running}
+                onClick={handleRunAll}
+              >
+                {running ? '⏳ Running...' : '▶ Run Agents'}
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {tasks.map(task => (
+                <PendingTaskCard
+                  key={task.id}
+                  task={task}
+                  agent={agentMap[task.agentId]}
+                  onApprove={handleApprove}
+                  onReject={handleReject}
+                  processing={processingTaskId}
+                />
+              ))}
+            </div>
           )}
         </>
       )}

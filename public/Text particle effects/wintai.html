@@ -1,0 +1,954 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>W!ntAi — Upload once. Publish everywhere.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#07090d;
+    --bg-2:#0d1220;
+    --panel:#121a2e;
+    --panel-2:#182342;
+    --ink:#e7ecf5;
+    --ink-dim:#8a93a8;
+    --ink-faint:#4a5469;
+    --line:#1d2438;
+    --line-2:#2a3452;
+    --cobalt: oklch(68% 0.17 250);
+    --cobalt-soft: oklch(68% 0.17 250 / .18);
+    --amber: oklch(76% 0.15 55);
+    --amber-soft: oklch(76% 0.15 55 / .18);
+    --yt:#ff3b3b; --ig:#ff3d7f; --tt:#25f4ee; --fb:#4f7cff; --li:#4a90e2; --x:#ffffff; --th:#cfcfcf; --pt:#e60023;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  body{overflow-x:hidden}
+  a{color:inherit;text-decoration:none}
+  button{font-family:inherit}
+
+  /* ambient backdrop */
+  body::before{
+    content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+    background:
+      radial-gradient(800px 500px at 85% -10%, oklch(68% 0.17 250 / .15), transparent 60%),
+      radial-gradient(600px 400px at 10% 20%, oklch(76% 0.15 55 / .08), transparent 60%);
+  }
+  main,nav,footer{position:relative;z-index:1}
+
+  /* ---------- nav ---------- */
+  .nav{position:sticky;top:0;z-index:50;display:flex;justify-content:space-between;align-items:center;padding:18px 36px;backdrop-filter:blur(12px);background:rgba(7,9,13,.6);border-bottom:1px solid var(--line)}
+  .nav .brand{font-family:'Instrument Serif',serif;font-size:26px;letter-spacing:-.01em;white-space:nowrap;flex:0 0 auto}
+  .nav .brand b{color:var(--amber);font-weight:400}
+  .nav ul{display:flex;gap:28px;list-style:none;margin:0;padding:0;font-size:13px;color:var(--ink-dim)}
+  .nav ul a:hover{color:var(--ink)}
+  .nav .actions{display:flex;gap:10px;align-items:center}
+  .btn{border-radius:999px;padding:9px 16px;font-size:13px;font-weight:500;letter-spacing:.01em;border:1px solid var(--line-2);color:var(--ink);background:transparent;cursor:pointer;transition:.18s}
+  .btn:hover{border-color:var(--ink-dim)}
+  .btn.primary{background:var(--ink);color:#07090d;border-color:var(--ink)}
+  .btn.primary:hover{background:#fff}
+  .btn.cobalt{background:var(--cobalt);border-color:var(--cobalt);color:#07090d;font-weight:600}
+  .btn.cobalt:hover{filter:brightness(1.08)}
+
+  /* ---------- eyebrows / section headers ---------- */
+  .eyebrow{display:flex;align-items:center;gap:12px;color:var(--ink-dim);font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+  .eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--amber);box-shadow:0 0 14px var(--amber)}
+  .eyebrow .sep{flex:1;height:1px;background:var(--line);max-width:120px}
+  .section-n{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-faint);letter-spacing:.12em}
+
+  /* ---------- hero ---------- */
+  .hero{position:relative;padding:72px 5vw 56px;min-height:92vh;display:flex;flex-direction:column;justify-content:center;gap:30px;border-bottom:1px solid var(--line)}
+  .hero .headline-stage{position:relative;}
+  .hero .headline{
+    font-family:'Instrument Serif',serif;
+    font-weight:400;
+    font-size:clamp(56px, 10vw, 176px);
+    line-height:.96;
+    letter-spacing:-.025em;
+    margin:0;
+    position:relative;z-index:2;
+  }
+  .hero .headline i{font-style:italic;color:#cfd6e7}
+  .hero .headline .amber{color:var(--amber)}
+  .hero .headline .cobalt{color:var(--cobalt)}
+  #heroFx{position:absolute;inset:0;pointer-events:none;z-index:3}
+
+  .hero .sub-row{display:grid;grid-template-columns:1.4fr .9fr;gap:56px;align-items:end}
+  .hero .sub{font-size:18px;line-height:1.55;color:#c3cada;max-width:58ch}
+  .hero .sub b{color:var(--ink);font-weight:500}
+  .hero .cta-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .hero .meta{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-dim);display:flex;flex-direction:column;gap:8px}
+  .hero .meta b{color:var(--ink)}
+
+  /* platform strip */
+  .platform-strip{display:flex;align-items:center;gap:14px;margin-top:30px;flex-wrap:wrap;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-dim);letter-spacing:.08em;text-transform:uppercase}
+  .platform-strip .label{color:var(--ink-faint)}
+  .platform-strip .chip{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--line);border-radius:999px;background:#0b0f1c;color:#cfd6e7;cursor:default;transition:.15s}
+  .platform-strip .chip:hover{border-color:var(--line-2);color:#fff;transform:translateY(-1px)}
+  .platform-strip .chip .swatch{width:8px;height:8px;border-radius:2px}
+
+  /* ---------- section base ---------- */
+  section.pad{padding:120px 5vw;border-bottom:1px solid var(--line)}
+  .section-head{display:grid;grid-template-columns:1fr 2fr;gap:40px;margin-bottom:56px;align-items:end}
+  .section-head h2{font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(40px,5vw,72px);line-height:1.02;letter-spacing:-.02em;margin:14px 0 0}
+  .section-head h2 i{color:var(--amber)}
+  .section-head h2 em{font-style:italic;color:#cfd6e7}
+  .section-head .lede{color:#a0a9c0;font-size:16px;line-height:1.6;max-width:54ch;align-self:end}
+
+  /* ---------- FLOW section (upload once → N platforms) ---------- */
+  .flow-wrap{position:relative;height:560px;border:1px solid var(--line);border-radius:24px;background:linear-gradient(180deg, #0b0f1c, #07090d 70%);overflow:hidden}
+  .flow-wrap .grid-bg{position:absolute;inset:0;background-image:linear-gradient(#ffffff06 1px,transparent 1px),linear-gradient(90deg,#ffffff06 1px,transparent 1px);background-size:56px 56px;mask-image:radial-gradient(circle at 50% 50%, black, transparent 85%)}
+  .flow-stage{position:absolute;inset:0}
+  .source{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:220px;height:150px;border-radius:18px;background:#0d1220;border:1px solid var(--line-2);display:flex;flex-direction:column;overflow:hidden;box-shadow:0 30px 80px oklch(68% 0.17 250 / .25), inset 0 1px 0 #ffffff0a;z-index:4}
+  .source .thumb{flex:1;background:
+      linear-gradient(120deg, oklch(68% 0.17 250 / .65), oklch(76% 0.15 55 / .35)),
+      repeating-linear-gradient(45deg,#ffffff08 0 10px,transparent 10px 20px);
+    position:relative}
+  .source .thumb::after{content:'▶';position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-size:24px;opacity:.9}
+  .source .meta{padding:8px 12px;font-family:'JetBrains Mono',monospace;font-size:10px;color:#b7c0d6;border-top:1px solid var(--line-2);display:flex;justify-content:space-between}
+  .source .meta b{color:var(--amber);font-weight:500}
+
+  .orbit{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:460px;height:460px;border:1px dashed #1e2744;border-radius:50%}
+  .orbit.outer{width:540px;height:540px;border-color:#19213b}
+  .orbit::before{content:'';position:absolute;inset:-1px;border-radius:50%;border:1px solid transparent;background:conic-gradient(from 0deg, transparent 0deg, oklch(68% 0.17 250 / .5) 40deg, transparent 80deg) border-box;-webkit-mask:linear-gradient(#000,#000) padding-box,linear-gradient(#000,#000);-webkit-mask-composite:xor;mask-composite:exclude;animation:orbitSweep 6s linear infinite}
+  .orbit.outer::before{animation-duration:9s;animation-direction:reverse}
+  @keyframes orbitSweep{to{transform:rotate(360deg)}}
+
+  .node{position:absolute;width:86px;height:86px;border-radius:50%;background:#0b0f1c;border:1px solid var(--line-2);display:grid;place-items:center;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;color:#cfd6e7}
+  .node b{font-size:22px;font-family:'Instrument Serif',serif;font-weight:400;line-height:1}
+  .node .lbl{font-size:9px;color:var(--ink-faint);margin-top:4px;text-transform:uppercase}
+  .node::after{content:'';position:absolute;inset:-6px;border-radius:50%;border:1px solid transparent;background:conic-gradient(from 0deg,var(--nc,transparent),transparent 60%) border-box;-webkit-mask:linear-gradient(#000,#000) padding-box,linear-gradient(#000,#000);-webkit-mask-composite:xor;mask-composite:exclude;opacity:.6}
+
+  .beam{position:absolute;left:50%;top:50%;height:2px;width:230px;transform-origin:0 50%;background:linear-gradient(90deg, var(--cobalt) 0%, var(--cobalt) 40%, transparent 100%);border-radius:2px;filter:blur(.3px);opacity:.7}
+  .beam::before{content:'';position:absolute;right:-4px;top:-4px;width:10px;height:10px;border-radius:50%;background:var(--cobalt);box-shadow:0 0 18px var(--cobalt)}
+
+  .flow-legend{position:absolute;left:24px;bottom:20px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-dim);display:flex;gap:18px}
+  .flow-legend b{color:#fff}
+  .flow-caption{position:absolute;right:24px;bottom:20px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-dim);text-align:right}
+  .flow-caption span{color:var(--amber)}
+
+  /* ---------- auto-format chips (interactive) ---------- */
+  .fmt-grid{display:grid;grid-template-columns:1fr 1.2fr;gap:60px;align-items:start}
+  .fmt-list{display:flex;flex-direction:column;gap:6px}
+  .fmt-list .row{display:grid;grid-template-columns:26px 1fr auto auto;gap:14px;align-items:center;padding:16px 14px;border:1px solid var(--line);border-radius:14px;background:#0b0f1c;cursor:pointer;transition:.2s}
+  .fmt-list .row:hover,.fmt-list .row.active{border-color:var(--line-2);background:#10162a}
+  .fmt-list .row .k{width:12px;height:12px;border-radius:3px}
+  .fmt-list .row .name{font-weight:500}
+  .fmt-list .row .res{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-dim)}
+  .fmt-list .row .pill{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 8px;border-radius:999px;border:1px solid var(--line-2);color:#cfd6e7}
+  .fmt-list .row.active .pill{color:var(--amber);border-color:var(--amber)}
+
+  .fmt-preview{position:relative;border:1px solid var(--line);border-radius:18px;background:#0b0f1c;padding:28px;min-height:520px;overflow:hidden}
+  .fmt-preview .phone-row{display:flex;gap:24px;align-items:flex-end;justify-content:center;height:420px}
+  .device{background:#05070b;border:1px solid var(--line-2);border-radius:24px;box-shadow:inset 0 0 0 1px #ffffff06, 0 20px 60px #00000080;position:relative;overflow:hidden;transition:.5s cubic-bezier(.2,.7,.2,1)}
+  .device .ph-top{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:54px;height:5px;background:#1b2236;border-radius:999px}
+  .device .content{position:absolute;inset:14px;border-radius:16px;background:linear-gradient(180deg, oklch(68% 0.17 250 / .4), oklch(76% 0.15 55 / .28)), repeating-linear-gradient(135deg,#ffffff10 0 6px,transparent 6px 12px);display:flex;align-items:flex-end;padding:10px}
+  .device .content .caption{font-family:'JetBrains Mono',monospace;font-size:9px;color:#fff;background:#00000066;backdrop-filter:blur(6px);padding:6px 8px;border-radius:8px;line-height:1.3;max-width:100%}
+  .device .badge{position:absolute;top:12px;left:14px;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.1em;color:#fff;background:#00000088;padding:3px 7px;border-radius:6px;text-transform:uppercase}
+  .device[data-fmt="9x16"]{width:140px;height:100%;aspect-ratio:9/16}
+  .device[data-fmt="1x1"]{width:260px;height:260px;aspect-ratio:1/1}
+  .device[data-fmt="16x9"]{width:420px;aspect-ratio:16/9}
+  .device[data-fmt="4x5"]{width:200px;aspect-ratio:4/5}
+
+  .fmt-preview .callout{position:absolute;top:18px;left:20px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-dim);text-transform:uppercase;letter-spacing:.1em}
+  .fmt-preview .callout b{color:var(--amber)}
+  .fmt-preview .status{position:absolute;right:20px;bottom:18px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-dim)}
+  .fmt-preview .status .ok{color:oklch(74% 0.16 150)}
+
+  /* ---------- tool grid ---------- */
+  .tools{display:grid;grid-template-columns:repeat(6,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+  .tool{background:#0b0f1c;padding:22px;min-height:148px;display:flex;flex-direction:column;justify-content:space-between;gap:10px;transition:.2s;cursor:default}
+  .tool:hover{background:#10162a}
+  .tool .num{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-faint);letter-spacing:.1em}
+  .tool h4{margin:0;font-size:14px;font-weight:500;color:var(--ink)}
+  .tool p{margin:0;font-size:12px;color:var(--ink-dim);line-height:1.45}
+  .tool.featured{background:linear-gradient(180deg, oklch(68% 0.17 250 / .22), transparent);grid-column:span 2;grid-row:span 2}
+  .tool.featured h4{font-family:'Instrument Serif',serif;font-size:28px;line-height:1.1;font-weight:400}
+  .tool.featured p{font-size:13px}
+  .tool.featured .num{color:var(--amber)}
+  .tool .icon{width:28px;height:28px;border:1px solid var(--line-2);border-radius:8px;display:grid;place-items:center;font-family:'Instrument Serif',serif;font-size:16px;color:var(--ink-dim)}
+
+  /* ---------- split feature ---------- */
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center}
+  .split .panel{border:1px solid var(--line);border-radius:20px;background:#0b0f1c;padding:28px;min-height:460px;position:relative;overflow:hidden}
+  .split h3{font-family:'Instrument Serif',serif;font-weight:400;font-size:44px;line-height:1.05;margin:14px 0 14px;letter-spacing:-.01em}
+  .split h3 i{color:var(--amber)}
+  .split p{color:#a0a9c0;font-size:15px;line-height:1.6;max-width:46ch}
+  .split ul{padding:0;margin:18px 0 0;list-style:none;display:flex;flex-direction:column;gap:10px;font-size:13px;color:#c3cada}
+  .split ul li{display:flex;gap:12px;align-items:baseline}
+  .split ul li::before{content:'';width:8px;height:1px;background:var(--amber);display:inline-block;margin-top:8px}
+
+  /* calendar mock */
+  .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:14px}
+  .cal .day{aspect-ratio:1/1.1;border:1px solid var(--line);border-radius:8px;padding:6px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-faint);display:flex;flex-direction:column;gap:4px;background:#07090d}
+  .cal .day.has .pill{background:var(--cobalt);color:#07090d;font-weight:600;padding:2px 5px;border-radius:4px;font-size:9px;letter-spacing:.04em}
+  .cal .day.has.amber .pill{background:var(--amber)}
+  .cal .day.has.ghost .pill{background:#1e2744;color:#cfd6e7;border:1px solid var(--line-2)}
+  .cal .wk{grid-column:1/-1;display:grid;grid-template-columns:repeat(7,1fr);gap:6px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-faint);margin-bottom:4px}
+
+  /* inbox mock */
+  .inbox{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+  .inbox .msg{display:grid;grid-template-columns:auto 1fr auto;gap:12px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:#07090d;align-items:center}
+  .inbox .avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--cobalt),var(--amber));font-family:'Instrument Serif',serif;color:#07090d;display:grid;place-items:center;font-size:14px;font-weight:600}
+  .inbox .row1{display:flex;gap:10px;align-items:center;font-size:12px;color:var(--ink)}
+  .inbox .row1 .src{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.1em}
+  .inbox .txt{font-size:12px;color:var(--ink-dim);margin-top:3px}
+  .inbox .auto{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.1em;color:var(--amber);border:1px solid var(--amber);padding:3px 6px;border-radius:999px;text-transform:uppercase}
+
+  /* analytics mock */
+  .stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px}
+  .stat{padding:14px;border:1px solid var(--line);border-radius:12px;background:#07090d}
+  .stat .label{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.1em}
+  .stat .val{font-family:'Instrument Serif',serif;font-size:32px;line-height:1;margin-top:6px;letter-spacing:-.01em}
+  .stat .delta{font-family:'JetBrains Mono',monospace;font-size:10px;color:oklch(74% 0.16 150);margin-top:4px}
+  .spark{height:60px;margin-top:14px;display:flex;align-items:flex-end;gap:4px}
+  .spark span{flex:1;background:linear-gradient(180deg,var(--cobalt),oklch(68% 0.17 250 / .3));border-radius:2px 2px 0 0}
+
+  /* ---------- testimonial ---------- */
+  .quote-row{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  .quote{padding:26px;border:1px solid var(--line);border-radius:16px;background:#0b0f1c;display:flex;flex-direction:column;gap:20px;min-height:240px}
+  .quote blockquote{margin:0;font-family:'Instrument Serif',serif;font-size:22px;line-height:1.3;letter-spacing:-.01em;color:#dfe4f1}
+  .quote blockquote i{color:var(--amber)}
+  .quote .who{display:flex;gap:12px;align-items:center;font-size:13px;color:var(--ink-dim);margin-top:auto}
+  .quote .who b{color:var(--ink);font-weight:500;display:block}
+  .quote .who .av{width:36px;height:36px;border-radius:50%;background:#1a2238;display:grid;place-items:center;font-family:'Instrument Serif',serif;color:#cfd6e7}
+
+  /* ---------- pricing ---------- */
+  .price-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .price{padding:30px;border:1px solid var(--line);border-radius:20px;background:#0b0f1c;display:flex;flex-direction:column;gap:20px;position:relative;overflow:hidden}
+  .price.featured{border-color:var(--cobalt);background:linear-gradient(180deg, oklch(68% 0.17 250 / .15), #0b0f1c 60%)}
+  .price .tier{display:flex;justify-content:space-between;align-items:baseline}
+  .price .tier h3{font-family:'Instrument Serif',serif;font-weight:400;font-size:32px;margin:0}
+  .price .tier .badge{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);border:1px solid var(--amber);padding:3px 8px;border-radius:999px}
+  .price .amt{display:flex;align-items:baseline;gap:6px}
+  .price .amt .n{font-family:'Instrument Serif',serif;font-size:64px;line-height:1;letter-spacing:-.02em}
+  .price .amt .u{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-dim)}
+  .price p{margin:0;color:#a0a9c0;font-size:13px;line-height:1.5}
+  .price ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px;font-size:13px;color:#c3cada}
+  .price ul li::before{content:'+';color:var(--amber);margin-right:8px;font-family:'JetBrains Mono',monospace}
+
+  /* ---------- faq ---------- */
+  .faq-list{display:flex;flex-direction:column}
+  .faq{border-top:1px solid var(--line);padding:22px 0;display:grid;grid-template-columns:60px 1fr 30px;gap:20px;align-items:start;cursor:pointer}
+  .faq:last-child{border-bottom:1px solid var(--line)}
+  .faq .n{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-faint)}
+  .faq .q{font-family:'Instrument Serif',serif;font-size:26px;line-height:1.25;font-weight:400;letter-spacing:-.01em}
+  .faq .a{grid-column:2;margin-top:14px;color:#a0a9c0;font-size:14px;line-height:1.6;max-width:64ch;display:none}
+  .faq.open .a{display:block}
+  .faq .tog{font-family:'JetBrains Mono',monospace;color:var(--ink-dim);transition:.2s;justify-self:end}
+  .faq.open .tog{color:var(--amber);transform:rotate(45deg)}
+
+  /* ---------- cta band ---------- */
+  .cta-band{padding:120px 5vw;border-bottom:1px solid var(--line);text-align:center;position:relative;overflow:hidden}
+  .cta-band::before{content:'';position:absolute;inset:0;background:radial-gradient(500px 300px at 50% 0%, oklch(68% 0.17 250 / .22), transparent 70%)}
+  .cta-band h2{position:relative;font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(48px,7vw,108px);line-height:1;letter-spacing:-.025em;margin:0}
+  .cta-band h2 i{color:var(--amber)}
+  .cta-band .row{position:relative;margin-top:30px;display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+  .cta-band small{position:relative;display:block;margin-top:16px;color:var(--ink-dim);font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase}
+
+  /* ---------- footer ---------- */
+  footer{padding:60px 5vw;display:grid;grid-template-columns:1.2fr repeat(3, 1fr);gap:40px;color:var(--ink-dim);font-size:13px;border-top:1px solid var(--line);background:#07090d}
+  footer h5{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint);margin:0 0 14px}
+  footer ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px}
+  footer .brand{font-family:'Instrument Serif',serif;font-size:28px;color:var(--ink)}
+  footer .brand b{color:var(--amber);font-weight:400}
+  footer p{margin:10px 0 0;max-width:40ch;line-height:1.6}
+  footer .bot{grid-column:1/-1;display:flex;justify-content:space-between;padding-top:28px;border-top:1px solid var(--line);margin-top:20px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em}
+
+  @media (max-width: 980px){
+    .nav ul{display:none}
+    .hero .sub-row{grid-template-columns:1fr}
+    .section-head{grid-template-columns:1fr}
+    .fmt-grid,.split,.quote-row,.price-grid{grid-template-columns:1fr}
+    .tools{grid-template-columns:repeat(2,1fr)}
+    .tool.featured{grid-column:span 2;grid-row:auto}
+    footer{grid-template-columns:1fr 1fr}
+    .stat-row{grid-template-columns:repeat(2,1fr)}
+  }
+</style>
+</head>
+<body>
+
+<nav class="nav" data-screen-label="nav">
+  <div class="brand">W<b>!</b>ntAi</div>
+  <ul>
+    <li><a href="#flow">Publishing</a></li>
+    <li><a href="#tools">AI Tools</a></li>
+    <li><a href="#calendar">Calendar</a></li>
+    <li><a href="#inbox">Inbox</a></li>
+    <li><a href="#pricing">Pricing</a></li>
+    <li><a href="#faq">FAQ</a></li>
+  </ul>
+  <div class="actions">
+    <a href="#" class="btn">Sign in</a>
+    <a href="#pricing" class="btn cobalt">Start free trial</a>
+  </div>
+</nav>
+
+<main>
+
+<!-- ───────── HERO ───────── -->
+<section class="hero" data-screen-label="01 Hero">
+  <div class="eyebrow">
+    <span class="dot"></span>
+    <span>Social publishing · for humans who record more than they post</span>
+    <span class="sep"></span>
+    <span>v4.2 · 8 platforms · 22 ai tools</span>
+  </div>
+
+  <div class="headline-stage" id="heroStage">
+    <canvas id="heroFx"></canvas>
+    <h1 class="headline" id="heroHeadline">Upload <i>once.</i><br/>Publish <span class="amber" data-fx="fire">every</span><span class="cobalt" data-fx="electric">where</span>.</h1>
+  </div>
+
+  <div class="sub-row">
+    <p class="sub"><b>W!ntAi</b> reformats, captions and schedules your video across YouTube, TikTok, Instagram, Facebook, LinkedIn, X, Threads and Pinterest — then answers the comments in your brand voice. One cockpit. No notification roulette.</p>
+    <div class="meta">
+      <div><b>14-day trial.</b> No card. Cancel in two clicks.</div>
+      <div>→ <b>2,400+ creators</b> publishing weekly</div>
+      <div>→ <b>1.8M posts</b> shipped this quarter</div>
+    </div>
+  </div>
+
+  <div class="cta-row">
+    <a href="#" class="btn cobalt">Upload your first video →</a>
+    <a href="#flow" class="btn">See how it works</a>
+    <span class="section-n" style="margin-left:14px">No editing skills required.</span>
+  </div>
+
+  <div class="platform-strip">
+    <span class="label">// publishes natively to</span>
+    <span class="chip"><span class="swatch" style="background:var(--yt)"></span>YouTube</span>
+    <span class="chip"><span class="swatch" style="background:var(--tt)"></span>TikTok</span>
+    <span class="chip"><span class="swatch" style="background:var(--ig)"></span>Instagram</span>
+    <span class="chip"><span class="swatch" style="background:var(--fb)"></span>Facebook</span>
+    <span class="chip"><span class="swatch" style="background:var(--li)"></span>LinkedIn</span>
+    <span class="chip"><span class="swatch" style="background:var(--x)"></span>X</span>
+    <span class="chip"><span class="swatch" style="background:var(--th)"></span>Threads</span>
+    <span class="chip"><span class="swatch" style="background:var(--pt)"></span>Pinterest</span>
+  </div>
+</section>
+
+<!-- ───────── FLOW ───────── -->
+<section class="pad" id="flow" data-screen-label="02 Flow">
+  <div class="section-head">
+    <div>
+      <div class="section-n">01 / FLOW</div>
+      <h2>One file in.<br/><em>Eight posts out.</em></h2>
+    </div>
+    <p class="lede">Drop a video. W!ntAi crops it for each aspect ratio, writes platform-native captions, picks a thumbnail, and pushes the post directly — no browser tabs, no "optimize for Reels" plugins, no 3am reminders.</p>
+  </div>
+
+  <div class="flow-wrap">
+    <div class="grid-bg"></div>
+    <div class="flow-stage" id="flowStage">
+      <div class="source">
+        <div class="thumb"></div>
+        <div class="meta"><span>raw_cut_v3.mp4</span><b>01:42</b></div>
+      </div>
+      <div class="orbit"></div>
+      <div class="orbit outer"></div>
+    </div>
+    <div class="flow-legend"><span>source</span><b>·</b><span>orchestrator</span><b>·</b><span>platforms</span></div>
+    <div class="flow-caption">average handoff <span>2.4s</span> / post</div>
+  </div>
+</section>
+
+<!-- ───────── AUTO-FORMAT ───────── -->
+<section class="pad" data-screen-label="03 Formats">
+  <div class="section-head">
+    <div>
+      <div class="section-n">02 / FORMATS</div>
+      <h2>Every aspect ratio, <i>handled.</i></h2>
+    </div>
+    <p class="lede">Reframing is the boring part. W!ntAi tracks faces, moves captions out of the safe zone, and regenerates thumbnails for each crop. Hover a platform to see what ships.</p>
+  </div>
+
+  <div class="fmt-grid">
+    <div class="fmt-list" id="fmtList">
+      <div class="row active" data-fmt="9x16" data-plat="TikTok"><span class="k" style="background:var(--tt)"></span><span class="name">TikTok</span><span class="res">1080 × 1920</span><span class="pill">9:16</span></div>
+      <div class="row" data-fmt="9x16" data-plat="Reels"><span class="k" style="background:var(--ig)"></span><span class="name">Instagram Reels</span><span class="res">1080 × 1920</span><span class="pill">9:16</span></div>
+      <div class="row" data-fmt="16x9" data-plat="YouTube"><span class="k" style="background:var(--yt)"></span><span class="name">YouTube</span><span class="res">1920 × 1080</span><span class="pill">16:9</span></div>
+      <div class="row" data-fmt="9x16" data-plat="Shorts"><span class="k" style="background:var(--yt)"></span><span class="name">YouTube Shorts</span><span class="res">1080 × 1920</span><span class="pill">9:16</span></div>
+      <div class="row" data-fmt="1x1" data-plat="Feed"><span class="k" style="background:var(--ig)"></span><span class="name">Instagram Feed</span><span class="res">1080 × 1080</span><span class="pill">1:1</span></div>
+      <div class="row" data-fmt="4x5" data-plat="LinkedIn"><span class="k" style="background:var(--li)"></span><span class="name">LinkedIn</span><span class="res">1080 × 1350</span><span class="pill">4:5</span></div>
+      <div class="row" data-fmt="16x9" data-plat="X"><span class="k" style="background:var(--x)"></span><span class="name">X / Twitter</span><span class="res">1280 × 720</span><span class="pill">16:9</span></div>
+      <div class="row" data-fmt="9x16" data-plat="Pinterest"><span class="k" style="background:var(--pt)"></span><span class="name">Pinterest Idea</span><span class="res">1080 × 1920</span><span class="pill">9:16</span></div>
+    </div>
+
+    <div class="fmt-preview">
+      <div class="callout">AUTO-REFRAMED · <b id="fmtLabel">TIKTOK</b></div>
+      <div class="phone-row" id="devicePreview">
+        <div class="device" data-fmt="9x16" style="height:380px">
+          <div class="ph-top"></div>
+          <div class="badge" id="devBadge">TikTok · 9:16</div>
+          <div class="content"><div class="caption">POV: you just cut<br/>a 40-min pod into<br/>8 posts in one drop.</div></div>
+        </div>
+      </div>
+      <div class="status">faces tracked · captions re-positioned · <span class="ok">ready to publish</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────── AI TOOLS ───────── -->
+<section class="pad" id="tools" data-screen-label="04 AI Tools">
+  <div class="section-head">
+    <div>
+      <div class="section-n">03 / INTELLIGENCE</div>
+      <h2>22 tools. <em>One brain.</em></h2>
+    </div>
+    <p class="lede">Every tool shares the same RAG layer trained on your brand guide, past posts and tone of voice — so a caption W!ntAi writes on Thursday sounds like you, not like the average creator on the internet.</p>
+  </div>
+
+  <div class="tools">
+    <div class="tool featured">
+      <div class="num">// PRIMARY</div>
+      <div>
+        <h4>Brand-aware Social AI</h4>
+        <p>Drop your style guide, past posts and product docs. Every hook, caption and reply is grounded in your voice — not a generic model.</p>
+      </div>
+      <a href="#" class="btn" style="align-self:flex-start">Train on your brand →</a>
+    </div>
+    <div class="tool"><div class="num">T-01</div><div class="icon">¶</div><h4>Hook Generator</h4><p>First 3 seconds, rewritten 10 ways.</p></div>
+    <div class="tool"><div class="num">T-02</div><div class="icon">A</div><h4>Caption Studio</h4><p>Per-platform length + emoji rules.</p></div>
+    <div class="tool"><div class="num">T-03</div><div class="icon">T</div><h4>Transcription</h4><p>99-lang speech-to-text with SRT.</p></div>
+    <div class="tool"><div class="num">T-04</div><div class="icon">#</div><h4>Hashtag Miner</h4><p>Trending + niche, ranked by reach.</p></div>
+    <div class="tool"><div class="num">T-05</div><div class="icon">◐</div><h4>Image Gen</h4><p>Covers and quote cards on-brand.</p></div>
+    <div class="tool"><div class="num">T-06</div><div class="icon">◇</div><h4>Thumbnail Picker</h4><p>AI selects 5 frames, ranked by CTR.</p></div>
+    <div class="tool"><div class="num">T-07</div><div class="icon">↻</div><h4>Repurposer</h4><p>Long-form → 8 shorts, auto-captioned.</p></div>
+    <div class="tool"><div class="num">T-08</div><div class="icon">☁</div><h4>Voice Clone</h4><p>Your voice for dubs, in 14 languages.</p></div>
+    <div class="tool"><div class="num">T-09</div><div class="icon">✎</div><h4>Script Doctor</h4><p>Tightens pacing, flags dead air.</p></div>
+    <div class="tool"><div class="num">T-10</div><div class="icon">◆</div><h4>Trend Radar</h4><p>Formats heating up in your niche.</p></div>
+    <div class="tool"><div class="num">T-11</div><div class="icon">↯</div><h4>AB Headline</h4><p>Live split test on publish.</p></div>
+    <div class="tool"><div class="num">T-12</div><div class="icon">◎</div><h4>Brand Voice Scan</h4><p>Drift warning when tone slips.</p></div>
+    <div class="tool"><div class="num">T-13</div><div class="icon">⌁</div><h4>Auto-Reply</h4><p>Comment + DM triage w/ approvals.</p></div>
+    <div class="tool"><div class="num">T-14</div><div class="icon">⊞</div><h4>Grid Planner</h4><p>Preview the feed before you post.</p></div>
+  </div>
+</section>
+
+<!-- ───────── CALENDAR ───────── -->
+<section class="pad" id="calendar" data-screen-label="05 Calendar">
+  <div class="split">
+    <div>
+      <div class="section-n">04 / CALENDAR</div>
+      <h3>A month of posts, <i>one afternoon.</i></h3>
+      <p>Bulk-import ideas from a CSV or a voice memo. Drag them onto a month view, set cadence rules per platform, and let W!ntAi queue the rest. Holidays, trending sounds, and optimal-time windows are baked in.</p>
+      <ul>
+        <li>Per-platform cadence rules (1 reel/day, 3 shorts/week…)</li>
+        <li>Holiday &amp; cultural-moment detection</li>
+        <li>Drag-and-drop re-scheduling with conflict warnings</li>
+        <li>Approval chains for agencies &amp; clients</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-family:'Instrument Serif',serif;font-size:28px">November 2026</div>
+        <div class="section-n">28 scheduled · 4 drafts</div>
+      </div>
+      <div class="cal">
+        <div class="wk"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div>
+        ${''/* Days — filled via script below for brevity isn't needed; inline static */}
+      </div>
+      <div id="calDays" class="cal"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────── INBOX ───────── -->
+<section class="pad" id="inbox" data-screen-label="06 Inbox">
+  <div class="split">
+    <div class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-family:'Instrument Serif',serif;font-size:28px">Unified Inbox</div>
+        <div class="section-n">12 new · 3 awaiting approval</div>
+      </div>
+      <div class="inbox">
+        <div class="msg">
+          <div class="avatar">M</div>
+          <div>
+            <div class="row1"><b>maya.p</b><span class="src">YouTube · Shorts</span></div>
+            <div class="txt">"wait how did you do that transition at 0:18?"</div>
+          </div>
+          <span class="auto">auto</span>
+        </div>
+        <div class="msg">
+          <div class="avatar">T</div>
+          <div>
+            <div class="row1"><b>thelab_co</b><span class="src">Instagram · DM</span></div>
+            <div class="txt">"Can we license this clip for a reel?"</div>
+          </div>
+          <span class="auto" style="color:#cfd6e7;border-color:var(--line-2)">manual</span>
+        </div>
+        <div class="msg">
+          <div class="avatar">J</div>
+          <div>
+            <div class="row1"><b>jon_runs</b><span class="src">TikTok · Comment</span></div>
+            <div class="txt">"drop the preset pls 🙏"</div>
+          </div>
+          <span class="auto">auto</span>
+        </div>
+        <div class="msg">
+          <div class="avatar">R</div>
+          <div>
+            <div class="row1"><b>ruby.k</b><span class="src">LinkedIn · Comment</span></div>
+            <div class="txt">"Would love to interview you about this workflow."</div>
+          </div>
+          <span class="auto" style="color:#cfd6e7;border-color:var(--line-2)">review</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="section-n">05 / INBOX</div>
+      <h3>Every reply. <i>One window.</i></h3>
+      <p>Comments, DMs and mentions from every platform land in one thread. W!ntAi drafts context-aware replies in your voice, flags anything sensitive, and holds sales-looking messages for human review.</p>
+      <ul>
+        <li>Trained per-account tone (fan vs. press vs. hate)</li>
+        <li>Smart muting for spam &amp; low-value comments</li>
+        <li>Approval workflow for teams</li>
+        <li>CRM tags — track replies that became customers</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ───────── ANALYTICS ───────── -->
+<section class="pad" data-screen-label="07 Analytics">
+  <div class="split">
+    <div>
+      <div class="section-n">06 / ANALYTICS</div>
+      <h3>Know what's <i>actually working.</i></h3>
+      <p>Cross-platform numbers, de-duped. Watch-time, save rate, comment velocity — the metrics that actually predict the next hit, not vanity impressions.</p>
+      <ul>
+        <li>Unified reporting across 8 platforms</li>
+        <li>Hook performance per first-3-seconds</li>
+        <li>Export ready-to-send client PDFs</li>
+        <li>Weekly digest: what to do more of, what to kill</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-family:'Instrument Serif',serif;font-size:28px">Last 30 days</div>
+        <div class="section-n">all platforms</div>
+      </div>
+      <div class="stat-row">
+        <div class="stat"><div class="label">views</div><div class="val">4.2M</div><div class="delta">▲ 38%</div></div>
+        <div class="stat"><div class="label">watch time</div><div class="val">312k<span style="font-size:14px;color:var(--ink-dim);font-family:'JetBrains Mono',monospace"> hrs</span></div><div class="delta">▲ 22%</div></div>
+        <div class="stat"><div class="label">saves</div><div class="val">58.9k</div><div class="delta">▲ 61%</div></div>
+        <div class="stat"><div class="label">new followers</div><div class="val">12.4k</div><div class="delta">▲ 19%</div></div>
+      </div>
+      <div style="margin-top:22px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.1em">Daily views</div>
+      <div class="spark" id="spark"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────── TESTIMONIALS ───────── -->
+<section class="pad" data-screen-label="08 Voices">
+  <div class="section-head">
+    <div><div class="section-n">07 / VOICES</div><h2>From the <em>publish button</em> hall of fame.</h2></div>
+    <p class="lede">2,400+ creators, agencies, and in-house social teams now run their distribution through W!ntAi.</p>
+  </div>
+  <div class="quote-row">
+    <div class="quote">
+      <blockquote>"I used to spend <i>Sundays</i> reformatting clips. Now I drop the cut on a Friday and forget about it. The Monday engagement is up either way."</blockquote>
+      <div class="who"><div class="av">K</div><div><b>Kaito R.</b>Solo creator · 480k followers</div></div>
+    </div>
+    <div class="quote">
+      <blockquote>"Our agency manages <i>22 clients</i>. Approval chains and brand-voice lock alone paid for the plan in week one."</blockquote>
+      <div class="who"><div class="av">S</div><div><b>Sana E.</b>Head of social, Lantern &amp; Co.</div></div>
+    </div>
+    <div class="quote">
+      <blockquote>"The RAG layer is the difference. Our captions finally sound like <i>us</i>, not like a hungover intern."</blockquote>
+      <div class="who"><div class="av">D</div><div><b>Devon O.</b>In-house social, Nocturne Audio</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────── PRICING ───────── -->
+<section class="pad" id="pricing" data-screen-label="09 Pricing">
+  <div class="section-head">
+    <div><div class="section-n">08 / PRICING</div><h2>Honest pricing.<br/><em>Pick your altitude.</em></h2></div>
+    <p class="lede">All plans include full multi-platform publishing, the 22-tool AI suite, and unified inbox. Seats and volume scale up as you do.</p>
+  </div>
+  <div class="price-grid">
+    <div class="price">
+      <div class="tier"><h3>Creator</h3></div>
+      <div class="amt"><span class="n">$19</span><span class="u">/ mo · 1 seat</span></div>
+      <p>For solo operators who finally want Sundays back.</p>
+      <ul>
+        <li>Up to 5 social accounts</li>
+        <li>120 scheduled posts / mo</li>
+        <li>Full 22-tool AI suite</li>
+        <li>Unified inbox (auto-reply on)</li>
+        <li>Basic analytics</li>
+      </ul>
+      <a class="btn" href="#" style="align-self:flex-start">Start free trial</a>
+    </div>
+    <div class="price featured">
+      <div class="tier"><h3>Studio</h3><span class="badge">Most loved</span></div>
+      <div class="amt"><span class="n">$39</span><span class="u">/ mo · 3 seats</span></div>
+      <p>For small teams &amp; duos shipping daily across 6+ platforms.</p>
+      <ul>
+        <li>Up to 20 social accounts</li>
+        <li>Unlimited scheduled posts</li>
+        <li>Brand-voice RAG training</li>
+        <li>Approval chains + roles</li>
+        <li>Full analytics &amp; client PDFs</li>
+        <li>Priority support</li>
+      </ul>
+      <a class="btn cobalt" href="#" style="align-self:flex-start">Start free trial →</a>
+    </div>
+    <div class="price">
+      <div class="tier"><h3>Agency</h3></div>
+      <div class="amt"><span class="n">$79</span><span class="u">/ mo · 10 seats</span></div>
+      <p>For agencies managing a portfolio of brands, all in one cockpit.</p>
+      <ul>
+        <li>Unlimited social accounts</li>
+        <li>White-label client reports</li>
+        <li>Per-client brand-voice vaults</li>
+        <li>SSO, audit log, SOC-2</li>
+        <li>Dedicated CSM</li>
+      </ul>
+      <a class="btn" href="#" style="align-self:flex-start">Talk to us</a>
+    </div>
+  </div>
+</section>
+
+<!-- ───────── FAQ ───────── -->
+<section class="pad" id="faq" data-screen-label="10 FAQ">
+  <div class="section-head">
+    <div><div class="section-n">09 / FAQ</div><h2>Things people <i>actually ask.</i></h2></div>
+    <p class="lede">Can't find it? Email hello@wintai.com — a human replies, usually the same day.</p>
+  </div>
+  <div class="faq-list" id="faqList">
+    <div class="faq open">
+      <div class="n">Q.01</div>
+      <div>
+        <div class="q">Does W!ntAi really publish directly — or just send me reminders?</div>
+        <div class="a">Directly. We hold official API partnerships with all 8 platforms, so your video, caption, thumbnail and schedule ship the moment you hit Publish. No phone notifications, no "open the app to post" tricks.</div>
+      </div>
+      <div class="tog">+</div>
+    </div>
+    <div class="faq">
+      <div class="n">Q.02</div>
+      <div><div class="q">Will the AI sound like <em>my</em> brand or like ChatGPT?</div>
+      <div class="a">Your brand. Upload a style guide, your last 100 posts, or a voice memo describing your tone. Our RAG layer grounds every generation in that corpus — and flags drift if the output starts sounding generic.</div></div>
+      <div class="tog">+</div>
+    </div>
+    <div class="faq">
+      <div class="n">Q.03</div>
+      <div><div class="q">I'm an agency with 22 clients. Can I keep brand voices separate?</div>
+      <div class="a">Yes. Every workspace is sandboxed. Each client gets their own brand-voice vault, approval chain, and white-label reports. Seats and accounts scale with the Agency plan.</div></div>
+      <div class="tog">+</div>
+    </div>
+    <div class="faq">
+      <div class="n">Q.04</div>
+      <div><div class="q">What if a platform changes its algorithm or aspect ratio?</div>
+      <div class="a">We re-tune the reframer + caption rules within 24 hours of any announced change, and we silently A/B test new rules against the old ones on our fleet before rolling them to you.</div></div>
+      <div class="tog">+</div>
+    </div>
+    <div class="faq">
+      <div class="n">Q.05</div>
+      <div><div class="q">Can I cancel whenever?</div>
+      <div class="a">Yes. Two clicks, no retention call. Your data exports as CSV + MP4 originals.</div></div>
+      <div class="tog">+</div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────── CTA BAND ───────── -->
+<section class="cta-band" data-screen-label="11 CTA">
+  <h2>Go <i>everywhere</i>.<br/>From <i>one</i> place.</h2>
+  <div class="row">
+    <a class="btn cobalt" href="#">Start your 14-day trial →</a>
+    <a class="btn" href="#">Book a 15-min demo</a>
+  </div>
+  <small>no credit card · 2-minute setup · sundays restored</small>
+</section>
+
+</main>
+
+<footer data-screen-label="12 Footer">
+  <div>
+    <div class="brand">W<b>!</b>ntAi</div>
+    <p>Social media publishing for humans who record more than they post. Made in Taipei &amp; Brooklyn.</p>
+  </div>
+  <div>
+    <h5>Product</h5>
+    <ul><li><a href="#">Publishing</a></li><li><a href="#">AI Tools</a></li><li><a href="#">Calendar</a></li><li><a href="#">Inbox</a></li><li><a href="#">Analytics</a></li></ul>
+  </div>
+  <div>
+    <h5>Company</h5>
+    <ul><li><a href="#">About</a></li><li><a href="#">Careers</a></li><li><a href="#">Changelog</a></li><li><a href="#">Status</a></li></ul>
+  </div>
+  <div>
+    <h5>Get in touch</h5>
+    <ul><li>hello@wintai.com</li><li>@wintaibot on everywhere</li><li>Book a demo</li></ul>
+  </div>
+  <div class="bot">
+    <span>© 2026 W!ntAi Labs · Upload once. Publish everywhere.</span>
+    <span>Privacy · Terms · SOC-2 Type II</span>
+  </div>
+</footer>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+//  HERO particle engine (scoped version of our text-effect system)
+//  Only applies to spans with [data-fx] inside #heroHeadline
+// ─────────────────────────────────────────────────────────────────────────────
+(() => {
+  const stage = document.getElementById('heroStage');
+  const headline = document.getElementById('heroHeadline');
+  const canvas = document.getElementById('heroFx');
+  const ctx = canvas.getContext('2d');
+  const DPR = Math.min(window.devicePixelRatio || 1, 2);
+  const TAU = Math.PI*2;
+  const rand = (a,b)=>a+Math.random()*(b-a);
+
+  function resize(){
+    const r = stage.getBoundingClientRect();
+    canvas.width = r.width*DPR; canvas.height = r.height*DPR;
+    canvas.style.width=r.width+'px'; canvas.style.height=r.height+'px';
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+  }
+
+  let matches = [];
+  function measure(){
+    const sr = stage.getBoundingClientRect();
+    matches = [];
+    headline.querySelectorAll('[data-fx]').forEach(el => {
+      const key = el.dataset.fx;
+      const rects = el.getClientRects();
+      for (const rr of rects){
+        matches.push({key, rect:{x:rr.left-sr.left,y:rr.top-sr.top,w:rr.width,h:rr.height}});
+      }
+    });
+  }
+
+  const particles = [];
+  const MAX = 900;
+  function spawn(p){ if(particles.length<MAX) particles.push(p); }
+
+  const FX = {
+    fire: {
+      emit(m){
+        const {x,y,w,h}=m.rect;
+        for(let i=0;i<2;i++){
+          spawn({t:'f',x:x+Math.random()*w,y:y+h*.85,vx:rand(-.3,.3),vy:rand(-1.7,-.8),r:rand(4,12),l:0,m:rand(40,80)});
+        }
+        if(Math.random()<.25){
+          spawn({t:'e',x:x+Math.random()*w,y:y+rand(h*.4,h*.9),vx:rand(-.6,.6),vy:rand(-2.4,-1.2),r:rand(1,2.2),l:0,m:rand(50,120)});
+        }
+      }
+    },
+    electric: {
+      emit(m){
+        const {x,y,w,h}=m.rect;
+        if(Math.random()<.22){
+          const pts=[]; const N=8; const yM=y+h*.5;
+          for(let i=0;i<=N;i++) pts.push({x:x+(w*i/N),y:yM+rand(-h*.35,h*.35)});
+          spawn({t:'b',pts,l:0,m:rand(6,14)});
+        }
+        if(Math.random()<.4){
+          spawn({t:'s',x:x+Math.random()*w,y:y+Math.random()*h,vx:rand(-2,2),vy:rand(-2,2),l:0,m:rand(10,22)});
+        }
+      }
+    }
+  };
+
+  function overlays(time){
+    matches.forEach(m=>{
+      const {x,y,w,h}=m.rect;
+      if(m.key==='fire'){
+        const g = ctx.createRadialGradient(x+w/2,y+h*.6,0,x+w/2,y+h*.6,Math.max(w,h));
+        g.addColorStop(0,'rgba(255,160,60,.16)'); g.addColorStop(1,'rgba(255,60,20,0)');
+        ctx.fillStyle=g; ctx.fillRect(x-w*.2,y-h*.3,w*1.4,h*1.6);
+      } else if(m.key==='electric'){
+        ctx.fillStyle='rgba(130,200,255,.06)'; ctx.fillRect(x,y,w,h);
+      }
+    });
+  }
+
+  function frame(now){
+    ctx.clearRect(0,0,canvas.width/DPR,canvas.height/DPR);
+    overlays(now);
+    matches.forEach(m=>FX[m.key] && FX[m.key].emit(m));
+    for(let i=particles.length-1;i>=0;i--){
+      const p = particles[i]; p.l++;
+      if(p.t==='f'){ p.x+=p.vx; p.y+=p.vy; p.vx+=rand(-.05,.05); p.vy-=.02;
+        const t=p.l/p.m, r=p.r*(1-t*.3), a=(1-t)*.8;
+        const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r*2.5);
+        g.addColorStop(0,`rgba(255,230,140,${a})`); g.addColorStop(.35,`rgba(255,140,40,${a*.9})`); g.addColorStop(1,'rgba(200,40,20,0)');
+        ctx.fillStyle=g; ctx.beginPath(); ctx.arc(p.x,p.y,r*2.5,0,TAU); ctx.fill();
+      } else if(p.t==='e'){ p.x+=p.vx; p.y+=p.vy; p.vy+=.02;
+        const t=p.l/p.m; ctx.fillStyle=`rgba(255,${180-t*120|0},${80-t*60|0},${1-t})`;
+        ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,TAU); ctx.fill();
+      } else if(p.t==='b'){
+        const t=p.l/p.m, a=1-t;
+        ctx.strokeStyle=`rgba(200,235,255,${a})`; ctx.shadowColor=`rgba(170,210,255,${a})`; ctx.shadowBlur=10; ctx.lineWidth=1.4;
+        ctx.beginPath(); p.pts.forEach((q,i)=>i?ctx.lineTo(q.x,q.y):ctx.moveTo(q.x,q.y)); ctx.stroke();
+        ctx.shadowBlur=0;
+      } else if(p.t==='s'){ p.x+=p.vx; p.y+=p.vy; p.vx*=.9; p.vy*=.9;
+        const t=p.l/p.m; ctx.fillStyle=`rgba(220,240,255,${1-t})`; ctx.fillRect(p.x,p.y,1.5,1.5);
+      }
+      if(p.l>=p.m) particles.splice(i,1);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  function init(){ resize(); measure(); requestAnimationFrame(frame); }
+  window.addEventListener('resize',()=>{ resize(); measure(); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(()=>{ resize(); measure(); });
+  init();
+})();
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  FLOW: arrange 8 platform nodes around the orbit + draw beams
+// ─────────────────────────────────────────────────────────────────────────────
+(() => {
+  const stage = document.getElementById('flowStage');
+  const platforms = [
+    {k:'YT',l:'YouTube', c:'#ff3b3b'},
+    {k:'TT',l:'TikTok',  c:'#25f4ee'},
+    {k:'IG',l:'Instagram',c:'#ff3d7f'},
+    {k:'FB',l:'Facebook',c:'#4f7cff'},
+    {k:'LI',l:'LinkedIn',c:'#4a90e2'},
+    {k:'X', l:'X',       c:'#ffffff'},
+    {k:'TH',l:'Threads', c:'#cfcfcf'},
+    {k:'PT',l:'Pinterest',c:'#e60023'},
+  ];
+  const R_OUT = 260, R_IN = 220;
+  platforms.forEach((p, i)=>{
+    const ang = (i/platforms.length) * Math.PI*2 - Math.PI/2;
+    const outer = i%2===0;
+    const R = outer ? R_OUT : R_IN;
+    const node = document.createElement('div');
+    node.className = 'node' + (outer ? ' outer':'');
+    node.style.left = `calc(50% + ${Math.cos(ang)*R}px - 43px)`;
+    node.style.top  = `calc(50% + ${Math.sin(ang)*R}px - 43px)`;
+    node.style.animation = `nodeFloat ${3 + (i%3)*0.4}s ease-in-out ${i*0.1}s infinite alternate`;
+    node.style.setProperty('--nc', p.c);
+    node.innerHTML = `<div style="text-align:center"><b style="color:${p.c}">${p.k}</b><div class="lbl">${p.l}</div></div>`;
+    stage.appendChild(node);
+
+    // beam
+    const beam = document.createElement('div');
+    beam.className = 'beam';
+    beam.style.width = (R-10)+'px';
+    beam.style.transform = `rotate(${ang}rad)`;
+    beam.style.animation = `beamPulse ${2.4 + i*0.15}s ease-in-out ${i*0.12}s infinite`;
+    stage.appendChild(beam);
+  });
+
+  // keyframes injected
+  const st = document.createElement('style');
+  st.textContent = `
+    @keyframes beamPulse{
+      0%,100%{opacity:.25}
+      50%{opacity:.85}
+    }
+    @keyframes nodeFloat{
+      from{filter:brightness(.95)}
+      to{filter:brightness(1.15)}
+    }`;
+  document.head.appendChild(st);
+})();
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  FORMAT preview
+// ─────────────────────────────────────────────────────────────────────────────
+(() => {
+  const list = document.getElementById('fmtList');
+  const wrap = document.getElementById('devicePreview');
+  const label = document.getElementById('fmtLabel');
+  const badge = document.getElementById('devBadge');
+  const captions = {
+    'TikTok':'POV: you just cut\na 40-min pod into\n8 posts in one drop.',
+    'Reels':'swipe-worthy clips,\nauto-formatted for the\nreels algorithm.',
+    'YouTube':'Full-episode upload —\nchapters + thumbnail\npicked for you.',
+    'Shorts':'best 58s of the pod,\nautocaptioned, hookfirst.',
+    'Feed':'carousel-ready crop\nwith safe-zone caption.',
+    'LinkedIn':'4:5 for the feed —\nprofessional captioning,\ndocument pairing optional.',
+    'X':'native video card,\nhook text above.',
+    'Pinterest':'idea-pin format with\ntitle overlay + steps.'
+  };
+  const dims = {
+    '9x16':{w:160,h:380},
+    '16x9':{w:480,h:270},
+    '1x1':{w:300,h:300},
+    '4x5':{w:240,h:300}
+  };
+  list.addEventListener('click', e=>{
+    const row = e.target.closest('.row'); if(!row) return;
+    list.querySelectorAll('.row').forEach(r=>r.classList.remove('active'));
+    row.classList.add('active');
+    apply(row);
+  });
+  list.addEventListener('mouseover', e=>{
+    const row = e.target.closest('.row'); if(!row) return;
+    list.querySelectorAll('.row').forEach(r=>r.classList.remove('active'));
+    row.classList.add('active');
+    apply(row);
+  });
+  function apply(row){
+    const fmt = row.dataset.fmt;
+    const plat = row.dataset.plat;
+    label.textContent = plat.toUpperCase();
+    const d = dims[fmt];
+    wrap.innerHTML = `
+      <div class="device" data-fmt="${fmt}" style="width:${d.w}px;height:${d.h}px">
+        <div class="ph-top"></div>
+        <div class="badge">${plat} · ${fmt.replace('x',':')}</div>
+        <div class="content"><div class="caption">${captions[plat].replace(/\n/g,'<br/>')}</div></div>
+      </div>`;
+  }
+})();
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Calendar mock
+// ─────────────────────────────────────────────────────────────────────────────
+(() => {
+  const host = document.getElementById('calDays');
+  if(!host) return;
+  // 35 cells; scatter some posts
+  const scheduled = [2,4,5,8,10,11,13,16,18,19,22,24,26,28,30];
+  const amber = new Set([4,11,18,26]);
+  const ghost = new Set([8,19,28]);
+  let html = '';
+  for(let i=1;i<=35;i++){
+    const dn = i > 31 ? '' : i;
+    const isScheduled = scheduled.includes(i);
+    const cls = isScheduled ? (amber.has(i)?'has amber':ghost.has(i)?'has ghost':'has') : '';
+    html += `<div class="day ${cls}">
+      <span>${dn}</span>
+      ${isScheduled?`<span class="pill">${amber.has(i)?'Reel':ghost.has(i)?'draft':'Shorts'}</span>`:''}
+    </div>`;
+  }
+  host.innerHTML = html;
+})();
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Sparkline
+// ─────────────────────────────────────────────────────────────────────────────
+(() => {
+  const host = document.getElementById('spark'); if(!host) return;
+  const vals = [32,40,38,50,62,55,70,78,66,72,80,92,85,95,110,105,120,115,140,132,148,160,150,170,165,180,195,210,188,220];
+  const max = Math.max(...vals);
+  host.innerHTML = vals.map(v=>`<span style="height:${(v/max*100).toFixed(1)}%"></span>`).join('');
+})();
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  FAQ accordion
+// ─────────────────────────────────────────────────────────────────────────────
+(() => {
+  document.querySelectorAll('#faqList .faq').forEach(f=>{
+    f.addEventListener('click', ()=> f.classList.toggle('open'));
+  });
+})();
+</script>
+
+</body>
+</html>

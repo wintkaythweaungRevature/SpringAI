@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import PlatformIcon from './PlatformIcon';
+import FallingPlatformsAnimation from './FallingPlatformsAnimation';
 
 const PLATFORM_META = {
   instagram: { id: 'instagram', color: '#E1306C' },
@@ -22,7 +23,9 @@ function getMediaBadge(post) {
 }
 
 // ─── Shared style tokens ────────────────────────────────────────────────────
-const BG_PAGE   = '#0f172a';
+// Dark gradient matches the landing-page final-CTA backdrop so the falling-platforms
+// animation reads the same way it does on the landing page.
+const BG_PAGE   = 'linear-gradient(160deg, #060a14 0%, #0f172a 35%, #1e1b4b 70%, #0a1020 100%)';
 const BG_CARD   = '#1e293b';
 const BG_INPUT  = '#0f172a';
 const ACCENT    = '#6366f1';
@@ -326,8 +329,13 @@ export default function SelfHealDashboard() {
         padding: '32px 24px',
         maxWidth: 860,
         margin: '0 auto',
+        position: 'relative',
+        isolation: 'isolate',
+        overflow: 'hidden',
       }}
     >
+      <FallingPlatformsAnimation mode="background" />
+
       {/* ── Page Header ── */}
       <div style={{ marginBottom: 32 }}>
         <h1 style={{ fontSize: 26, fontWeight: 700, margin: 0, color: TEXT_PRI }}>

@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { filterEnabledPlatforms } from '../config/disabledPlatforms';
 import PlatformIcon from './PlatformIcon';
+import FallingPlatformsAnimation from './FallingPlatformsAnimation';
 import PostDetailModal from './PostDetailModal';
 import ComposePostModal from './ComposePostModal';
 import { getHolidaysForDate, HOLIDAY_COLORS } from '../data/holidays';
@@ -1074,6 +1075,9 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
 
   return (
     <div style={{ ...s.page, ...(isMobile ? { padding: '12px 8px', borderRadius: 0, border: 'none' } : {}) }}>
+      {/* Ambient bouncing-platforms backdrop — pointer-events: none so calendar
+          interactions (date click, post click, drag-and-drop) still work. */}
+      <FallingPlatformsAnimation mode="background" />
 
       {/* ── CLIENT Approval Queue Banner ── */}
       {myOrgRole === 'CLIENT' && pendingApprovalPosts.length > 0 && (
@@ -1253,7 +1257,17 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
         </div>
       )}
 
-      <div style={{ ...s.body, ...(isMobile ? { gridTemplateColumns: '1fr', gap: 12 } : {}) }}>
+      <div
+        style={{
+          ...s.body,
+          // Mobile: stack everything in a single column.
+          // Desktop: calendar takes the full width when no date is selected; the
+          // 300px right rail only appears once the user clicks a calendar day.
+          ...(isMobile
+            ? { gridTemplateColumns: '1fr', gap: 12 }
+            : { gridTemplateColumns: selectedDay ? 'minmax(0, 1fr) 300px' : 'minmax(0, 1fr)' }),
+        }}
+      >
 
         {/* ══ CALENDAR VIEW ══ */}
         {view === 'calendar' && (
@@ -1282,6 +1296,8 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
                   const isSelected = selectedDay && sameDay(day, selectedDay);
                   const hasScheduledPost = dayPosts.some(isPostScheduled);
                   const platformColors = [...new Set(dayPosts.map(p => platformColor(p.platform)))].slice(0, 4);
+                  // De-duped list of platform IDs that have a post on this day, capped at 4 logos.
+                  const dayPlatformIds = [...new Set(dayPosts.map(p => (p.platform || '').toLowerCase()).filter(Boolean))].slice(0, 4);
                   const dayHolidays = getHolidaysForDate(day);
 
                   return (
@@ -1490,9 +1506,19 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
                         </div>
                       ) : (
                         <div style={s.dotRow}>
-                          {platformColors.map((c, i) => (
-                            <div key={i} style={{ ...s.dot, background: c }} />
-                          ))}
+                          {dayPlatformIds.map((pid) => {
+                            const meta = PLATFORM_MAP[pid];
+                            if (!meta) return null;
+                            return (
+                              <span
+                                key={pid}
+                                title={meta.label}
+                                style={{ display: 'inline-flex', lineHeight: 0 }}
+                              >
+                                <PlatformIcon platform={meta} size={14} />
+                              </span>
+                            );
+                          })}
                         </div>
                       )}
                     </div>
@@ -1504,7 +1530,9 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
               <div style={s.legend}>
                 {PLATFORMS.filter(p => monthPosts.some(m => m.platform?.toLowerCase() === p.id)).map(p => (
                   <div key={p.id} style={s.legendItem}>
-                    <div style={{ ...s.dot, background: p.color }} />
+                    <span style={{ display: 'inline-flex', lineHeight: 0 }}>
+                      <PlatformIcon platform={p} size={14} />
+                    </span>
                     <span>{p.label}</span>
                   </div>
                 ))}
@@ -1527,13 +1555,16 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
 
             </div>
 
-            {/* Right column — sidebar + post-status legend stacked together so the legend
-                sits directly under the Recent/Selected-day card (not floating under the calendar grid). */}
+            {/* Right column — sidebar (only when a date is selected) + post-status legend.
+                The "Recent Posts" listing is hidden by default and only appears as a side-panel
+                after the user clicks a calendar day; the legend remains visible always so users
+                still see the color key for the calendar grid. */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {selectedDay && (
             <div style={s.sidebar}>
               <div style={s.sidebarHeader}>
                 <span style={s.sidebarTitle}>
-                  {selectedDay ? `📅 ${fmtDate(selectedDay)}` : '📋 Recent Posts'}
+                  📅 {fmtDate(selectedDay)}
                 </span>
                 <span style={s.sidebarCount}>{upcoming.length}</span>
                 {selectedDay && (
@@ -1665,26 +1696,30 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
               )}
 
             </div>
-            {/* Post status legend — stacked under the sidebar card in the right column. */}
-            <div style={{ background: '#fff', borderRadius: 12, border: '1.5px solid #e2e8f0', padding: '12px 16px', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 8 }}>Post status</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {[
-                  { emoji: '🟢', label: 'Published', hint: 'already live' },
-                  { emoji: '🟡', label: 'Scheduled', hint: 'posts later' },
-                  { emoji: '🔵', label: 'Draft', hint: 'not scheduled yet' },
-                  { emoji: '🔴', label: 'Failed', hint: 'posting error' },
-                ].map((row) => (
-                  <div key={row.label} style={s.legendItem} title={`${row.label}: ${row.hint}`}>
-                    <span style={{ fontSize: 11, lineHeight: 1 }}>{row.emoji}</span>
-                    <span style={{ fontSize: 12, color: '#475569' }}>
-                      <strong>{row.label}</strong>
-                      <span style={{ color: '#94a3b8', fontWeight: 400 }}> — {row.hint}</span>
-                    </span>
-                  </div>
-                ))}
+            )}
+            {/* Post status legend — also hidden by default; only appears alongside the
+                day's posts when a calendar date is selected. */}
+            {selectedDay && (
+              <div style={{ background: '#fff', borderRadius: 12, border: '1.5px solid #e2e8f0', padding: '12px 16px', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 8 }}>Post status</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {[
+                    { emoji: '🟢', label: 'Published', hint: 'already live' },
+                    { emoji: '🟡', label: 'Scheduled', hint: 'posts later' },
+                    { emoji: '🔵', label: 'Draft', hint: 'not scheduled yet' },
+                    { emoji: '🔴', label: 'Failed', hint: 'posting error' },
+                  ].map((row) => (
+                    <div key={row.label} style={s.legendItem} title={`${row.label}: ${row.hint}`}>
+                      <span style={{ fontSize: 11, lineHeight: 1 }}>{row.emoji}</span>
+                      <span style={{ fontSize: 12, color: '#475569' }}>
+                        <strong>{row.label}</strong>
+                        <span style={{ color: '#94a3b8', fontWeight: 400 }}> — {row.hint}</span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
             </div>
           </>
         )}
@@ -1860,27 +1895,8 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
         )}
       </div>
 
-      {/* Day detail modal */}
-      {selectedDay && (
-        <DayModal
-          date={selectedDay}
-          posts={filteredPosts}
-          onRetryFailed={retryFailedPost}
-          retryingIds={retryingIds}
-          onClose={() => setSelectedDay(null)}
-          onCancelJob={cancelJob}
-          onDeletePost={deletePost}
-          onRescheduleJob={rescheduleJob}
-          reschedulingJob={reschedulingJob}
-          newDateTime={newDateTime}
-          setNewDateTime={setNewDateTime}
-          setReschedulingJob={setReschedulingJob}
-          onPostSelect={(p) => {
-            setFeedDetailPost(p);
-            setSelectedDay(null);
-          }}
-        />
-      )}
+      {/* Day detail modal — disabled. Selecting a date now reveals the side
+          "Recent Posts" panel only; no full-screen popup overlay. */}
 
       {/* Compose post modal */}
       <ComposePostModal
@@ -2105,6 +2121,12 @@ const s = {
     borderRadius: 16,
     border: '1px solid rgba(148,163,184,0.25)',
     boxShadow: '0 4px 24px rgba(0,0,0,0.12)',
+    // position+overflow let the absolutely-positioned bouncing-platforms background fill
+    // this container without bleeding into surrounding layout. isolation creates a fresh
+    // stacking context so its z-index:-1 doesn't escape behind page chrome.
+    position: 'relative',
+    overflow: 'hidden',
+    isolation: 'isolate',
   },
 
   pageHeader: { display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 },
@@ -2133,11 +2155,33 @@ const s = {
 
   calGrid: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2 },
   calDayHeader: { textAlign: 'center', fontSize: 11, fontWeight: 700, color: '#94a3b8', padding: '6px 0', textTransform: 'uppercase', letterSpacing: '0.05em' },
-  calCell: { minHeight: 72, padding: '6px', borderRadius: 8, border: '1px solid #e2e8f0', transition: 'all 0.15s', position: 'relative', background: '#fff' },
-  calCellToday: { border: '1.5px solid #6366f133', background: '#f5f3ff' },
+  // Clean light tone — Notion/Apple Calendar style. Each cell is a soft off-white
+  // tile with a subtle border and gentle rounded corners. Today/selected/scheduled
+  // states use light tints so platform logos and event chips inside read clearly.
+  calCell: {
+    minHeight: 80,
+    padding: '8px',
+    borderRadius: 10,
+    border: '1px solid #eef2f7',
+    transition: 'all 0.15s',
+    position: 'relative',
+    background: '#fbfcfe',
+    boxShadow: '0 1px 0 rgba(15,23,42,0.02)',
+  },
+  calCellToday: {
+    border: '1.5px solid #c7d2fe',
+    background: '#f5f3ff',
+    boxShadow: '0 1px 0 rgba(99,102,241,0.06)',
+  },
   /** Pale yellow border when the day has at least one scheduled (not yet published) post */
-  calCellHasScheduled: { border: '1.5px solid #fde68a' },
-  calCellSelected: { background: '#ede9fe', border: '1.5px solid #6366f1' },
+  calCellHasScheduled: {
+    border: '1.5px solid #fde68a',
+  },
+  calCellSelected: {
+    background: '#ede9fe',
+    border: '1.5px solid #6366f1',
+    boxShadow: '0 0 0 3px rgba(99,102,241,0.12)',
+  },
   calDayNum: { fontSize: 13, fontWeight: 600, color: '#334155', lineHeight: 1, marginBottom: 4 },
   dotRow: { display: 'flex', gap: 3, flexWrap: 'wrap', marginTop: 4 },
   dot: { width: 8, height: 8, borderRadius: '50%', flexShrink: 0 },
@@ -2218,7 +2262,9 @@ const s = {
   feedTitle: { fontSize: 17, fontWeight: 800, color: '#0f172a', display: 'block' },
   feedSub: { fontSize: 13, color: '#94a3b8', marginTop: 2, display: 'block' },
   feedGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 14 },
-  feedCard: { borderRadius: 12, border: '1.5px solid #e2e8f0', overflow: 'hidden', background: '#fff' },
+  // Split `border` shorthand into longhand so the mouseEnter/Leave handlers can
+  // imperatively change `borderColor` without React warning about shorthand+longhand collisions.
+  feedCard: { borderRadius: 12, borderWidth: '1.5px', borderStyle: 'solid', borderColor: '#e2e8f0', overflow: 'hidden', background: '#fff' },
   feedThumb: { height: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' },
   feedPlatformBadge: { position: 'absolute', top: 8, left: 8, borderRadius: 6, padding: '3px 6px', display: 'flex', alignItems: 'center' },
   feedStatusBadge: { position: 'absolute', top: 8, right: 8, borderRadius: '50%', width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#fff' },

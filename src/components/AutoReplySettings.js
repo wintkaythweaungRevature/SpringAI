@@ -249,7 +249,10 @@ export default function AutoReplySettings() {
 
   const recentByPlatform = useMemo(() => {
     const latest = Object.fromEntries(PLATFORMS.map((p) => [p.id, null]));
+    // Skip rows are hidden from the per-platform "latest" card too — only real replies
+    // / hard failures count as the platform's "most recent activity".
     for (const l of sortedLogs) {
+      if (l.skipReason) continue;
       const id = logCanonicalPlatformId(l);
       if (id && latest[id] == null) latest[id] = l;
     }
@@ -257,8 +260,12 @@ export default function AutoReplySettings() {
   }, [sortedLogs]);
 
   const displayLogs = useMemo(() => {
-    if (!logPlatformFilter) return sortedLogs;
-    return sortedLogs.filter((l) => logCanonicalPlatformId(l) === logPlatformFilter);
+    // Hide skipped rows entirely — only successful replies (and hard failures with no
+    // skipReason) are shown. The skip-reason data is still in the underlying log; we
+    // just don't render those rows in the activity table.
+    const visible = sortedLogs.filter((l) => !l.skipReason);
+    if (!logPlatformFilter) return visible;
+    return visible.filter((l) => logCanonicalPlatformId(l) === logPlatformFilter);
   }, [sortedLogs, logPlatformFilter]);
 
   // ─── Save rule ────────────────────────────────────────────────────────────

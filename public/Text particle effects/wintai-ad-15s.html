@@ -1,0 +1,558 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>W!ntAi — 15s Vertical Ad</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;padding:0;background:#0a0a0a;height:100%;font-family:Inter,system-ui,sans-serif;overflow:hidden}
+  #root{position:fixed;inset:0}
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="animations.jsx"></script>
+
+<script type="text/babel">
+const { Stage, Sprite, useSprite, useTime, Easing, interpolate, animate, clamp } = window;
+
+// ───────── Palette ─────────
+const ACC = 'oklch(76% 0.15 55)';       // amber
+const COB = 'oklch(68% 0.17 250)';      // cobalt
+const INK = '#f6f4ef';
+const BG  = '#07090d';
+
+// ───────── Shared chrome (captions + progress + safe zones) ─────────
+function Chrome(){
+  const t = useTime();
+  // "Shot" chapter ticks along the bottom
+  const marks = [0, 2.5, 5, 8, 11.5, 14, 15];
+  return (
+    <>
+      {/* vignette */}
+      <div style={{position:'absolute',inset:0,background:'radial-gradient(120% 80% at 50% 50%, transparent 55%, rgba(0,0,0,.55) 100%)',pointerEvents:'none',zIndex:50}}/>
+      {/* top status bar (creator-POV) */}
+      <div style={{position:'absolute',top:28,left:0,right:0,display:'flex',justifyContent:'space-between',padding:'0 40px',fontFamily:'JetBrains Mono, monospace',fontSize:22,color:'#fff',opacity:.55,zIndex:45,letterSpacing:'.08em'}}>
+        <span>9:41</span>
+        <span>●REC · 01:12</span>
+      </div>
+      {/* bottom chapter ticks */}
+      <div style={{position:'absolute',bottom:24,left:40,right:40,display:'flex',gap:4,zIndex:45}}>
+        {marks.slice(0,-1).map((m,i)=>{
+          const w = (marks[i+1]-m)/15;
+          const active = t >= m;
+          const local = clamp((t-m)/(marks[i+1]-m),0,1);
+          return <div key={i} style={{flex:w,height:3,background:'rgba(255,255,255,.15)',borderRadius:2,overflow:'hidden'}}>
+            <div style={{height:'100%',width:`${local*100}%`,background:active?ACC:'transparent',transition:'width .1s'}}/>
+          </div>
+        })}
+      </div>
+    </>
+  );
+}
+
+// ───────── Real video frame used as "source footage" ─────────
+const VIDEO_FRAME = 'assets/video-frame.png';
+
+// ───────── Real platform logos (brand SVGs) ─────────
+function PlatformLogo({ kind, size=64 }){
+  const s = size;
+  switch(kind){
+    case 'YT': return (
+      <svg width={s} height={s} viewBox="0 0 48 48"><rect x="2" y="10" width="44" height="28" rx="8" fill="#FF0000"/><polygon points="20,18 20,30 32,24" fill="#fff"/></svg>
+    );
+    case 'IG': return (
+      <svg width={s} height={s} viewBox="0 0 48 48">
+        <defs><linearGradient id="igG" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stopColor="#feda77"/><stop offset=".3" stopColor="#f58529"/><stop offset=".6" stopColor="#dd2a7b"/><stop offset="1" stopColor="#8134af"/></linearGradient></defs>
+        <rect x="4" y="4" width="40" height="40" rx="11" fill="url(#igG)"/>
+        <rect x="10" y="10" width="28" height="28" rx="8" fill="none" stroke="#fff" strokeWidth="3"/>
+        <circle cx="24" cy="24" r="7" fill="none" stroke="#fff" strokeWidth="3"/>
+        <circle cx="33" cy="15" r="2" fill="#fff"/>
+      </svg>
+    );
+    case 'FB': return (
+      <svg width={s} height={s} viewBox="0 0 48 48"><circle cx="24" cy="24" r="22" fill="#1877F2"/><path d="M28 24h-4v14h-5V24h-3v-5h3v-3c0-4 2-6 6-6 2 0 3 .2 3 .2v4h-2c-1.5 0-2 1-2 2v2.8h4l-.8 5z" fill="#fff"/></svg>
+    );
+    case 'TT': return (
+      <svg width={s} height={s} viewBox="0 0 48 48">
+        <rect x="2" y="2" width="44" height="44" rx="10" fill="#000"/>
+        <path d="M31 12c1.5 2.8 3.8 4.3 7 4.5v5c-2.5.1-4.8-.6-7-2v10.5c0 6-4.8 10-10 10s-10-4.5-10-10 4.5-10 10-10c.8 0 1.5.1 2.2.2v5.3c-.7-.2-1.4-.3-2.2-.3-2.8 0-5 2.2-5 5s2.2 5 5 5 5-2.2 5-5V12h5z" fill="#FF0050"/>
+        <path d="M29 10c1.5 2.8 3.8 4.3 7 4.5v5c-2.5.1-4.8-.6-7-2v10.5c0 6-4.8 10-10 10s-10-4.5-10-10 4.5-10 10-10c.8 0 1.5.1 2.2.2v5.3c-.7-.2-1.4-.3-2.2-.3-2.8 0-5 2.2-5 5s2.2 5 5 5 5-2.2 5-5V10h5z" fill="#00F2EA" transform="translate(-1.5,-1)" opacity=".85"/>
+        <path d="M30 11c1.5 2.8 3.8 4.3 7 4.5v5c-2.5.1-4.8-.6-7-2v10.5c0 6-4.8 10-10 10s-10-4.5-10-10 4.5-10 10-10c.8 0 1.5.1 2.2.2v5.3c-.7-.2-1.4-.3-2.2-.3-2.8 0-5 2.2-5 5s2.2 5 5 5 5-2.2 5-5V11h5z" fill="#fff"/>
+      </svg>
+    );
+    case 'X': return (
+      <svg width={s} height={s} viewBox="0 0 48 48"><rect x="2" y="2" width="44" height="44" rx="10" fill="#000"/><path d="M13 12h5.5l5 7 6-7h3l-7.5 8.7L34 36h-5.5l-5.5-7.7L16 36h-3l8.2-9.5L13 12zm3 2l14 20h2L18 14h-2z" fill="#fff"/></svg>
+    );
+    case 'LI': return (
+      <svg width={s} height={s} viewBox="0 0 48 48"><rect x="2" y="2" width="44" height="44" rx="6" fill="#0A66C2"/><rect x="10" y="18" width="6" height="18" fill="#fff"/><circle cx="13" cy="13" r="3.2" fill="#fff"/><path d="M20 18h6v2.5c1-1.7 3-3 6-3 5 0 7 3 7 8v10h-6v-9c0-2.5-1-4-3.5-4s-3.5 1.5-3.5 4v9h-6V18z" fill="#fff"/></svg>
+    );
+    case 'PT': return (
+      <svg width={s} height={s} viewBox="0 0 48 48"><circle cx="24" cy="24" r="22" fill="#E60023"/><path d="M25 8C16 8 11 14 11 21c0 4 2 8 5 9 .5.2.8 0 .9-.4l.3-1.3c.1-.4 0-.6-.3-.9-.8-.9-1.3-2.1-1.3-3.8 0-4.9 3.7-9.3 9.6-9.3 5.2 0 8.1 3.2 8.1 7.5 0 5.6-2.5 10.4-6.2 10.4-2 0-3.6-1.7-3.1-3.8.6-2.5 1.8-5.2 1.8-7 0-1.6-.9-2.9-2.6-2.9-2.1 0-3.8 2.2-3.8 5.1 0 1.8.6 3.1.6 3.1s-2.1 9-2.5 10.6c-.7 3.1-.1 6.9 0 7.3 0 .2.3.3.4.1.2-.3 2.8-3.5 3.7-6.7.2-.9 1.5-6.1 1.5-6.1.8 1.4 3 2.7 5.3 2.7 7 0 11.7-6.4 11.7-14.9C38 11.6 32.7 8 25 8z" fill="#fff"/></svg>
+    );
+    case 'TH': return (
+      <svg width={s} height={s} viewBox="0 0 48 48"><rect x="2" y="2" width="44" height="44" rx="11" fill="#000"/><path d="M24 10c-7 0-12 4.5-12.5 12.5C11 31 15.5 37 24 37c4 0 7-1 9-3.5 1.8-2.2 2.5-4.8 2-7.3-.6-3.5-3.5-6.2-7.5-6.8-2-.3-4.5 0-6 1.2-1.5 1.2-2 3-1.5 4.7.3 1.1 1 1.8 2 2l.5-2.5c-.3 0-.5-.2-.6-.5-.2-.7.2-1.5.9-2 1-.8 2.8-1 4.3-.7 2.7.4 4.5 2 4.9 4.3.3 1.6-.2 3.3-1.3 4.7-1.4 1.7-3.6 2.4-6.7 2.4-6.5 0-9.4-4.2-9.6-10.5C14.8 16.2 18.3 13 24 13c4 0 6.7 1.5 8 4.5l2.5-1.2c-1.7-3.7-5.3-6.3-10.5-6.3z" fill="#fff"/></svg>
+    );
+    default: return null;
+  }
+}
+
+// ───────── Shot 1 — Creator POV, tired Sunday night (0–2.5s) ─────────
+function Shot1(){
+  const { progress, localTime } = useSprite();
+  // subtle handheld shake
+  const sx = Math.sin(localTime*7.1)*4 + Math.cos(localTime*11)*3;
+  const sy = Math.cos(localTime*6.3)*3 + Math.sin(localTime*9.7)*2;
+  // dim pulse (TV glow on face)
+  const glow = 0.6 + 0.4*Math.sin(localTime*3);
+  return (
+    <div style={{position:'absolute',inset:0,transform:`translate(${sx}px,${sy}px)`}}>
+      {/* dim bedroom background */}
+      <div style={{position:'absolute',inset:0,background:'radial-gradient(60% 40% at 50% 78%, rgba(30,40,80,.6), transparent 70%), linear-gradient(180deg,#0a0c14, #05060a)'}}/>
+      {/* creator silhouette — simple stylized portrait */}
+      <svg viewBox="0 0 1080 1920" style={{position:'absolute',inset:0,width:'100%',height:'100%'}}>
+        {/* shoulders */}
+        <path d="M 160 1920 L 160 1500 Q 540 1280 920 1500 L 920 1920 Z" fill="#14171f"/>
+        {/* neck */}
+        <rect x="470" y="1340" width="140" height="180" fill="#b89780" opacity=".7"/>
+        {/* head */}
+        <ellipse cx="540" cy="1150" rx="210" ry="260" fill="#c99e84" opacity=".8"/>
+        {/* hair */}
+        <path d="M 330 1050 Q 540 820 750 1050 Q 760 990 720 940 Q 540 800 360 940 Q 320 990 330 1050 Z" fill="#1a1611"/>
+        {/* hoodie strings */}
+        <rect x="520" y="1450" width="6" height="140" fill="#2a2f3a"/>
+        <rect x="555" y="1450" width="6" height="140" fill="#2a2f3a"/>
+        {/* eyes closed (tired) */}
+        <path d="M 450 1150 Q 475 1160 500 1150" stroke="#1a1611" strokeWidth="6" fill="none" strokeLinecap="round"/>
+        <path d="M 580 1150 Q 605 1160 630 1150" stroke="#1a1611" strokeWidth="6" fill="none" strokeLinecap="round"/>
+        {/* mouth — flat line */}
+        <path d="M 510 1280 Q 540 1290 570 1280" stroke="#6b3e2f" strokeWidth="5" fill="none" strokeLinecap="round"/>
+        {/* phone glow in hand */}
+        <rect x="440" y="1600" width="200" height="120" rx="14" fill="#1a2236" opacity={glow}/>
+        <rect x="460" y="1620" width="160" height="80" rx="6" fill={COB} opacity={glow*.5}/>
+      </svg>
+      {/* lamp highlight */}
+      <div style={{position:'absolute',right:-100,top:-100,width:500,height:500,background:'radial-gradient(circle,rgba(255,180,90,.25),transparent 60%)'}}/>
+      {/* caption */}
+      {localTime > 0.4 && (
+        <div style={{position:'absolute',left:0,right:0,top:'42%',textAlign:'center',zIndex:40}}>
+          <div style={{display:'inline-block',background:'rgba(0,0,0,.55)',padding:'16px 28px',backdropFilter:'blur(10px)',borderRadius:14,border:'1px solid rgba(255,255,255,.08)'}}>
+            <div style={{fontFamily:'JetBrains Mono,monospace',fontSize:22,color:ACC,letterSpacing:'.18em'}}>POV</div>
+            <div style={{fontFamily:'Instrument Serif,serif',fontSize:72,color:INK,lineHeight:1,marginTop:10,letterSpacing:'-.02em'}}>it's <i>Sunday</i> night.</div>
+          </div>
+        </div>
+      )}
+      {/* VO line at bottom */}
+      <Caption text={`"It's Sunday. I've got one video —"`} top={1680}/>
+    </div>
+  );
+}
+
+// ───────── Shot 2 — 8 platforms rain down (2.5–5s) ─────────
+function Shot2(){
+  const { localTime, progress } = useSprite();
+  const platforms = [
+    {k:'YT', c:'#ff3b3b', x:.15, delay:.0},
+    {k:'TT', c:'#25f4ee', x:.38, delay:.1},
+    {k:'IG', c:'#ff3d7f', x:.60, delay:.05},
+    {k:'FB', c:'#4f7cff', x:.82, delay:.15},
+    {k:'LI', c:'#4a90e2', x:.25, delay:.25},
+    {k:'X',  c:'#ffffff', x:.50, delay:.3},
+    {k:'TH', c:'#cfcfcf', x:.72, delay:.22},
+    {k:'PT', c:'#e60023', x:.90, delay:.35},
+  ];
+  return (
+    <div style={{position:'absolute',inset:0,background:'linear-gradient(180deg,#0a0f1c,#030509)'}}>
+      {/* falling icons */}
+      {platforms.map((p,i)=>{
+        const start = p.delay;
+        const t = clamp((localTime-start)/1.8,0,1);
+        const y = Easing.easeInQuad(t) * 1950 - 200;
+        const rot = t*180 - 90;
+        const op = t>.92 ? 1-(t-.92)/.08 : 1;
+        return (
+          <div key={i} style={{
+            position:'absolute', left:`${p.x*100}%`, top:y, transform:`translate(-50%,0) rotate(${rot}deg)`,
+            width:160, height:160, borderRadius:32,
+            background:'#0b0f1c', border:`2px solid ${p.c}`,
+            display:'grid', placeItems:'center',
+            boxShadow:`0 0 60px ${p.c}88`,
+            opacity:op
+          }}>
+            <span style={{fontFamily:'Instrument Serif,serif',fontSize:64,color:p.c,fontWeight:400,lineHeight:1}}>{p.k}</span>
+          </div>
+        );
+      })}
+      {/* creator small, in foreground crushed */}
+      {progress > .3 && (
+        <div style={{position:'absolute',left:'50%',bottom:'12%',transform:'translateX(-50%)',zIndex:20}}>
+          <div style={{fontFamily:'Instrument Serif,serif',fontSize:72,color:INK,textAlign:'center',letterSpacing:'-.02em',lineHeight:1}}>
+            Same video.<br/><i style={{color:ACC}}>Eight edits.</i>
+          </div>
+        </div>
+      )}
+      <Caption text={`"—and eight platforms that all want it different."`} top={1740}/>
+    </div>
+  );
+}
+
+// ───────── Shot 3 — Real product flow montage (5–8s) ─────────
+// ───────── Shot 3 — Real dashboard flow, full-view (4.5–9s) ─────────
+function Shot3(){
+  const { localTime, duration } = useSprite();
+  // Dashboard screenshots are ~1917×873 (landscape); our frame is 1080×1920 portrait.
+  // Show each full-width, pinned to a "device" area mid-frame with a subtle ken-burns pan
+  // so the ENTIRE screenshot is visible — nothing gets cut off.
+  const screens = [
+    { src:'assets/dashboard-upload.png',    label:'01 · UPLOAD',        caption:'Drop your video',               headline:'Drop raw_cut.mp4' },
+    { src:'assets/dashboard-processing.png',label:'02 · AI PROCESSING',  caption:'Captions · hashtags · hooks',    headline:'AI reads the footage' },
+    { src:'assets/dashboard-review.png',    label:'03 · REVIEW',         caption:'Auto-scored · 72 viral',        headline:'Review · every platform' },
+    { src:'assets/dashboard-calendar.png',  label:'04 · SCHEDULED',      caption:'Live across 8 networks',        headline:'Queued. Scheduled. Live.' },
+  ];
+  const step = duration / screens.length;
+
+  return (
+    <div style={{position:'absolute',inset:0,background:'linear-gradient(180deg,#0a0e1a 0%, #03050a 100%)',overflow:'hidden'}}>
+      {/* screen stack */}
+      {screens.map((s,i)=>{
+        const sStart = i*step;
+        const sEnd   = (i+1)*step;
+        const fadeIn = clamp((localTime - sStart)/0.3, 0, 1);
+        const fadeOut= clamp((sEnd - localTime)/0.3, 0, 1);
+        const op = Math.min(fadeIn, fadeOut);
+        if (op <= 0) return null;
+        const local = localTime - sStart;
+        const progress = local / step; // 0→1 within this screen
+        // Ken burns: start slightly zoomed + panned, end slightly zoomed + panned opposite
+        const scale = 1.05 + progress * 0.08;
+        const panX = (progress - 0.5) * 40; // px
+        const panY = (progress - 0.5) * 20;
+        return (
+          <div key={i} style={{
+            position:'absolute',
+            left: 40, right: 40,
+            top: 380, bottom: 520,
+            opacity: op,
+            display:'flex', alignItems:'center', justifyContent:'center'
+          }}>
+            {/* device frame around the screenshot */}
+            <div style={{
+              width:'100%', aspectRatio:'1917 / 873',
+              borderRadius:18, overflow:'hidden',
+              border:'1px solid rgba(255,255,255,.12)',
+              boxShadow:'0 50px 120px rgba(0,0,0,.85), 0 0 0 1px rgba(255,255,255,.04), inset 0 0 0 1px rgba(255,255,255,.05)',
+              background:'#0b0f1c',
+              position:'relative'
+            }}>
+              <img src={s.src} alt="" style={{
+                width:'100%', height:'100%',
+                objectFit:'cover', objectPosition:'center',
+                display:'block',
+                transform:`scale(${scale}) translate(${panX}px, ${panY}px)`,
+                transformOrigin:'center center'
+              }}/>
+            </div>
+          </div>
+        );
+      })}
+
+      {/* progress pips */}
+      <div style={{position:'absolute',top:50,left:0,right:0,display:'flex',justifyContent:'center',gap:12,zIndex:30}}>
+        {screens.map((_,i)=>{
+          const active = localTime >= i*step && localTime < (i+1)*step;
+          const done   = localTime >= (i+1)*step;
+          return (
+            <div key={i} style={{
+              width: active ? 56 : 16, height:6, borderRadius:3,
+              background: active ? ACC : (done ? '#4a5469' : '#1d2438'),
+              transition:'all .3s'
+            }}/>
+          );
+        })}
+      </div>
+
+      {/* Dynamic headline over current screen */}
+      {screens.map((s,i)=>{
+        const sStart = i*step;
+        const sEnd   = (i+1)*step;
+        if (localTime < sStart || localTime >= sEnd) return null;
+        const fadeIn = clamp((localTime - sStart)/0.25, 0, 1);
+        return (
+          <React.Fragment key={i}>
+            {/* top section: step chip + headline */}
+            <div style={{position:'absolute',top:110,left:0,right:0,textAlign:'center',zIndex:30,opacity:fadeIn,transform:`translateY(${(1-fadeIn)*20}px)`}}>
+              <div style={{display:'inline-block',background:'#07090d',border:`1px solid ${ACC}`,borderRadius:999,padding:'12px 24px',fontFamily:'JetBrains Mono,monospace',fontSize:22,color:ACC,letterSpacing:'.2em',marginBottom:22,boxShadow:`0 8px 24px rgba(0,0,0,.7)`}}>
+                {s.label}
+              </div>
+              <div style={{fontFamily:'Instrument Serif,serif',fontSize:80,color:INK,letterSpacing:'-.025em',lineHeight:1,padding:'0 40px',textShadow:'0 4px 24px rgba(0,0,0,.9)'}}>
+                {s.headline}
+              </div>
+            </div>
+            {/* bottom caption */}
+            <div style={{position:'absolute',bottom:320,left:40,right:40,textAlign:'center',zIndex:30,opacity:fadeIn}}>
+              <div style={{display:'inline-block',background:'rgba(7,9,13,.8)',backdropFilter:'blur(10px)',border:'1px solid rgba(255,255,255,.08)',borderRadius:12,padding:'14px 24px',fontFamily:'Instrument Serif,serif',fontSize:40,color:COB,letterSpacing:'-.01em',fontStyle:'italic'}}>
+                {s.caption}
+              </div>
+            </div>
+          </React.Fragment>
+        );
+      })}
+
+      <Caption text={`"I drop it once. The AI handles every platform."`} top={1780}/>
+    </div>
+  );
+}
+
+// ───────── Shot 4 — Orbit: one → eight (8–11.5s) ─────────
+function Shot4(){
+  const { localTime, progress } = useSprite();
+  const platforms = [
+    {k:'YT', l:'YouTube',   c:'#FF0000'},
+    {k:'IG', l:'Instagram', c:'#dd2a7b'},
+    {k:'FB', l:'Facebook',  c:'#1877F2'},
+    {k:'LI', l:'LinkedIn',  c:'#0A66C2'},
+    {k:'TT', l:'TikTok',    c:'#00F2EA'},
+    {k:'X',  l:'X',         c:'#ffffff'},
+    {k:'PT', l:'Pinterest', c:'#E60023'},
+    {k:'TH', l:'Threads',   c:'#cfcfcf'},
+  ];
+  const cx = 540, cy = 960;
+  const R = 380;
+  const rot = localTime * 0.25;
+  return (
+    <div style={{position:'absolute',inset:0,background:'radial-gradient(circle at 50% 50%, #0d1220, #03050a 80%)'}}>
+      <svg viewBox="0 0 1080 1920" style={{position:'absolute',inset:0,width:'100%',height:'100%'}}>
+        {/* orbit rings */}
+        <circle cx={cx} cy={cy} r={R} fill="none" stroke="#1d2438" strokeDasharray="6 10"/>
+        <circle cx={cx} cy={cy} r={R-80} fill="none" stroke="#1d2438" strokeDasharray="2 8"/>
+
+        {/* beams (staggered) */}
+        {platforms.map((p,i)=>{
+          const ang = (i/8)*Math.PI*2 - Math.PI/2 + rot;
+          const start = i * 0.15;
+          const t = clamp((localTime-start)/.4, 0, 1);
+          if (t <= 0) return null;
+          const ease = Easing.easeOutCubic(t);
+          const x2 = cx + Math.cos(ang)*R*ease;
+          const y2 = cy + Math.sin(ang)*R*ease;
+          return (
+            <line key={'b'+i} x1={cx} y1={cy} x2={x2} y2={y2}
+              stroke={p.c} strokeWidth="3" opacity={0.5+0.5*(1-ease)}
+              strokeLinecap="round"/>
+          );
+        })}
+
+        {/* center source — real video frame (HTML img overlay for reliability) */}
+        <g transform={`translate(${cx} ${cy})`}>
+          <rect x={-120} y={-72} width={240} height={144} rx={16} fill="#0b0f1c" stroke={ACC} strokeWidth="3"/>
+          <text x="0" y="108" textAnchor="middle" fontFamily="JetBrains Mono,monospace" fontSize="22" fill={INK}>raw_cut.mp4 · 01:42</text>
+        </g>
+
+        {/* platform node BACKGROUNDS (rings) */}
+        {platforms.map((p,i)=>{
+          const ang = (i/8)*Math.PI*2 - Math.PI/2 + rot;
+          const start = i * 0.15 + 0.3;
+          const t = clamp((localTime-start)/.5, 0, 1);
+          if (t <= 0) return null;
+          const ease = Easing.easeOutBack(t);
+          const px = cx + Math.cos(ang)*R;
+          const py = cy + Math.sin(ang)*R;
+          return (
+            <g key={'ring'+i} transform={`translate(${px} ${py}) scale(${ease})`}>
+              <circle r="68" fill="#0b0f1c" stroke={p.c} strokeWidth="3"/>
+              <text x="0" y="104" textAnchor="middle" fontFamily="JetBrains Mono,monospace" fontSize="18" fill="#8a93a8" letterSpacing="2">{p.l.toUpperCase()}</text>
+            </g>
+          );
+        })}
+      </svg>
+
+      {/* platform LOGOS (HTML overlay for real brand marks) + checkmarks */}
+      {platforms.map((p,i)=>{
+        const ang = (i/8)*Math.PI*2 - Math.PI/2 + rot;
+        const start = i * 0.15 + 0.3;
+        const t = clamp((localTime-start)/.5, 0, 1);
+        if (t <= 0) return null;
+        const ease = Easing.easeOutBack(t);
+        const px = cx + Math.cos(ang)*R;
+        const py = cy + Math.sin(ang)*R;
+        const chk = clamp((t-0.6)/0.4, 0, 1);
+        return (
+          <div key={'logo'+i} style={{
+            position:'absolute',
+            left: `calc(${px/1080*100}% - 40px)`,
+            top:  `calc(${py/1920*100}% - 40px)`,
+            width: 80, height: 80,
+            display:'grid', placeItems:'center',
+            transform:`scale(${ease})`,
+            zIndex: 8,
+            pointerEvents:'none'
+          }}>
+            <PlatformLogo kind={p.k} size={72}/>
+            {chk > 0 && (
+              <div style={{
+                position:'absolute', right:-8, top:-8,
+                width: 28*chk, height: 28*chk,
+                borderRadius:'50%', background: ACC,
+                display:'grid', placeItems:'center',
+                boxShadow:`0 0 12px ${ACC}cc`
+              }}>
+                <svg width="16" height="16" viewBox="0 0 20 20"><path d="M 4 10 L 8 14 L 16 5" stroke="#07090d" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      {/* center source video frame — HTML overlay positioned over the SVG center */}
+      <div style={{
+        position:'absolute',
+        left: `calc(50% - 120px)`,
+        top: `calc(${cy}px / 1920 * 100% - 72px)`,
+        width: 240, height: 144,
+        borderRadius: 16,
+        overflow: 'hidden',
+        border: `3px solid ${ACC}`,
+        boxShadow: `0 0 40px ${ACC}66`,
+        zIndex: 10,
+        pointerEvents: 'none'
+      }}>
+        <img src={VIDEO_FRAME} alt="" style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}}/>
+        {/* play glyph overlay */}
+        <div style={{position:'absolute',inset:0,display:'grid',placeItems:'center',background:'rgba(0,0,0,.25)'}}>
+          <div style={{width:42,height:42,borderRadius:'50%',background:'rgba(255,255,255,.9)',display:'grid',placeItems:'center'}}>
+            <div style={{width:0,height:0,borderLeft:`14px solid ${BG}`,borderTop:'9px solid transparent',borderBottom:'9px solid transparent',marginLeft:4}}/>
+          </div>
+        </div>
+      </div>
+
+      {/* headline */}
+      <div style={{position:'absolute',top:90,left:0,right:0,textAlign:'center',zIndex:30}}>
+        <div style={{fontFamily:'Instrument Serif,serif',fontSize:72,color:INK,letterSpacing:'-.02em',lineHeight:1}}>
+          Eight platforms.<br/><i style={{color:COB}}>Auto-formatted.</i>
+        </div>
+        {progress > .8 && (
+          <div style={{marginTop:16,fontFamily:'JetBrains Mono,monospace',fontSize:26,color:ACC,letterSpacing:'.14em'}}>LIVE.</div>
+        )}
+      </div>
+      <Caption text={`"—and publishes native cuts to all eight. Live."`} top={1760}/>
+    </div>
+  );
+}
+
+// ───────── Shot 5 — Creator grinning, phone down (11.5–14s) ─────────
+function Shot5(){
+  const { localTime } = useSprite();
+  const sx = Math.sin(localTime*6)*3;
+  const sy = Math.cos(localTime*5.4)*2;
+  return (
+    <div style={{position:'absolute',inset:0,transform:`translate(${sx}px,${sy}px)`,background:'linear-gradient(180deg,#1a2030,#080a12)'}}>
+      {/* morning window light */}
+      <div style={{position:'absolute',inset:0,background:'radial-gradient(40% 30% at 75% 25%, rgba(255,200,120,.35), transparent 70%)'}}/>
+      <svg viewBox="0 0 1080 1920" style={{position:'absolute',inset:0,width:'100%',height:'100%'}}>
+        {/* shoulders */}
+        <path d="M 140 1920 L 140 1460 Q 540 1250 940 1460 L 940 1920 Z" fill="#1e2332"/>
+        {/* neck */}
+        <rect x="470" y="1300" width="140" height="180" fill="#c99e84"/>
+        {/* head */}
+        <ellipse cx="540" cy="1100" rx="220" ry="270" fill="#e0b497"/>
+        {/* hair */}
+        <path d="M 320 990 Q 540 760 760 990 Q 770 920 720 880 Q 540 740 360 880 Q 310 920 320 990 Z" fill="#1a1611"/>
+        {/* eyes open, happy */}
+        <ellipse cx="475" cy="1100" rx="10" ry="12" fill="#1a1611"/>
+        <ellipse cx="605" cy="1100" rx="10" ry="12" fill="#1a1611"/>
+        {/* big smile */}
+        <path d="M 440 1240 Q 540 1340 640 1240" stroke="#8a3a2a" strokeWidth="8" fill="#3a1510" strokeLinecap="round"/>
+        <path d="M 470 1258 Q 540 1310 610 1258" fill="#c97060"/>
+      </svg>
+      {/* caption */}
+      {localTime > 0.3 && (
+        <div style={{position:'absolute',left:0,right:0,top:'38%',textAlign:'center',zIndex:40}}>
+          <div style={{display:'inline-block',background:'rgba(0,0,0,.5)',padding:'18px 32px',backdropFilter:'blur(10px)',borderRadius:14,border:'1px solid rgba(255,255,255,.1)'}}>
+            <div style={{fontFamily:'Instrument Serif,serif',fontSize:88,color:ACC,letterSpacing:'-.025em',lineHeight:1}}>Sunday</div>
+            <div style={{fontFamily:'Instrument Serif,serif',fontSize:88,color:INK,fontStyle:'italic',letterSpacing:'-.025em',lineHeight:1,marginTop:6}}>restored.</div>
+          </div>
+        </div>
+      )}
+      <Caption text={`"Now it takes two minutes. I get my Sundays back."`} top={1720}/>
+    </div>
+  );
+}
+
+// ───────── Shot 6 — End card (14–15s) ─────────
+function Shot6(){
+  const { localTime } = useSprite();
+  const t = clamp(localTime/0.4, 0, 1);
+  const ease = Easing.easeOutBack(t);
+  return (
+    <div style={{position:'absolute',inset:0,background:`radial-gradient(ellipse at 50% 40%, ${COB}, #03050a 70%)`}}>
+      <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:40,transform:`scale(${ease})`,opacity:t}}>
+        <div style={{fontFamily:'Instrument Serif,serif',fontSize:140,color:INK,letterSpacing:'-.03em',lineHeight:1,whiteSpace:'nowrap'}}>
+          W<span style={{color:ACC}}>!</span>ntAi
+        </div>
+        <div style={{fontFamily:'Instrument Serif,serif',fontSize:56,color:'#cfd6e7',letterSpacing:'-.02em',textAlign:'center',lineHeight:1.1}}>
+          Upload <i>once</i>.<br/>Publish <i style={{color:ACC}}>everywhere</i>.
+        </div>
+        <div style={{marginTop:40,display:'flex',flexDirection:'column',alignItems:'center',gap:16}}>
+          <div style={{background:ACC,color:'#07090d',padding:'22px 44px',borderRadius:999,fontSize:30,fontWeight:600,fontFamily:'Inter',letterSpacing:'.01em'}}>Start free · wintaibot.com</div>
+          <div style={{fontFamily:'JetBrains Mono,monospace',fontSize:18,color:'#8a93a8',letterSpacing:'.14em'}}>14-DAY TRIAL · NO CARD</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ───────── Caption component ─────────
+function Caption({text, top=1700}){
+  const { localTime, duration } = useSprite();
+  const fadeIn = clamp(localTime/0.3, 0, 1);
+  const fadeOut = clamp((duration - localTime)/0.3, 0, 1);
+  const op = Math.min(fadeIn, fadeOut);
+  return (
+    <div style={{position:'absolute',left:40,right:40,top,zIndex:40,opacity:op,textAlign:'center'}}>
+      <div style={{display:'inline-block',background:'rgba(0,0,0,.7)',padding:'12px 20px',borderRadius:10,fontFamily:'Inter',fontSize:26,color:INK,lineHeight:1.3,letterSpacing:'-.01em',fontWeight:500,maxWidth:'100%',backdropFilter:'blur(6px)'}}>
+        {text}
+      </div>
+    </div>
+  );
+}
+
+// ───────── Crossfade helper ─────────
+function Scene({start, end, children}){
+  return (
+    <Sprite start={start} end={end}>
+      {({ localTime, duration }) => {
+        const fadeIn = clamp(localTime/0.25, 0, 1);
+        const fadeOut = clamp((duration-localTime)/0.25, 0, 1);
+        const op = Math.min(fadeIn, fadeOut);
+        return <div style={{position:'absolute',inset:0,opacity:op}}>{children}</div>;
+      }}
+    </Sprite>
+  );
+}
+
+// ───────── App ─────────
+function App(){
+  return (
+    <Stage width={1080} height={1920} duration={15} background={BG} persistKey="wintai-ad">
+      <Scene start={0}    end={2.0}><Shot1/></Scene>
+      <Scene start={2.0}  end={4.5}><Shot2/></Scene>
+      <Scene start={4.5}  end={9.0}><Shot3/></Scene>
+      <Scene start={9.0}  end={12.0}><Shot4/></Scene>
+      <Scene start={12.0} end={14.0}><Shot5/></Scene>
+      <Scene start={14.0} end={15.0}><Shot6/></Scene>
+      <Chrome/>
+    </Stage>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

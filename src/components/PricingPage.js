@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import PromoCodeRedeem from './PromoCodeRedeem';
 
 /* ─── Plan Data ──────────────────────────────────────────────────────── */
 const PLANS = [
@@ -211,6 +212,18 @@ export default function PricingPage({ onClose }) {
             </button>
           </div>
         </div>
+
+        {/* ── Promo code redeem (FREE codes activate immediately; PERCENT_OFF is queued for checkout) ── */}
+        {user && (
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
+            <PromoCodeRedeem onRedeemed={(r) => {
+              // FREE-kind codes grant access immediately — refresh user so isSubscribed flips on
+              if (r?.kind === 'FREE' && typeof refetchUser === 'function') {
+                refetchUser();
+              }
+            }} />
+          </div>
+        )}
 
         {successMsg && <div style={s.successBanner}>{successMsg}</div>}
         {error      && <div style={s.errorBanner}>{error}</div>}

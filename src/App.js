@@ -51,6 +51,7 @@ import SEO from './components/SEO';
 import UrlRepurposer from './components/UrlRepurposer';
 import VideoRecycler from './components/VideoRecycler';
 import Repurposer from './components/Repurposer';
+import AdminPromoCodes from './components/AdminPromoCodes';
 import TrendAlerts from './components/TrendAlerts';
 import ClientApprovalPage from './components/ClientApprovalPage';
 import SelfHealDashboard from './components/SelfHealDashboard';
@@ -740,6 +741,10 @@ function App() {
               <div style={s.groupLabelFooter}>{SIDEBAR_GROUPS.settings}</div>
               {user && <NavItem icon={<HiCog6Tooth size={17} />} label="Account" active={activeTab === 'account'} onClick={() => { go('account'); if (isMobile || isTablet) setSidebarOpen(false); }} hasArrow />}
               {user && <NavItem icon={<HiCreditCard size={17} />} label="Pricing" active={activeTab === 'pricing'} onClick={() => { go('pricing'); if (isMobile || isTablet) setSidebarOpen(false); }} />}
+              {/* Admin-only Promo Codes nav — gated on user.role === 'ROLE_ADMIN' */}
+              {user?.role === 'ROLE_ADMIN' && (
+                <NavItem icon={<span style={{ fontSize: 16 }}>🎟</span>} label="Promo Codes" active={activeTab === 'admin-promo'} onClick={() => { go('admin-promo'); if (isMobile || isTablet) setSidebarOpen(false); }} />
+              )}
               <NavItem icon={<HiQuestionMarkCircle size={17} />} label="Help & Support" active={activeTab === 'help'} onClick={() => { go('help'); if (isMobile || isTablet) setSidebarOpen(false); }} />
             </div>
           </nav>
@@ -1163,6 +1168,9 @@ function App() {
           {activeTab === 'social-ai'       && <MemberGate featureName="Social AI"><ProGate featureName="Social AI"><WorkspaceGate permKey="aiCaptions"><SocialAIChat /></WorkspaceGate></ProGate></MemberGate>}
           {activeTab === 'pricing'         && <PricingPage onClose={() => go(null)} />}
           {activeTab === 'brand'           && <MemberGate featureName="Brand Kit"><BrandKitSettings /></MemberGate>}
+          {activeTab === 'admin-promo'     && (user?.role === 'ROLE_ADMIN'
+            ? <AdminPromoCodes />
+            : <div style={{ padding: 40, color: '#94a3b8', textAlign: 'center' }}>Admin only.</div>)}
           {activeTab === 'team'            && <MemberGate featureName="Team"><ProGate featureName="Team"><TeamSettings /></ProGate></MemberGate>}
           {activeTab === 'organization'    && <MemberGate featureName="Organization"><ProGate featureName="Organization"><OrganizationSettings /></ProGate></MemberGate>}
           {activeTab === 'help'            && <HelpPanel />}

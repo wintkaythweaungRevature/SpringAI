@@ -1433,30 +1433,42 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
                                   setContextMenu({ post: p, x: e.clientX, y: e.clientY });
                                 }}
                               >
-                                {preview?.url ? (
-                                  <ResolvedPostMedia
-                                    post={p}
-                                    playOverlay={previewIsVideoPost(p, preview)}
-                                    wrapperStyle={{ ...s.dayChipThumb, overflow: 'hidden' }}
-                                    imgStyle={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                    videoStyle={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                    playOverlayStyle={{ fontSize: 10 }}
-                                  />
-                                ) : (
-                                  <div
-                                    style={{
-                                      ...s.dayChipThumbPlaceholder,
-                                      background: `linear-gradient(135deg, ${pColor}, ${pColor}cc)`,
-                                    }}
-                                  >
-                                    {pInfo ? <PlatformIcon platform={pInfo} size={12} /> : '•'}
+                                {/* Unified chip layout — same look for text / image / video posts:
+                                    header row (small platform logo + time) on top,
+                                    caption preview underneath, optional small thumbnail on the right
+                                    when the post has media. */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '2px 4px', width: '100%', minWidth: 0 }}>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: 1, minWidth: 0 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                      {pInfo && <PlatformIcon platform={pInfo} size={14} />}
+                                      <span style={{ fontSize: 12, fontWeight: 700, color: '#1e293b' }}>{t || 'Post'}</span>
+                                    </div>
+                                    <div
+                                      style={{
+                                        fontSize: 12,
+                                        color: '#475569',
+                                        lineHeight: 1.3,
+                                        overflow: 'hidden',
+                                        whiteSpace: 'nowrap',
+                                        textOverflow: 'ellipsis',
+                                      }}
+                                      title={p.caption || ''}
+                                    >
+                                      {(p.caption || '').trim() || (pInfo?.label || p.platform || 'Post')}
+                                    </div>
                                   </div>
-                                )}
-                                <div style={s.dayChipBody}>
-                                  <div style={s.dayChipTime}>{t || 'Post'}</div>
-                                  <div style={s.dayChipMeta}>
-                                    {pInfo?.label || p.platform || ''}
-                                  </div>
+                                  {preview?.url && (
+                                    <div style={{ width: 36, height: 36, borderRadius: 6, overflow: 'hidden', flexShrink: 0, background: '#0f172a' }}>
+                                      <ResolvedPostMedia
+                                        post={p}
+                                        playOverlay={previewIsVideoPost(p, preview)}
+                                        wrapperStyle={{ width: '100%', height: '100%' }}
+                                        imgStyle={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                        videoStyle={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                        playOverlayStyle={{ fontSize: 9 }}
+                                      />
+                                    </div>
+                                  )}
                                 </div>
                                 {/* Approval status badge — only for member-approval outcomes.
                                     SCHEDULED / PENDING / SUCCESS / FAILED render nothing. */}
@@ -2202,6 +2214,10 @@ const s = {
     textAlign: 'left',
     minHeight: 28,
     transition: 'box-shadow 0.15s, transform 0.15s',
+    // Narrower chip — sits left-aligned in the day cell with a small max width
+    // so it doesn't span the full cell.
+    maxWidth: 140,
+    alignSelf: 'flex-start',
   },
   dayChipThumb: { width: 28, height: 28, borderRadius: 5, objectFit: 'cover', border: '1px solid #e2e8f0', flexShrink: 0 },
   dayChipThumbPlaceholder: {

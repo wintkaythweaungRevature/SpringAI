@@ -1191,14 +1191,37 @@ export default function AnalyticsDashboard() {
                   </div>
                   {/* Top 4 grid */}
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
-                    {topPosts.posts.length === 0 ? (
-                      <div style={{ gridColumn: '1/-1', color: '#94a3b8', fontSize: 13, textAlign: 'center', padding: '20px 0' }}>
-                        No posts yet.
-                      </div>
-                    ) : (
-                      [...topPosts.posts]
-                        .sort((a, b) => (b[topMetricTab] ?? -1) - (a[topMetricTab] ?? -1))
-                        .slice(0, 4)
+                    {(() => {
+                      // Rank posts by their total engagement across ALL metrics so the user
+                      // always sees their 4 best posts — even when the currently-selected
+                      // metric tab has zero values across the board. The displayed number
+                      // still reflects the selected metric (so it can show 0), but at least
+                      // the cards aren't an empty state when the post has likes/comments etc.
+                      const totalEng = (p) =>
+                        Number(p.likes ?? 0)
+                        + Number(p.commentsCount ?? p.comments ?? 0)
+                        + Number(p.views ?? 0)
+                        + Number(p.shares ?? 0)
+                        + Number(p.impressions ?? 0)
+                        + Number(p.reach ?? 0);
+                      const ranked = [...topPosts.posts]
+                        // First sort by the selected metric (so when that metric has data,
+                        // the cards reflect the user's intent). Tie-break by total engagement
+                        // so all-zero metrics fall back to "best posts overall."
+                        .sort((a, b) => {
+                          const sel = (b[topMetricTab] ?? 0) - (a[topMetricTab] ?? 0);
+                          if (sel !== 0) return sel;
+                          return totalEng(b) - totalEng(a);
+                        })
+                        .slice(0, 4);
+                      if (topPosts.posts.length === 0) {
+                        return (
+                          <div style={{ gridColumn: '1/-1', color: '#94a3b8', fontSize: 13, textAlign: 'center', padding: '20px 0' }}>
+                            No posts yet.
+                          </div>
+                        );
+                      }
+                      return ranked
                         .map((post, i) => {
                           const pl = PLATFORMS.find(x => x.id === (post.platform ?? '').toLowerCase());
                           const metricVal = post[topMetricTab];
@@ -1220,8 +1243,8 @@ export default function AnalyticsDashboard() {
                               </div>
                             </div>
                           );
-                        })
-                    )}
+                        });
+                    })()}
                   </div>
                 </div>
               )}

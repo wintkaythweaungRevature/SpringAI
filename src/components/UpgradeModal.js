@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import PromoCodeRedeem from './PromoCodeRedeem';
 
 /**
  * UpgradeModal — shown when a user hits a plan limit.
@@ -168,6 +169,17 @@ export default function UpgradeModal({ reason, feature, onClose, suggestPlan }) 
               </div>
             );
           })}
+        </div>
+
+        {/* Promo code redeem inline — for users with a beta / friend code, this skips Stripe
+            entirely (FREE codes activate instantly) or reserves a discount for checkout. */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 16 }}>
+          <PromoCodeRedeem onRedeemed={(r) => {
+            if (r?.kind === 'FREE' && typeof refetchUser === 'function') {
+              refetchUser();
+              if (typeof onClose === 'function') onClose();
+            }
+          }} />
         </div>
 
         <p style={s.footNote}>

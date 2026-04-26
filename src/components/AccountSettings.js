@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
+import PromoCodeRedeem from "./PromoCodeRedeem";
 
 /** Matches PricingPage / UpgradeModal (per-month equivalent when billed annually). */
 const TIER_CATALOG = {
@@ -507,6 +508,47 @@ export default function AccountSettings() {
           <button onClick={handleBilling} disabled={!!loading} style={s.btnPrimary}>
             {loading === "billing" ? "Opening..." : "Manage Billing & Invoices"}
           </button>
+        </div>
+
+        {/* Promo / Beta Code */}
+        <div style={s.section}>
+          <h3 style={s.sectionTitle}>🎟 Promo Code</h3>
+          {user?.freeUntil ? (
+            // User already has a redeemed code granting free access — show a status badge
+            // instead of the redeem input. freeUntil is null = lifetime; specific date = expires.
+            <div style={{
+              display: "inline-flex", alignItems: "center", gap: 8,
+              padding: "10px 14px", borderRadius: 10,
+              background: "#f0fdf4", border: "1px solid #bbf7d0",
+              color: "#15803d", fontSize: 14, fontWeight: 600,
+            }}>
+              <span>🎁</span>
+              <span>
+                Free access via promo code
+                {(() => {
+                  // freeUntil is an ISO timestamp. If it's >50 years in the future treat as lifetime.
+                  try {
+                    const until = new Date(user.freeUntil);
+                    const yearsAway = (until.getTime() - Date.now()) / (1000 * 60 * 60 * 24 * 365);
+                    if (yearsAway > 50) return " — lifetime";
+                    return ` — until ${until.toLocaleDateString()}`;
+                  } catch { return ""; }
+                })()}
+              </span>
+            </div>
+          ) : (
+            <>
+              <p style={s.desc}>
+                Have a code from W!ntAi? Enter it here to unlock free access or a discount.
+                FREE codes activate instantly; percentage-discount codes apply at checkout.
+              </p>
+              <PromoCodeRedeem onRedeemed={() => {
+                // After a FREE code is redeemed, the user's freeUntil flips on. Refresh
+                // the user object so the badge above appears without a manual page reload.
+                if (typeof refetchUser === "function") refetchUser();
+              }} />
+            </>
+          )}
         </div>
 
         {/* Deactivate */}

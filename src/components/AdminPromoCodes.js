@@ -150,6 +150,15 @@ export default function AdminPromoCodes() {
         </button>
       </div>
 
+      {/* Helper banner — explains how the user on the receiving end actually uses the code. */}
+      <div style={s.helperBanner}>
+        <strong>How users redeem:</strong> share the code via WhatsApp / email / SMS. The
+        recipient signs up to W!ntAi (free tier), then enters the code in either{' '}
+        <strong>Account Settings → Promo Code</strong> or on the <strong>Pricing</strong>{' '}
+        page (or in any upgrade prompt). FREE codes activate instantly with no Stripe charge;
+        percentage-discount codes apply at checkout.
+      </div>
+
       {error && <div style={s.errorBox}>⚠ {error}</div>}
       {successMsg && <div style={s.successBox}>{successMsg}</div>}
 
@@ -374,4 +383,9 @@ const s = {
   badgeActive: { background: 'rgba(16,185,129,0.18)', color: '#6ee7b7', padding: '3px 8px', borderRadius: 12, fontSize: 11, fontWeight: 700 },
   badgeInactive: { background: 'rgba(148,163,184,0.18)', color: '#94a3b8', padding: '3px 8px', borderRadius: 12, fontSize: 11, fontWeight: 700 },
   iconBtn: { background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 16, padding: '4px 6px' },
+  helperBanner: {
+    background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.25)',
+    color: '#cbd5e1', padding: '12px 16px', borderRadius: 10, marginBottom: 16,
+    fontSize: 13, lineHeight: 1.55,
+  },
 };

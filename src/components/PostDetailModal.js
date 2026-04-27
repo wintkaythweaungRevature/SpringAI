@@ -372,7 +372,11 @@ export default function PostDetailModal({ post, onClose, platform, onSaved, feed
 
       let res;
       if (selectedFile) {
-        // multipart/form-data — let browser set Content-Type with boundary
+        // multipart/form-data via POST sub-path — PATCH multipart is flaky on
+        // Spring/Tomcat (the resolver only reliably parses multipart for POST).
+        // Hits /api/social/post/{id}/replace-media instead. Browser sets the
+        // Content-Type with the multipart boundary automatically when the body
+        // is FormData — DON'T set it manually or the boundary is wrong.
         const fd = new FormData();
         fd.append('caption', caption.trim());
         fd.append('hashtags', hashtags.trim());
@@ -383,8 +387,8 @@ export default function PostDetailModal({ post, onClose, platform, onSaved, feed
           fd.append('scheduledAt', scheduledAt);
         }
         fd.append('file', selectedFile);
-        res = await fetch(url, {
-          method: 'PATCH',
+        res = await fetch(url + '/replace-media', {
+          method: 'POST',
           headers: { Authorization: `Bearer ${token}` },
           body: fd,
         });

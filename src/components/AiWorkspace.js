@@ -720,7 +720,7 @@ function AddAgentModal({ onClose, onCreate }) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function AiWorkspace({ onCaptionApproved } = {}) {
+export default function AiWorkspace({ onCaptionApproved, onPostsScheduled } = {}) {
   const { apiBase, authHeaders, activeWorkspaceId, userWorkspaces, user } = useAuth();
 
   // ── State ──────────────────────────────────────────────────────────────────
@@ -890,9 +890,14 @@ export default function AiWorkspace({ onCaptionApproved } = {}) {
         setTasks(prev => prev.filter(t => t.id !== taskId));
         setPendingCount(prev => Math.max(0, prev - 1));
 
-        // If the task is a caption draft AND we have a callback, send it to Video Publisher
-        const isCaptionDraft = approvedTask?.taskType === 'DRAFT_CAPTION' || approvedTask?.taskType === 'SUGGEST_POST_TIME';
-        if (isCaptionDraft && captionText && onCaptionApproved) {
+        // Only DRAFT_CAPTION (Writer's caption-for-existing-post) hands off to Video
+        // Publisher for further editing. SUGGEST_POST_TIME (Strategist) and ASSET_TO_POST
+        // both create real SocialPost rows on the backend — those should land in the
+        // Content Calendar, NOT redirect to Video Publisher. Previously
+        // SUGGEST_POST_TIME was incorrectly bundled here, sending the user to the wrong
+        // page after approving a Strategist task.
+        const handsOffToPublisher = approvedTask?.taskType === 'DRAFT_CAPTION';
+        if (handsOffToPublisher && captionText && onCaptionApproved) {
           onCaptionApproved(captionText);
           return; // Navigation happens via the callback — skip the toast
         }
@@ -900,6 +905,12 @@ export default function AiWorkspace({ onCaptionApproved } = {}) {
         if (data.postsCreated > 0) {
           setApproveMsg(`✅ ${data.postsCreated} post${data.postsCreated > 1 ? 's' : ''} scheduled to your Content Calendar!`);
           setTimeout(() => setApproveMsg(''), 6000);
+          // Navigate to Content Calendar so the user immediately sees what was created
+          // (instead of staring at the now-empty AI Workspace pending list). Brief
+          // delay so the toast registers visually before the page changes.
+          if (typeof onPostsScheduled === 'function') {
+            setTimeout(() => onPostsScheduled(data.postsCreated), 700);
+          }
         } else if (data.captionApplied) {
           setApproveMsg(`✅ ${data.captionApplied}`);
           setTimeout(() => setApproveMsg(''), 5000);

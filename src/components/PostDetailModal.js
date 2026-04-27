@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import PlatformIcon from './PlatformIcon';
 import { fireToast } from './Toast';
 import DraftActionBar from './DraftActionBar';
+import ApprovalRequestPopup from './ApprovalRequestPopup';
 
 function firstNonEmptyStr(...vals) {
   for (const v of vals) {
@@ -155,6 +156,10 @@ export default function PostDetailModal({ post, onClose, platform, onSaved, feed
   const [scheduledDateOnly, setScheduledDateOnly] = useState('');
   const [scheduledTimeOnly, setScheduledTimeOnly] = useState('12:00');
   const [mediaUrlEdit, setMediaUrlEdit] = useState('');
+  // Approval Request popup — toggled by the new "👤 Approval Request" button
+  // in the modal footer. The popup itself loads workspace members and POSTs
+  // to /api/approve/send/{postId} (same flow Video Publisher uses today).
+  const [showApprovalPopup, setShowApprovalPopup] = useState(false);
   // --- new state ---
   const [selectedFile, setSelectedFile] = useState(null);
   const [filePreview, setFilePreview] = useState('');
@@ -1095,6 +1100,35 @@ export default function PostDetailModal({ post, onClose, platform, onSaved, feed
             >
               {deleting ? 'Deleting…' : 'Delete'}
             </button>
+            {/* Approval Request — opens a popup that lists workspace members
+                (only ones in THIS post's workspace) and emails the picked one
+                a private review link. Hidden for terminal states (SUCCESS /
+                REJECTED) where approval no longer makes sense, and during
+                CHANGES_REQUESTED resubmit (the existing Save & Resubmit button
+                already routes through approval). */}
+            {post.status !== 'SUCCESS'
+              && post.status !== 'REJECTED'
+              && feedbackContext?.kind !== 'CHANGES_REQUESTED'
+              && feedbackContext?.kind !== 'REJECTED' && (
+              <button
+                type="button"
+                onClick={() => setShowApprovalPopup(true)}
+                disabled={saving || deleting || duplicating}
+                style={{
+                  padding: '10px 18px',
+                  borderRadius: 10,
+                  border: '1.5px solid #c7d2fe',
+                  background: '#eef2ff',
+                  fontWeight: 700,
+                  fontSize: 14,
+                  cursor: 'pointer',
+                  color: '#4338ca',
+                }}
+                title="Send this post to a workspace member for approval"
+              >
+                👤 Approval Request
+              </button>
+            )}
             {feedbackContext?.kind === 'REJECTED' ? (
               <button
                 type="button"
@@ -1139,6 +1173,20 @@ export default function PostDetailModal({ post, onClose, platform, onSaved, feed
           </div>
         )}
       </div>
+
+      {/* Approval Request popup — overlaid on top of the modal. Reuses the
+          exact backend flow Video Publisher uses (/api/workspace/{id}/members
+          + /api/approve/send/{postId}). On success, also refreshes the parent
+          (Calendar) so the post chip updates to "Awaiting review by …". */}
+      {showApprovalPopup && (
+        <ApprovalRequestPopup
+          post={post}
+          onClose={() => setShowApprovalPopup(false)}
+          onSent={() => {
+            if (typeof onSaved === 'function') onSaved();
+          }}
+        />
+      )}
     </div>
   );
 }

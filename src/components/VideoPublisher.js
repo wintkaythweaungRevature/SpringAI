@@ -572,6 +572,7 @@ export default function VideoPublisher({ onNavigateToSocialConnect, templateCapt
     if (onTemplateCaptionUsed) onTemplateCaptionUsed();
   }, [templateCaption]); // eslint-disable-line
 
+
   useEffect(() => {
     if (!video || postType !== 'video') {
       setClientVideoDurationSec(0);

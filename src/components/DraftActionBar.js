@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import ApprovalRequestPopup from './ApprovalRequestPopup';
 
 /**
  * Action bar shown on a PENDING_APPROVAL post (a "draft").
@@ -27,18 +28,18 @@ import { useAuth } from '../context/AuthContext';
 export default function DraftActionBar({ post, awaitingApproverEmail, onUpdated }) {
   const { apiBase, authHeaders } = useAuth();
 
-  const [mode, setMode] = useState(null);     // null | 'publish' | 'send'
+  const [mode, setMode] = useState(null);     // null | 'publish'
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  // Send-to-client now reuses the shared ApprovalRequestPopup (workspace member
+  // dropdown), matching Video Publisher's pattern. The old inline email-input
+  // picker is removed — keep one consistent UX everywhere.
+  const [showApprovalPopup, setShowApprovalPopup] = useState(false);
 
   // Publish picker state
   const [publishWhen, setPublishWhen] = useState('now'); // 'now' | 'later'
   const [scheduledAt, setScheduledAt] = useState('');
-
-  // Send-to-client picker state
-  const [clientEmail, setClientEmail] = useState('');
-  const [clientName,  setClientName]  = useState('');
 
   // Already-sent passive state
   if (awaitingApproverEmail) {
@@ -60,7 +61,6 @@ export default function DraftActionBar({ post, awaitingApproverEmail, onUpdated 
   const reset = () => {
     setMode(null); setError(null); setSuccess(null);
     setPublishWhen('now'); setScheduledAt('');
-    setClientEmail(''); setClientName('');
   };
 
   const doPublish = async () => {
@@ -87,30 +87,8 @@ export default function DraftActionBar({ post, awaitingApproverEmail, onUpdated 
     }
   };
 
-  const doSendToClient = async () => {
-    if (!clientEmail.trim()) { setError('Enter the client\'s email first.'); return; }
-    setBusy(true); setError(null);
-    try {
-      const res = await fetch(`${apiBase}/api/approve/send/${post.id}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...authHeaders() },
-        body: JSON.stringify({
-          memberEmail: clientEmail.trim(),
-          memberName: clientName.trim() || clientEmail.trim(),
-        }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || `Send failed (HTTP ${res.status})`);
-      setSuccess(data.sent
-        ? `📨 Approval link sent to ${clientEmail}.`
-        : `Token created for ${clientEmail} but email transport failed — share the link manually.`);
-      if (onUpdated) onUpdated(data);
-    } catch (e) {
-      setError(e.message || 'Send failed');
-    } finally {
-      setBusy(false);
-    }
-  };
+  // Send-to-client moved to ApprovalRequestPopup (workspace-member dropdown)
+  // — same flow Video Publisher uses. The popup itself handles the API call.
 
   return (
     <div style={{
@@ -134,10 +112,10 @@ export default function DraftActionBar({ post, awaitingApproverEmail, onUpdated 
             🚀 Publish
           </button>
           <button
-            onClick={() => { reset(); setMode('send'); }}
+            onClick={() => setShowApprovalPopup(true)}
             style={btnSecondary}
           >
-            📨 Send to client
+            👤 Approval Request
           </button>
         </div>
       )}
@@ -186,41 +164,6 @@ export default function DraftActionBar({ post, awaitingApproverEmail, onUpdated 
         </div>
       )}
 
-      {/* Send-to-client picker */}
-      {mode === 'send' && !success && (
-        <div>
-          <div style={{ fontSize: 13, color: '#0f172a', fontWeight: 600, marginBottom: 8 }}>
-            Send approval link to:
-          </div>
-          <input
-            type="email"
-            placeholder="client@example.com"
-            value={clientEmail}
-            onChange={(e) => setClientEmail(e.target.value)}
-            disabled={busy}
-            style={inputStyle}
-          />
-          <input
-            type="text"
-            placeholder="Optional name (e.g. Bob)"
-            value={clientName}
-            onChange={(e) => setClientName(e.target.value)}
-            disabled={busy}
-            style={{ ...inputStyle, marginTop: 6 }}
-          />
-          <div style={{ fontSize: 11, color: '#64748b', marginTop: 6 }}>
-            The client will get an email with a link to approve, request changes, or
-            reject. You'll get an in-app notification confirming the send (no email).
-          </div>
-          <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-            <button onClick={doSendToClient} disabled={busy} style={btnPrimary}>
-              {busy ? 'Sending…' : 'Send'}
-            </button>
-            <button onClick={reset} disabled={busy} style={btnGhost}>Cancel</button>
-          </div>
-        </div>
-      )}
-
       {/* Inline feedback */}
       {error && (
         <div style={{ marginTop: 10, padding: '6px 10px', background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', borderRadius: 6, fontSize: 12 }}>
@@ -231,6 +174,21 @@ export default function DraftActionBar({ post, awaitingApproverEmail, onUpdated 
         <div style={{ marginTop: 10, padding: '6px 10px', background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#15803d', borderRadius: 6, fontSize: 12 }}>
           {success}
         </div>
+      )}
+
+      {/* Approval Request popup — same shared component used by PostDetailModal,
+          loads workspace members and POSTs to /api/approve/send/{postId}. */}
+      {showApprovalPopup && (
+        <ApprovalRequestPopup
+          post={post}
+          onClose={() => setShowApprovalPopup(false)}
+          onSent={(data) => {
+            setSuccess(data?.sent
+              ? `📨 Approval link sent.`
+              : `Token created — share the link manually if email failed.`);
+            if (onUpdated) onUpdated(data);
+          }}
+        />
       )}
     </div>
   );

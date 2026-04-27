@@ -164,8 +164,74 @@ function AssetCard({ asset, onClick }) {
 
 // ─── Side Panel ──────────────────────────────────────────────────────────────
 
-function SidePanel({ asset, onClose, onDelete, onTagClick, deleteConfirm, setDeleteConfirm }) {
+// All supported targets for ASSET_TO_POST. We INTERSECT this with the user's
+// actually-connected platforms (read from /api/social/accounts) so the picker
+// only offers options that can actually be posted to.
+const ALL_PLATFORMS = [
+  { id: 'instagram', label: 'Instagram', emoji: '📸', color: '#E1306C' },
+  { id: 'facebook',  label: 'Facebook',  emoji: '📘', color: '#1877F2' },
+  { id: 'linkedin',  label: 'LinkedIn',  emoji: '💼', color: '#0A66C2' },
+  { id: 'x',         label: 'X (Twitter)', emoji: '✖️', color: '#000000' },
+  { id: 'twitter',   label: 'X (Twitter)', emoji: '✖️', color: '#000000' },
+  { id: 'tiktok',    label: 'TikTok',    emoji: '🎵', color: '#69C9D0' },
+  { id: 'youtube',   label: 'YouTube',   emoji: '▶️', color: '#FF0000' },
+  { id: 'threads',   label: 'Threads',   emoji: '🧵', color: '#000000' },
+  { id: 'pinterest', label: 'Pinterest', emoji: '📌', color: '#BD081C' },
+];
+
+function SidePanel({ asset, onClose, onDelete, onTagClick, deleteConfirm, setDeleteConfirm,
+                    apiBase, authHeaders }) {
   const [copied, setCopied] = useState(false);
+
+  // ASSET_TO_POST generation state — fetches the user's connected platforms once
+  // when the side panel opens; on Generate, posts to /api/ai-agents/generate-from-asset.
+  const [connected, setConnected] = useState([]);     // ids: ['linkedin','instagram',...]
+  const [picked,    setPicked]    = useState([]);     // user-selected subset
+  const [brief,     setBrief]     = useState('');
+  const [genLoading, setGenLoading] = useState(false);
+  const [genResult,  setGenResult]  = useState(null); // { taskId, ... } | { error }
+
+  useEffect(() => {
+    let live = true;
+    setGenResult(null); setBrief(''); setPicked([]);
+    (async () => {
+      try {
+        const res = await fetch(`${apiBase}/api/social/accounts`, { headers: authHeaders() });
+        if (!res.ok) return;
+        const data = await res.json();
+        const pool = data.accounts || {};
+        if (!live) return;
+        const ids = Object.keys(pool).filter(p => (pool[p] || []).length > 0);
+        setConnected(ids);
+        // Default-select up to 2 platforms so the user can hit Generate immediately.
+        setPicked(ids.slice(0, 2));
+      } catch { /* silent */ }
+    })();
+    return () => { live = false; };
+  }, [asset?.id, apiBase, authHeaders]);
+
+  const togglePlatform = (id) => {
+    setPicked(prev => prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]);
+  };
+
+  const generate = async () => {
+    if (!asset?.id || picked.length === 0) return;
+    setGenLoading(true); setGenResult(null);
+    try {
+      const res = await fetch(`${apiBase}/api/ai-agents/generate-from-asset`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({ mediaAssetId: asset.id, platforms: picked, brief }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `Generation failed (HTTP ${res.status})`);
+      setGenResult(data);
+    } catch (e) {
+      setGenResult({ error: e.message || 'Generation failed' });
+    } finally {
+      setGenLoading(false);
+    }
+  };
 
   if (!asset) return null;
 
@@ -364,6 +430,114 @@ function SidePanel({ asset, onClose, onDelete, onTagClick, deleteConfirm, setDel
               </div>
             </div>
           )}
+
+          {/* ── ASSET → POST GENERATION ───────────────────────────────────── */}
+          <div style={{ marginBottom: 20 }}>
+            <p style={{
+              margin: '0 0 8px',
+              color: '#6366f1',
+              fontSize: 11,
+              fontWeight: 700,
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase',
+            }}>
+              ✨ Generate Post Ideas
+            </p>
+            <p style={{ margin: '0 0 10px', color: '#94a3b8', fontSize: 12, lineHeight: 1.5 }}>
+              Pick platforms — AI will draft a post tailored to each, ready for review in your AI Workspace.
+            </p>
+
+            {connected.length === 0 ? (
+              <p style={{ margin: 0, color: '#fca5a5', fontSize: 12 }}>
+                Connect at least one social platform first (Settings → Connections).
+              </p>
+            ) : (
+              <>
+                {/* Platform chips */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
+                  {connected.map(pid => {
+                    const meta = ALL_PLATFORMS.find(p => p.id === pid) || { id: pid, label: pid, emoji: '📤', color: '#6366f1' };
+                    const isPicked = picked.includes(pid);
+                    return (
+                      <button
+                        key={pid}
+                        onClick={() => togglePlatform(pid)}
+                        style={{
+                          background: isPicked ? `${meta.color}26` : 'rgba(30,41,59,0.6)',
+                          border: `1px solid ${isPicked ? meta.color : '#334155'}`,
+                          color: isPicked ? '#e0e7ff' : '#94a3b8',
+                          fontSize: 12,
+                          padding: '4px 10px',
+                          borderRadius: 999,
+                          cursor: 'pointer',
+                          transition: 'all 0.15s',
+                          fontWeight: 600,
+                        }}
+                      >
+                        {meta.emoji} {meta.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Optional brief */}
+                <textarea
+                  value={brief}
+                  onChange={(e) => setBrief(e.target.value)}
+                  placeholder="Optional brief — e.g. 'Promote our spring sale, mention 30% off'"
+                  rows={2}
+                  style={{
+                    width: '100%', boxSizing: 'border-box',
+                    background: '#0f172a',
+                    border: '1px solid #334155',
+                    borderRadius: 8,
+                    padding: '8px 10px',
+                    color: '#e2e8f0',
+                    fontSize: 12,
+                    resize: 'vertical',
+                    outline: 'none',
+                    fontFamily: 'inherit',
+                    marginBottom: 10,
+                  }}
+                />
+
+                {/* Generate button */}
+                <button
+                  onClick={generate}
+                  disabled={genLoading || picked.length === 0}
+                  style={{
+                    width: '100%',
+                    background: picked.length === 0 || genLoading ? '#334155' : 'linear-gradient(135deg,#6366f1,#8b5cf6)',
+                    border: 'none',
+                    color: '#fff',
+                    borderRadius: 8,
+                    padding: '10px 16px',
+                    cursor: picked.length === 0 || genLoading ? 'not-allowed' : 'pointer',
+                    fontSize: 13,
+                    fontWeight: 600,
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  {genLoading
+                    ? '⏳ Generating drafts…'
+                    : `✨ Generate for ${picked.length} platform${picked.length === 1 ? '' : 's'}`}
+                </button>
+
+                {/* Result feedback */}
+                {genResult?.error && (
+                  <p style={{ margin: '8px 0 0', color: '#fca5a5', fontSize: 12 }}>
+                    ⚠️ {genResult.error}
+                  </p>
+                )}
+                {genResult?.taskId && (
+                  <p style={{ margin: '8px 0 0', color: '#86efac', fontSize: 12, lineHeight: 1.5 }}>
+                    ✅ Drafts ready for review in <strong>AI Workspace → Pending Tasks</strong>
+                    <br/><span style={{ color: '#64748b', fontSize: 11 }}>Task #{genResult.taskId}</span>
+                  </p>
+                )}
+              </>
+            )}
+          </div>
 
           {/* Actions */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -910,6 +1084,8 @@ export default function MediaLibrary() {
           }}
           deleteConfirm={deleteConfirm}
           setDeleteConfirm={setDeleteConfirm}
+          apiBase={apiBase}
+          authHeaders={authHeaders}
         />
       )}
     </>

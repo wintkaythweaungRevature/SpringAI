@@ -126,15 +126,19 @@ export default function UrlRepurposer() {
   const [result, setResult] = useState(null);
   const [err, setErr] = useState('');
   const [activeTab, setActiveTab] = useState('instagram');
+  // Drag-and-drop: highlight when a tab/URL is hovering the input area, fires
+  // the existing generate() flow on drop. Not destructive to manual paste.
+  const [dragOver, setDragOver] = useState(false);
 
-  const generate = async () => {
-    if (!url.trim()) { setErr('Enter a URL first.'); return; }
+  const generate = async (overrideUrl) => {
+    const target = (overrideUrl ?? url).trim();
+    if (!target) { setErr('Enter a URL first.'); return; }
     setLoading(true); setErr(''); setResult(null);
     try {
       const res = await fetch(`${base}/api/content/from-url`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeaders() },
-        body: JSON.stringify({ url: url.trim() }),
+        body: JSON.stringify({ url: target }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Failed to generate content');
@@ -146,6 +150,41 @@ export default function UrlRepurposer() {
       setLoading(false);
     }
   };
+
+  // Browser tab drag carries the URL on the `text/uri-list` MIME type
+  // (newline-separated list). Some browsers (Safari, some Linux setups) only
+  // populate `text/plain` with the URL string instead — we fall back to that.
+  const onDrop = (e) => {
+    e.preventDefault();
+    setDragOver(false);
+    if (loading) return;
+    const uriList = e.dataTransfer.getData('text/uri-list');
+    const plain   = e.dataTransfer.getData('text/plain');
+    const candidate = (uriList || plain || '')
+      .split('\n')
+      .map(s => s.trim())
+      .find(s => /^https?:\/\//i.test(s));
+    if (!candidate) {
+      setErr('Drop a link from another tab — that was not a recognizable URL.');
+      return;
+    }
+    setUrl(candidate);
+    generate(candidate);
+  };
+
+  const onDragOver = (e) => {
+    if (loading) return;
+    // Only react when the drag actually carries a URL/text payload — ignore
+    // file drags so we don't visually fight with the file-drop pattern used
+    // elsewhere (Analyzer.js).
+    const types = e.dataTransfer?.types || [];
+    const hasUrl = Array.from(types).some(t => t === 'text/uri-list' || t === 'text/plain' || t === 'text/x-moz-url');
+    if (!hasUrl) return;
+    e.preventDefault();
+    setDragOver(true);
+  };
+
+  const onDragLeave = () => setDragOver(false);
 
   const card = { background: '#fff', border: '1.5px solid #e2e8f0', borderRadius: 14, padding: '20px', marginBottom: 16 };
 
@@ -162,15 +201,41 @@ export default function UrlRepurposer() {
         </p>
       </div>
 
-      {/* Input */}
-      <div style={card}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 8 }}>Article or Blog URL</div>
+      {/* Input — wraps in a drag-target so the user can drag a browser tab here */}
+      <div
+        style={{
+          ...card,
+          // Highlight the card when a URL is being dragged over it. Uses a dashed
+          // indigo border + soft tint so it's obvious without redrawing layout.
+          borderColor: dragOver ? '#6366f1' : (card.border || '').includes('#e2e8f0') ? '#e2e8f0' : '#e2e8f0',
+          borderStyle: dragOver ? 'dashed' : 'solid',
+          background: dragOver ? '#eef2ff' : '#fff',
+          transition: 'background 0.15s, border-color 0.15s',
+        }}
+        onDragOver={onDragOver}
+        onDragLeave={onDragLeave}
+        onDrop={onDrop}
+      >
+        <div style={{ fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span>Article or Blog URL</span>
+          <span style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8' }}>
+            💡 Tip: drag a browser tab here to auto-repurpose
+          </span>
+        </div>
+        {dragOver && (
+          <div style={{
+            margin: '0 0 10px', padding: '8px 12px', borderRadius: 8,
+            background: '#e0e7ff', color: '#4338ca', fontSize: 12, fontWeight: 700, textAlign: 'center',
+          }}>
+            ⬇ Drop the tab to extract & repurpose
+          </div>
+        )}
         <div style={{ display: 'flex', gap: 8 }}>
           <input
             value={url}
             onChange={e => setUrl(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && generate()}
-            placeholder="https://yourblog.com/article-title"
+            placeholder="https://yourblog.com/article-title  —  or drag a tab onto this card"
             style={{
               flex: 1, padding: '10px 14px', borderRadius: 10,
               border: '1.5px solid #e2e8f0', fontSize: 13, outline: 'none',
@@ -178,7 +243,7 @@ export default function UrlRepurposer() {
             }}
           />
           <button
-            onClick={generate}
+            onClick={() => generate()}
             disabled={loading || !url.trim()}
             style={{
               padding: '10px 22px', borderRadius: 10, border: 'none',

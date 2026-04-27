@@ -30,6 +30,7 @@ const TASK_TYPE_META = {
   DRAFT_CAPTION:     { label: 'Caption Draft',  icon: '✍️' },
   PERFORMANCE_INSIGHT: { label: 'Performance Insight', icon: '📊' },
   CONTENT_IDEA:      { label: 'Content Idea',   icon: '💡' },
+  ASSET_TO_POST:     { label: 'Asset → Post Drafts', icon: '🖼️' },
 };
 
 const EMOJI_OPTIONS = ['🤖', '🧠', '✍️', '📊', '🎯', '🔮', '💡', '🚀'];
@@ -308,6 +309,87 @@ const PLATFORM_META_MAP = {
  * readable post cards. Everything else gets rendered as pre-wrapped text.
  */
 function TaskOutputRenderer({ task }) {
+  // ASSET_TO_POST: taskOutput is a JSON object keyed by platform with caption /
+  // hashtags / suggestedTime per platform. Render each as a tabbed card so the
+  // user can scan all platform variants at a glance before approving.
+  if (task.taskType === 'ASSET_TO_POST' && task.taskOutput) {
+    try {
+      let raw = task.taskOutput.trim();
+      if (raw.startsWith('```')) {
+        raw = raw.replace(/^```[a-z]*\n?/, '').replace(/```\s*$/, '').trim();
+      }
+      const perPlatform = JSON.parse(raw);
+      if (perPlatform && typeof perPlatform === 'object') {
+        const entries = Object.entries(perPlatform);
+        if (entries.length > 0) {
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {task.mediaAssetId && (
+                <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 2 }}>
+                  🖼️ Source asset #{task.mediaAssetId} (open Asset Library to view)
+                </div>
+              )}
+              {entries.map(([plat, v]) => {
+                const platLower = (plat || '').toLowerCase();
+                const pmeta = PLATFORM_META_MAP[platLower] || { id: platLower, color: '#6366f1' };
+                const color = pmeta.color;
+                const caption  = v?.caption  || '';
+                const hashtags = v?.hashtags || '';
+                const sugg     = v?.suggestedTime || '';
+                const errMsg   = v?.error;
+                return (
+                  <div key={plat} style={{
+                    background: '#0d1829',
+                    border: `1px solid ${C.border}`,
+                    borderLeft: `3px solid ${color}`,
+                    borderRadius: 8,
+                    padding: '12px 14px',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
+                      <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center' }}>
+                        <PlatformIcon platform={pmeta} size={18} />
+                      </span>
+                      <span style={{
+                        fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
+                        color, background: color + '22',
+                        border: `1px solid ${color}44`,
+                        borderRadius: 4, padding: '1px 7px',
+                      }}>{platLower}</span>
+                      {sugg && (
+                        <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 'auto' }}>
+                          ⏰ {sugg}
+                        </span>
+                      )}
+                    </div>
+                    {errMsg ? (
+                      <div style={{ fontSize: 12, color: '#fca5a5' }}>⚠️ {errMsg}</div>
+                    ) : (
+                      <>
+                        <div style={{ fontSize: 13, color: '#e2e8f0', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+                          {caption || '(empty caption)'}
+                        </div>
+                        {hashtags && (
+                          <div style={{ fontSize: 12, color: '#a5b4fc', marginTop: 6 }}>
+                            {hashtags}
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+              <div style={{ fontSize: 11, color: '#64748b', marginTop: 4 }}>
+                Approving creates one PENDING_APPROVAL post per platform — edit & schedule from Compose or Calendar.
+              </div>
+            </div>
+          );
+        }
+      }
+    } catch {
+      // fall through to plain text
+    }
+  }
+
   // Only try to render as cards for Post Strategy tasks
   if (task.taskType === 'SUGGEST_POST_TIME' && task.taskOutput) {
     try {

@@ -61,6 +61,10 @@ export default function AccountSettings() {
   const [upgradeYearly, setUpgradeYearly] = useState(false);
   const [useBrandContext, setUseBrandContext] = useState(false);
   const [brandPrefSaving, setBrandPrefSaving] = useState(false);
+  // Asset-cron toggle: when ON, the daily AI agent run scans the user's recent
+  // unused MediaAssets and drafts ASSET_TO_POST tasks for them (capped at 3/run).
+  const [assetCronEnabled, setAssetCronEnabled] = useState(false);
+  const [assetCronSaving, setAssetCronSaving]   = useState(false);
 
   const isMember = isSubscribed;
   const planBadgeLabel = (() => {
@@ -102,7 +106,11 @@ export default function AccountSettings() {
     let cancelled = false;
     fetch(`${apiBase}/api/user/ai-preferences`, { headers: authHeaders() })
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => { if (!cancelled && d) setUseBrandContext(!!d.useBrandContext); })
+      .then((d) => {
+        if (cancelled || !d) return;
+        setUseBrandContext(!!d.useBrandContext);
+        setAssetCronEnabled(!!d.assetCronEnabled);
+      })
       .catch(() => {});
     return () => { cancelled = true; };
   }, [apiBase, token]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -126,6 +134,29 @@ export default function AccountSettings() {
       setMessage({ text: "Could not save preference. Try again.", error: true });
     } finally {
       setBrandPrefSaving(false);
+      setTimeout(() => setMessage(null), 4000);
+    }
+  };
+
+  const handleToggleAssetCron = async (next) => {
+    if (assetCronSaving) return;
+    setAssetCronSaving(true);
+    setAssetCronEnabled(next); // optimistic
+    try {
+      const r = await fetch(`${apiBase}/api/user/ai-preferences`, {
+        method: "PUT",
+        headers: { ...authHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({ assetCronEnabled: next }),
+      });
+      if (!r.ok) throw new Error("save failed");
+      setMessage({ text: next
+        ? "Daily asset cron is ON. AI will draft posts from new assets."
+        : "Daily asset cron is OFF. Manual generation still works.", error: false });
+    } catch (e) {
+      setAssetCronEnabled(!next); // revert
+      setMessage({ text: "Could not save preference. Try again.", error: true });
+    } finally {
+      setAssetCronSaving(false);
       setTimeout(() => setMessage(null), 4000);
     }
   };
@@ -490,6 +521,47 @@ export default function AccountSettings() {
             >
               <span style={{
                 position: "absolute", top: 3, left: useBrandContext ? 27 : 3,
+                width: 22, height: 22, borderRadius: "50%",
+                background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                transition: "left 0.2s",
+              }} />
+            </button>
+          </div>
+
+          {/* Asset auto-suggest cron */}
+          <div style={{
+            display: "flex", alignItems: "flex-start", justifyContent: "space-between",
+            gap: 16, marginTop: 18, paddingTop: 18, borderTop: "1px solid #e2e8f0",
+          }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "#0f172a", marginBottom: 4 }}>
+                Auto-suggest posts from new assets (daily)
+              </div>
+              <p style={{ ...s.desc, marginTop: 0 }}>
+                When ON, the daily AI agent run scans the latest assets in your Asset Library
+                and creates platform-tailored draft posts for the first 3 unused assets — ready for
+                your review in AI Workspace → Pending Tasks. OFF by default. Manual generation
+                from any asset always works regardless of this setting.
+              </p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={assetCronEnabled}
+              disabled={assetCronSaving}
+              onClick={() => handleToggleAssetCron(!assetCronEnabled)}
+              style={{
+                flexShrink: 0,
+                width: 52, height: 28, borderRadius: 999,
+                border: "none", cursor: assetCronSaving ? "wait" : "pointer",
+                background: assetCronEnabled ? "#6366f1" : "#cbd5e1",
+                position: "relative", transition: "background 0.2s",
+                opacity: assetCronSaving ? 0.6 : 1,
+              }}
+              title={assetCronEnabled ? "Click to turn OFF" : "Click to turn ON"}
+            >
+              <span style={{
+                position: "absolute", top: 3, left: assetCronEnabled ? 27 : 3,
                 width: 22, height: 22, borderRadius: "50%",
                 background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
                 transition: "left 0.2s",

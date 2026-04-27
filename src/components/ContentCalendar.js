@@ -5,6 +5,7 @@ import { filterEnabledPlatforms } from '../config/disabledPlatforms';
 import PlatformIcon from './PlatformIcon';
 import FallingPlatformsAnimation from './FallingPlatformsAnimation';
 import PostDetailModal from './PostDetailModal';
+import ApprovalRequestPopup from './ApprovalRequestPopup';
 import ComposePostModal from './ComposePostModal';
 import { getHolidaysForDate, HOLIDAY_COLORS } from '../data/holidays';
 import {
@@ -797,6 +798,9 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
   const [contextMenu,    setContextMenu]    = useState(null);  // { post, x, y } | null
   const [duplicateTarget, setDuplicateTarget] = useState(null); // post | null
   const [duplicateDate,  setDuplicateDate]  = useState('');    // datetime-local value
+  // Approval Request — second item in the right-click context menu, opens the
+  // shared workspace-member popup (same flow Video Publisher uses).
+  const [approvalTarget, setApprovalTarget] = useState(null); // post | null
 
   const loadPosts = useCallback(async () => {
     if (!token) return;
@@ -2045,7 +2049,47 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
           >
             📋 Duplicate
           </button>
+          {/* Approval Request — opens the shared workspace-member popup. Hidden
+              for terminal states (SUCCESS / REJECTED) where approval makes no sense. */}
+          {contextMenu.post.status !== 'SUCCESS' && contextMenu.post.status !== 'REJECTED' && (
+            <button
+              style={{
+                display: 'block',
+                width: '100%',
+                padding: '10px 16px',
+                background: 'none',
+                border: 'none',
+                borderTop: '1px solid #f1f5f9',
+                textAlign: 'left',
+                fontSize: 13,
+                fontWeight: 600,
+                color: '#1e293b',
+                cursor: 'pointer',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#f8fafc'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
+              onClick={() => {
+                setApprovalTarget(contextMenu.post);
+                setContextMenu(null);
+              }}
+            >
+              👤 Approval Request
+            </button>
+          )}
         </div>
+      )}
+
+      {/* ── Approval Request popup ───────────────────────────────────────── */}
+      {approvalTarget && (
+        <ApprovalRequestPopup
+          post={approvalTarget}
+          onClose={() => setApprovalTarget(null)}
+          onSent={() => {
+            setActionMsg('📨 Approval link sent to selected member.');
+            setTimeout(() => setActionMsg(''), 4000);
+            loadPosts();
+          }}
+        />
       )}
 
       {/* ── Duplicate post modal ─────────────────────────────────────────── */}

@@ -64,7 +64,7 @@ const PLANS = [
     yearlyPrice: 64,
     yearlyTotal: 768,
     color: '#f59e0b',
-    badge: 'Best for Agencies',
+    badge: 'For Growing Teams',
     icon: '🔥',
     tagline: 'Maximum power for teams',
     seats: 5,
@@ -87,6 +87,28 @@ const PLANS = [
       { text: '📁 Unlimited workspaces', included: true },
       { text: '🔐 Granular permissions per workspace', included: true },
       { text: '👥 Up to 5 org members', included: true },
+    ],
+  },
+  {
+    id: 'AGENCY',
+    name: 'Agency',
+    monthlyPrice: 149,
+    yearlyPrice: 119,
+    yearlyTotal: 1428,
+    color: '#10b981',
+    badge: 'Best for Agencies',
+    icon: '🏢',
+    tagline: 'For agencies managing many client brands',
+    seats: 'Unlimited',
+    features: [
+      { text: '✨ EVERYTHING in Growth, plus:', included: true },
+      { text: '♾️ Unlimited client workspaces', included: true },
+      { text: '👥 Unlimited team seats', included: true },
+      { text: '📄 Branded PDF reports per client (coming soon)', included: true },
+      { text: '🎨 Custom logo + colors per client workspace', included: true },
+      { text: '🔐 Client-facing read-only role', included: true },
+      { text: '⚡ Priority support', included: true },
+      { text: '📊 Client portal access (coming soon)', included: true },
     ],
   },
 ];
@@ -135,8 +157,36 @@ export default function PricingPage({ onClose }) {
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [showTable, setShowTable] = useState(false);
+  // Pending promo discount — null when none, or { pending: true, code, percentOff,
+  // durationLabel, expiresAt }. Fetched on mount + after a code is redeemed.
+  const [pendingDiscount, setPendingDiscount] = useState(null);
 
   const showStarterTrialCopy = !user || (!isSubscribed && starterTrialEligible !== false);
+
+  // Compute the discounted price for a given base price using the pending discount.
+  // Returns { discounted: number, originalKept: boolean } — when the user has a
+  // PERCENT_OFF code applied, every plan card shows ~~$39~~ $19.50.
+  const applyDiscount = (basePrice) => {
+    if (!pendingDiscount?.pending) return { discounted: basePrice, originalKept: false };
+    if (pendingDiscount.percentOff) {
+      const d = basePrice * (1 - pendingDiscount.percentOff / 100);
+      return { discounted: Math.round(d * 100) / 100, originalKept: true };
+    }
+    if (pendingDiscount.fixedOffCents) {
+      const d = Math.max(0, basePrice - pendingDiscount.fixedOffCents / 100);
+      return { discounted: Math.round(d * 100) / 100, originalKept: true };
+    }
+    return { discounted: basePrice, originalKept: false };
+  };
+
+  // Re-fetch the user's pending discount — called on mount + every time a code is redeemed.
+  const loadPendingDiscount = () => {
+    if (!user) { setPendingDiscount(null); return; }
+    fetch(`${apiBase}/api/promo/my-pending-discount`, { headers: authHeaders() })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => setPendingDiscount(d || null))
+      .catch(() => setPendingDiscount(null));
+  };
 
   useEffect(() => {
     if (!user) { setStarterTrialEligible(null); return; }
@@ -147,6 +197,7 @@ export default function PricingPage({ onClose }) {
         if (typeof d?.starterTrialEligible === 'boolean') setStarterTrialEligible(d.starterTrialEligible);
       })
       .catch(() => {});
+    loadPendingDiscount();
   }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubscribe = async (planId) => {
@@ -213,25 +264,59 @@ export default function PricingPage({ onClose }) {
           </div>
         </div>
 
-        {/* ── Promo code redeem (FREE codes activate immediately; PERCENT_OFF is queued for checkout) ── */}
+        {/* ── Promo code redeem ── FREE codes activate immediately; PERCENT_OFF/FIXED_OFF
+             stay "queued" so the discount applies to whichever plan the user picks below. */}
         {user && (
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
             <PromoCodeRedeem onRedeemed={(r) => {
-              // FREE-kind codes grant access immediately — refresh user so isSubscribed flips on
               if (r?.kind === 'FREE' && typeof refetchUser === 'function') {
                 refetchUser();
+              } else {
+                // PERCENT_OFF / FIXED_OFF — re-fetch the pending discount so the plan
+                // cards below update to show struck-through prices in real time.
+                loadPendingDiscount();
               }
             }} />
+          </div>
+        )}
+
+        {/* Banner shown when user has a pending discount — explains it applies to any plan. */}
+        {pendingDiscount?.pending && (
+          <div style={{
+            margin: '0 auto 20px', maxWidth: 720,
+            background: 'linear-gradient(135deg, #ecfdf5, #d1fae5)',
+            border: '1.5px solid #10b981',
+            borderRadius: 12, padding: '12px 18px',
+            color: '#065f46', fontSize: 14, fontWeight: 600,
+            textAlign: 'center',
+          }}>
+            🎟 Code <code style={{ background: '#065f46', color: '#fff', padding: '2px 8px', borderRadius: 6 }}>{pendingDiscount.code}</code>{' '}
+            applied — {pendingDiscount.percentOff
+              ? `${pendingDiscount.percentOff}% off`
+              : `$${(pendingDiscount.fixedOffCents || 0) / 100} off`}{' '}
+            {pendingDiscount.durationLabel}. Pick any plan below — discount applies automatically at checkout.
           </div>
         )}
 
         {successMsg && <div style={s.successBanner}>{successMsg}</div>}
         {error      && <div style={s.errorBanner}>{error}</div>}
 
+        {/* Responsive grid override: inline style sets 4-col desktop default; this
+            <style> block tiers it down — 2 cols on tablet (<1200px), 1 col on mobile (<700px). */}
+        <style>{`
+          @media (max-width: 1200px) {
+            .pricing-cards-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+          }
+          @media (max-width: 700px) {
+            .pricing-cards-grid { grid-template-columns: 1fr !important; }
+          }
+        `}</style>
+
         {/* ── Plan cards ── */}
-        <div style={s.cardsRow}>
+        <div className="pricing-cards-grid" style={s.cardsRow}>
           {PLANS.map(plan => {
-            const price = yearly ? plan.yearlyPrice : plan.monthlyPrice;
+            const basePrice = yearly ? plan.yearlyPrice : plan.monthlyPrice;
+            const { discounted, originalKept } = applyDiscount(basePrice);
             const isCurrent = currentPlan === plan.id;
             const isPro = plan.id === 'PRO';
             return (
@@ -240,9 +325,20 @@ export default function PricingPage({ onClose }) {
                 border: isPro ? `2px solid ${plan.color}` : '1.5px solid #e2e8f0',
                 boxShadow: isPro ? `0 6px 28px ${plan.color}33` : '0 1px 6px rgba(0,0,0,0.07)',
                 transform: isPro ? 'translateY(-6px)' : 'none',
+                position: 'relative',
               }}>
                 {plan.badge && (
                   <div style={{ ...s.planBadge, background: plan.color }}>{plan.badge}</div>
+                )}
+                {/* Discount chip — small green ribbon on plans when a code is applied. */}
+                {originalKept && (
+                  <div style={{
+                    position: 'absolute', top: 12, right: 12,
+                    background: '#10b981', color: '#fff',
+                    fontSize: 11, fontWeight: 800, padding: '3px 8px', borderRadius: 8,
+                  }}>
+                    {pendingDiscount.percentOff ? `−${pendingDiscount.percentOff}%` : 'CODE APPLIED'}
+                  </div>
                 )}
 
                 <div style={{ ...s.planIcon, background: plan.color + '18', color: plan.color }}>
@@ -252,14 +348,28 @@ export default function PricingPage({ onClose }) {
                 <p style={s.planTagline}>{plan.tagline}</p>
 
                 <div style={s.priceRow}>
-                  <span style={s.priceDollar}>$</span>
-                  <span style={s.priceNumber}>{price}</span>
+                  {originalKept ? (
+                    <>
+                      <span style={{ fontSize: 18, color: '#94a3b8', textDecoration: 'line-through', marginRight: 8 }}>
+                        ${basePrice}
+                      </span>
+                      <span style={{ ...s.priceDollar, color: '#10b981' }}>$</span>
+                      <span style={{ ...s.priceNumber, color: '#10b981' }}>{discounted}</span>
+                    </>
+                  ) : (
+                    <>
+                      <span style={s.priceDollar}>$</span>
+                      <span style={s.priceNumber}>{basePrice}</span>
+                    </>
+                  )}
                   <span style={s.pricePer}>/mo</span>
                 </div>
                 <div style={s.priceNote}>
-                  {yearly
-                    ? `$${plan.yearlyTotal}/yr · save $${(plan.monthlyPrice - plan.yearlyPrice) * 12}/yr`
-                    : 'Billed monthly'}
+                  {originalKept
+                    ? `Discount: ${pendingDiscount.durationLabel}`
+                    : yearly
+                      ? `$${plan.yearlyTotal}/yr · save $${(plan.monthlyPrice - plan.yearlyPrice) * 12}/yr`
+                      : 'Billed monthly'}
                 </div>
 
                 {/* Feature list */}
@@ -359,7 +469,8 @@ const s = {
   },
   modal: {
     background: '#fff', borderRadius: 20, padding: '32px',
-    maxWidth: 980, width: '100%', maxHeight: '92vh', overflowY: 'auto',
+    // Wider so 4 plan cards (Starter / Pro / Growth / Agency) fit side-by-side.
+    maxWidth: 1480, width: '100%', maxHeight: '92vh', overflowY: 'auto',
     boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
   },
   header: {
@@ -399,12 +510,24 @@ const s = {
     borderRadius: 8, padding: '10px 14px', marginBottom: 14, fontSize: 14,
   },
   cardsRow: {
-    display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-    gap: 20, marginBottom: 24, alignItems: 'start',
+    // 4 columns at desktop (Starter / Pro / Growth / Agency). Responsive media query
+    // in the JSX <style> block collapses to 2 columns at <1100px and 1 at <700px.
+    display: 'grid',
+    gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+    gap: 20,
+    marginBottom: 24,
+    alignItems: 'stretch',
   },
   card: {
-    borderRadius: 16, padding: '28px 22px 22px', position: 'relative',
-    background: '#fff', display: 'flex', flexDirection: 'column',
+    // 4-card layout — slightly slimmer padding so each card has breathing room without
+    // becoming oversized. Min-height keeps cards aligned even with different bullet counts.
+    borderRadius: 18,
+    padding: '32px 22px 24px',
+    position: 'relative',
+    background: '#fff',
+    display: 'flex',
+    flexDirection: 'column',
+    minHeight: 480,
   },
   planBadge: {
     position: 'absolute', top: -13, left: '50%', transform: 'translateX(-50%)',

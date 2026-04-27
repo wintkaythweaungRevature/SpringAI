@@ -27,8 +27,9 @@ function isOwnerToken(t) {
   return t === OWNER_TOKEN;
 }
 
-/** Paid tiers from API / Stripe; must match header plan badges (MEMBER = legacy single paid tier). */
-const PAID_MEMBERSHIP_TYPES = new Set(["MEMBER", "STARTER", "PRO", "GROWTH"]);
+/** Paid tiers from API / Stripe; must match header plan badges (MEMBER = legacy single paid tier).
+ *  AGENCY is the highest tier — agencies managing many client brands. */
+const PAID_MEMBERSHIP_TYPES = new Set(["MEMBER", "STARTER", "PRO", "GROWTH", "AGENCY"]);
 
 function isPaidMembershipType(mt) {
   return !!(mt && PAID_MEMBERSHIP_TYPES.has(mt));

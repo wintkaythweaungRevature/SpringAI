@@ -30,6 +30,7 @@ export default function AdminPromoCodes() {
     maxUses: '',
     expiresAt: '',
     notes: '',
+    restrictedToEmail: '',
   });
   const [creating, setCreating] = useState(false);
 
@@ -72,6 +73,11 @@ export default function AdminPromoCodes() {
       // Strip empty optional fields
       if (!body.maxUses) delete body.maxUses; else body.maxUses = Number(body.maxUses);
       if (!body.expiresAt) delete body.expiresAt;
+      if (!body.restrictedToEmail || !body.restrictedToEmail.trim()) {
+        delete body.restrictedToEmail;
+      } else {
+        body.restrictedToEmail = body.restrictedToEmail.trim().toLowerCase();
+      }
       if (body.kind === 'FREE') {
         delete body.percentOff;
       } else {
@@ -97,7 +103,7 @@ export default function AdminPromoCodes() {
       }
       const created = await res.json();
       setSuccessMsg(`✅ Created code "${created.code}". Share it with your friend / beta user.`);
-      setForm({ code: '', kind: 'FREE', percentOff: 50, durationKind: 'FOREVER', durationMonths: 3, durationUntilDate: '', maxUses: '', expiresAt: '', notes: '' });
+      setForm({ code: '', kind: 'FREE', percentOff: 50, durationKind: 'FOREVER', durationMonths: 3, durationUntilDate: '', maxUses: '', expiresAt: '', notes: '', restrictedToEmail: '' });
       setShowForm(false);
       loadCodes();
       setTimeout(() => setSuccessMsg(''), 5000);
@@ -256,6 +262,22 @@ export default function AdminPromoCodes() {
             </label>
           </div>
 
+          {/* Email-lock — when set, only the matching account can redeem the code.
+              Best for friend / 1:1 beta codes so the code can't be shared/leaked. */}
+          <div style={s.row}>
+            <label style={s.lbl}>
+              🔒 Lock to a specific email (optional)
+              <input style={s.input} type="email"
+                placeholder="e.g. sarah@example.com — leave blank for any user"
+                value={form.restrictedToEmail}
+                onChange={e => setForm(f => ({ ...f, restrictedToEmail: e.target.value }))}
+              />
+              <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 400, marginTop: 4, textTransform: 'none', letterSpacing: 0 }}>
+                Only this email can redeem the code. Even if the recipient forwards it, no one else can use it.
+              </span>
+            </label>
+          </div>
+
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
             <button type="button" onClick={() => setShowForm(false)} style={s.btnSec}>Cancel</button>
             <button type="submit" disabled={creating} style={{ ...s.btnPrimary, opacity: creating ? 0.6 : 1 }}>
@@ -292,6 +314,19 @@ export default function AdminPromoCodes() {
                     <code style={s.codeChip} onClick={() => copyToClipboard(c.code)} title="Click to copy">
                       {c.code}
                     </code>
+                    {c.restrictedToEmail && (
+                      <span
+                        title={`Locked to ${c.restrictedToEmail}`}
+                        style={{
+                          marginLeft: 6, display: 'inline-block',
+                          fontSize: 10, fontWeight: 700,
+                          background: 'rgba(99,102,241,0.18)', color: '#a5b4fc',
+                          padding: '2px 6px', borderRadius: 6,
+                        }}
+                      >
+                        🔒 {c.restrictedToEmail}
+                      </span>
+                    )}
                   </td>
                   <td style={s.td}>
                     {c.kind === 'FREE' ? '🎁 Free' :

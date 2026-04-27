@@ -1146,12 +1146,12 @@ export default function AnalyticsDashboard() {
                                       {safeDecodeCaption(post.caption) || '(no caption)'}
                                     </div>
                                     <div style={{ display: 'flex', gap: 8, marginTop: 3, fontSize: 11, color: '#64748b', flexWrap: 'wrap' }}>
-                                      <span>❤️ {post.likes ?? '—'}</span>
-                                      <span>💬 {post.commentsCount ?? '—'}</span>
-                                      <span>👁 {post.views ?? '—'}</span>
-                                      <span>🔁 {post.shares ?? '—'}</span>
-                                      <span>📣 {post.impressions ?? '—'}</span>
-                                      <span>🎯 {post.reach ?? '—'}</span>
+                                      <span>❤️ {Number(post.likes ?? 0).toLocaleString()}</span>
+                                      <span>💬 {Number(post.commentsCount ?? post.comments ?? 0).toLocaleString()}</span>
+                                      <span>👁 {Number(post.views ?? 0).toLocaleString()}</span>
+                                      <span>🔁 {Number(post.shares ?? 0).toLocaleString()}</span>
+                                      <span>📣 {Number(post.impressions ?? 0).toLocaleString()}</span>
+                                      <span>🎯 {Number(post.reach ?? 0).toLocaleString()}</span>
                                     </div>
                                   </div>
                                 ))}

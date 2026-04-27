@@ -52,14 +52,10 @@ export default function PromoCodeRedeem({ onRedeemed }) {
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok && data.ok) {
-        // PERCENT_OFF / FIXED_OFF codes return a Stripe Checkout URL — full-page redirect
-        // so the user lands on the discounted price page in one click. FREE codes don't
-        // include checkoutUrl; we fall through to the in-place success badge for those.
-        if (data.checkoutUrl) {
-          if (typeof onRedeemed === 'function') onRedeemed(data);
-          window.location.href = data.checkoutUrl;
-          return;
-        }
+        // FREE codes → instant success badge (no Stripe involvement).
+        // PERCENT_OFF / FIXED_OFF codes → success badge + parent re-fetches pending
+        // discount so all plan cards on the Pricing page can show struck-through prices.
+        // The user then picks which plan they want and clicks Subscribe.
         setRedeemed(data);
         if (typeof onRedeemed === 'function') onRedeemed(data);
       } else {

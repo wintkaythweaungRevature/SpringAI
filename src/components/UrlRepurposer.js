@@ -33,13 +33,23 @@ function InstagramResult({ data }) {
   if (!data?.slides) return null;
   return (
     <div>
-      <div style={{ fontWeight: 700, fontSize: 12, color: '#475569', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}><PlatformIcon platform={PLATFORMS[0]} size={14} /> INSTAGRAM CAROUSEL — 5 slides</div>
-      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 6 }}>
+      <div style={{ fontWeight: 700, fontSize: 12, color: '#475569', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+        <PlatformIcon platform={PLATFORMS[0]} size={14} /> INSTAGRAM CAROUSEL — {data.slides.length} slide{data.slides.length === 1 ? '' : 's'}
+      </div>
+      {/* Wrap slides to a second row when they don't fit horizontally — previously
+          they were in a single overflow-x row and the last slide(s) got clipped
+          off-screen with no visible scrollbar on most browsers. flexWrap fixes this
+          without losing the carousel feel. */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+        gap: 8,
+        paddingBottom: 6,
+      }}>
         {data.slides.map((sl, i) => (
           <div key={i} style={{
-            minWidth: 150, maxWidth: 160, background: '#fff',
+            background: '#fff',
             border: '1.5px solid #fce7f3', borderRadius: 12, padding: '12px 10px',
-            flexShrink: 0,
           }}>
             <div style={{ fontSize: 10, fontWeight: 800, color: '#E1306C', marginBottom: 4 }}>SLIDE {i + 1}</div>
             <div style={{ fontSize: 12, fontWeight: 700, color: '#1e293b', marginBottom: 4 }}>{sl.title}</div>

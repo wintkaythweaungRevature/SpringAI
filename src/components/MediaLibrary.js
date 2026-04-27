@@ -180,7 +180,7 @@ const ALL_PLATFORMS = [
 ];
 
 function SidePanel({ asset, onClose, onDelete, onTagClick, deleteConfirm, setDeleteConfirm,
-                    apiBase, authHeaders }) {
+                    apiBase, authHeaders, userWorkspaces, activeWorkspaceId }) {
   const [copied, setCopied] = useState(false);
 
   // ASSET_TO_POST generation state — fetches the user's connected platforms once
@@ -190,10 +190,16 @@ function SidePanel({ asset, onClose, onDelete, onTagClick, deleteConfirm, setDel
   const [brief,     setBrief]     = useState('');
   const [genLoading, setGenLoading] = useState(false);
   const [genResult,  setGenResult]  = useState(null); // { taskId, ... } | { error }
+  // Target workspace for the resulting drafts. Defaults to whatever the user is
+  // currently sitting in; can be changed before clicking Generate so the drafts
+  // land where the user actually wants them rather than wherever they happened
+  // to be when they opened the asset.
+  const [targetWorkspaceId, setTargetWorkspaceId] = useState(activeWorkspaceId ?? null);
 
   useEffect(() => {
     let live = true;
     setGenResult(null); setBrief(''); setPicked([]);
+    setTargetWorkspaceId(activeWorkspaceId ?? null);
     (async () => {
       try {
         const res = await fetch(`${apiBase}/api/social/accounts`, { headers: authHeaders() });
@@ -208,7 +214,7 @@ function SidePanel({ asset, onClose, onDelete, onTagClick, deleteConfirm, setDel
       } catch { /* silent */ }
     })();
     return () => { live = false; };
-  }, [asset?.id, apiBase, authHeaders]);
+  }, [asset?.id, apiBase, authHeaders, activeWorkspaceId]);
 
   const togglePlatform = (id) => {
     setPicked(prev => prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]);
@@ -221,7 +227,13 @@ function SidePanel({ asset, onClose, onDelete, onTagClick, deleteConfirm, setDel
       const res = await fetch(`${apiBase}/api/ai-agents/generate-from-asset`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeaders() },
-        body: JSON.stringify({ mediaAssetId: asset.id, platforms: picked, brief }),
+        body: JSON.stringify({
+          mediaAssetId: asset.id,
+          platforms: picked,
+          brief,
+          // Locks the user's pick into the task — survives later workspace switches.
+          targetWorkspaceId: targetWorkspaceId,
+        }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || `Generation failed (HTTP ${res.status})`);
@@ -453,6 +465,43 @@ function SidePanel({ asset, onClose, onDelete, onTagClick, deleteConfirm, setDel
               </p>
             ) : (
               <>
+                {/* Workspace destination — drafts will land in the selected workspace
+                    on approval, regardless of which workspace the user is in when
+                    they click Approve later. */}
+                {Array.isArray(userWorkspaces) && userWorkspaces.length > 0 && (
+                  <div style={{ marginBottom: 10 }}>
+                    <label style={{
+                      display: 'block', fontSize: 11, color: '#94a3b8',
+                      marginBottom: 4, fontWeight: 600,
+                    }}>
+                      Send drafts to workspace
+                    </label>
+                    <select
+                      value={targetWorkspaceId == null ? '' : String(targetWorkspaceId)}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setTargetWorkspaceId(v === '' ? null : Number(v));
+                      }}
+                      style={{
+                        width: '100%', boxSizing: 'border-box',
+                        background: '#0f172a',
+                        border: '1px solid #334155',
+                        borderRadius: 8,
+                        padding: '8px 10px',
+                        color: '#e2e8f0',
+                        fontSize: 12,
+                        outline: 'none',
+                      }}
+                    >
+                      {userWorkspaces.map(ws => (
+                        <option key={ws.id} value={String(ws.id)}>
+                          {ws.name}{ws.id === activeWorkspaceId ? ' (current)' : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
                 {/* Platform chips */}
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
                   {connected.map(pid => {
@@ -656,7 +705,7 @@ function EmptyState({ onUploadClick, query }) {
 // ─── Main Component ──────────────────────────────────────────────────────────
 
 export default function MediaLibrary() {
-  const { apiBase, authHeaders } = useAuth();
+  const { apiBase, authHeaders, userWorkspaces, activeWorkspaceId } = useAuth();
 
   const [assets, setAssets] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -1086,6 +1135,8 @@ export default function MediaLibrary() {
           setDeleteConfirm={setDeleteConfirm}
           apiBase={apiBase}
           authHeaders={authHeaders}
+          userWorkspaces={userWorkspaces}
+          activeWorkspaceId={activeWorkspaceId}
         />
       )}
     </>

@@ -308,7 +308,7 @@ const PLATFORM_META_MAP = {
  * Post Strategy tasks (SUGGEST_POST_TIME) with JSON output get rendered as
  * readable post cards. Everything else gets rendered as pre-wrapped text.
  */
-function TaskOutputRenderer({ task }) {
+function TaskOutputRenderer({ task, userWorkspaces }) {
   // ASSET_TO_POST: taskOutput is a JSON object keyed by platform with caption /
   // hashtags / suggestedTime per platform. Render each as a tabbed card so the
   // user can scan all platform variants at a glance before approving.
@@ -322,13 +322,25 @@ function TaskOutputRenderer({ task }) {
       if (perPlatform && typeof perPlatform === 'object') {
         const entries = Object.entries(perPlatform);
         if (entries.length > 0) {
+          // Look up the destination workspace name so the user knows where the
+          // posts will land on approval. Falls back to a generic label for legacy
+          // tasks that don't have targetWorkspaceId yet.
+          const targetWs = task.targetWorkspaceId
+            ? (userWorkspaces || []).find(w => w.id === task.targetWorkspaceId)
+            : null;
+          const targetLabel = targetWs
+            ? targetWs.name
+            : (task.targetWorkspaceId ? `Workspace #${task.targetWorkspaceId}` : 'General');
           return (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {task.mediaAssetId && (
-                <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 2 }}>
-                  🖼️ Source asset #{task.mediaAssetId} (open Asset Library to view)
-                </div>
-              )}
+              <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 2, display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                {task.mediaAssetId && (
+                  <span>🖼️ Source asset #{task.mediaAssetId}</span>
+                )}
+                <span style={{ marginLeft: 'auto', color: '#a5b4fc' }}>
+                  📂 Will publish to: <strong>{targetLabel}</strong>
+                </span>
+              </div>
               {entries.map(([plat, v]) => {
                 const platLower = (plat || '').toLowerCase();
                 const pmeta = PLATFORM_META_MAP[platLower] || { id: platLower, color: '#6366f1' };
@@ -539,8 +551,15 @@ function InsightActionsPanel({ actions, onDismiss, onCreateStrategy }) {
   );
 }
 
-function PendingTaskCard({ task, agent, onApprove, onReject, processing }) {
+function PendingTaskCard({ task, agent, onApprove, onReject, processing, userWorkspaces, currentUserId }) {
   const busy = processing === task.id;
+  // Self-approval guard. Only the originator can approve. Falls back to allowing
+  // approval for legacy tasks (generatedByUserId IS NULL) so old tasks stay
+  // actionable. Server enforces — this is just a defensive UX nudge.
+  const originatorId = task.generatedByUserId ?? task.userId;
+  const canApprove = originatorId == null
+                  || currentUserId == null
+                  || originatorId === currentUserId;
   return (
     <div style={{ ...s.card, display: 'flex', flexDirection: 'column', gap: '14px' }}>
       {/* Header */}
@@ -559,14 +578,23 @@ function PendingTaskCard({ task, agent, onApprove, onReject, processing }) {
 
       {/* Output */}
       <div style={{ background: '#0d1829', border: `1px solid ${C.border}`, borderRadius: '8px', padding: '14px' }}>
-        <TaskOutputRenderer task={task} />
+        <TaskOutputRenderer task={task} userWorkspaces={userWorkspaces} />
       </div>
 
       {/* Footer */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
         <span style={{ fontSize: '11px', color: C.muted }}>{fmtDateTime(task.createdAt)}</span>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button style={{ ...s.btn('success'), opacity: busy ? 0.5 : 1 }} disabled={busy} onClick={() => onApprove(task.id)}>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          {!canApprove && (
+            <span style={{ fontSize: 11, color: '#fbbf24' }}>
+              🔒 Only the originator can approve
+            </span>
+          )}
+          <button
+            style={{ ...s.btn('success'), opacity: (busy || !canApprove) ? 0.5 : 1, cursor: !canApprove ? 'not-allowed' : 'pointer' }}
+            disabled={busy || !canApprove}
+            title={canApprove ? 'Approve this task' : 'You did not generate this task — only the originator can approve.'}
+            onClick={() => canApprove && onApprove(task.id)}>
             {busy ? '...' : '✅ Approve'}
           </button>
           <button style={{ ...s.btn('danger'), opacity: busy ? 0.5 : 1 }} disabled={busy} onClick={() => onReject(task.id)}>
@@ -693,7 +721,7 @@ function AddAgentModal({ onClose, onCreate }) {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function AiWorkspace({ onCaptionApproved } = {}) {
-  const { apiBase, authHeaders } = useAuth();
+  const { apiBase, authHeaders, activeWorkspaceId, userWorkspaces, user } = useAuth();
 
   // ── State ──────────────────────────────────────────────────────────────────
   const [agents, setAgents] = useState([]);
@@ -758,12 +786,15 @@ export default function AiWorkspace({ onCaptionApproved } = {}) {
 
   // History tab + fetchHistoryTasks removed — Tasks tab now shows the Pending list only.
 
-  // On mount
+  // On mount + whenever the user switches active workspace.
+  // The Pending queue is workspace-scoped on the backend (see AiAgentController.listTasks)
+  // so we re-fetch on workspace change so the user sees the right tasks for where
+  // they are. authHeaders() automatically injects X-Workspace-Id from AuthContext.
   useEffect(() => {
     fetchAgents();
     fetchPendingTasks();
     fetchPendingCount();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activeWorkspaceId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Agent actions ──────────────────────────────────────────────────────────
 
@@ -1036,6 +1067,8 @@ export default function AiWorkspace({ onCaptionApproved } = {}) {
                   onApprove={handleApprove}
                   onReject={handleReject}
                   processing={processingTaskId}
+                  userWorkspaces={userWorkspaces}
+                  currentUserId={user?.id}
                 />
               ))}
             </div>

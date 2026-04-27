@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import { useAuth } from '../context/AuthContext';
 import PlatformIcon from './PlatformIcon';
 import { fireToast } from './Toast';
+import DraftActionBar from './DraftActionBar';
 
 function firstNonEmptyStr(...vals) {
   for (const v of vals) {
@@ -652,6 +653,20 @@ export default function PostDetailModal({ post, onClose, platform, onSaved, feed
               This post won't publish. Use <strong>Duplicate as draft</strong> to keep the work or <strong>Delete</strong> to remove it.
             </div>
           </div>
+        )}
+
+        {/* ── Draft action bar ──
+            Shown only for PENDING_APPROVAL posts that haven't already been sent
+            to a client (no active approval token). Gives the user the choice
+            between publishing directly or sending to a client for approval.
+            CHANGES_REQUESTED uses the existing resubmit flow above and gets a
+            different bar variant. */}
+        {(post.status === 'PENDING_APPROVAL' || post.status === 'PENDING') && !readOnly && (
+          <DraftActionBar
+            post={post}
+            awaitingApproverEmail={feedbackContext?.kind === 'PENDING' ? feedbackContext.approverEmail : null}
+            onUpdated={() => { if (typeof onClose === 'function') { /* let parent re-fetch on close */ } }}
+          />
         )}
 
         {/* ── Banners ── */}

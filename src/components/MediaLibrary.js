@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
+import PlatformIcon from './PlatformIcon';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -166,17 +167,18 @@ function AssetCard({ asset, onClick }) {
 
 // All supported targets for ASSET_TO_POST. We INTERSECT this with the user's
 // actually-connected platforms (read from /api/social/accounts) so the picker
-// only offers options that can actually be posted to.
+// only offers options that can actually be posted to. `id` doubles as both the
+// API platform key and the lookup key for <PlatformIcon> (real SVG logos).
 const ALL_PLATFORMS = [
-  { id: 'instagram', label: 'Instagram', emoji: '📸', color: '#E1306C' },
-  { id: 'facebook',  label: 'Facebook',  emoji: '📘', color: '#1877F2' },
-  { id: 'linkedin',  label: 'LinkedIn',  emoji: '💼', color: '#0A66C2' },
-  { id: 'x',         label: 'X (Twitter)', emoji: '✖️', color: '#000000' },
-  { id: 'twitter',   label: 'X (Twitter)', emoji: '✖️', color: '#000000' },
-  { id: 'tiktok',    label: 'TikTok',    emoji: '🎵', color: '#69C9D0' },
-  { id: 'youtube',   label: 'YouTube',   emoji: '▶️', color: '#FF0000' },
-  { id: 'threads',   label: 'Threads',   emoji: '🧵', color: '#000000' },
-  { id: 'pinterest', label: 'Pinterest', emoji: '📌', color: '#BD081C' },
+  { id: 'instagram', label: 'Instagram',   color: '#E1306C' },
+  { id: 'facebook',  label: 'Facebook',    color: '#1877F2' },
+  { id: 'linkedin',  label: 'LinkedIn',    color: '#0A66C2' },
+  { id: 'x',         label: 'X (Twitter)', color: '#000000' },
+  { id: 'twitter',   label: 'X (Twitter)', color: '#000000' },
+  { id: 'tiktok',    label: 'TikTok',      color: '#000000' },
+  { id: 'youtube',   label: 'YouTube',     color: '#FF0000' },
+  { id: 'threads',   label: 'Threads',     color: '#000000' },
+  { id: 'pinterest', label: 'Pinterest',   color: '#BD081C' },
 ];
 
 function SidePanel({ asset, onClose, onDelete, onTagClick, deleteConfirm, setDeleteConfirm,
@@ -502,10 +504,13 @@ function SidePanel({ asset, onClose, onDelete, onTagClick, deleteConfirm, setDel
                   </div>
                 )}
 
-                {/* Platform chips */}
+                {/* Platform chips — same real platform logos Video Publisher uses
+                    (via the shared PlatformIcon component, no emoji fallback for
+                    the platforms we know). Falls back to a generic colored dot for
+                    any unrecognized platform id. */}
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
                   {connected.map(pid => {
-                    const meta = ALL_PLATFORMS.find(p => p.id === pid) || { id: pid, label: pid, emoji: '📤', color: '#6366f1' };
+                    const meta = ALL_PLATFORMS.find(p => p.id === pid) || { id: pid, label: pid, color: '#6366f1' };
                     const isPicked = picked.includes(pid);
                     return (
                       <button
@@ -521,9 +526,13 @@ function SidePanel({ asset, onClose, onDelete, onTagClick, deleteConfirm, setDel
                           cursor: 'pointer',
                           transition: 'all 0.15s',
                           fontWeight: 600,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
                         }}
                       >
-                        {meta.emoji} {meta.label}
+                        <PlatformIcon platform={meta} size={14} />
+                        {meta.label}
                       </button>
                     );
                   })}

@@ -670,9 +670,13 @@ const s = {
     borderWidth: "1px",
     borderStyle: "solid",
     borderColor: "#e2e8f0",
-    padding: "28px 32px",
-    maxWidth: "560px",
+    padding: "32px 40px",
+    // Wider card so descriptions don't wrap into 4-5 lines and the page feels
+    // less like a long scrolling column. Caps at 1100px so it stays readable
+    // on ultrawide monitors.
+    maxWidth: "1100px",
     width: "100%",
+    margin: "0 auto",
     boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
     fontFamily: "'Inter', -apple-system, sans-serif",
   },
@@ -685,7 +689,10 @@ const s = {
     borderWidth: "1px", borderStyle: "solid",
     marginBottom: "16px", fontSize: "14px", fontWeight: "500",
   },
-  section: { borderTop: "1px solid #f1f5f9", paddingTop: "20px", marginTop: "20px" },
+  // Tightened from 20/20 → 14/14 since the wider card (1100px) means each
+  // section's content now wraps to fewer lines, so the previous spacing felt
+  // overly stretched.
+  section: { borderTop: "1px solid #f1f5f9", paddingTop: "14px", marginTop: "14px" },
   sectionTitle: { margin: "0 0 10px", color: "#0f172a", fontSize: "15px", fontWeight: "700" },
   desc: { margin: "0 0 14px", color: "#64748b", fontSize: "14px", lineHeight: "1.6" },
   badgeRow: { display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" },

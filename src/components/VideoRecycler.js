@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import PlatformIcon from './PlatformIcon';
 
 const PLATFORMS = [
   { id: 'instagram', label: 'Instagram', emoji: '📸', color: '#E1306C' },
@@ -91,12 +92,15 @@ function PlatformResult({ platform, data }) {
 
   const borderColor = platform === 'linkedin' ? '#dbeafe' : platform === 'tiktok' ? '#fef3c7' : '#dbeafe';
   const tagColor = platform === 'linkedin' ? '#0A66C2' : platform === 'tiktok' ? '#010101' : '#1877F2';
-  const emoji = PLATFORMS.find(p => p.id === platform)?.emoji || '📄';
-  const label = PLATFORMS.find(p => p.id === platform)?.label || platform;
+  const meta = PLATFORMS.find(p => p.id === platform) || { id: platform, label: platform };
+  const label = meta.label || platform;
 
   return (
     <div>
-      <div style={{ fontWeight: 700, fontSize: 12, color: '#475569', marginBottom: 8 }}>{emoji} {label.toUpperCase()} POST</div>
+      <div style={{ fontWeight: 700, fontSize: 12, color: '#475569', marginBottom: 8, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+        <PlatformIcon platform={meta} size={14} />
+        {label.toUpperCase()} POST
+      </div>
       <div style={{ padding: '12px 14px', background: '#fff', border: `1.5px solid ${borderColor}`, borderRadius: 10 }}>
         <div style={{ fontSize: 13, color: '#1e293b', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{data.post || data.caption || data.body || ''}</div>
         {data.hashtags && <div style={{ fontSize: 12, color: tagColor, marginTop: 6 }}>{data.hashtags}</div>}
@@ -262,6 +266,24 @@ export default function VideoRecycler() {
                   <div style={{ fontSize: 11, color: '#64748b', lineHeight: 1.6, fontStyle: 'italic' }}>"{result.transcriptPreview.slice(0, 300)}{result.transcriptPreview.length > 300 ? '…' : ''}"</div>
                 </div>
               )}
+              {/* Honest UX nudge: when the backend couldn't get a real transcript
+                  (no captions on the video, or YouTube blocked the timedtext fetch),
+                  the AI generates from title only — and tends to invent content.
+                  Tell the user so they can paste the transcript manually for a much
+                  better result. Backend sets hasTranscript=false in that case. */}
+              {result.hasTranscript === false && (
+                <div style={{
+                  marginTop: 8, padding: '10px 12px',
+                  background: '#fffbeb', border: '1px solid #fde68a',
+                  borderRadius: 8, color: '#92400e', fontSize: 12, lineHeight: 1.5,
+                }}>
+                  ⚠️ <strong>This video has no captions we could fetch.</strong> The AI
+                  generated content from the title only — it may invent details that
+                  aren't in the actual video. For accurate output, click "Or paste video
+                  transcript manually" above and paste the real transcript, then click
+                  Recycle again.
+                </div>
+              )}
             </div>
           )}
 
@@ -273,12 +295,21 @@ export default function VideoRecycler() {
                 onClick={() => setActiveTab(p.id)}
                 style={{
                   padding: '8px 16px', borderRadius: 10, border: 'none', cursor: 'pointer',
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
                   background: activeTab === p.id ? p.color : '#f1f5f9',
                   color: activeTab === p.id ? '#fff' : '#475569',
                   fontSize: 12, fontWeight: 700, transition: 'all 0.15s',
                 }}
               >
-                {p.emoji} {p.label}
+                {/* Real platform logo (Video Publisher pattern). Filter inverts
+                    the SVG color when the tab is active so the logo stays visible
+                    against the tab's solid colored background. */}
+                <PlatformIcon
+                  platform={p}
+                  size={16}
+                  style={{ filter: activeTab === p.id ? 'brightness(0) invert(1)' : 'none' }}
+                />
+                {p.label}
               </button>
             ))}
           </div>

@@ -89,28 +89,10 @@ const PLANS = [
       { text: '👥 Up to 5 org members', included: true },
     ],
   },
-  {
-    id: 'AGENCY',
-    name: 'Agency',
-    monthlyPrice: 149,
-    yearlyPrice: 119,
-    yearlyTotal: 1428,
-    color: '#10b981',
-    badge: 'Best for Agencies',
-    icon: '🏢',
-    tagline: 'For agencies managing many client brands',
-    seats: 'Unlimited',
-    features: [
-      { text: '✨ EVERYTHING in Growth, plus:', included: true },
-      { text: '♾️ Unlimited client workspaces', included: true },
-      { text: '👥 Unlimited team seats', included: true },
-      { text: '📄 Branded PDF reports per client (coming soon)', included: true },
-      { text: '🎨 Custom logo + colors per client workspace', included: true },
-      { text: '🔐 Client-facing read-only role', included: true },
-      { text: '⚡ Priority support', included: true },
-      { text: '📊 Client portal access (coming soon)', included: true },
-    ],
-  },
+  // Agency tier removed from the visible pricing UI per user request. Backend
+  // still recognizes "AGENCY" as a valid PlanType so any existing AGENCY
+  // subscribers keep their access — they just can't be upgraded TO this tier
+  // through the UI anymore. To bring it back, restore the entry below.
 ];
 
 /* ─── Comparison table rows ─────────────────────────────────────────── */
@@ -301,12 +283,9 @@ export default function PricingPage({ onClose }) {
         {successMsg && <div style={s.successBanner}>{successMsg}</div>}
         {error      && <div style={s.errorBanner}>{error}</div>}
 
-        {/* Responsive grid override: inline style sets 4-col desktop default; this
-            <style> block tiers it down — 2 cols on tablet (<1200px), 1 col on mobile (<700px). */}
+        {/* Responsive grid override: inline style sets 3-col desktop default; this
+            <style> block collapses to 1 col on narrow viewports (<700px). */}
         <style>{`
-          @media (max-width: 1200px) {
-            .pricing-cards-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
-          }
           @media (max-width: 700px) {
             .pricing-cards-grid { grid-template-columns: 1fr !important; }
           }
@@ -469,8 +448,8 @@ const s = {
   },
   modal: {
     background: '#fff', borderRadius: 20, padding: '32px',
-    // Wider so 4 plan cards (Starter / Pro / Growth / Agency) fit side-by-side.
-    maxWidth: 1480, width: '100%', maxHeight: '92vh', overflowY: 'auto',
+    // 3 plan cards (Starter / Pro / Growth) — was 1480 for the old 4-card layout.
+    maxWidth: 1180, width: '100%', maxHeight: '92vh', overflowY: 'auto',
     boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
   },
   header: {
@@ -510,19 +489,17 @@ const s = {
     borderRadius: 8, padding: '10px 14px', marginBottom: 14, fontSize: 14,
   },
   cardsRow: {
-    // 4 columns at desktop (Starter / Pro / Growth / Agency). Responsive media query
-    // in the JSX <style> block collapses to 2 columns at <1100px and 1 at <700px.
+    // 3 columns at desktop (Starter / Pro / Growth). Responsive media query in
+    // the JSX <style> block collapses to 1 column at <700px.
     display: 'grid',
-    gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
     gap: 20,
     marginBottom: 24,
     alignItems: 'stretch',
   },
   card: {
-    // 4-card layout — slightly slimmer padding so each card has breathing room without
-    // becoming oversized. Min-height keeps cards aligned even with different bullet counts.
     borderRadius: 18,
-    padding: '32px 22px 24px',
+    padding: '32px 24px 24px',
     position: 'relative',
     background: '#fff',
     display: 'flex',

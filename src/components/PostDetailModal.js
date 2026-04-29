@@ -65,10 +65,28 @@ function isPublishedPost(post) {
   return s === 'SUCCESS' || s === 'PUBLISHED' || s === 'COMPLETED';
 }
 
+/**
+ * Backend stores LocalDateTime UTC without a 'Z' suffix. JavaScript's Date
+ * parser would interpret that as LOCAL time, so a post saved at 10:06 PM EDT
+ * (= 02:06 UTC next day) would re-open the modal pre-filled with 02:06 AM
+ * instead of the original 10:06 PM. Append 'Z' so the browser knows it's UTC
+ * and converts back to local for the form. Same helper used in ContentCalendar.
+ */
+function asUtcIfBare(iso) {
+  if (!iso) return iso;
+  const s = String(iso);
+  if (/^\d{4}-\d{2}-\d{2}T/.test(s)
+      && !s.endsWith('Z')
+      && !/[+\-]\d{2}:?\d{2}$/.test(s)) {
+    return s + 'Z';
+  }
+  return s;
+}
+
 function toDatetimeLocalValue(iso) {
   if (!iso) return '';
   try {
-    const d = new Date(iso);
+    const d = new Date(asUtcIfBare(iso));
     if (!Number.isFinite(d.getTime())) return '';
     const pad = (n) => String(n).padStart(2, '0');
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;

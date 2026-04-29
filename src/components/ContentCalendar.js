@@ -49,17 +49,36 @@ function platformColor(pid) {
   return PLATFORM_MAP[pid?.toLowerCase()]?.color || '#6366f1';
 }
 
+/**
+ * Backend stores scheduled times as Java LocalDateTime — serialized as
+ * "2026-05-08T03:45:00" with NO timezone suffix. JavaScript's Date constructor
+ * interprets bare ISO strings as LOCAL time, so a UTC-stored 03:45 displays as
+ * "3:45 AM" instead of being converted to the user's actual wall-clock time.
+ * Append "Z" so the browser knows it's UTC and converts to local for display.
+ * Already-tz-suffixed strings ("Z", "+00:00", "-05:00") are left alone.
+ */
+function asUtcIfBare(iso) {
+  if (!iso) return iso;
+  const s = String(iso);
+  if (/^\d{4}-\d{2}-\d{2}T/.test(s)
+      && !s.endsWith('Z')
+      && !/[+\-]\d{2}:?\d{2}$/.test(s)) {
+    return s + 'Z';
+  }
+  return s;
+}
+
 function fmtTime(iso) {
   if (!iso) return '';
   try {
-    return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    return new Date(asUtcIfBare(iso)).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   } catch { return ''; }
 }
 
 function fmtDate(iso) {
   if (!iso) return '';
   try {
-    return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return new Date(asUtcIfBare(iso)).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   } catch { return ''; }
 }
 
@@ -150,16 +169,10 @@ function postCalendarTimestamp(post) {
 function postCalendarDate(post) {
   const ts = postCalendarTimestamp(post);
   if (!ts) return new Date(NaN);
-  const str = String(ts);
-  // Backend stores dates as LocalDateTime (no timezone suffix) in UTC.
-  // Without "Z", JavaScript interprets bare ISO strings as local time,
-  // causing posts created at e.g. 9 PM EDT (= 1 AM UTC next day) to
-  // appear on tomorrow's calendar instead of today. Appending "Z" tells
-  // the browser the timestamp is UTC, so it converts to local date correctly.
-  if (/^\d{4}-\d{2}-\d{2}T/.test(str) && !str.includes('Z') && !str.includes('+') && !/T.*-/.test(str)) {
-    return new Date(str + 'Z');
-  }
-  return new Date(str);
+  // Backend stores LocalDateTime UTC without a 'Z' suffix — asUtcIfBare appends it
+  // so the browser converts to local time correctly. Same helper used by fmtTime/
+  // fmtDate so the day cell, the time chip, and the date label all agree.
+  return new Date(asUtcIfBare(ts));
 }
 
 /** True when the post is still scheduled / not yet published (for day-cell border). */
@@ -1111,7 +1124,7 @@ export default function ContentCalendar({ onOpenVideoPublisher }) {
                   }}>{(post.platform || 'unknown').toUpperCase()}</span>
                   {post.scheduledAt && (
                     <span style={{ color: '#888', fontSize: 12 }}>
-                      ⏰ {new Date(post.scheduledAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                      ⏰ {new Date(asUtcIfBare(post.scheduledAt)).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
                     </span>
                   )}
                 </div>

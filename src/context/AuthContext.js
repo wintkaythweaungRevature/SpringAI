@@ -10,21 +10,16 @@ const getApiBase = () => {
 };
 const API_BASE = getApiBase();
 
-/** Owner account: this login gets full access to all features (no subscription required). */
-const OWNER_EMAIL = "wint@gmail.com";
-const OWNER_PASSWORD = "wintkay";
-const OWNER_TOKEN = "owner-wint-full-access";
-const OWNER_USER = {
-  id: "owner",
-  email: OWNER_EMAIL,
-  firstName: "Wint",
-  lastName: "Kay",
-  membershipType: "MEMBER",
-  emailVerified: true,
-};
-
-function isOwnerToken(t) {
-  return t === OWNER_TOKEN;
+/** Owner-bypass REMOVED — credentials were hardcoded in the production JS bundle
+ *  (visible to anyone who viewed source). Now wint@gmail.com goes through the
+ *  normal backend login like every other user, and the backend's OWNER_EMAIL
+ *  constant in UserService grants this account full feature access server-side.
+ *
+ *  If the owner can't log in: use the forgot-password flow to set a real password.
+ *  This stub is kept so the dozen `if (isOwnerToken(...))` checks scattered
+ *  across this file still compile harmlessly (always falls through to normal flow). */
+function isOwnerToken(_t) {
+  return false;
 }
 
 /** Paid tiers from API / Stripe; must match header plan badges (MEMBER = legacy single paid tier).
@@ -61,10 +56,7 @@ export function AuthProvider({ children }) {
 
   const refetchUser = () => {
     if (!token) return;
-    if (isOwnerToken(token)) {
-      setUser(OWNER_USER);
-      return Promise.resolve();
-    }
+    // Owner backdoor removed — all users go through the backend now.
     return fetch(`${API_BASE}/api/auth/me`, {
       headers: { Authorization: `Bearer ${token}` },
     })
@@ -111,12 +103,7 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     if (token) {
-      if (isOwnerToken(token)) {
-        setUser(OWNER_USER);
-        setIsSubscribed(true);
-        setLoading(false);
-        return;
-      }
+      // Owner backdoor removed — all tokens go through /api/auth/me.
       fetch(`${API_BASE}/api/auth/me`, {
         headers: { Authorization: `Bearer ${token}` },
       })
@@ -354,13 +341,9 @@ export function AuthProvider({ children }) {
   const login = async (identifier, password) => {
     const trimmedIdentifier = (identifier || "").trim();
     const trimmedPassword = password || "";
-    // Owner account: grant full access to all features without calling the backend.
-    if (trimmedIdentifier === OWNER_EMAIL && trimmedPassword === OWNER_PASSWORD) {
-      localStorage.setItem("authToken", OWNER_TOKEN);
-      setToken(OWNER_TOKEN);
-      setUser(OWNER_USER);
-      return { user: OWNER_USER, token: OWNER_TOKEN };
-    }
+    // Owner backdoor REMOVED — wint@gmail.com now logs in through the backend
+    // like everyone else. The backend's UserService.OWNER_EMAIL constant still
+    // grants this account full feature access server-side.
     let res;
     try {
       res = await fetch(`${API_BASE}/api/auth/login`, {

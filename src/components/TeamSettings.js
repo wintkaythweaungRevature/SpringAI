@@ -11,7 +11,7 @@ function seatLimit(membershipType) {
 
 function isTeamPlan(membershipType) {
   const m = String(membershipType || '').toUpperCase();
-  return m === 'PRO' || m === 'GROWTH' || m === 'MEMBER';
+  return m === 'PRO' || m === git GROWTH' || m === 'MEMBER';
 }
 
 /* ─── localStorage helpers (fallback while backend is not ready) ─ */

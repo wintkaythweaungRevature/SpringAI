@@ -31,6 +31,9 @@ export default function AdminPromoCodes() {
     expiresAt: '',
     notes: '',
     restrictedToEmail: '',
+    restrictedToPlans: '',   // '' = all plans; otherwise a single plan code
+    sendEmail: false,        // tick to email the code on create
+    emailRecipient: '',      // override; defaults to restrictedToEmail when blank
   });
   const [creating, setCreating] = useState(false);
 
@@ -78,6 +81,22 @@ export default function AdminPromoCodes() {
       } else {
         body.restrictedToEmail = body.restrictedToEmail.trim().toLowerCase();
       }
+      // Plan restriction — empty string means "all plans"; backend expects null
+      // (omitted) for unrestricted, or the plan code (e.g. "GROWTH") otherwise.
+      if (!body.restrictedToPlans) {
+        delete body.restrictedToPlans;
+      }
+      // Email-on-create — when true, backend uses emailRecipient if provided
+      // else falls back to restrictedToEmail. When false, drop both fields.
+      if (!body.sendEmail) {
+        delete body.sendEmail;
+        delete body.emailRecipient;
+      } else if (!body.emailRecipient || !body.emailRecipient.trim()) {
+        // No explicit recipient — let backend use restrictedToEmail
+        delete body.emailRecipient;
+      } else {
+        body.emailRecipient = body.emailRecipient.trim().toLowerCase();
+      }
       if (body.kind === 'FREE') {
         delete body.percentOff;
       } else {
@@ -102,8 +121,21 @@ export default function AdminPromoCodes() {
         throw new Error(err.error || 'Create failed');
       }
       const created = await res.json();
-      setSuccessMsg(`✅ Created code "${created.code}". Share it with your friend / beta user.`);
-      setForm({ code: '', kind: 'FREE', percentOff: 50, durationKind: 'FOREVER', durationMonths: 3, durationUntilDate: '', maxUses: '', expiresAt: '', notes: '', restrictedToEmail: '' });
+      // Backend now wraps the saved row + email outcome:
+      //   { code: PromoCode, emailRequested: bool, emailSent: bool, emailWarning?: string }
+      // For backward compat (older deploys), fall back to the bare-row shape.
+      const savedCode = created.code && typeof created.code === 'object' ? created.code : created;
+      const codeStr = savedCode.code || '(unknown)';
+      let msg = `✅ Created code "${codeStr}".`;
+      if (created.emailRequested) {
+        msg += created.emailSent
+          ? ' Email sent to recipient.'
+          : ' ⚠️ Email failed: ' + (created.emailWarning || 'check server mail config.');
+      } else {
+        msg += ' Share it with your friend / beta user.';
+      }
+      setSuccessMsg(msg);
+      setForm({ code: '', kind: 'FREE', percentOff: 50, durationKind: 'FOREVER', durationMonths: 3, durationUntilDate: '', maxUses: '', expiresAt: '', notes: '', restrictedToEmail: '', restrictedToPlans: '', sendEmail: false, emailRecipient: '' });
       setShowForm(false);
       loadCodes();
       setTimeout(() => setSuccessMsg(''), 5000);
@@ -129,6 +161,37 @@ export default function AdminPromoCodes() {
       await fetch(`${base}/api/admin/promo/${id}`, { method: 'DELETE', headers: authHeaders() });
       loadCodes();
     } catch {}
+  };
+
+  // Re-send (or first-time send) the code via email. Pre-fills the prompt with
+  // the code's restrictedToEmail when set, otherwise asks the admin to type one.
+  const emailCode = async (c) => {
+    const defaultTo = c.restrictedToEmail || '';
+    const to = window.prompt(
+      `Email code "${c.code}" to:`,
+      defaultTo
+    );
+    if (!to || !to.trim()) return;
+    try {
+      const res = await fetch(`${base}/api/admin/promo/${c.id}/email`, {
+        method: 'POST',
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ to: to.trim().toLowerCase() }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error || 'Failed to send email');
+        setTimeout(() => setError(''), 5000);
+        return;
+      }
+      setSuccessMsg(data.emailed
+        ? `📧 Code "${c.code}" emailed to ${data.to}.`
+        : `⚠️ Email failed (mail config issue?).`);
+      setTimeout(() => setSuccessMsg(''), 5000);
+    } catch (e) {
+      setError('Email send failed: ' + e.message);
+      setTimeout(() => setError(''), 5000);
+    }
   };
 
   const copyToClipboard = (text) => {
@@ -262,6 +325,30 @@ export default function AdminPromoCodes() {
             </label>
           </div>
 
+          {/* Plan-lock — restrict the code to a single subscription plan. When set,
+              the code can only be redeemed/applied at checkout for the chosen plan;
+              users picking another plan get a 400 with a clear message. Leave on
+              "All plans" for codes that should work everywhere (current default). */}
+          <div style={s.row}>
+            <label style={s.lbl}>
+              🎯 Restrict to plan (optional)
+              <select
+                style={s.input}
+                value={form.restrictedToPlans}
+                onChange={e => setForm(f => ({ ...f, restrictedToPlans: e.target.value }))}
+              >
+                <option value="">All plans (no restriction)</option>
+                <option value="STARTER">STARTER only</option>
+                <option value="PRO">PRO only</option>
+                <option value="GROWTH">GROWTH only</option>
+                <option value="AGENCY">AGENCY only</option>
+              </select>
+              <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 400, marginTop: 4, textTransform: 'none', letterSpacing: 0 }}>
+                Pick the single plan this code applies to. Discount only shows on that plan card on the Pricing page.
+              </span>
+            </label>
+          </div>
+
           {/* Email-lock — when set, only the matching account can redeem the code.
               Best for friend / 1:1 beta codes so the code can't be shared/leaked. */}
           <div style={s.row}>
@@ -277,6 +364,40 @@ export default function AdminPromoCodes() {
               </span>
             </label>
           </div>
+
+          {/* Email-on-create — when ticked, the backend sends an email to
+              `emailRecipient` (or `restrictedToEmail` when blank) with the
+              code, discount details, plan restriction, and how to redeem. */}
+          <div style={s.row}>
+            <label style={{ ...s.lbl, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <input
+                type="checkbox"
+                checked={form.sendEmail}
+                onChange={e => setForm(f => ({ ...f, sendEmail: e.target.checked }))}
+                style={{ width: 16, height: 16 }}
+              />
+              📧 Email this code to the recipient on save
+            </label>
+          </div>
+          {form.sendEmail && (
+            <div style={s.row}>
+              <label style={s.lbl}>
+                Recipient email (optional)
+                <input
+                  style={s.input}
+                  type="email"
+                  placeholder={form.restrictedToEmail
+                    ? `defaults to ${form.restrictedToEmail}`
+                    : 'who should we email this code to?'}
+                  value={form.emailRecipient}
+                  onChange={e => setForm(f => ({ ...f, emailRecipient: e.target.value }))}
+                />
+                <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 400, marginTop: 4, textTransform: 'none', letterSpacing: 0 }}>
+                  Leave blank to send to the email-lock address above. Useful if you want to email a cohort address that ISN'T the email-lock.
+                </span>
+              </label>
+            </div>
+          )}
 
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
             <button type="button" onClick={() => setShowForm(false)} style={s.btnSec}>Cancel</button>
@@ -327,6 +448,19 @@ export default function AdminPromoCodes() {
                         🔒 {c.restrictedToEmail}
                       </span>
                     )}
+                    {c.restrictedToPlans && (
+                      <span
+                        title={`Only valid on ${c.restrictedToPlans}`}
+                        style={{
+                          marginLeft: 6, display: 'inline-block',
+                          fontSize: 10, fontWeight: 700,
+                          background: 'rgba(16,185,129,0.18)', color: '#6ee7b7',
+                          padding: '2px 6px', borderRadius: 6,
+                        }}
+                      >
+                        🎯 {c.restrictedToPlans}
+                      </span>
+                    )}
                   </td>
                   <td style={s.td}>
                     {c.kind === 'FREE' ? '🎁 Free' :
@@ -350,6 +484,7 @@ export default function AdminPromoCodes() {
                   <td style={{ ...s.td, color: '#94a3b8', fontSize: 12 }}>{c.notes || '—'}</td>
                   <td style={s.td}>
                     <button onClick={() => copyToClipboard(c.code)} style={s.iconBtn} title="Copy code">📋</button>
+                    <button onClick={() => emailCode(c)} style={s.iconBtn} title="Email this code to recipient">📧</button>
                     <button onClick={() => toggleActive(c.id, c.active)} style={s.iconBtn} title={c.active ? 'Disable' : 'Enable'}>
                       {c.active ? '🚫' : '✅'}
                     </button>

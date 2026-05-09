@@ -148,8 +148,16 @@ export default function PricingPage({ onClose }) {
   // Compute the discounted price for a given base price using the pending discount.
   // Returns { discounted: number, originalKept: boolean } — when the user has a
   // PERCENT_OFF code applied, every plan card shows ~~$39~~ $19.50.
-  const applyDiscount = (basePrice) => {
+  //
+  // Plan-lock aware: if the pending discount is restricted to specific plans
+  // (e.g. "GROWTH"), passing a non-matching planCode returns the bare base
+  // price with originalKept=false so the card renders without the discount
+  // styling. Pass planCode = null to skip the lock check (legacy callers).
+  const applyDiscount = (basePrice, planCode = null) => {
     if (!pendingDiscount?.pending) return { discounted: basePrice, originalKept: false };
+    if (planCode && !isPlanEligibleForDiscount(planCode)) {
+      return { discounted: basePrice, originalKept: false };
+    }
     if (pendingDiscount.percentOff) {
       const d = basePrice * (1 - pendingDiscount.percentOff / 100);
       return { discounted: Math.round(d * 100) / 100, originalKept: true };
@@ -159,6 +167,19 @@ export default function PricingPage({ onClose }) {
       return { discounted: Math.round(d * 100) / 100, originalKept: true };
     }
     return { discounted: basePrice, originalKept: false };
+  };
+
+  // Returns true if the current pendingDiscount can apply to this plan code.
+  // No pending discount → trivially "eligible" (caller should still treat it
+  // as no-discount). No restriction on the discount → eligible for everyone.
+  // Otherwise the planCode (case-insensitive) must be in the comma-separated
+  // restrictedToPlans list returned by the backend.
+  const isPlanEligibleForDiscount = (planCode) => {
+    if (!pendingDiscount?.pending) return true;
+    const restricted = pendingDiscount.restrictedToPlans;
+    if (!restricted) return true;
+    const allowed = String(restricted).split(',').map(s => s.trim().toUpperCase());
+    return allowed.includes(String(planCode || '').trim().toUpperCase());
   };
 
   // Re-fetch the user's pending discount — called on mount + every time a code is redeemed.
@@ -276,7 +297,10 @@ export default function PricingPage({ onClose }) {
             applied — {pendingDiscount.percentOff
               ? `${pendingDiscount.percentOff}% off`
               : `$${(pendingDiscount.fixedOffCents || 0) / 100} off`}{' '}
-            {pendingDiscount.durationLabel}. Pick any plan below — discount applies automatically at checkout.
+            {pendingDiscount.durationLabel}.
+            {pendingDiscount.restrictedToPlans
+              ? ` Valid only on the ${pendingDiscount.restrictedToPlans} plan — discount applies automatically when you pick that plan.`
+              : ' Pick any plan below — discount applies automatically at checkout.'}
           </div>
         )}
 
@@ -295,9 +319,18 @@ export default function PricingPage({ onClose }) {
         <div className="pricing-cards-grid" style={s.cardsRow}>
           {PLANS.map(plan => {
             const basePrice = yearly ? plan.yearlyPrice : plan.monthlyPrice;
-            const { discounted, originalKept } = applyDiscount(basePrice);
+            // Plan-aware discount: if the pending code is locked to a different
+            // plan, applyDiscount returns the bare base price + originalKept=false
+            // so this card renders without the discount styling.
+            const { discounted, originalKept } = applyDiscount(basePrice, plan.id);
             const isCurrent = currentPlan === plan.id;
             const isPro = plan.id === 'PRO';
+            // Dim ineligible cards when a plan-locked code is pending so the
+            // user's eye is drawn to the one card that actually gets the deal.
+            const ineligibleForPendingDiscount =
+              pendingDiscount?.pending
+              && pendingDiscount.restrictedToPlans
+              && !isPlanEligibleForDiscount(plan.id);
             return (
               <div key={plan.id} style={{
                 ...s.card,
@@ -305,6 +338,9 @@ export default function PricingPage({ onClose }) {
                 boxShadow: isPro ? `0 6px 28px ${plan.color}33` : '0 1px 6px rgba(0,0,0,0.07)',
                 transform: isPro ? 'translateY(-6px)' : 'none',
                 position: 'relative',
+                opacity: ineligibleForPendingDiscount ? 0.55 : 1,
+                filter: ineligibleForPendingDiscount ? 'grayscale(0.35)' : 'none',
+                transition: 'opacity 200ms, filter 200ms',
               }}>
                 {plan.badge && (
                   <div style={{ ...s.planBadge, background: plan.color }}>{plan.badge}</div>
@@ -365,6 +401,27 @@ export default function PricingPage({ onClose }) {
                     </li>
                   ))}
                 </ul>
+
+                {/* Plan-lock footnote — shown only when there's a pending discount
+                    locked to OTHER plans, so the user understands why this card
+                    doesn't get the green discount badge. */}
+                {ineligibleForPendingDiscount && (
+                  <div style={{
+                    marginTop: 'auto',
+                    marginBottom: 8,
+                    padding: '8px 10px',
+                    background: '#f1f5f9',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: 8,
+                    fontSize: 11,
+                    color: '#475569',
+                    textAlign: 'center',
+                    lineHeight: 1.4,
+                  }}>
+                    Code <strong>{pendingDiscount.code}</strong> only applies to{' '}
+                    <strong>{pendingDiscount.restrictedToPlans}</strong>.
+                  </div>
+                )}
 
                 {isCurrent ? (
                   <button style={s.ctaBtnCurrent} disabled>Current Plan</button>

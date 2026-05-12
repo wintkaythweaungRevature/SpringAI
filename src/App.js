@@ -14,6 +14,7 @@ import PlatformIcon from './components/PlatformIcon';
 import ProfileAvatar from './components/ProfileAvatar';
 import HelpPanel from './components/HelpPanel';
 import ImageGenerator from './components/ImageGenerator';
+import ImageUpscaler from './components/ImageUpscaler';
 import ChatComponent from './components/ChatComponent';
 import ReceipeGenerator from './components/ReceipeGenerator';
 import SpendingAnalyzer from './components/Analyzer';
@@ -971,6 +972,7 @@ function App() {
                     {[
                       { label: 'Smart Hub',    icon: '🧠', color: '#f472b6', items: [
                         { icon: '🖼', label: 'Image Generator',  tab: 'image-generator'  },
+                        { icon: '🔍', label: 'Image Upscaler',   tab: 'image-upscaler'   },
                         { icon: '✨', label: 'Recipe Generator', tab: 'recipe-generator' },
                       ]},
                       { label: 'Digital Vault', icon: '🗄', color: '#22d3ee', items: [
@@ -1146,6 +1148,7 @@ function App() {
             </MemberGate>
           )}
           {activeTab === 'image-generator'  && <MemberGate featureName="Image Generator"><WorkspaceGate permKey="imageGenerator"><ImageGenerator /></WorkspaceGate></MemberGate>}
+          {activeTab === 'image-upscaler'   && <MemberGate featureName="Image Upscaler"><WorkspaceGate permKey="imageGenerator"><ImageUpscaler /></WorkspaceGate></MemberGate>}
           {activeTab === 'chat'             && <AskAIGate  featureName="Ask AI"><ChatComponent /></AskAIGate>}
           {activeTab === 'analyzer'         && <MemberGate featureName="DocuWizard"><SpendingAnalyzer /></MemberGate>}
           {activeTab === 'recipe-generator' && <AskAIGate  featureName="Recipe Generator"><ReceipeGenerator /></AskAIGate>}

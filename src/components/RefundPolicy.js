@@ -39,7 +39,7 @@ export default function RefundPolicy() {
   return (
     <div style={styles.page}>
       <header style={styles.header}>
-        <a href="/" style={styles.logo}>W!ntAi</a>
+        <a href="/" style={styles.logo}>Wintaibot</a>
         <a href="/" style={styles.back}>← Back to home</a>
       </header>
       <main style={styles.main}>
@@ -48,7 +48,7 @@ export default function RefundPolicy() {
 
         <p style={styles.p}>
           This Refund Policy explains how refunds and cancellations work for paid subscriptions and
-          one-time purchases on W!ntAi (&quot;we&quot;, &quot;our&quot;, &quot;us&quot;) at
+          one-time purchases on Wintaibot (&quot;we&quot;, &quot;our&quot;, &quot;us&quot;) at
           https://www.wintaibot.com. By purchasing a paid plan, you agree to this policy together with
           our{' '}
           <a href="/terms-of-service" style={{ color: '#2563eb', fontWeight: 600 }}>
@@ -63,7 +63,7 @@ export default function RefundPolicy() {
           <a href="https://stripe.com" target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', fontWeight: 600 }}>
             Stripe
           </a>
-          , Inc. W!ntAi does not store your full card number. Stripe&apos;s terms and privacy practices
+          , Inc. Wintaibot does not store your full card number. Stripe&apos;s terms and privacy practices
           also apply to payment transactions.
         </p>
 

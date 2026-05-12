@@ -39,25 +39,25 @@ export default function PrivacyPolicy() {
   return (
     <div style={styles.page}>
       <header style={styles.header}>
-        <a href="/" style={styles.logo}>W!ntAi</a>
+        <a href="/" style={styles.logo}>Wintaibot</a>
         <a href="/" style={styles.back}>← Back to home</a>
       </header>
       <main style={styles.main}>
-        <h1 style={styles.h1}>W!ntAi Privacy Policy</h1>
+        <h1 style={styles.h1}>Wintaibot Privacy Policy</h1>
         <p style={styles.updated}>Last updated: April 2026</p>
 
         <p style={styles.p}>
-          This Privacy Policy applies to <strong>W!ntAi</strong>, a social-media publishing
-          and AI-assisted commenting application operated by W!ntAi ("we", "our", or "us") at
-          https://www.wintaibot.com (the "Site"). It also covers the W!ntAi integrations registered with
+          This Privacy Policy applies to <strong>Wintaibot</strong>, a social-media publishing
+          and AI-assisted commenting application operated by Wintaibot ("we", "our", or "us") at
+          https://www.wintaibot.com (the "Site"). It also covers the Wintaibot integrations registered with
           third-party platforms including TikTok, Meta (Facebook and Instagram), YouTube, LinkedIn, and X (Twitter).
           This page informs you of our policies regarding the collection, use, and disclosure of personal
-          information when you use the W!ntAi service.
+          information when you use the Wintaibot service.
         </p>
 
         <h2 style={styles.h2}>Information We Collect</h2>
         <p style={styles.p}>
-          When you use W!ntAi, we may collect:
+          When you use Wintaibot, we may collect:
         </p>
         <ul style={styles.ul}>
           <li style={styles.li}>Account information (email address, name) when you register</li>
@@ -68,7 +68,7 @@ export default function PrivacyPolicy() {
 
         <h2 style={styles.h2}>How We Use Your Information</h2>
         <p style={styles.p}>
-          We use the information we collect to provide, maintain, and improve W!ntAi; to process your account and subscription; to send you service-related communications; and to comply with legal obligations. We may use aggregated, non-personally identifiable data for analytics and product improvement.
+          We use the information we collect to provide, maintain, and improve Wintaibot; to process your account and subscription; to send you service-related communications; and to comply with legal obligations. We may use aggregated, non-personally identifiable data for analytics and product improvement.
         </p>
 
         <h2 style={styles.h2}>Data Sharing and Third Parties</h2>
@@ -83,28 +83,28 @@ export default function PrivacyPolicy() {
 
         <h2 style={styles.h2}>TikTok Integration</h2>
         <p style={styles.p}>
-          When you connect your TikTok account to W!ntAi, you authorize W!ntAi to access certain data through
-          the TikTok Login Kit and TikTok Display API on your behalf. Specifically, W!ntAi may access:
+          When you connect your TikTok account to Wintaibot, you authorize Wintaibot to access certain data through
+          the TikTok Login Kit and TikTok Display API on your behalf. Specifically, Wintaibot may access:
         </p>
         <ul style={styles.ul}>
           <li style={styles.li}>Your basic TikTok profile information (open ID, display name, avatar URL)</li>
           <li style={styles.li}>A list of your public videos and their metadata (caption, share URL, cover image, view/like/comment counts)</li>
-          <li style={styles.li}>Comments on your TikTok videos, so W!ntAi can display them in your inbox and allow you to reply</li>
+          <li style={styles.li}>Comments on your TikTok videos, so Wintaibot can display them in your inbox and allow you to reply</li>
         </ul>
         <p style={styles.p}>
-          W!ntAi uses TikTok data solely to provide the publishing, analytics, and AI auto-reply features you
-          have enabled inside the W!ntAi dashboard. W!ntAi does not sell, rent, or share your TikTok data with
-          unrelated third parties. You may revoke W!ntAi's access to your TikTok account at any time from your
+          Wintaibot uses TikTok data solely to provide the publishing, analytics, and AI auto-reply features you
+          have enabled inside the Wintaibot dashboard. Wintaibot does not sell, rent, or share your TikTok data with
+          unrelated third parties. You may revoke Wintaibot's access to your TikTok account at any time from your
           TikTok account settings (Settings &amp; privacy → Security and login → Manage app permissions) or by
-          disconnecting TikTok inside the W!ntAi dashboard. W!ntAi's use and transfer of information received
+          disconnecting TikTok inside the Wintaibot dashboard. Wintaibot's use and transfer of information received
           from TikTok APIs adheres to the TikTok Developer Terms of Service and Developer Policy.
         </p>
 
         <h2 style={styles.h2}>Meta (Facebook and Instagram) Integration</h2>
         <p style={styles.p}>
-          When you connect your Facebook Page or Instagram Business account to W!ntAi, W!ntAi accesses your
+          When you connect your Facebook Page or Instagram Business account to Wintaibot, Wintaibot accesses your
           Page metadata, post and comment data, and the access tokens necessary to publish replies through the
-          Meta Graph API. W!ntAi uses this data only to power the inbox, analytics, and auto-reply features.
+          Meta Graph API. Wintaibot uses this data only to power the inbox, analytics, and auto-reply features.
           You can revoke access at any time from Facebook Settings → Business Integrations.
         </p>
 
@@ -125,7 +125,7 @@ export default function PrivacyPolicy() {
 
         <h2 style={styles.h2}>Children</h2>
         <p style={styles.p}>
-          W!ntAi is not directed at children under 13. We do not knowingly collect personal information from children under 13. If you believe we have collected such information, please contact us and we will delete it.
+          Wintaibot is not directed at children under 13. We do not knowingly collect personal information from children under 13. If you believe we have collected such information, please contact us and we will delete it.
         </p>
 
         <h2 style={styles.h2}>Changes to This Policy</h2>

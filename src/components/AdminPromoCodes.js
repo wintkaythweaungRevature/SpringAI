@@ -32,8 +32,6 @@ export default function AdminPromoCodes() {
     notes: '',
     restrictedToEmail: '',
     restrictedToPlans: '',   // '' = all plans; otherwise a single plan code
-    sendEmail: false,        // tick to email the code on create
-    emailRecipient: '',      // override; defaults to restrictedToEmail when blank
   });
   const [creating, setCreating] = useState(false);
 
@@ -86,17 +84,10 @@ export default function AdminPromoCodes() {
       if (!body.restrictedToPlans) {
         delete body.restrictedToPlans;
       }
-      // Email-on-create — when true, backend uses emailRecipient if provided
-      // else falls back to restrictedToEmail. When false, drop both fields.
-      if (!body.sendEmail) {
-        delete body.sendEmail;
-        delete body.emailRecipient;
-      } else if (!body.emailRecipient || !body.emailRecipient.trim()) {
-        // No explicit recipient — let backend use restrictedToEmail
-        delete body.emailRecipient;
-      } else {
-        body.emailRecipient = body.emailRecipient.trim().toLowerCase();
-      }
+      // Backend auto-emails the code to `restrictedToEmail` on create (mirrors
+      // the post-approval flow that always emails the locked address). No
+      // opt-in toggle needed — if the admin set an email-lock, they want the
+      // recipient to know about the code.
       if (body.kind === 'FREE') {
         delete body.percentOff;
       } else {
@@ -122,20 +113,20 @@ export default function AdminPromoCodes() {
       }
       const created = await res.json();
       // Backend now wraps the saved row + email outcome:
-      //   { code: PromoCode, emailRequested: bool, emailSent: bool, emailWarning?: string }
+      //   { code: PromoCode, emailRecipient: string|null, emailSent: bool, emailWarning?: string }
       // For backward compat (older deploys), fall back to the bare-row shape.
       const savedCode = created.code && typeof created.code === 'object' ? created.code : created;
       const codeStr = savedCode.code || '(unknown)';
       let msg = `✅ Created code "${codeStr}".`;
-      if (created.emailRequested) {
+      if (created.emailRecipient) {
         msg += created.emailSent
-          ? ' Email sent to recipient.'
-          : ' ⚠️ Email failed: ' + (created.emailWarning || 'check server mail config.');
+          ? ` 📧 Emailed to ${created.emailRecipient}.`
+          : ` ⚠️ Email to ${created.emailRecipient} failed: ${created.emailWarning || 'check server mail config.'}`;
       } else {
         msg += ' Share it with your friend / beta user.';
       }
       setSuccessMsg(msg);
-      setForm({ code: '', kind: 'FREE', percentOff: 50, durationKind: 'FOREVER', durationMonths: 3, durationUntilDate: '', maxUses: '', expiresAt: '', notes: '', restrictedToEmail: '', restrictedToPlans: '', sendEmail: false, emailRecipient: '' });
+      setForm({ code: '', kind: 'FREE', percentOff: 50, durationKind: 'FOREVER', durationMonths: 3, durationUntilDate: '', maxUses: '', expiresAt: '', notes: '', restrictedToEmail: '', restrictedToPlans: '' });
       setShowForm(false);
       loadCodes();
       setTimeout(() => setSuccessMsg(''), 5000);
@@ -365,37 +356,17 @@ export default function AdminPromoCodes() {
             </label>
           </div>
 
-          {/* Email-on-create — when ticked, the backend sends an email to
-              `emailRecipient` (or `restrictedToEmail` when blank) with the
-              code, discount details, plan restriction, and how to redeem. */}
-          <div style={s.row}>
-            <label style={{ ...s.lbl, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <input
-                type="checkbox"
-                checked={form.sendEmail}
-                onChange={e => setForm(f => ({ ...f, sendEmail: e.target.checked }))}
-                style={{ width: 16, height: 16 }}
-              />
-              📧 Email this code to the recipient on save
-            </label>
-          </div>
-          {form.sendEmail && (
-            <div style={s.row}>
-              <label style={s.lbl}>
-                Recipient email (optional)
-                <input
-                  style={s.input}
-                  type="email"
-                  placeholder={form.restrictedToEmail
-                    ? `defaults to ${form.restrictedToEmail}`
-                    : 'who should we email this code to?'}
-                  value={form.emailRecipient}
-                  onChange={e => setForm(f => ({ ...f, emailRecipient: e.target.value }))}
-                />
-                <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 400, marginTop: 4, textTransform: 'none', letterSpacing: 0 }}>
-                  Leave blank to send to the email-lock address above. Useful if you want to email a cohort address that ISN'T the email-lock.
-                </span>
-              </label>
+          {/* Auto-email hint — only shown when the admin has set an email-lock.
+              Mirrors the post-approval flow: setting a recipient is the
+              implicit "yes, send it" signal — no separate toggle needed. */}
+          {form.restrictedToEmail && form.restrictedToEmail.trim() && (
+            <div style={{
+              padding: '10px 14px', marginBottom: 16,
+              background: 'rgba(16,185,129,0.08)',
+              border: '1px solid rgba(16,185,129,0.3)',
+              borderRadius: 8, fontSize: 12, color: '#6ee7b7',
+            }}>
+              📧 The code will be emailed to <strong>{form.restrictedToEmail.trim()}</strong> automatically when you click Create.
             </div>
           )}
 

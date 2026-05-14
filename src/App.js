@@ -14,7 +14,6 @@ import PlatformIcon from './components/PlatformIcon';
 import ProfileAvatar from './components/ProfileAvatar';
 import HelpPanel from './components/HelpPanel';
 import ImageGenerator from './components/ImageGenerator';
-import ImageUpscaler from './components/ImageUpscaler';
 import ChatComponent from './components/ChatComponent';
 import ReceipeGenerator from './components/ReceipeGenerator';
 import SpendingAnalyzer from './components/Analyzer';
@@ -58,7 +57,6 @@ import ClientApprovalPage from './components/ClientApprovalPage';
 import SelfHealDashboard from './components/SelfHealDashboard';
 import BrandGuardian from './components/BrandGuardian';
 import MediaLibrary from './components/MediaLibrary';
-import DocumentQA from './components/DocumentQA';
 import AiWorkspace from './components/AiWorkspace';
 
 const BRAND_LOGO_SRC = '/android-chrome-192x192.png';
@@ -972,7 +970,6 @@ function App() {
                     {[
                       { label: 'Smart Hub',    icon: '🧠', color: '#f472b6', items: [
                         { icon: '🖼', label: 'Image Generator',  tab: 'image-generator'  },
-                        { icon: '🔍', label: 'Image Upscaler',   tab: 'image-upscaler'   },
                         { icon: '✨', label: 'Recipe Generator', tab: 'recipe-generator' },
                       ]},
                       { label: 'Digital Vault', icon: '🗄', color: '#22d3ee', items: [
@@ -983,7 +980,6 @@ function App() {
                         { icon: '💬', label: 'Reply Enchanter',  tab: 'Content'        },
                         { icon: '📄', label: 'Career Alchemist', tab: 'Resume'         },
                         { icon: '🗂', label: 'Asset Library',    tab: 'asset-library'  },
-                        { icon: '📑', label: 'Document Q&A',     tab: 'document-qa'    },
                       ]},
                       { label: 'Social HQ',   icon: '📡', color: '#a78bfa', items: [
                         { icon: '🛡', label: 'Brand Guardian', tab: 'brand-guardian' },
@@ -1148,7 +1144,6 @@ function App() {
             </MemberGate>
           )}
           {activeTab === 'image-generator'  && <MemberGate featureName="Image Generator"><WorkspaceGate permKey="imageGenerator"><ImageGenerator /></WorkspaceGate></MemberGate>}
-          {activeTab === 'image-upscaler'   && <MemberGate featureName="Image Upscaler"><WorkspaceGate permKey="imageGenerator"><ImageUpscaler /></WorkspaceGate></MemberGate>}
           {activeTab === 'chat'             && <AskAIGate  featureName="Ask AI"><ChatComponent /></AskAIGate>}
           {activeTab === 'analyzer'         && <MemberGate featureName="DocuWizard"><SpendingAnalyzer /></MemberGate>}
           {activeTab === 'recipe-generator' && <AskAIGate  featureName="Recipe Generator"><ReceipeGenerator /></AskAIGate>}
@@ -1162,7 +1157,6 @@ function App() {
           {activeTab === 'self-heal'        && <MemberGate featureName="Self-Healing Content"><ProGate featureName="Self-Healing Content"><SelfHealDashboard /></ProGate></MemberGate>}
           {activeTab === 'brand-guardian'   && <MemberGate featureName="Brand Guardian"><ProGate featureName="Brand Guardian"><BrandGuardian /></ProGate></MemberGate>}
           {activeTab === 'asset-library'    && <MemberGate featureName="Asset Library"><ProGate featureName="Asset Library"><MediaLibrary /></ProGate></MemberGate>}
-          {activeTab === 'document-qa'      && <MemberGate featureName="Document Q&A"><ProGate featureName="Document Q&A"><DocumentQA /></ProGate></MemberGate>}
           {activeTab === 'ai-workspace'     && <MemberGate featureName="AI Workspace"><ProGate featureName="AI Workspace"><AiWorkspace
               onCaptionApproved={(text) => { setTemplateCaption(text); go('video-publisher'); }}
               onPostsScheduled={() => go('calendar')}

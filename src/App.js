@@ -52,6 +52,7 @@ import UrlRepurposer from './components/UrlRepurposer';
 import VideoRecycler from './components/VideoRecycler';
 import Repurposer from './components/Repurposer';
 import AdminPromoCodes from './components/AdminPromoCodes';
+import AdminUsers from './components/AdminUsers';
 import TrendAlerts from './components/TrendAlerts';
 import ClientApprovalPage from './components/ClientApprovalPage';
 import SelfHealDashboard from './components/SelfHealDashboard';
@@ -741,9 +742,12 @@ function App() {
               <div style={s.groupLabelFooter}>{SIDEBAR_GROUPS.settings}</div>
               {user && <NavItem icon={<HiCog6Tooth size={17} />} label="Account" active={activeTab === 'account'} onClick={() => { go('account'); if (isMobile || isTablet) setSidebarOpen(false); }} hasArrow />}
               {user && <NavItem icon={<HiCreditCard size={17} />} label="Pricing" active={activeTab === 'pricing'} onClick={() => { go('pricing'); if (isMobile || isTablet) setSidebarOpen(false); }} />}
-              {/* Admin-only Promo Codes nav — gated on user.role === 'ROLE_ADMIN' */}
+              {/* Admin-only nav entries — gated on user.role === 'ROLE_ADMIN' */}
               {user?.role === 'ROLE_ADMIN' && (
                 <NavItem icon={<span style={{ fontSize: 16 }}>🎟</span>} label="Promo Codes" active={activeTab === 'admin-promo'} onClick={() => { go('admin-promo'); if (isMobile || isTablet) setSidebarOpen(false); }} />
+              )}
+              {user?.role === 'ROLE_ADMIN' && (
+                <NavItem icon={<span style={{ fontSize: 16 }}>👥</span>} label="Users & Plans" active={activeTab === 'admin-users'} onClick={() => { go('admin-users'); if (isMobile || isTablet) setSidebarOpen(false); }} />
               )}
               <NavItem icon={<HiQuestionMarkCircle size={17} />} label="Help & Support" active={activeTab === 'help'} onClick={() => { go('help'); if (isMobile || isTablet) setSidebarOpen(false); }} />
             </div>
@@ -1173,6 +1177,9 @@ function App() {
           {activeTab === 'brand'           && <MemberGate featureName="Brand Kit"><BrandKitSettings /></MemberGate>}
           {activeTab === 'admin-promo'     && (user?.role === 'ROLE_ADMIN'
             ? <AdminPromoCodes />
+            : <div style={{ padding: 40, color: '#94a3b8', textAlign: 'center' }}>Admin only.</div>)}
+          {activeTab === 'admin-users'     && (user?.role === 'ROLE_ADMIN'
+            ? <AdminUsers />
             : <div style={{ padding: 40, color: '#94a3b8', textAlign: 'center' }}>Admin only.</div>)}
           {activeTab === 'team'            && <MemberGate featureName="Team"><ProGate featureName="Team"><TeamSettings /></ProGate></MemberGate>}
           {activeTab === 'organization'    && <MemberGate featureName="Organization"><ProGate featureName="Organization"><OrganizationSettings /></ProGate></MemberGate>}
